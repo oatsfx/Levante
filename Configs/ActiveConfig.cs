@@ -22,6 +22,9 @@ namespace DestinyUtility.Configs
         [JsonProperty("ActiveAFKUsers")]
         public static List<ActiveAFKUser> ActiveAFKUsers { get; set; } = new List<ActiveAFKUser>();
 
+        [JsonProperty("MaximumThrallwayUsers")]
+        public static int MaximumThrallwayUsers = 40;
+
         public partial class ActiveAFKUser
         {
             [JsonProperty("DiscordID")]

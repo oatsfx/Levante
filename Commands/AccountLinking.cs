@@ -11,9 +11,9 @@ using System.Globalization;
 using System.Collections.Concurrent;
 using System.Linq;
 using Discord.WebSocket;
-using ThrallwayLogger.Configs;
+using DestinyUtility.Configs;
 
-namespace ThrallwayLogger.Commands
+namespace DestinyUtility.Commands
 {
     public class AccountLinking : ModuleBase<SocketCommandContext>
     {
@@ -24,7 +24,7 @@ namespace ThrallwayLogger.Commands
         {
             if (BungieTag == null)
             {
-                await ReplyAsync($"Missing argument: Bungie Tag. Use the command like this: \"{BotConfig.DefaultCommandPrefix}link [YOUR BUNGIE TAG]");
+                await ReplyAsync($"Missing argument: Bungie Tag. Use the command like this: \"{BotConfig.DefaultCommandPrefix}link [YOUR BUNGIE TAG]\"");
             }
             else
             {

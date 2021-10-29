@@ -34,7 +34,7 @@ namespace DestinyUtility.Configs
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + GetLinkedUser(DiscordID).BungieMembershipType + "/Profile/" + GetLinkedUser(DiscordID).BungieMembershipID + "/?components=100").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
-                return $"{item.Response.profile.data.userInfo.bungieGlobalDisplayName}#{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode}";
+                return $"{item.Response.profile.data.userInfo.bungieGlobalDisplayName}#{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode:0000}";
             }
         }
 

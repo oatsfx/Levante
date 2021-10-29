@@ -14,6 +14,13 @@ namespace DestinyUtility.Commands
 {
     public class Commands : ModuleBase<SocketCommandContext>
     {
+        private CommandService _service;
+
+        public Commands(CommandService service)
+        {
+            _service = service;
+        }
+
         [Command("ping", RunMode = RunMode.Async)]
         [Summary("Replies with latency in milliseconds.")]
         public async Task PingAsync()
@@ -46,6 +53,70 @@ namespace DestinyUtility.Commands
             };
             embed.Description =
                 $"Pong! ({latency} ms)";
+
+            await ReplyAsync("", false, embed.Build());
+        }
+
+        [Command("help", RunMode = RunMode.Async)]
+        public async Task Help()
+        {
+            var dmChannel = await Context.User.CreateDMChannelAsync();
+
+            var serverId = Context.Guild.Id;
+
+            string prefix = BotConfig.DefaultCommandPrefix;
+
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = "Command List"
+            };
+
+            var builder = new EmbedBuilder()
+            {
+                Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = auth,
+            };
+
+            foreach (var module in _service.Modules)
+            {
+                string description = "";
+                foreach (var cmd in module.Commands)
+                {
+                    var result = await cmd.CheckPreconditionsAsync(Context);
+                    if (result.IsSuccess && !description.Contains(cmd.Name)) // Check for permissions (dont want randoms seeing our private commands) and duplicate commands
+                        description += $"{prefix}{cmd.Name}\n";
+                }
+
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    builder.AddField(x =>
+                    {
+                        x.Name = module.Name;
+                        x.Value = description;
+                        x.IsInline = true;
+                    });
+                }
+            }
+
+            await dmChannel.SendMessageAsync("", false, builder.Build()); /* then we send it to the user. */
+
+            await ReplyAsync($"{Context.User.Mention}, check your DMs. <a:verified:690374136526012506>");
+        }
+
+        [Command("invite")]
+        [Summary("Provides links that support this bot.")]
+        public async Task Invite()
+        {
+            var app = await Context.Client.GetApplicationInfoAsync();
+            var embed = new EmbedBuilder();
+            embed.WithColor(new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
+
+            embed.ThumbnailUrl = app.IconUrl;
+
+            embed.Title = "Invite Link";
+            embed.Description =
+                "__**Invite me to your server!**__" +
+                "\n[Invite](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=bot&permissions=3154635888)";
 
             await ReplyAsync("", false, embed.Build());
         }
@@ -128,6 +199,79 @@ namespace DestinyUtility.Commands
             {
                 await ReplyAsync($"{x}");
             }
+        }
+
+        [Command("createHub", RunMode = RunMode.Async)]
+        [Summary("Creates the post with buttons so people can start their logs.")]
+        [RequireUserPermission(GuildPermission.ManageChannels)]
+        public async Task CreateHub()
+        {
+            ICategoryChannel cc = null;
+            foreach (var categoryChan in Context.Guild.CategoryChannels)
+            {
+                if (categoryChan.Name.Equals($"Thrallway Logger"))
+                {
+                    cc = categoryChan;
+                }
+            }
+
+            if (cc == null)
+            {
+                cc = await Context.Guild.CreateCategoryChannelAsync($"Thrallway Logger");
+            }
+            try
+            {
+                await cc.AddPermissionOverwriteAsync(Context.Guild.GetRole(Context.Guild.Id), new OverwritePermissions(sendMessages: PermValue.Deny));
+            }
+            catch (Exception x)
+            {
+                await ReplyAsync($"{x}");
+            }
+
+            OverwritePermissions perms = new OverwritePermissions(sendMessages: PermValue.Deny);
+            var hubChannel = Context.Guild.CreateTextChannelAsync($"thrallway-hub").Result;
+            await hubChannel.ModifyAsync(x =>
+            {
+                x.CategoryId = cc.Id;
+                x.Topic = $"Thrallway Hub: Start your logging here.";
+                x.PermissionOverwrites = new[]
+                {
+                    new Overwrite(Context.Guild.Id, PermissionTarget.Role, new OverwritePermissions(sendMessages: PermValue.Deny, viewChannel: PermValue.Allow))
+                };
+            });
+            var app = await Context.Client.GetApplicationInfoAsync();
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Thrallway Hub",
+                IconUrl = app.IconUrl,
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Make sure you have your AFK setup running before clicking one of the buttons."
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = auth,
+                Footer = foot,
+            };
+            embed.Description =
+                $"Are you getting ready to go AFK in Shattered Throne soon?\n" +
+                $"Click the \"Ready\" button and we'll start logging your progress and even DM you if we think you wiped!\n" +
+                $"When you are done, click the \"Stop\" button and we'll shut your logging down.";
+
+            Emoji sleepyEmote = new Emoji("😴");
+            Emoji helpEmote = new Emoji("❔");
+            Emoji stopEmote = new Emoji("🛑");
+
+            var buttonBuilder = new ComponentBuilder()
+                .WithButton("Ready", customId: $"startAFK", ButtonStyle.Secondary, sleepyEmote, row: 0)
+                .WithButton("Stop", customId: $"stopAFK", ButtonStyle.Secondary, stopEmote, row: 0)
+                .WithButton("Help", customId: $"viewHelp", ButtonStyle.Secondary, helpEmote, row: 0);
+
+            await hubChannel.SendMessageAsync($"", false, embed.Build(), component: buttonBuilder.Build());
+
+            await ReplyAsync($"{Context.User.Mention}: Hub created at {hubChannel.Mention}. Feel free to move that Category anywhere!");
         }
 
         private string GetCurrentDestiny2Season(out int SeasonNumber)
