@@ -206,6 +206,8 @@ namespace DestinyUtility.Commands
         [RequireUserPermission(GuildPermission.ManageChannels)]
         public async Task CreateHub()
         {
+            var app = await Context.Client.GetApplicationInfoAsync();
+
             ICategoryChannel cc = null;
             foreach (var categoryChan in Context.Guild.CategoryChannels)
             {
@@ -222,6 +224,7 @@ namespace DestinyUtility.Commands
             try
             {
                 await cc.AddPermissionOverwriteAsync(Context.Guild.GetRole(Context.Guild.Id), new OverwritePermissions(sendMessages: PermValue.Deny));
+                await cc.AddPermissionOverwriteAsync(Context.Client.GetUser(app.Id), new OverwritePermissions(sendMessages: PermValue.Allow));
             }
             catch (Exception x)
             {
@@ -239,7 +242,6 @@ namespace DestinyUtility.Commands
                     new Overwrite(Context.Guild.Id, PermissionTarget.Role, new OverwritePermissions(sendMessages: PermValue.Deny, viewChannel: PermValue.Allow))
                 };
             });
-            var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Thrallway Hub",

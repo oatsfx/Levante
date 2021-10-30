@@ -195,7 +195,6 @@ namespace DestinyUtility
         #region ThrallwayLogging
         private async Task RefreshBungieAPI()
         {
-            ulong chanId = 0;
             if (ActiveConfig.ActiveAFKUsers.Count <= 0)
             {
                 Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Skipping refresh, no active AFK users...");
@@ -288,7 +287,6 @@ namespace DestinyUtility
             catch (Exception x)
             {
                 Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refresh failed, trying again!");
-                await LogHelper.Log(_client.GetChannelAsync(chanId).Result as ITextChannel, $"Exception found: {x}");
                 await Task.Delay(8000);
                 await RefreshBungieAPI();
             }
