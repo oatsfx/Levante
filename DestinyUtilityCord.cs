@@ -101,7 +101,7 @@ namespace DestinyUtility
             DailyResetTimer = new Timer(DailyResetChanges, null, (long)timeToGo.TotalMilliseconds, Timeout.Infinite);
         }
 
-        public void DailyResetChanges(Object o = null)
+        public async void DailyResetChanges(Object o = null)
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("\nDaily Reset Occurred.");
@@ -110,7 +110,7 @@ namespace DestinyUtility
             Console.WriteLine($"Legend Lost Sector: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.CurrentLegendLostSector)} ({LostSectorTrackingConfig.CurrentLegendArmorDrop})");
             Console.WriteLine($"Master Lost Sector: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.GetMasterLostSector())} ({LostSectorTrackingConfig.GetMasterLostSectorArmorDrop()})");
 
-            LostSectorTrackingConfig.PostLostSectorUpdate(_client).ConfigureAwait(false);
+            await LostSectorTrackingConfig.PostLostSectorUpdate(_client);
 
             List<LostSectorTrackingConfig.LostSectorLink> temp = new List<LostSectorTrackingConfig.LostSectorLink>();
             foreach (var LSL in LostSectorTrackingConfig.LostSectorLinks)
@@ -131,7 +131,7 @@ namespace DestinyUtility
                             user = _client.GetUser(LSL.DiscordID);
                         }
 
-                        user.SendMessageAsync($"Hey {user.Mention}!\n" +
+                        await user.SendMessageAsync($"Hey {user.Mention}!\n" +
                             $"{LostSectorTrackingConfig.GetLostSectorString(LSL.LostSector)} ({LSL.Difficulty}) is dropping {LSL.ArmorDrop} today! I have removed your tracking, good luck!");
                         addBack = false;
                     }
@@ -151,7 +151,7 @@ namespace DestinyUtility
                             user = _client.GetUser(LSL.DiscordID);
                         }
 
-                        user.SendMessageAsync($"Hey {user.Mention}!\n" +
+                        await user.SendMessageAsync($"Hey {user.Mention}!\n" +
                             $"{LostSectorTrackingConfig.GetLostSectorString(LSL.LostSector)} ({LSL.Difficulty}) is dropping {LSL.ArmorDrop} today! I have removed your tracking, good luck!");
                         addBack = false;
                     }

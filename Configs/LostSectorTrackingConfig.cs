@@ -441,7 +441,7 @@ namespace DestinyUtility.Configs
             };
             embed.AddField(y =>
             {
-                y.Name = "Legend";
+                y.Name = "Master";
                 y.Value = $"Recommended Power: <:LightLevel:844029708077367297>{GetLostSectorDifficultyLight(LostSectorDifficulty.Master)}";
                 y.IsInline = false;
             })
