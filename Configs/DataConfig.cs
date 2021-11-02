@@ -48,6 +48,12 @@ namespace DestinyUtility.Configs
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
+                if (IsBungieAPIDown(content))
+                {
+                    MembershipType = null;
+                    return null;
+                }
+
                 string memId = "";
                 string memType = "";
                 for (int i = 0; i < item.Response.Count; i++)
@@ -84,6 +90,12 @@ namespace DestinyUtility.Configs
                 isPublic = item.Response[0].isPublic;
             }
             return isPublic;
+        }
+        public static bool IsBungieAPIDown(string JSONContent)
+        {
+            dynamic item = JsonConvert.DeserializeObject(JSONContent);
+            string status = item.ErrorStatus;
+            return !status.Equals("Success");
         }
 
         public static void UpdateUsersList()

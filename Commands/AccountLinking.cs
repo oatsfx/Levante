@@ -36,6 +36,12 @@ namespace DestinyUtility.Commands
 
                 string memId = DataConfig.GetValidDestinyMembership(BungieTag, out string memType);
 
+                if (memId == null && memType == null)
+                {
+                    await ReplyAsync("Bungie API is down, try again later.");
+                    return;
+                }
+
                 if (!DataConfig.IsPublicAccount(BungieTag))
                 {
                     await ReplyAsync("Your account privacy is not set to public. We cannot access your information otherwise.");
