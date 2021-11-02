@@ -1028,12 +1028,21 @@ namespace DestinyUtility
                 string json = File.ReadAllText(ActiveConfigPath);
                 aConfig = JsonConvert.DeserializeObject<ActiveConfig>(json);
 
-                foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
+                try
                 {
-                    int updatedLevel = DataConfig.GetUserSeasonPassLevel(aau.DiscordID, out int updatedProgression);
-                    aau.LastLevelProgress = updatedProgression;
-                    aau.LastLoggedLevel = updatedLevel;
+                    foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
+                    {
+                        int updatedLevel = DataConfig.GetUserSeasonPassLevel(aau.DiscordID, out int updatedProgression);
+                        aau.LastLevelProgress = updatedProgression;
+                        aau.LastLoggedLevel = updatedLevel;
+                    }
                 }
+                catch (Exception x)
+                {
+                    DataConfig.UpdateUsersList();
+                    Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Bungie API is down, loading stored data and continuing.");
+                }
+                
 
                 string output = JsonConvert.SerializeObject(aConfig, Formatting.Indented);
                 File.WriteAllText(ActiveConfigPath, output);
