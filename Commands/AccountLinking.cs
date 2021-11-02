@@ -20,7 +20,7 @@ namespace DestinyUtility.Commands
         [Command("link", RunMode = RunMode.Async)]
         [Alias("register")]
         [Summary("Links a Bungie Membership ID to the User's Discord account.")]
-        public async Task LinkAsync(string BungieTag = null)
+        public async Task LinkAsync([Remainder] string BungieTag = null)
         {
             if (BungieTag == null)
             {
