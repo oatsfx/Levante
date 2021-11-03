@@ -62,8 +62,8 @@ namespace DestinyUtility.Configs
                     memType = item.Response[i].membershipType;
 
                     var memResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + memType + "/Profile/" + memId + "/?components=100").Result;
-                    var memContent = response.Content.ReadAsStringAsync().Result;
-                    dynamic memItem = JsonConvert.DeserializeObject(content);
+                    var memContent = memResponse.Content.ReadAsStringAsync().Result;
+                    dynamic memItem = JsonConvert.DeserializeObject(memContent);
 
                     if (memItem.ErrorCode == 1)
                     {
