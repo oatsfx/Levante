@@ -327,6 +327,7 @@ namespace DestinyUtility
                     }
                     string uniqueName = DataConfig.GetUniqueBungieName(tempAau.DiscordID);
                     await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{aau.DiscordID}>: Potential wipe detected. Logging will be terminated for {uniqueName}.");
+                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).");
                     //await (_client.GetChannel(tempAau.DiscordChannelID) as SocketGuildChannel).DeleteAsync();
 
                     Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {DataConfig.GetUniqueBungieName(aau.DiscordID)}.");
@@ -763,7 +764,7 @@ namespace DestinyUtility
                 };
                 var foot = new EmbedFooterBuilder()
                 {
-                    Text = $"-Thrallway Logger"
+                    Text = $"Powered by @OatsFX"
                 };
                 var ruleEmbed = new EmbedBuilder()
                 {
@@ -844,6 +845,7 @@ namespace DestinyUtility
                 }
 
                 var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName}").Result;
+                await interaction.FollowupAsync($"Your channel is setup! View it here: {userLogChannel.Mention}.", ephemeral: true);
 
                 await LogHelper.Log(userLogChannel, "Getting things ready...");
 
@@ -890,8 +892,6 @@ namespace DestinyUtility
                 await UpdateBotActivity();
 
                 await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
-
-                await interaction.FollowupAsync($"Logging has begun! View them here: {userLogChannel.Mention}.", ephemeral: true);
             }
             else if (customId.Contains($"stopAFK"))
             {
@@ -910,6 +910,7 @@ namespace DestinyUtility
                 var aau = ActiveConfig.GetActiveAFKUser(user.Id);
 
                 await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: GenerateSessionSummary(aau).Result, CB: GenerateDeleteChannelButton());
+                await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).");
                 string uniqueName = DataConfig.GetUniqueBungieName(user.Id);
 
                 ActiveConfig.DeleteActiveUserFromConfig(user.Id);
@@ -968,7 +969,7 @@ namespace DestinyUtility
                     return true;
                 else if (error == CommandError.UnmetPrecondition)
                 {
-                    await context.Channel.SendMessageAsync($"[{error}]: {result.ErrorReason}*").ConfigureAwait(false);
+                    await context.Channel.SendMessageAsync($"[{error}]: {result.ErrorReason}").ConfigureAwait(false);
                 }
                 else if (error == CommandError.BadArgCount)
                 {

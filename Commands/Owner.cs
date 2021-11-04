@@ -28,7 +28,7 @@ namespace DestinyUtility.Commands
             var buttonBuilder = new ComponentBuilder()
                 .WithButton("Force Reset", customId: $"force", ButtonStyle.Secondary, helpEmote, row: 0);
 
-            await ReplyAsync($"AAAA", component: buttonBuilder.Build());
+            await ReplyAsync($"This shouldn't really be used...", component: buttonBuilder.Build());
         }
     }
 }

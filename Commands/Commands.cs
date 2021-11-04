@@ -116,7 +116,9 @@ namespace DestinyUtility.Commands
             embed.Title = "Invite Link";
             embed.Description =
                 "__**Invite me to your server!**__" +
-                "\n[Invite](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=bot&permissions=3154635888)";
+                "\n[Invite](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=bot&permissions=3154635888)" +
+                "\n__**Let me use Slash Commands in your server!**__" +
+                "\n[Slash Commands](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=applications.commands)";
 
             await ReplyAsync("", false, embed.Build());
         }
