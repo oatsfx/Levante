@@ -103,7 +103,7 @@ namespace DestinyUtility.Commands
             await ReplyAsync($"{Context.User.Mention}, check your DMs. <a:verified:690374136526012506>");
         }
 
-        [Command("invite")]
+        [Command("invite", RunMode = RunMode.Async)]
         [Summary("Provides links that support this bot.")]
         public async Task Invite()
         {
