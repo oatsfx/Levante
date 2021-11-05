@@ -327,8 +327,7 @@ namespace DestinyUtility
                     }
                     string uniqueName = DataConfig.GetUniqueBungieName(tempAau.DiscordID);
                     await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{aau.DiscordID}>: Potential wipe detected. Logging will be terminated for {uniqueName}.");
-                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).");
-                    //await (_client.GetChannel(tempAau.DiscordChannelID) as SocketGuildChannel).DeleteAsync();
+                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).", GenerateSessionSummary(aau).Result);
 
                     Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {DataConfig.GetUniqueBungieName(aau.DiscordID)}.");
 
@@ -792,6 +791,7 @@ namespace DestinyUtility
                 if (ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumThrallwayUsers)
                 {
                     await interaction.RespondAsync($"Unfortunately, we are at the maximum number of users to watch ({ActiveConfig.MaximumThrallwayUsers}). Try again later.", ephemeral: true);
+                    return;
                 }
 
                 if (IsBungieAPIDown())
@@ -845,9 +845,8 @@ namespace DestinyUtility
                 }
 
                 var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName}").Result;
-                await interaction.FollowupAsync($"Your channel is setup! View it here: {userLogChannel.Mention}.", ephemeral: true);
-
                 await LogHelper.Log(userLogChannel, "Getting things ready...");
+                await interaction.RespondAsync($"Your channel is setup! View it here: {userLogChannel.Mention}.", ephemeral: true);
 
                 int userLevel = DataConfig.GetUserSeasonPassLevel(user.Id, out int lvlProg);
                 ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
@@ -910,7 +909,7 @@ namespace DestinyUtility
                 var aau = ActiveConfig.GetActiveAFKUser(user.Id);
 
                 await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: GenerateSessionSummary(aau).Result, CB: GenerateDeleteChannelButton());
-                await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).");
+                await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).", GenerateSessionSummary(aau).Result);
                 string uniqueName = DataConfig.GetUniqueBungieName(user.Id);
 
                 ActiveConfig.DeleteActiveUserFromConfig(user.Id);

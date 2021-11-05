@@ -53,6 +53,13 @@ namespace DestinyUtility.Commands
             }
         }
 
+        [Command("linkHelp", RunMode = RunMode.Async)]
+        [Summary("Links a Bungie Membership ID to the User's Discord account.")]
+        public async Task LinkHelpAsync()
+        {
+            await ReplyAsync($"> To link, use this command \"{BotConfig.DefaultCommandPrefix}link [your Bungie Tag]\".");
+        }
+
         [Command("unlink", RunMode = RunMode.Async)]
         [Summary("Unlinks user's Bungie ID from their Discord ID.")]
         [RequireBotPermission(ChannelPermission.AddReactions)]
