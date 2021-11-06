@@ -269,7 +269,7 @@ namespace DestinyUtility.Configs
                 case LostSector.K1Revelation: result += "<:VoidBurn:900142150338105404> Void Burn\n<:MatchGame:900142096013459516> Match Game\n<:LimitedRevives:900142086270115901> Limited Revives\n<:EquipmentLocked:900142051725819965> Equipment Locked\n<:FirePit:900142069182521345> Fire Pit"; break;
                 case LostSector.ConcealedVoid: result += "<:SolarBurn:900142136996020224> Solar Burn\n<:MatchGame:900142096013459516> Match Game\n<:LimitedRevives:900142086270115901> Limited Revives\n<:EquipmentLocked:900142051725819965> Equipment Locked\n<:ArachNO:900142007840833576> Arach-NO!"; break;
                 case LostSector.BunkerE15: result += "<:VoidBurn:900142150338105404> Void Burn\n<:MatchGame:900142096013459516> Match Game\n<:LimitedRevives:900142086270115901> Limited Revives\n<:EquipmentLocked:900142051725819965> Equipment Locked\n<:Shocker:900142114426486844> Shocker"; break;
-                case LostSector.Perdition: result += "<:ArcBurn:900142018280456213> Arc Burn\nMatch Game\n<:LimitedRevives:900142086270115901> Limited Revives\n<:EquipmentLocked:900142051725819965> Equipment Locked\n<:Shocker:900142114426486844> Shocker"; break;
+                case LostSector.Perdition: result += "<:ArcBurn:900142018280456213> Arc Burn\n<:MatchGame:900142096013459516> Match Game\n<:LimitedRevives:900142086270115901> Limited Revives\n<:EquipmentLocked:900142051725819965> Equipment Locked\n<:Shocker:900142114426486844> Shocker"; break;
                 default: return "";
             }
 

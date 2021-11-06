@@ -827,6 +827,7 @@ namespace DestinyUtility
                     return;
                 }
 
+                await interaction.RespondAsync($"Getting things ready...", ephemeral: true);
                 string uniqueName = DataConfig.GetUniqueBungieName(user.Id);
 
                 ICategoryChannel cc = null;
@@ -845,8 +846,6 @@ namespace DestinyUtility
                 }
 
                 var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName}").Result;
-                await LogHelper.Log(userLogChannel, "Getting things ready...");
-                await interaction.RespondAsync($"Your channel is setup! View it here: {userLogChannel.Mention}.", ephemeral: true);
 
                 int userLevel = DataConfig.GetUserSeasonPassLevel(user.Id, out int lvlProg);
                 ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
