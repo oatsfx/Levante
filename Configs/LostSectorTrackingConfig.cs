@@ -230,7 +230,7 @@ namespace DestinyUtility.Configs
                     case LostSector.K1CrewQuarters: return "10 <:Solar:900144171267022888>";
                     case LostSector.K1Revelation: return "4 <:Arc:900144187696099359>";
                     case LostSector.ConcealedVoid: return "2 <:Solar:900144171267022888>\n3 <:Void:900144180288958474>\n1 <:Arc:900144187696099359>";
-                    case LostSector.BunkerE15: return "4 <:Solar:900144171267022888>\n2 <:Void:900144180288958474>";
+                    case LostSector.BunkerE15: return "2 <:Void:900144180288958474>";
                     case LostSector.Perdition: return "2 <:Void:900144180288958474>\n22 <:Arc:900144187696099359>";
                     default: return "";
                 }
