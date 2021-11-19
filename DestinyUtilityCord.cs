@@ -221,9 +221,11 @@ namespace DestinyUtility
                     int updatedLevel = DataConfig.GetUserSeasonPassLevel(tempAau.DiscordID, out int updatedProgression);
                     bool addBack = true;
 
+                    Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Checking user: {tempAau.UniqueBungieName}");
+
                     if (!ActiveConfig.IsInShatteredThrone(DataConfig.GetLinkedUser(tempAau.DiscordID).BungieMembershipID, DataConfig.GetLinkedUser(tempAau.DiscordID).BungieMembershipType))
                     {
-                        string uniqueName = DataConfig.GetUniqueBungieName(tempAau.DiscordID);
+                        string uniqueName = tempAau.UniqueBungieName;
 
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player {uniqueName} is no longer in Shattered Throne.");
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau).Result, GenerateDeleteChannelButton());
@@ -241,7 +243,7 @@ namespace DestinyUtility
                         await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player {uniqueName} is no longer in Shattered Throne. Logging will be terminated for {uniqueName}.");
                         //await (_client.GetChannel(tempAau.DiscordChannelID) as SocketGuildChannel).DeleteAsync();
 
-                        Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {DataConfig.GetUniqueBungieName(aau.DiscordID)}.");
+                        Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {tempAau.UniqueBungieName}.");
                         addBack = false;
                     }
                     else if (updatedLevel > tempAau.LastLoggedLevel)
@@ -262,7 +264,7 @@ namespace DestinyUtility
                     }
                     else
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {DataConfig.GetUniqueBungieName(tempAau.DiscordID)} (Level: {updatedLevel}): {tempAau.LastLevelProgress} XP -> {updatedProgression} XP");
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {tempAau.LastLevelProgress} XP -> {updatedProgression} XP");
 
                         tempAau.LastLoggedLevel = updatedLevel;
                         tempAau.LastLevelProgress = updatedProgression;
@@ -295,7 +297,7 @@ namespace DestinyUtility
         private async Task<ActiveConfig.ActiveAFKUser> RefreshSpecificUser(ActiveConfig.ActiveAFKUser aau)
         {
             await Task.Delay(20000);
-            Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refreshing Bungie API specifically for {DataConfig.GetUniqueBungieName(aau.DiscordID)}.");
+            Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refreshing Bungie API specifically for {aau.UniqueBungieName}.");
             List<ActiveConfig.ActiveAFKUser> temp = new List<ActiveConfig.ActiveAFKUser>();
             ActiveConfig.ActiveAFKUser tempAau = new ActiveConfig.ActiveAFKUser();
             try
@@ -325,11 +327,11 @@ namespace DestinyUtility
                     {
                         user = _client.GetUser(tempAau.DiscordID);
                     }
-                    string uniqueName = DataConfig.GetUniqueBungieName(tempAau.DiscordID);
+                    string uniqueName = tempAau.UniqueBungieName;
                     await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{aau.DiscordID}>: Potential wipe detected. Logging will be terminated for {uniqueName}.");
                     await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).", GenerateSessionSummary(aau).Result);
 
-                    Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {DataConfig.GetUniqueBungieName(aau.DiscordID)}.");
+                    Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {tempAau.UniqueBungieName}.");
 
                     return null;
                 }
@@ -340,18 +342,18 @@ namespace DestinyUtility
                 }
                 else
                 {
-                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {DataConfig.GetUniqueBungieName(aau.DiscordID)} (Level: {updatedLevel}): {aau.LastLevelProgress} XP -> {updatedProgression} XP");
+                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {aau.LastLevelProgress} XP -> {updatedProgression} XP");
                     tempAau.LastLoggedLevel = updatedLevel;
                     tempAau.LastLevelProgress = updatedProgression;
                 }
 
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] API Refreshed for {DataConfig.GetUniqueBungieName(aau.DiscordID)}!");
+                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] API Refreshed for {tempAau.UniqueBungieName}!");
 
                 return tempAau;
             }
             catch (Exception x)
             {
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refresh for {DataConfig.GetUniqueBungieName(aau.DiscordID)} failed!");
+                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refresh for {tempAau.UniqueBungieName} failed!");
                 await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Exception found: {x}");
                 return null;
             }
@@ -372,7 +374,7 @@ namespace DestinyUtility
             var app = await _client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Session Summary: {DataConfig.GetUniqueBungieName(aau.DiscordID)}",
+                Name = $"Session Summary: {aau.UniqueBungieName}",
                 IconUrl = app.IconUrl,
             };
             var foot = new EmbedFooterBuilder()
@@ -828,7 +830,7 @@ namespace DestinyUtility
                 }
 
                 await interaction.RespondAsync($"Getting things ready...", ephemeral: true);
-                string uniqueName = DataConfig.GetUniqueBungieName(user.Id);
+                string uniqueName = DataConfig.GetLinkedUser(user.Id).UniqueBungieName;
 
                 ICategoryChannel cc = null;
                 foreach (var categoryChan in guild.CategoryChannels)
@@ -852,6 +854,7 @@ namespace DestinyUtility
                 {
                     DiscordID = user.Id,
                     BungieMembershipID = memId,
+                    UniqueBungieName = uniqueName,
                     DiscordChannelID = userLogChannel.Id,
                     StartLevel = userLevel,
                     LastLoggedLevel = userLevel,
@@ -909,7 +912,7 @@ namespace DestinyUtility
 
                 await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: GenerateSessionSummary(aau).Result, CB: GenerateDeleteChannelButton());
                 await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).", GenerateSessionSummary(aau).Result);
-                string uniqueName = DataConfig.GetUniqueBungieName(user.Id);
+                string uniqueName = aau.UniqueBungieName;
 
                 ActiveConfig.DeleteActiveUserFromConfig(user.Id);
                 await UpdateBotActivity();

@@ -48,7 +48,7 @@ namespace DestinyUtility.Commands
                     return;
                 }
 
-                DataConfig.AddUserToConfig(Context.User.Id, memId, memType);
+                DataConfig.AddUserToConfig(Context.User.Id, memId, memType, BungieTag);
                 await ReplyAsync($"Linked {Context.User.Mention} to {BungieTag}.");
             }
         }

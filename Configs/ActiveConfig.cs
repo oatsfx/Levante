@@ -33,6 +33,9 @@ namespace DestinyUtility.Configs
             [JsonProperty("BungieMembershipID")]
             public string BungieMembershipID { get; set; } = "Hello World";
 
+            [JsonProperty("UniqueBungieName")]
+            public string UniqueBungieName { get; set; } = "Guardian#0000";
+
             [JsonProperty("DiscordChannelID")]
             public ulong DiscordChannelID { get; set; } = 0;
 

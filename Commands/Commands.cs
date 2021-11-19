@@ -149,14 +149,13 @@ namespace DestinyUtility.Commands
             foreach (var aau in ActiveConfig.ActiveAFKUsers)
             {
                 embed.Description +=
-                    $"{DataConfig.GetUniqueBungieName(aau.DiscordID)} (<@{aau.DiscordID}>): Level {aau.LastLoggedLevel}\n";
+                    $"{aau.UniqueBungieName} (<@{aau.DiscordID}>): Level {aau.LastLoggedLevel}\n";
             }
 
             await ReplyAsync($"", false, embed.Build());
         }
 
         [Command("level", RunMode = RunMode.Async)]
-        [Alias("rank")]
         [Summary("Gets your Destiny 2 Season Pass Rank.")]
         public async Task GetLevel([Remainder] SocketGuildUser user = null)
         {
@@ -191,7 +190,7 @@ namespace DestinyUtility.Commands
                     Footer = foot,
                 };
                 embed.Description =
-                    $"Player: **{DataConfig.GetUniqueBungieName(user.Id)}**\n" +
+                    $"Player: **{DataConfig.GetLinkedUser(user.Id).UniqueBungieName}**\n" +
                     $"Level: **{DataConfig.GetUserSeasonPassLevel(user.Id, out int progress)}**\n" +
                     $"Progress to Next Level: **{progress}/100000**";
 
@@ -201,6 +200,98 @@ namespace DestinyUtility.Commands
             {
                 await ReplyAsync($"{x}");
             }
+        }
+
+        [Command("rank", RunMode = RunMode.Async)]
+        [Alias("leaderboard")]
+        [Summary("Gets a leaderboard of all registered users.")]
+        public async Task Rank()
+        {
+            var tempList = BubbleSortByLevel(DataConfig.DiscordIDLinks, out var LevelList);
+            bool isTop10 = false;
+            string embedDesc = "";
+
+            if (tempList.Count >= 10)
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    if (tempList[i].DiscordID == Context.User.Id)
+                    {
+                        embedDesc += $"{i + 1}) **{DataConfig.GetLinkedUser(tempList[i].DiscordID).UniqueBungieName}** (Level: {LevelList[i]})\n";
+                        isTop10 = true;
+                    }
+                    else
+                        embedDesc += $"{i + 1}) {DataConfig.GetLinkedUser(tempList[i].DiscordID).UniqueBungieName} (Level: {LevelList[i]})\n";
+                }
+
+                if (!isTop10)
+                {
+                    embedDesc += "...\n";
+                    for (int i = 10; i < tempList.Count; i++)
+                    {
+                        if (tempList[i].DiscordID == Context.User.Id)
+                            embedDesc += $"{i + 1}) **{DataConfig.GetLinkedUser(tempList[i].DiscordID).UniqueBungieName}** (Level: {LevelList[i]})";
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < tempList.Count; i++)
+                {
+                    if (tempList[i].DiscordID == Context.User.Id)
+                        embedDesc += $"{i + 1}) **{DataConfig.GetLinkedUser(tempList[i].DiscordID).UniqueBungieName}** (Level: {LevelList[i]})\n";
+                    else
+                        embedDesc += $"{i + 1}) {DataConfig.GetLinkedUser(tempList[i].DiscordID).UniqueBungieName} (Level: {LevelList[i]})\n";
+                }
+            }
+
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Top Linked Guardians by Season Level",
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Powered by Bungie API"
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = auth,
+                Footer = foot,
+            };
+            embed.Description = embedDesc;
+
+            await ReplyAsync($"", false, embed.Build());
+        }
+
+        private List<DataConfig.DiscordIDLink> BubbleSortByLevel(List<DataConfig.DiscordIDLink> DiscordIDLinkList, out List<int> LevelList)
+        {
+            int n = DiscordIDLinkList.Count;
+            LevelList = new List<int>();
+
+            for (int i = 0; i < n; i++)
+            {
+                LevelList.Add(DataConfig.GetUserSeasonPassLevel(DiscordIDLinkList[i].DiscordID, out _));
+            }
+
+            for (int i = 0; i < n - 1; i++)
+            {
+                for (int j = 0; j < n - 1 - i; j++)
+                {
+                    if (LevelList[j] < LevelList[j + 1])
+                    {
+                        var temp = DiscordIDLinkList[j];
+                        DiscordIDLinkList[j] = DiscordIDLinkList[j + 1];
+                        DiscordIDLinkList[j + 1] = temp;
+
+                        int tempLevel = LevelList[j];
+                        LevelList[j] = LevelList[j + 1];
+                        LevelList[j + 1] = tempLevel;
+                    }
+                }
+            }
+
+            return DiscordIDLinkList;
         }
 
         [Command("createHub", RunMode = RunMode.Async)]

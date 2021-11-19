@@ -23,9 +23,12 @@ namespace DestinyUtility.Configs
 
             [JsonProperty("BungieMembershipType")]
             public string BungieMembershipType { get; set; } = "-1";
+
+            [JsonProperty("UniqueBungieName")]
+            public string UniqueBungieName { get; set; } = "Guardian#0000";
         }
 
-        public static string GetUniqueBungieName(ulong DiscordID)
+        /*public static string GetUniqueBungieName(ulong DiscordID)
         {
             using (var client = new HttpClient())
             {
@@ -36,7 +39,7 @@ namespace DestinyUtility.Configs
                 dynamic item = JsonConvert.DeserializeObject(content);
                 return $"{item.Response.profile.data.userInfo.bungieGlobalDisplayName}#{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode:0000}";
             }
-        }
+        }*/
 
         public static string GetValidDestinyMembership(string BungieTag, out string MembershipType)
         {
@@ -114,22 +117,20 @@ namespace DestinyUtility.Configs
 
         public static DiscordIDLink GetLinkedUser(ulong DiscordID)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
-            DiscordIDLinks.Clear();
-            DataConfig jsonObj = JsonConvert.DeserializeObject<DataConfig>(json);
             foreach (DiscordIDLink dil in DiscordIDLinks)
                 if (dil.DiscordID == DiscordID)
                     return dil;
             return null;
         }
 
-        public static void AddUserToConfig(ulong DiscordID, string MembershipID, string MembershipType)
+        public static void AddUserToConfig(ulong DiscordID, string MembershipID, string MembershipType, string BungieName)
         {
             DiscordIDLink dil = new DiscordIDLink()
             {
                 DiscordID = DiscordID,
                 BungieMembershipID = MembershipID,
-                BungieMembershipType = MembershipType
+                BungieMembershipType = MembershipType,
+                UniqueBungieName = BungieName
             };
             string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
             DiscordIDLinks.Clear();
