@@ -327,7 +327,7 @@ namespace DestinyUtility.Commands
             int i = Start - 1;
             for (int j = Start; j < End; j++)
             {
-                if (LevelList[j] <= Center)
+                if (LevelList[j] >= Center)
                 {
                     i++;
                     var temp1 = DiscordIDLinkList[i];
