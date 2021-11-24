@@ -38,7 +38,7 @@ namespace DestinyUtility.Commands
 
                 if (memId == null && memType == null)
                 {
-                    await ReplyAsync("Bungie API is down, try again later.");
+                    await ReplyAsync("Something went wrong. Is your Bungie Tag correct?");
                     return;
                 }
 
