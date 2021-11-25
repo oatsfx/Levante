@@ -226,12 +226,13 @@ namespace DestinyUtility
                 foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
-                    int updatedLevel = DataConfig.GetUserSeasonPassLevel(tempAau.DiscordID, out int updatedProgression);
+                    // implement a IsInShatteredThrone out on this method, to reduce API calls
+                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isInShatteredThrone);
                     bool addBack = true;
 
                     Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Checking user: {tempAau.UniqueBungieName}");
 
-                    if (!ActiveConfig.IsInShatteredThrone(DataConfig.GetLinkedUser(tempAau.DiscordID).BungieMembershipID, DataConfig.GetLinkedUser(tempAau.DiscordID).BungieMembershipType))
+                    if (!isInShatteredThrone)
                     {
                         string uniqueName = tempAau.UniqueBungieName;
 
