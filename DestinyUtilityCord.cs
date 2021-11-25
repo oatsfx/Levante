@@ -54,6 +54,9 @@ namespace DestinyUtility
             if (!CheckAndLoadConfigFiles())
                 return;
 
+            if (!CheckAndLoadDataFiles())
+                return;
+
             Console.WriteLine($"Current Bot Version: v{BotConfig.Version}");
             Console.WriteLine($"Current Developer Note: {BotConfig.Note}");
 
@@ -1174,7 +1177,8 @@ namespace DestinyUtility
                 closeProgram = true;
             }
 
-            return closeProgram;
+            if (closeProgram == true) return false;
+            return true;
         }
     }
 }
