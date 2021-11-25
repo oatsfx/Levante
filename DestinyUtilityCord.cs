@@ -302,24 +302,33 @@ namespace DestinyUtility
             }
 
             // data loading
-            await Task.Delay(5000); // wait to prevent numerous APi calls
+            await Task.Delay(25000); // wait to prevent numerous APi calls
             await LoadLeaderboards();
         }
 
         private async Task LoadLeaderboards()
         {
-            Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Pulling data for leaderboards...");
-            foreach (var link in DataConfig.DiscordIDLinks) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
+            try
             {
-                // populate list
-                LevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
+                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Pulling data for leaderboards...");
+                LevelData.LevelDataEntries.Clear();
+                foreach (var link in DataConfig.DiscordIDLinks) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
                 {
-                    LastLoggedLevel = DataConfig.GetUserSeasonPassLevel(link.DiscordID, out _),
-                    UniqueBungieName = link.UniqueBungieName,
-                });
+                    // populate list
+                    LevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
+                    {
+                        LastLoggedLevel = DataConfig.GetUserSeasonPassLevel(link.DiscordID, out _),
+                        UniqueBungieName = link.UniqueBungieName,
+                    });
+                    await Task.Delay(150);
+                }
+                LevelData.UpdateEntriesConfig();
+                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Data pulling complete!");
             }
-            LevelData.UpdateEntriesConfig();
-            Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Data pulling complete!");
+            catch
+            {
+                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Error while updating leaderboards, trying again at next refresh.");
+            }
         }
 
         private List<DataConfig.DiscordIDLink> QuickSortByLevel(List<DataConfig.DiscordIDLink> DiscordIDLinkList, out List<int> LevelList)
