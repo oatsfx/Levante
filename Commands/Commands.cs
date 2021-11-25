@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DestinyUtility.Configs;
+using DestinyUtility.Data;
 
 namespace DestinyUtility.Commands
 {
@@ -207,7 +208,7 @@ namespace DestinyUtility.Commands
         [Summary("Gets a leaderboard of all registered users.")]
         public async Task Rank()
         {
-            var tempList = QuickSortByLevel(DataConfig.DiscordIDLinks, out var LevelList);
+            var tempList = LevelData.GetSortedLevelData();
             bool isTop10 = false;
             string embedDesc = "";
 
@@ -215,13 +216,13 @@ namespace DestinyUtility.Commands
             {
                 for (int i = 0; i < 10; i++)
                 {
-                    if (tempList[i].DiscordID == Context.User.Id)
+                    if (tempList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(Context.User.Id).UniqueBungieName))
                     {
-                        embedDesc += $"{i + 1}) **{DataConfig.GetLinkedUser(tempList[i].DiscordID).UniqueBungieName}** (Level: {LevelList[i]})\n";
+                        embedDesc += $"{i + 1}) **{tempList[i].UniqueBungieName}** (Level: {tempList[i].LastLoggedLevel})\n";
                         isTop10 = true;
                     }
                     else
-                        embedDesc += $"{i + 1}) {DataConfig.GetLinkedUser(tempList[i].DiscordID).UniqueBungieName} (Level: {LevelList[i]})\n";
+                        embedDesc += $"{i + 1}) {tempList[i].UniqueBungieName} (Level: {tempList[i].LastLoggedLevel})\n";
                 }
 
                 if (!isTop10)
@@ -229,8 +230,8 @@ namespace DestinyUtility.Commands
                     embedDesc += "...\n";
                     for (int i = 10; i < tempList.Count; i++)
                     {
-                        if (tempList[i].DiscordID == Context.User.Id)
-                            embedDesc += $"{i + 1}) **{DataConfig.GetLinkedUser(tempList[i].DiscordID).UniqueBungieName}** (Level: {LevelList[i]})";
+                        if (tempList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(Context.User.Id).UniqueBungieName))
+                            embedDesc += $"{i + 1}) **{tempList[i].UniqueBungieName}** (Level: {tempList[i].LastLoggedLevel})";
                     }
                 }
             }
@@ -238,10 +239,10 @@ namespace DestinyUtility.Commands
             {
                 for (int i = 0; i < tempList.Count; i++)
                 {
-                    if (tempList[i].DiscordID == Context.User.Id)
-                        embedDesc += $"{i + 1}) **{DataConfig.GetLinkedUser(tempList[i].DiscordID).UniqueBungieName}** (Level: {LevelList[i]})\n";
+                    if (tempList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(Context.User.Id).UniqueBungieName))
+                        embedDesc += $"{i + 1}) **{tempList[i].UniqueBungieName}** (Level: {tempList[i].LastLoggedLevel})\n";
                     else
-                        embedDesc += $"{i + 1}) {DataConfig.GetLinkedUser(tempList[i].DiscordID).UniqueBungieName} (Level: {LevelList[i]})\n";
+                        embedDesc += $"{i + 1}) {tempList[i].UniqueBungieName} (Level: {tempList[i].LastLoggedLevel})\n";
                 }
             }
 
@@ -292,63 +293,6 @@ namespace DestinyUtility.Commands
             }
 
             return DiscordIDLinkList;
-        }
-
-        private List<DataConfig.DiscordIDLink> QuickSortByLevel(List<DataConfig.DiscordIDLink> DiscordIDLinkList, out List<int> LevelList)
-        {
-            int n = DiscordIDLinkList.Count;
-            LevelList = new List<int>();
-
-            for (int i = 0; i < n; i++)
-            {
-                LevelList.Add(DataConfig.GetUserSeasonPassLevel(DiscordIDLinkList[i].DiscordID, out _));
-            }
-
-            QuickSort(DiscordIDLinkList, LevelList, 0, DiscordIDLinkList.Count - 1);
-
-            return DiscordIDLinkList;
-        }
-
-        private void QuickSort(List<DataConfig.DiscordIDLink> DiscordIDLinkList, List<int> LevelList, int Start, int End)
-        {
-            if (Start < End)
-            {
-                int partIndex = Partition(DiscordIDLinkList, LevelList, Start, End);
-
-                QuickSort(DiscordIDLinkList, LevelList, Start, partIndex - 1);
-                QuickSort(DiscordIDLinkList, LevelList, partIndex + 1, End);
-            }
-        }
-
-        private int Partition(List<DataConfig.DiscordIDLink> DiscordIDLinkList, List<int> LevelList, int Start, int End)
-        {
-            int Center = LevelList[End];
-
-            int i = Start - 1;
-            for (int j = Start; j < End; j++)
-            {
-                if (LevelList[j] >= Center)
-                {
-                    i++;
-                    var temp1 = DiscordIDLinkList[i];
-                    DiscordIDLinkList[i] = DiscordIDLinkList[j];
-                    DiscordIDLinkList[j] = temp1;
-
-                    int tempLevel1 = LevelList[i];
-                    LevelList[i] = LevelList[j];
-                    LevelList[j] = tempLevel1;
-                }
-            }
-
-            var temp = DiscordIDLinkList[i + 1];
-            DiscordIDLinkList[i + 1] = DiscordIDLinkList[End];
-            DiscordIDLinkList[End] = temp;
-
-            int tempLevel = LevelList[i + 1];
-            LevelList[i + 1] = LevelList[End];
-            LevelList[End] = tempLevel;
-
-            return i + 1;
         }
 
         [Command("createHub", RunMode = RunMode.Async)]

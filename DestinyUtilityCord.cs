@@ -16,6 +16,7 @@ using System.ComponentModel;
 using System.Threading;
 using Discord.Rest;
 using Discord.Net;
+using DestinyUtility.Data;
 
 namespace DestinyUtility
 {
@@ -29,6 +30,8 @@ namespace DestinyUtility
         public static readonly string DataConfigPath = @"Configs/dataConfig.json";
         public static readonly string ActiveConfigPath = @"Configs/activeConfig.json";
         public static readonly string LostSectorTrackingConfigPath = @"Configs/lostSectorTrackingConfigPath.json";
+
+        public static readonly string LevelDataPath = @"Data/levelData.json";
 
         private Timer DailyResetTimer;
 
@@ -198,6 +201,7 @@ namespace DestinyUtility
             if (ActiveConfig.ActiveAFKUsers.Count <= 0)
             {
                 Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Skipping refresh, no active AFK users...");
+                await LoadLeaderboards();
                 return;
             }
 
@@ -213,8 +217,9 @@ namespace DestinyUtility
 
             Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refreshing Bungie API...");
             List<ActiveConfig.ActiveAFKUser> temp = new List<ActiveConfig.ActiveAFKUser>();
-            try
+            try // thrallway
             {
+                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refreshing Thrallway Users...");
                 foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
@@ -272,7 +277,7 @@ namespace DestinyUtility
                     if (addBack)
                         temp.Add(tempAau);
 
-                    await Task.Delay(2500); // we dont want to spam API if we have a ton of AFK subscriptions
+                    await Task.Delay(3500); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
 
                 string json = File.ReadAllText(ActiveConfigPath);
@@ -292,6 +297,83 @@ namespace DestinyUtility
                 await Task.Delay(8000);
                 await RefreshBungieAPI();
             }
+
+            // data loading
+            await Task.Delay(5000); // wait to prevent numerous APi calls
+            await LoadLeaderboards();
+        }
+
+        private async Task LoadLeaderboards()
+        {
+            Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Pulling data for leaderboards...");
+            foreach (var link in DataConfig.DiscordIDLinks) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
+            {
+                // populate list
+                LevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
+                {
+                    LastLoggedLevel = DataConfig.GetUserSeasonPassLevel(link.DiscordID, out _),
+                    UniqueBungieName = link.UniqueBungieName,
+                });
+            }
+            LevelData.UpdateEntriesConfig();
+            Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Data pulling complete!");
+        }
+
+        private List<DataConfig.DiscordIDLink> QuickSortByLevel(List<DataConfig.DiscordIDLink> DiscordIDLinkList, out List<int> LevelList)
+        {
+            int n = DiscordIDLinkList.Count;
+            LevelList = new List<int>();
+
+            for (int i = 0; i < n; i++)
+            {
+                LevelList.Add(DataConfig.GetUserSeasonPassLevel(DiscordIDLinkList[i].DiscordID, out _));
+            }
+
+            QuickSort(DiscordIDLinkList, LevelList, 0, DiscordIDLinkList.Count - 1);
+
+            return DiscordIDLinkList;
+        }
+
+        private void QuickSort(List<DataConfig.DiscordIDLink> DiscordIDLinkList, List<int> LevelList, int Start, int End)
+        {
+            if (Start < End)
+            {
+                int partIndex = Partition(DiscordIDLinkList, LevelList, Start, End);
+
+                QuickSort(DiscordIDLinkList, LevelList, Start, partIndex - 1);
+                QuickSort(DiscordIDLinkList, LevelList, partIndex + 1, End);
+            }
+        }
+
+        private int Partition(List<DataConfig.DiscordIDLink> DiscordIDLinkList, List<int> LevelList, int Start, int End)
+        {
+            int Center = LevelList[End];
+
+            int i = Start - 1;
+            for (int j = Start; j < End; j++)
+            {
+                if (LevelList[j] >= Center)
+                {
+                    i++;
+                    var temp1 = DiscordIDLinkList[i];
+                    DiscordIDLinkList[i] = DiscordIDLinkList[j];
+                    DiscordIDLinkList[j] = temp1;
+
+                    int tempLevel1 = LevelList[i];
+                    LevelList[i] = LevelList[j];
+                    LevelList[j] = tempLevel1;
+                }
+            }
+
+            var temp = DiscordIDLinkList[i + 1];
+            DiscordIDLinkList[i + 1] = DiscordIDLinkList[End];
+            DiscordIDLinkList[End] = temp;
+
+            int tempLevel = LevelList[i + 1];
+            LevelList[i + 1] = LevelList[End];
+            LevelList[End] = tempLevel;
+
+            return i + 1;
         }
 
         private async Task<ActiveConfig.ActiveAFKUser> RefreshSpecificUser(ActiveConfig.ActiveAFKUser aau)
@@ -1072,6 +1154,27 @@ namespace DestinyUtility
 
             if (closeProgram == true) return false;
             return true;
+        }
+
+        private bool CheckAndLoadDataFiles()
+        {
+            LevelData ld;
+
+            bool closeProgram = false;
+            if (File.Exists(LevelDataPath))
+            {
+                string json = File.ReadAllText(LevelDataPath);
+                ld = JsonConvert.DeserializeObject<LevelData>(json);
+            }
+            else
+            {
+                ld = new LevelData();
+                File.WriteAllText(LevelDataPath, JsonConvert.SerializeObject(ld, Formatting.Indented));
+                Console.WriteLine($"No levelData.json file detected. A new one has been created and the program has stopped.");
+                closeProgram = true;
+            }
+
+            return closeProgram;
         }
     }
 }
