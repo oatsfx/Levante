@@ -11,7 +11,7 @@ namespace DestinyUtility.Data
         [JsonProperty("LevelDataEntries")]
         public static List<LevelDataEntry> LevelDataEntries { get; set; } = new List<LevelDataEntry>();
 
-        public partial class LevelDataEntry
+        public partial class LevelDataEntry : LeaderboardEntry
         {
             [JsonProperty("LastLoggedLevel")]
             public int LastLoggedLevel { get; set; } = -1;
@@ -61,6 +61,14 @@ namespace DestinyUtility.Data
         }
 
         #region JSONFileHandling
+
+        public static void UpdateEntriesConfig()
+        {
+            LevelData ld = new LevelData();
+            string output = JsonConvert.SerializeObject(ld, Formatting.Indented);
+            File.WriteAllText(DestinyUtilityCord.LevelDataPath, output);
+        }
+
         public static void AddEntryToConfig(int Level, string BungieName)
         {
             LevelDataEntry lde = new LevelDataEntry()
@@ -68,7 +76,7 @@ namespace DestinyUtility.Data
                 LastLoggedLevel = Level,
                 UniqueBungieName = BungieName
             };
-            string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
+            string json = File.ReadAllText(DestinyUtilityCord.LevelDataPath);
             LevelDataEntries.Clear();
             LevelData jsonObj = JsonConvert.DeserializeObject<LevelData>(json);
 
@@ -80,7 +88,7 @@ namespace DestinyUtility.Data
 
         public static void AddEntryToConfig(LevelDataEntry lde)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
+            string json = File.ReadAllText(DestinyUtilityCord.LevelDataPath);
             LevelDataEntries.Clear();
             LevelData jsonObj = JsonConvert.DeserializeObject<LevelData>(json);
 
@@ -92,32 +100,25 @@ namespace DestinyUtility.Data
 
         public static void DeleteEntryFromConfig(string BungieName)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
+            string json = File.ReadAllText(DestinyUtilityCord.LevelDataPath);
             LevelDataEntries.Clear();
             LevelData ld = JsonConvert.DeserializeObject<LevelData>(json);
             for (int i = 0; i < LevelDataEntries.Count; i++)
                 if (LevelDataEntries[i].UniqueBungieName.Equals(BungieName))
                     LevelDataEntries.RemoveAt(i);
             string output = JsonConvert.SerializeObject(ld, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.DataConfigPath, output);
+            File.WriteAllText(DestinyUtilityCord.LevelDataPath, output);
         }
 
         public static bool IsExistingLinkedEntry(string BungieName)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
+            string json = File.ReadAllText(DestinyUtilityCord.LevelDataPath);
             LevelDataEntries.Clear();
             LevelData jsonObj = JsonConvert.DeserializeObject<LevelData>(json);
             foreach (LevelDataEntry ld in LevelDataEntries)
                 if (ld.UniqueBungieName.Equals(BungieName))
                     return true;
             return false;
-        }
-
-        public static void UpdateEntriesConfig()
-        {
-            LevelData ld = new LevelData();
-            string output = JsonConvert.SerializeObject(ld, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LevelDataPath, output);
         }
 
         #endregion

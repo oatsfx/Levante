@@ -192,6 +192,7 @@ namespace DestinyUtility.Configs
                 dynamic item = JsonConvert.DeserializeObject(content);
 
                 IsInShatteredThrone = false;
+
                 for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
                 {
                     string charId = item.Response.profile.data.characterIds[i];

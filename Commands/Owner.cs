@@ -30,5 +30,28 @@ namespace DestinyUtility.Commands
 
             await ReplyAsync($"This shouldn't really be used...", component: buttonBuilder.Build());
         }
+
+        [Command("maxUsers", RunMode = RunMode.Async)]
+        [RequireOwner]
+        public async Task ChangeMaxUsers(int NewMaxUserCount)
+        {
+            if (NewMaxUserCount > 50)
+            {
+                await ReplyAsync($"That's too high.");
+                return;
+            }
+            else if (NewMaxUserCount < 1)
+            {
+                await ReplyAsync($"That's too low.");
+                return;
+            }
+
+            ActiveConfig.MaximumThrallwayUsers = NewMaxUserCount;
+            ActiveConfig.UpdateActiveAFKUsersConfig();
+
+            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "" : "s";
+            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumThrallwayUsers} Thrallway Farmer{s}", ActivityType.Watching));
+            await ReplyAsync($"Changed maximum Thrallway users to {NewMaxUserCount}.");
+        }
     }
 }

@@ -13,25 +13,25 @@ namespace DestinyUtility.Helpers
         public async static Task Log(IMessageChannel Channel, string Message)
         {
             if (Channel == null) return;
-            await Channel.SendMessageAsync($"{GetTimePrefix()} {Message}");
+            await Channel.SendMessageAsync($"> {GetTimePrefix()} {Message}");
         }
 
         public async static Task Log(IMessageChannel Channel, string Message, ComponentBuilder CB)
         {
             if (Channel == null) return;
-            await Channel.SendMessageAsync($"{GetTimePrefix()} {Message}", component: CB.Build());
+            await Channel.SendMessageAsync($"> {GetTimePrefix()} {Message}", component: CB.Build());
         }
 
         public async static Task Log(IMessageChannel Channel, string Message, EmbedBuilder Embed)
         {
             if (Channel == null) return;
-            await Channel.SendMessageAsync($"{GetTimePrefix()} {Message}", embed: Embed.Build());
+            await Channel.SendMessageAsync($"> {GetTimePrefix()} {Message}", embed: Embed.Build());
         }
 
         public async static Task Log(IMessageChannel Channel, string Message, EmbedBuilder Embed, ComponentBuilder CB)
         {
             if (Channel == null) return;
-            await Channel.SendMessageAsync($"{GetTimePrefix()} {Message}", embed: Embed.Build(), component: CB.Build());
+            await Channel.SendMessageAsync($"> {GetTimePrefix()} {Message}", embed: Embed.Build(), component: CB.Build());
         }
 
         private static string GetTimePrefix()

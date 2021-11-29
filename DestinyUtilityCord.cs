@@ -32,6 +32,7 @@ namespace DestinyUtility
         public static readonly string LostSectorTrackingConfigPath = @"Configs/lostSectorTrackingConfigPath.json";
 
         public static readonly string LevelDataPath = @"Data/levelData.json";
+        public static readonly string XPPerHourDataPath = @"Data/xpPerHourData.json";
 
         private Timer DailyResetTimer;
 
@@ -226,7 +227,6 @@ namespace DestinyUtility
                 foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
-                    // implement a IsInShatteredThrone out on this method, to reduce API calls
                     int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isInShatteredThrone);
                     bool addBack = true;
 
@@ -253,6 +253,8 @@ namespace DestinyUtility
                         //await (_client.GetChannel(tempAau.DiscordChannelID) as SocketGuildChannel).DeleteAsync();
 
                         Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {tempAau.UniqueBungieName}.");
+
+                        await CheckLeaderboardData(tempAau);
                         addBack = false;
                     }
                     else if (updatedLevel > tempAau.LastLoggedLevel)
@@ -303,8 +305,36 @@ namespace DestinyUtility
             }
 
             // data loading
-            await Task.Delay(25000); // wait to prevent numerous APi calls
+            await Task.Delay(25000); // wait to prevent numerous API calls
             await LoadLeaderboards();
+        }
+
+        private async Task CheckLeaderboardData(ActiveConfig.ActiveAFKUser AAU)
+        {
+            // generate leaderboard entry, and overwrite if existing is better
+            if (XPPerHourData.IsExistingLinkedEntry(AAU.UniqueBungieName))
+            {
+                var entry = XPPerHourData.GetExistingLinkedEntry(AAU.UniqueBungieName);
+
+                int xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+                if (xpPerHour > entry.XPPerHour)
+                    XPPerHourData.DeleteEntryFromConfig(AAU.UniqueBungieName);
+
+                XPPerHourData.XPPerHourEntries.Add(new XPPerHourData.XPPerHourEntry()
+                {
+                    XPPerHour = xpPerHour,
+                    UniqueBungieName = AAU.UniqueBungieName
+                });
+            }
+            else
+            {
+                XPPerHourData.XPPerHourEntries.Add(new XPPerHourData.XPPerHourEntry()
+                {
+                    XPPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours),
+                    UniqueBungieName = AAU.UniqueBungieName
+                });
+            }
+            XPPerHourData.UpdateEntriesConfig();
         }
 
         private async Task LoadLeaderboards()
@@ -332,63 +362,6 @@ namespace DestinyUtility
             }
         }
 
-        private List<DataConfig.DiscordIDLink> QuickSortByLevel(List<DataConfig.DiscordIDLink> DiscordIDLinkList, out List<int> LevelList)
-        {
-            int n = DiscordIDLinkList.Count;
-            LevelList = new List<int>();
-
-            for (int i = 0; i < n; i++)
-            {
-                LevelList.Add(DataConfig.GetUserSeasonPassLevel(DiscordIDLinkList[i].DiscordID, out _));
-            }
-
-            QuickSort(DiscordIDLinkList, LevelList, 0, DiscordIDLinkList.Count - 1);
-
-            return DiscordIDLinkList;
-        }
-
-        private void QuickSort(List<DataConfig.DiscordIDLink> DiscordIDLinkList, List<int> LevelList, int Start, int End)
-        {
-            if (Start < End)
-            {
-                int partIndex = Partition(DiscordIDLinkList, LevelList, Start, End);
-
-                QuickSort(DiscordIDLinkList, LevelList, Start, partIndex - 1);
-                QuickSort(DiscordIDLinkList, LevelList, partIndex + 1, End);
-            }
-        }
-
-        private int Partition(List<DataConfig.DiscordIDLink> DiscordIDLinkList, List<int> LevelList, int Start, int End)
-        {
-            int Center = LevelList[End];
-
-            int i = Start - 1;
-            for (int j = Start; j < End; j++)
-            {
-                if (LevelList[j] >= Center)
-                {
-                    i++;
-                    var temp1 = DiscordIDLinkList[i];
-                    DiscordIDLinkList[i] = DiscordIDLinkList[j];
-                    DiscordIDLinkList[j] = temp1;
-
-                    int tempLevel1 = LevelList[i];
-                    LevelList[i] = LevelList[j];
-                    LevelList[j] = tempLevel1;
-                }
-            }
-
-            var temp = DiscordIDLinkList[i + 1];
-            DiscordIDLinkList[i + 1] = DiscordIDLinkList[End];
-            DiscordIDLinkList[End] = temp;
-
-            int tempLevel = LevelList[i + 1];
-            LevelList[i + 1] = LevelList[End];
-            LevelList[End] = tempLevel;
-
-            return i + 1;
-        }
-
         private async Task<ActiveConfig.ActiveAFKUser> RefreshSpecificUser(ActiveConfig.ActiveAFKUser aau)
         {
             await Task.Delay(20000);
@@ -398,11 +371,11 @@ namespace DestinyUtility
             try
             {
                 tempAau = aau;
-                int updatedLevel = DataConfig.GetUserSeasonPassLevel(aau.DiscordID, out int updatedProgression);
+                int updatedLevel = DataConfig.GetUserSeasonPassLevel(tempAau.DiscordID, out int updatedProgression);
 
                 if (updatedLevel > aau.LastLoggedLevel)
                 {
-                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Level up detected. {aau.LastLoggedLevel} -> {updatedLevel}");
+                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected. {tempAau.LastLoggedLevel} -> {updatedLevel}");
 
                     tempAau.LastLoggedLevel = updatedLevel;
                     tempAau.LastLevelProgress = updatedProgression;
@@ -410,7 +383,7 @@ namespace DestinyUtility
                 else if (updatedProgression == aau.LastLevelProgress)
                 {
                     await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Potential wipe detected.");
-                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{aau.DiscordID}>: Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau).Result, GenerateDeleteChannelButton());
+                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau).Result, GenerateDeleteChannelButton());
 
                     IUser user;
                     if (_client.GetUser(tempAau.DiscordID) == null)
@@ -422,22 +395,22 @@ namespace DestinyUtility
                     {
                         user = _client.GetUser(tempAau.DiscordID);
                     }
-                    string uniqueName = tempAau.UniqueBungieName;
-                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{aau.DiscordID}>: Potential wipe detected. Logging will be terminated for {uniqueName}.");
-                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).", GenerateSessionSummary(aau).Result);
+                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Potential wipe detected. Logging will be terminated for {tempAau.UniqueBungieName}.");
+                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {tempAau.TimeStarted:G} (UTC-7).", GenerateSessionSummary(tempAau).Result);
 
                     Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {tempAau.UniqueBungieName}.");
 
+                    await CheckLeaderboardData(tempAau);
                     return null;
                 }
                 else if (updatedProgression < aau.LastLevelProgress)
                 {
-                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"API backstepped. Waiting for next refresh.");
+                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"API backstepped. Waiting for next refresh.");
                     return tempAau;
                 }
                 else
                 {
-                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {aau.LastLevelProgress} XP -> {updatedProgression} XP");
+                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {tempAau.LastLevelProgress} XP -> {updatedProgression} XP");
                     tempAau.LastLoggedLevel = updatedLevel;
                     tempAau.LastLevelProgress = updatedProgression;
                 }
@@ -615,6 +588,24 @@ namespace DestinyUtility
             removeAlertCommand.WithName("removealert");
             removeAlertCommand.WithDescription("Remove an active tracking alert");
 
+            // 8==============================================D
+
+            var rankCommand = new SlashCommandBuilder();
+            rankCommand.WithName("rank");
+            rankCommand.WithDescription("Display a Destiny 2 leaderboard of choice");
+
+            var scobF = new SlashCommandOptionBuilder()
+                .WithName("leaderboard")
+                .WithDescription("Specific leaderboard to display")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (Leaderboard LB in Enum.GetValues(typeof(Leaderboard)))
+            {
+                scobF.AddChoice($"{Leaderboards.GetLeaderboardString(LB)}", (int)LB);
+            }
+
+            rankCommand.AddOption(scobF);
+
             try
             {
                 //await guild.CreateApplicationCommandAsync(globalCommand.Build());
@@ -622,6 +613,7 @@ namespace DestinyUtility
                 //await _client.CreateGlobalApplicationCommandAsync(lostSectorInfoCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(nextOccuranceCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(removeAlertCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(rankCommand.Build());
             }
             catch (ApplicationCommandException exception)
             {
@@ -832,6 +824,36 @@ namespace DestinyUtility
                     return;
                 }
             }
+            else if (command.Data.Name.Equals("rank"))
+            {
+                Leaderboard LeaderboardType = 0;
+                // Using this foreach Loop for future parameters, such as Seasonal leaderboards because we will be resetting the leaderboards each season.
+                foreach (var option in command.Data.Options)
+                {
+                    if (option.Name.Equals("leaderboard"))
+                    {
+                        // Using Leaderboard enum Values to determine what kind of Leaderboard we should generate.
+                        LeaderboardType = (Leaderboard)Convert.ToInt32(option.Value);
+                    }
+                }
+
+                bool underConstruction = false;
+                EmbedBuilder embed = new EmbedBuilder();
+                switch (LeaderboardType)
+                {
+                    case Leaderboard.Level: embed = Leaderboards.GetLeaderboardEmbed(LevelData.GetSortedLevelData(), command.User); break;
+                    case Leaderboard.LongestSession: underConstruction = true; break;
+                    case Leaderboard.XPPerHour: embed = Leaderboards.GetLeaderboardEmbed(XPPerHourData.GetSortedLevelData(), command.User); break;
+                }
+
+                if (underConstruction)
+                {
+                    await command.RespondAsync($"{Leaderboards.GetLeaderboardString(LeaderboardType)} is under construction!");
+                    return;
+                }
+
+                await command.RespondAsync($"", embed: embed.Build());
+            }
         }
 
         private async Task ButtonHandler(SocketMessageComponent interaction)
@@ -1007,11 +1029,11 @@ namespace DestinyUtility
 
                 await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: GenerateSessionSummary(aau).Result, CB: GenerateDeleteChannelButton());
                 await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).", GenerateSessionSummary(aau).Result);
-                string uniqueName = aau.UniqueBungieName;
 
+                await CheckLeaderboardData(aau);
                 ActiveConfig.DeleteActiveUserFromConfig(user.Id);
                 await UpdateBotActivity();
-                await interaction.RespondAsync($"Stopped AFK logging for {uniqueName}.", ephemeral: true);
+                await interaction.RespondAsync($"Stopped AFK logging for {aau.UniqueBungieName}.", ephemeral: true);
             }
             else if (customId.Contains("deleteChannel"))
             {
@@ -1172,6 +1194,7 @@ namespace DestinyUtility
         private bool CheckAndLoadDataFiles()
         {
             LevelData ld;
+            XPPerHourData xph;
 
             bool closeProgram = false;
             if (File.Exists(LevelDataPath))
@@ -1184,6 +1207,19 @@ namespace DestinyUtility
                 ld = new LevelData();
                 File.WriteAllText(LevelDataPath, JsonConvert.SerializeObject(ld, Formatting.Indented));
                 Console.WriteLine($"No levelData.json file detected. A new one has been created and the program has stopped.");
+                closeProgram = true;
+            }
+
+            if (File.Exists(XPPerHourDataPath))
+            {
+                string json = File.ReadAllText(XPPerHourDataPath);
+                xph = JsonConvert.DeserializeObject<XPPerHourData>(json);
+            }
+            else
+            {
+                xph = new XPPerHourData();
+                File.WriteAllText(XPPerHourDataPath, JsonConvert.SerializeObject(xph, Formatting.Indented));
+                Console.WriteLine($"No xpPerHourData.json file detected. A new one has been created and the program has stopped.");
                 closeProgram = true;
             }
 

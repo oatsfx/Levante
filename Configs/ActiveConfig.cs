@@ -135,6 +135,13 @@ namespace DestinyUtility.Configs
             ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
         }
 
+        public static void UpdateActiveAFKUsersConfig()
+        {
+            ActiveConfig ac = new ActiveConfig();
+            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
+            File.WriteAllText(DestinyUtilityCord.ActiveConfigPath, output);
+        }
+
         public static void ClearActiveAFKUsersList()
         {
             ActiveAFKUsers.Clear();
