@@ -317,14 +317,17 @@ namespace DestinyUtility
                 var entry = XPPerHourData.GetExistingLinkedEntry(AAU.UniqueBungieName);
 
                 int xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+                // Only add back if the entry is better than their previous.
                 if (xpPerHour > entry.XPPerHour)
+                {
                     XPPerHourData.DeleteEntryFromConfig(AAU.UniqueBungieName);
 
-                XPPerHourData.XPPerHourEntries.Add(new XPPerHourData.XPPerHourEntry()
-                {
-                    XPPerHour = xpPerHour,
-                    UniqueBungieName = AAU.UniqueBungieName
-                });
+                    XPPerHourData.XPPerHourEntries.Add(new XPPerHourData.XPPerHourEntry()
+                    {
+                        XPPerHour = xpPerHour,
+                        UniqueBungieName = AAU.UniqueBungieName
+                    });
+                }
             }
             else
             {
