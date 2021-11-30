@@ -44,20 +44,13 @@ namespace DestinyUtility.Commands
 
                 if (!DataConfig.IsPublicAccount(BungieTag))
                 {
-                    await ReplyAsync("Your account privacy is not set to public. We cannot access your information otherwise.");
+                    await ReplyAsync("Your account privacy is not set to public. I cannot access your information otherwise.");
                     return;
                 }
 
                 DataConfig.AddUserToConfig(Context.User.Id, memId, memType, BungieTag);
                 await ReplyAsync($"Linked {Context.User.Mention} to {BungieTag}.");
             }
-        }
-
-        [Command("linkHelp", RunMode = RunMode.Async)]
-        [Summary("Links a Bungie Membership ID to the User's Discord account.")]
-        public async Task LinkHelpAsync()
-        {
-            await ReplyAsync($"> To link, use this command \"{BotConfig.DefaultCommandPrefix}link [your Bungie Tag]\".");
         }
 
         [Command("unlink", RunMode = RunMode.Async)]

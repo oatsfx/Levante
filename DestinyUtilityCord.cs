@@ -480,7 +480,7 @@ namespace DestinyUtility
             _client.SlashCommandExecuted += SlashCommandHandler;
 
             _client.ButtonExecuted += ButtonHandler;
-            _client.SelectMenuExecuted += SelectMenuHandler;
+            //_client.SelectMenuExecuted += SelectMenuHandler;
         }
 
         private async Task InitializeSlashCommands()
@@ -677,7 +677,7 @@ namespace DestinyUtility
 
                     LostSectorTrackingConfig.AddLostSectorsTrackingToConfig(command.User.Id, LS, LSD, EAT);
 
-                    await command.RespondAsync($"We will remind you when {LostSectorTrackingConfig.GetLostSectorString(LS)} ({LSD}) is dropping {EAT}, which will be on " +
+                    await command.RespondAsync($"I will remind you when {LostSectorTrackingConfig.GetLostSectorString(LS)} ({LSD}) is dropping {EAT}, which will be on " +
                         $"{(LSD == LostSectorTrackingConfig.LostSectorDifficulty.Legend ? $"{DateTime.Now.AddDays(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date:d}" : $"{DateTime.Now.AddDays(1 + LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date:d}")}.",
                         ephemeral: true);
                     return;
@@ -909,13 +909,13 @@ namespace DestinyUtility
             {
                 if (ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumThrallwayUsers)
                 {
-                    await interaction.RespondAsync($"Unfortunately, we are at the maximum number of users to watch ({ActiveConfig.MaximumThrallwayUsers}). Try again later.", ephemeral: true);
+                    await interaction.RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumThrallwayUsers}). Try again later.", ephemeral: true);
                     return;
                 }
 
                 if (IsBungieAPIDown())
                 {
-                    await interaction.RespondAsync($"Bungie API is temporarily down, therefore, we cannot enable our logging feature. Try again later.", ephemeral: true);
+                    await interaction.RespondAsync($"Bungie API is temporarily down, therefore, I cannot enable our logging feature. Try again later.", ephemeral: true);
                     return;
                 }
 

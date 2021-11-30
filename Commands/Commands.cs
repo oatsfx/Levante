@@ -117,7 +117,7 @@ namespace DestinyUtility.Commands
             embed.Title = "Invite Link";
             embed.Description =
                 "__**Invite me to your server!**__" +
-                "\n[Invite](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=bot&permissions=3154635888)" +
+                "\n[Invite](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=bot&permissions=8)" +
                 "\n__**Let me use Slash Commands in your server!**__" +
                 "\n[Slash Commands](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=applications.commands)";
 
@@ -208,61 +208,7 @@ namespace DestinyUtility.Commands
         [Summary("Gets a leaderboard of all registered users.")]
         public async Task Rank()
         {
-            var tempList = LevelData.GetSortedLevelData();
-            bool isTop10 = false;
-            string embedDesc = "";
-
-            if (tempList.Count >= 10)
-            {
-                for (int i = 0; i < 10; i++)
-                {
-                    if (tempList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(Context.User.Id).UniqueBungieName))
-                    {
-                        embedDesc += $"{i + 1}) **{tempList[i].UniqueBungieName}** (Level: {tempList[i].LastLoggedLevel})\n";
-                        isTop10 = true;
-                    }
-                    else
-                        embedDesc += $"{i + 1}) {tempList[i].UniqueBungieName} (Level: {tempList[i].LastLoggedLevel})\n";
-                }
-
-                if (!isTop10)
-                {
-                    embedDesc += "...\n";
-                    for (int i = 10; i < tempList.Count; i++)
-                    {
-                        if (tempList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(Context.User.Id).UniqueBungieName))
-                            embedDesc += $"{i + 1}) **{tempList[i].UniqueBungieName}** (Level: {tempList[i].LastLoggedLevel})";
-                    }
-                }
-            }
-            else
-            {
-                for (int i = 0; i < tempList.Count; i++)
-                {
-                    if (tempList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(Context.User.Id).UniqueBungieName))
-                        embedDesc += $"{i + 1}) **{tempList[i].UniqueBungieName}** (Level: {tempList[i].LastLoggedLevel})\n";
-                    else
-                        embedDesc += $"{i + 1}) {tempList[i].UniqueBungieName} (Level: {tempList[i].LastLoggedLevel})\n";
-                }
-            }
-
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = $"Top Linked Guardians by Season Level",
-            };
-            var foot = new EmbedFooterBuilder()
-            {
-                Text = $"Powered by Bungie API"
-            };
-            var embed = new EmbedBuilder()
-            {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                Author = auth,
-                Footer = foot,
-            };
-            embed.Description = embedDesc;
-
-            await ReplyAsync($"", false, embed.Build());
+            await ReplyAsync($"Depreciated to a Slash Command.");
         }
 
         private List<DataConfig.DiscordIDLink> BubbleSortByLevel(List<DataConfig.DiscordIDLink> DiscordIDLinkList, out List<int> LevelList)
@@ -304,28 +250,24 @@ namespace DestinyUtility.Commands
 
             ICategoryChannel cc = null;
             foreach (var categoryChan in Context.Guild.CategoryChannels)
-            {
                 if (categoryChan.Name.Equals($"Thrallway Logger"))
                 {
                     cc = categoryChan;
+                    // Remove an existing hub.
+                    foreach (var channel in categoryChan.Channels)
+                        if (channel.Name.ToLower().Contains("thrallway") && channel.Name.ToLower().Contains("hub"))
+                            await channel.DeleteAsync();
                 }
-            }
 
+            // Create a category channel if there isn't one.
             if (cc == null)
             {
                 cc = await Context.Guild.CreateCategoryChannelAsync($"Thrallway Logger");
-            }
-            try
-            {
+
                 await cc.AddPermissionOverwriteAsync(Context.Guild.GetRole(Context.Guild.Id), new OverwritePermissions(sendMessages: PermValue.Deny));
-                await cc.AddPermissionOverwriteAsync(Context.Client.GetUser(app.Id), new OverwritePermissions(sendMessages: PermValue.Allow));
-            }
-            catch (Exception x)
-            {
-                await ReplyAsync($"{x}");
+                await cc.AddPermissionOverwriteAsync(Context.Client.GetUser(app.Id), new OverwritePermissions(sendMessages: PermValue.Allow, attachFiles: PermValue.Allow, embedLinks: PermValue.Allow, manageChannel: PermValue.Allow));
             }
 
-            OverwritePermissions perms = new OverwritePermissions(sendMessages: PermValue.Deny);
             var hubChannel = Context.Guild.CreateTextChannelAsync($"thrallway-hub").Result;
             await hubChannel.ModifyAsync(x =>
             {
@@ -333,9 +275,11 @@ namespace DestinyUtility.Commands
                 x.Topic = $"Thrallway Hub: Start your logging here.";
                 x.PermissionOverwrites = new[]
                 {
-                    new Overwrite(Context.Guild.Id, PermissionTarget.Role, new OverwritePermissions(sendMessages: PermValue.Deny, viewChannel: PermValue.Allow))
+                    new Overwrite(Context.Guild.Id, PermissionTarget.Role, new OverwritePermissions(sendMessages: PermValue.Deny, viewChannel: PermValue.Allow)),
+                    new Overwrite(Context.Client.CurrentUser.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, attachFiles: PermValue.Allow, embedLinks: PermValue.Allow, manageChannel: PermValue.Allow))
                 };
             });
+
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Thrallway Hub",
@@ -353,8 +297,8 @@ namespace DestinyUtility.Commands
             };
             embed.Description =
                 $"Are you getting ready to go AFK in Shattered Throne soon?\n" +
-                $"Click the \"Ready\" button and we'll start logging your progress and even DM you if we think you wiped!\n" +
-                $"When you are done, click the \"Stop\" button and we'll shut your logging down.";
+                $"Click the \"Ready\" button and I'll start logging your progress and even DM you if I think you wiped!\n" +
+                $"When you are done, click the \"Stop\" button and I'll shut your logging down.";
 
             Emoji sleepyEmote = new Emoji("😴");
             Emoji helpEmote = new Emoji("❔");
