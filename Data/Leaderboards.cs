@@ -70,7 +70,7 @@ namespace DestinyUtility.Data
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by Bungie API"
+                Text = $"Powered by @OatsFX"
             };
             var embed = new EmbedBuilder()
             {
