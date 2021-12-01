@@ -316,7 +316,10 @@ namespace DestinyUtility
             {
                 var entry = XPPerHourData.GetExistingLinkedEntry(AAU.UniqueBungieName);
 
-                int xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+                int xpPerHour = 0;
+                if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
+                    xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+                
                 // Only add back if the entry is better than their previous.
                 if (xpPerHour > entry.XPPerHour)
                 {
