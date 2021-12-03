@@ -58,6 +58,24 @@ namespace DestinyUtility.Commands
             await ReplyAsync("", false, embed.Build());
         }
 
+        [Command("info", RunMode = RunMode.Async)]
+        [Summary("Replies with the info of the bot.")]
+        public async Task InfoAsync()
+        {
+            var app = await Context.Client.GetApplicationInfoAsync();
+            var embed = new EmbedBuilder();
+            embed.WithColor(new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
+
+            embed.ThumbnailUrl = app.IconUrl;
+
+            embed.Title = "Bot Information";
+            embed.Description =
+                "Destiny Utility is an [popen-source](https://github.com/oatsfx/DestinyUtility) Discord bot using Discord.Net-Labs for various Destiny 2 Needs. " +
+                "This bot is actively developed by [@OatsFX](https://twitter.com/OatsFX). It pulls most of its information from the Bungie API.";
+
+            await ReplyAsync("", false, embed.Build());
+        }
+
         [Command("help", RunMode = RunMode.Async)]
         public async Task Help()
         {
