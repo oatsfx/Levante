@@ -70,14 +70,6 @@ namespace DestinyUtility
                 return Task.CompletedTask;
             };
 
-            await InitializeCommands().ConfigureAwait(false);
-
-            await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken).ConfigureAwait(false);
-            await _client.StartAsync().ConfigureAwait(false);
-
-            //await InitializeSlashCommands().ConfigureAwait(false);
-            await UpdateBotActivity();
-
             Timer timer = new Timer(TimerCallback, null, 25000, 240000);
 
             if (DateTime.Now.Hour >= 10) // after daily reset
@@ -89,7 +81,12 @@ namespace DestinyUtility
                 SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 0, 0));
             }
 
-            //SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 14, 0));
+            await InitializeCommands().ConfigureAwait(false);
+
+            await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken).ConfigureAwait(false);
+            await _client.StartAsync().ConfigureAwait(false);
+
+            await UpdateBotActivity();
 
             await Task.Delay(-1);
         }
@@ -653,7 +650,7 @@ namespace DestinyUtility
 
         private async Task SelectMenuHandler(SocketMessageComponent interaction)
         {
-
+            // Will be used for implementation at some point.
         }
 
         private async Task SlashCommandHandler(SocketSlashCommand command)

@@ -17,6 +17,7 @@ namespace DestinyUtility.Configs
         InvitationOnly,
         Closed,
     }
+
     public partial class ActiveConfig
     {
         [JsonProperty("ActiveAFKUsers")]
@@ -128,6 +129,8 @@ namespace DestinyUtility.Configs
             }
         }
 
+        #region JSONHandling
+
         public static void UpdateActiveAFKUsersList()
         {
             string json = File.ReadAllText(DestinyUtilityCord.ActiveConfigPath);
@@ -183,5 +186,7 @@ namespace DestinyUtility.Configs
                     return true;
             return false;
         }
+
+        #endregion
     }
 }

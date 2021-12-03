@@ -84,7 +84,7 @@ namespace DestinyUtility.Commands
                 foreach (var cmd in module.Commands)
                 {
                     var result = await cmd.CheckPreconditionsAsync(Context);
-                    if (result.IsSuccess && !description.Contains(cmd.Name)) // Check for permissions (dont want randoms seeing our private commands) and duplicate commands
+                    if (result.IsSuccess && !description.Contains(cmd.Name)) // Check for Duplicates and Permissions.
                         description += $"{prefix}{cmd.Name}\n";
                 }
 
@@ -99,7 +99,7 @@ namespace DestinyUtility.Commands
                 }
             }
 
-            await dmChannel.SendMessageAsync("", false, builder.Build()); /* then we send it to the user. */
+            await dmChannel.SendMessageAsync("", false, builder.Build());
 
             await ReplyAsync($"{Context.User.Mention}, check your DMs. <a:verified:690374136526012506>");
         }
@@ -209,36 +209,6 @@ namespace DestinyUtility.Commands
         public async Task Rank()
         {
             await ReplyAsync($"Depreciated to a Slash Command.");
-        }
-
-        private List<DataConfig.DiscordIDLink> BubbleSortByLevel(List<DataConfig.DiscordIDLink> DiscordIDLinkList, out List<int> LevelList)
-        {
-            int n = DiscordIDLinkList.Count;
-            LevelList = new List<int>();
-
-            for (int i = 0; i < n; i++)
-            {
-                LevelList.Add(DataConfig.GetUserSeasonPassLevel(DiscordIDLinkList[i].DiscordID, out _));
-            }
-
-            for (int i = 0; i < n - 1; i++)
-            {
-                for (int j = 0; j < n - 1 - i; j++)
-                {
-                    if (LevelList[j] < LevelList[j + 1])
-                    {
-                        var temp = DiscordIDLinkList[j];
-                        DiscordIDLinkList[j] = DiscordIDLinkList[j + 1];
-                        DiscordIDLinkList[j + 1] = temp;
-
-                        int tempLevel = LevelList[j];
-                        LevelList[j] = LevelList[j + 1];
-                        LevelList[j + 1] = tempLevel;
-                    }
-                }
-            }
-
-            return DiscordIDLinkList;
         }
 
         [Command("createHub", RunMode = RunMode.Async)]

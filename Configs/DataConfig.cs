@@ -28,19 +28,6 @@ namespace DestinyUtility.Configs
             public string UniqueBungieName { get; set; } = "Guardian#0000";
         }
 
-        /*public static string GetUniqueBungieName(ulong DiscordID)
-        {
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + GetLinkedUser(DiscordID).BungieMembershipType + "/Profile/" + GetLinkedUser(DiscordID).BungieMembershipID + "/?components=100").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-                return $"{item.Response.profile.data.userInfo.bungieGlobalDisplayName}#{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode:0000}";
-            }
-        }*/
-
         public static string GetValidDestinyMembership(string BungieTag, out string MembershipType)
         {
             using (var client = new HttpClient())
@@ -94,6 +81,7 @@ namespace DestinyUtility.Configs
             }
             return isPublic;
         }
+
         public static bool IsBungieAPIDown(string JSONContent)
         {
             dynamic item = JsonConvert.DeserializeObject(JSONContent);
@@ -177,7 +165,7 @@ namespace DestinyUtility.Configs
             return false;
         }
 
-        // This returns the level, then other parameters are XPProgress (int) and IsInShatteredThrone (bool)
+        // This returns the level, then other parameters are XPProgress (int) and IsInShatteredThrone (bool). Reduces the amount of calls to the Bungie API.
         public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsInShatteredThrone)
         {
             using (var client = new HttpClient())
