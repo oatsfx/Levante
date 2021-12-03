@@ -16,7 +16,7 @@ Click [this link to invite](https://discord.com/oauth2/authorize?client_id=88230
 
 ## Having Issues?
 There are a few things you can do if there are any issues with the official bot user:
-1. Please make sure your issue is not already a [Known Issue](https://github.com/oatsfx/DestinyUtility/tree/main#known-issues).
+1. Please make sure your issue is not already a [Known Issue](#known-issues).
 2. Create an Issue here on GitHub.
 3. Join [my Bot support server](https://discord.gg/qTHRZJx4qt) and shoot a message in the #error-report channel.
 
