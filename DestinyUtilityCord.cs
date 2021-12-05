@@ -33,6 +33,8 @@ namespace DestinyUtility
 
         public static readonly string LevelDataPath = @"Data/levelData.json";
         public static readonly string XPPerHourDataPath = @"Data/xpPerHourData.json";
+        public static readonly string MostThrallwayTimeDataPath = @"Data/mostThrallwayTimeData.json";
+        public static readonly string LongestSessionDataPath = @"Data/longestSessionData.json";
 
         private Timer DailyResetTimer;
 
@@ -262,7 +264,7 @@ namespace DestinyUtility
                         tempAau.LastLevelProgress = updatedProgression;
 
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, 
-                            $"Start: {tempAau.StartLevel} ({tempAau.StartLevelProgress}/100000 XP). Now: {tempAau.LastLoggedLevel} ({tempAau.LastLevelProgress}/100000 XP)");
+                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {String.Format("{0:n0}", tempAau.LastLoggedLevel)} ({tempAau.LastLevelProgress}/100,000 XP)");
                     }
                     else if (updatedProgression <= tempAau.LastLevelProgress)
                     {
@@ -272,7 +274,7 @@ namespace DestinyUtility
                     }
                     else
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {tempAau.LastLevelProgress} XP -> {updatedProgression} XP");
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP");
 
                         tempAau.LastLoggedLevel = updatedLevel;
                         tempAau.LastLevelProgress = updatedProgression;
@@ -308,7 +310,7 @@ namespace DestinyUtility
 
         private async Task CheckLeaderboardData(ActiveConfig.ActiveAFKUser AAU)
         {
-            // generate leaderboard entry, and overwrite if existing is better
+            // Generate a Leaderboard entry, and overwrite if the existing one is worse.
             if (XPPerHourData.IsExistingLinkedEntry(AAU.UniqueBungieName))
             {
                 var entry = XPPerHourData.GetExistingLinkedEntry(AAU.UniqueBungieName);
@@ -321,8 +323,7 @@ namespace DestinyUtility
                 if (xpPerHour > entry.XPPerHour)
                 {
                     XPPerHourData.DeleteEntryFromConfig(AAU.UniqueBungieName);
-
-                    XPPerHourData.XPPerHourEntries.Add(new XPPerHourData.XPPerHourEntry()
+                    XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
                     {
                         XPPerHour = xpPerHour,
                         UniqueBungieName = AAU.UniqueBungieName
@@ -331,13 +332,65 @@ namespace DestinyUtility
             }
             else
             {
-                XPPerHourData.XPPerHourEntries.Add(new XPPerHourData.XPPerHourEntry()
+                int xpPerHour = 0;
+                if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
+                    xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+
+                XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
                 {
-                    XPPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours),
+                    XPPerHour = xpPerHour,
                     UniqueBungieName = AAU.UniqueBungieName
                 });
             }
-            XPPerHourData.UpdateEntriesConfig();
+
+            if (LongestSessionData.IsExistingLinkedEntry(AAU.UniqueBungieName))
+            {
+                var entry = LongestSessionData.GetExistingLinkedEntry(AAU.UniqueBungieName);
+
+                var sessionTime = DateTime.Now - AAU.TimeStarted;
+
+                // Only add back if the entry is better than their previous.
+                if (sessionTime > entry.Time)
+                {
+                    LongestSessionData.DeleteEntryFromConfig(AAU.UniqueBungieName);
+                    LongestSessionData.AddEntryToConfig(new LongestSessionData.LongestSessionEntry()
+                    {
+                        Time = sessionTime,
+                        UniqueBungieName = AAU.UniqueBungieName
+                    });
+                }
+            }
+            else
+            {
+                LongestSessionData.AddEntryToConfig(new LongestSessionData.LongestSessionEntry()
+                {
+                    Time = DateTime.Now - AAU.TimeStarted,
+                    UniqueBungieName = AAU.UniqueBungieName
+                });
+            }
+
+            if (MostThrallwayTimeData.IsExistingLinkedEntry(AAU.UniqueBungieName))
+            {
+                var entry = MostThrallwayTimeData.GetExistingLinkedEntry(AAU.UniqueBungieName);
+
+                var newTotalTime = (DateTime.Now - AAU.TimeStarted) + entry.Time;
+
+                // Overwrite the existing entry with new data.
+                MostThrallwayTimeData.DeleteEntryFromConfig(AAU.UniqueBungieName);
+                MostThrallwayTimeData.AddEntryToConfig(new MostThrallwayTimeData.MostThrallwayTimeEntry()
+                { 
+                    Time = newTotalTime,
+                    UniqueBungieName = AAU.UniqueBungieName
+                });
+            }
+            else
+            {
+                MostThrallwayTimeData.AddEntryToConfig(new MostThrallwayTimeData.MostThrallwayTimeEntry()
+                {
+                    Time = DateTime.Now - AAU.TimeStarted,
+                    UniqueBungieName = AAU.UniqueBungieName
+                });
+            }
         }
 
         private async Task LoadLeaderboards()
@@ -413,7 +466,7 @@ namespace DestinyUtility
                 }
                 else
                 {
-                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {tempAau.LastLevelProgress} XP -> {updatedProgression} XP");
+                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP");
                     tempAau.LastLoggedLevel = updatedLevel;
                     tempAau.LastLevelProgress = updatedProgression;
                 }
@@ -465,7 +518,7 @@ namespace DestinyUtility
                 xpPerHour = (int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours);
             embed.Description =
                 $"Total Levels Gained: {levelsGained}\n" +
-                $"Total XP Gained: {xpGained}\n" +
+                $"Total XP Gained: {String.Format("{0:n0}", xpGained)}\n" +
                 $"Total Time: {String.Format("{0:0.00}", (DateTime.Now - aau.TimeStarted).TotalHours)} hours\n" +
                 $"XP Per Hour: {xpPerHour}";
 
@@ -533,7 +586,7 @@ namespace DestinyUtility
                     .WithType(ApplicationCommandOptionType.Integer))
                 .AddOption(scobB);
 
-            // 8==============================================D
+            // ==============================================
 
             var lostSectorInfoCommand = new SlashCommandBuilder();
             lostSectorInfoCommand.WithName("lostsectorinfo");
@@ -557,7 +610,7 @@ namespace DestinyUtility
                     .AddChoice("Master", 1)
                     .WithType(ApplicationCommandOptionType.Integer));
 
-            // 8==============================================D
+            // ==============================================
 
             var nextOccuranceCommand = new SlashCommandBuilder();
             nextOccuranceCommand.WithName("next");
@@ -585,13 +638,13 @@ namespace DestinyUtility
 
             nextOccuranceCommand.AddOption(scobD).AddOption(scobE);
 
-            //  8==============================================D
+            //  ==============================================
 
             var removeAlertCommand = new SlashCommandBuilder();
             removeAlertCommand.WithName("removealert");
             removeAlertCommand.WithDescription("Remove an active tracking alert");
 
-            // 8==============================================D
+            // ==============================================
 
             var rankCommand = new SlashCommandBuilder();
             rankCommand.WithName("rank");
@@ -840,19 +893,14 @@ namespace DestinyUtility
                     }
                 }
 
-                bool underConstruction = false;
+
                 EmbedBuilder embed = new EmbedBuilder();
                 switch (LeaderboardType)
                 {
                     case Leaderboard.Level: embed = Leaderboards.GetLeaderboardEmbed(LevelData.GetSortedLevelData(), command.User); break;
-                    case Leaderboard.LongestSession: underConstruction = true; break;
+                    case Leaderboard.LongestSession: embed = Leaderboards.GetLeaderboardEmbed(LongestSessionData.GetSortedLevelData(), command.User); break;
                     case Leaderboard.XPPerHour: embed = Leaderboards.GetLeaderboardEmbed(XPPerHourData.GetSortedLevelData(), command.User); break;
-                }
-
-                if (underConstruction)
-                {
-                    await command.RespondAsync($"{Leaderboards.GetLeaderboardString(LeaderboardType)} is under construction!");
-                    return;
+                    case Leaderboard.MostThrallwayTime: embed = Leaderboards.GetLeaderboardEmbed(MostThrallwayTimeData.GetSortedLevelData(), command.User); break;
                 }
 
                 await command.RespondAsync($"", embed: embed.Build());
@@ -986,7 +1034,7 @@ namespace DestinyUtility
                 await userLogChannel.ModifyAsync(x =>
                 {
                     x.CategoryId = cc.Id;
-                    x.Topic = $"{uniqueName} (Starting Level: {newUser.StartLevel} [{newUser.StartLevelProgress}/100000 XP]) - Time Started: {DateTime.UtcNow}-UTC";
+                    x.Topic = $"{uniqueName} (Starting Level: {newUser.StartLevel} [{String.Format("{0:n0}", newUser.StartLevelProgress)}/100,000 XP]) - Time Started: {DateTime.UtcNow}-UTC";
                     x.PermissionOverwrites = new[]
                     {
                         new Overwrite(user.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
@@ -1005,7 +1053,7 @@ namespace DestinyUtility
                     case PrivacySetting.Closed: privacy = "Closed"; break;
                     default: break;
                 }
-                await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLoggedLevel} ({newUser.LastLevelProgress}/100000 XP).");
+                await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLoggedLevel} ({String.Format("{0:n0}", newUser.LastLevelProgress)}/100,000 XP).");
                 string recommend = newUser.PrivacySetting == PrivacySetting.Open || newUser.PrivacySetting == PrivacySetting.ClanAndFriendsOnly || newUser.PrivacySetting == PrivacySetting.FriendsOnly ? " It is recommended to change your privacy to prevent people from joining you." : "";
                 await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
 
@@ -1198,6 +1246,8 @@ namespace DestinyUtility
         {
             LevelData ld;
             XPPerHourData xph;
+            LongestSessionData ls;
+            MostThrallwayTimeData mtt;
 
             bool closeProgram = false;
             if (File.Exists(LevelDataPath))
@@ -1223,6 +1273,32 @@ namespace DestinyUtility
                 xph = new XPPerHourData();
                 File.WriteAllText(XPPerHourDataPath, JsonConvert.SerializeObject(xph, Formatting.Indented));
                 Console.WriteLine($"No xpPerHourData.json file detected. A new one has been created and the program has stopped.");
+                closeProgram = true;
+            }
+
+            if (File.Exists(LongestSessionDataPath))
+            {
+                string json = File.ReadAllText(LongestSessionDataPath);
+                ls = JsonConvert.DeserializeObject<LongestSessionData>(json);
+            }
+            else
+            {
+                ls = new LongestSessionData();
+                File.WriteAllText(LongestSessionDataPath, JsonConvert.SerializeObject(ls, Formatting.Indented));
+                Console.WriteLine($"No longestSessionData.json file detected. A new one has been created and the program has stopped.");
+                closeProgram = true;
+            }
+
+            if (File.Exists(MostThrallwayTimeDataPath))
+            {
+                string json = File.ReadAllText(MostThrallwayTimeDataPath);
+                mtt = JsonConvert.DeserializeObject<MostThrallwayTimeData>(json);
+            }
+            else
+            {
+                mtt = new MostThrallwayTimeData();
+                File.WriteAllText(MostThrallwayTimeDataPath, JsonConvert.SerializeObject(mtt, Formatting.Indented));
+                Console.WriteLine($"No mostThrallwayTimeData.json file detected. A new one has been created and the program has stopped.");
                 closeProgram = true;
             }
 

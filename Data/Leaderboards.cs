@@ -17,6 +17,7 @@ namespace DestinyUtility.Data
                 case Leaderboard.Level: return "Season Pass Level";
                 case Leaderboard.LongestSession: return "Longest Thrallway Session";
                 case Leaderboard.XPPerHour: return "Most Thrallway XP Per Hour";
+                case Leaderboard.MostThrallwayTime: return "Total Thrallway Time";
                 default: return "Leaderboard";
             }
         }
@@ -70,7 +71,7 @@ namespace DestinyUtility.Data
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by @OatsFX"
+                Text = $"Powered by Destiny Utility"
             };
             var embed = new EmbedBuilder()
             {
@@ -88,11 +89,15 @@ namespace DestinyUtility.Data
             if (LE.GetType() == typeof(LevelData.LevelDataEntry))
                 return $"Level: {(LE as LevelData.LevelDataEntry).LastLoggedLevel}";
             else if (LE.GetType() == typeof(LongestSessionData.LongestSessionEntry))
-                return $"Hours: {(int)(LE as LongestSessionData.LongestSessionEntry).Time.TotalHours}";
+                return $"{((LE as LongestSessionData.LongestSessionEntry).Time.Hours > 0 ? $"{(LE as LongestSessionData.LongestSessionEntry).Time.Hours}h " : "")}" +
+                    $"{((LE as LongestSessionData.LongestSessionEntry).Time.Minutes > 0 ? $"{(LE as LongestSessionData.LongestSessionEntry).Time.Minutes:00}m " : "")}" +
+                    $"{(LE as LongestSessionData.LongestSessionEntry).Time.Seconds:00}s";
             else if (LE.GetType() == typeof(XPPerHourData.XPPerHourEntry))
-                return $"XP Per Hour: {(LE as XPPerHourData.XPPerHourEntry).XPPerHour}";
+                return $"XP Per Hour: {String.Format("{0:n0}", (LE as XPPerHourData.XPPerHourEntry).XPPerHour)}";
+            else if (LE.GetType() == typeof(MostThrallwayTimeData.MostThrallwayTimeEntry))
+                return $"Hours: {Math.Floor((LE as MostThrallwayTimeData.MostThrallwayTimeEntry).Time.TotalHours)}";
             else
-                return $"({LE.UniqueBungieName})";
+                return $"{LE.UniqueBungieName}";
         }
 
         private static Leaderboard GetLeaderboardEnumValue(Type T)
@@ -103,6 +108,8 @@ namespace DestinyUtility.Data
                 return Leaderboard.LongestSession;
             else if (T == typeof(XPPerHourData.XPPerHourEntry))
                 return Leaderboard.XPPerHour;
+            else if (T == typeof(MostThrallwayTimeData.MostThrallwayTimeEntry))
+                return Leaderboard.MostThrallwayTime;
             else
                 return 0;
         }
@@ -117,5 +124,6 @@ namespace DestinyUtility.Data
         Level,
         LongestSession,
         XPPerHour,
+        MostThrallwayTime,
     }
 }
