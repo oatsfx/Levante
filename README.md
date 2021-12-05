@@ -36,7 +36,7 @@ This project is built using the most recent version of Visual Studio Community 2
 - We have a JSON that stores any potential Lost Sector alerts for a Discord user. If a user wants to be notified of a specific Lost Sector and armor drop, they can use this.
 - We check said JSON and let them know if their desired Lost Sector and Armor Drop is in rotation for that day.
 - This feature does not use the Bungie API.
-> *This will soon implement an interface that will be the parent for all future activities on a daily rotation.*
+> *Look forward for more rotations tracking!*
 
 ### Leaderboards:
 - We store all of the leaderboard data in its own JSON file and then quick sort it when a command is called.
