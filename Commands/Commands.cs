@@ -70,7 +70,7 @@ namespace DestinyUtility.Commands
 
             embed.Title = "Bot Information";
             embed.Description =
-                "Destiny Utility is an [popen-source](https://github.com/oatsfx/DestinyUtility) Discord bot using Discord.Net-Labs for various Destiny 2 Needs. " +
+                "Destiny Utility is an [open-source](https://github.com/oatsfx/DestinyUtility) Discord bot using Discord.Net-Labs for various Destiny 2 Needs. " +
                 "This bot is actively developed by [@OatsFX](https://twitter.com/OatsFX). It pulls most of its information from the Bungie API.";
 
             await ReplyAsync("", false, embed.Build());
