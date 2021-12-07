@@ -264,7 +264,7 @@ namespace DestinyUtility
                         tempAau.LastLevelProgress = updatedProgression;
 
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, 
-                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {String.Format("{0:n0}", tempAau.LastLoggedLevel)} ({tempAau.LastLevelProgress}/100,000 XP)");
+                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {String.Format("{0:n0}", tempAau.LastLoggedLevel)} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP)");
                     }
                     else if (updatedProgression <= tempAau.LastLevelProgress)
                     {
