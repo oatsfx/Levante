@@ -90,7 +90,7 @@ namespace DestinyUtility.Data
         {
             string json = File.ReadAllText(DestinyUtilityCord.MostThrallwayTimeDataPath);
             MostThrallwayTimeEntries.Clear();
-            MostThrallwayTimeEntry jsonObj = JsonConvert.DeserializeObject<MostThrallwayTimeEntry>(json);
+            MostThrallwayTimeData jsonObj = JsonConvert.DeserializeObject<MostThrallwayTimeData>(json);
 
             MostThrallwayTimeEntries.Add(lde);
             MostThrallwayTimeData mttd = new MostThrallwayTimeData();
