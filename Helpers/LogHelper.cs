@@ -36,7 +36,8 @@ namespace DestinyUtility.Helpers
 
         private static string GetTimePrefix()
         {
-            return $"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}]:";
+            return $"[{TimestampTag.FromDateTime(DateTime.Now, TimestampTagStyles.LongTime)}]:";
+            //return $"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}]:";
         }
     }
 }

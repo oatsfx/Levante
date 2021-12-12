@@ -107,6 +107,44 @@ namespace DestinyUtility
             DailyResetTimer = new Timer(DailyResetChanges, null, (long)timeToGo.TotalMilliseconds, Timeout.Infinite);
         }
 
+        private async Task PostDailyResetUpdate()
+        {
+            foreach (ulong ChannelID in LostSectorTrackingConfig.AnnounceLostSectorUpdates)
+            {
+                var channel = _client.GetChannel(ChannelID) as SocketTextChannel;
+
+                var app = await _client.GetApplicationInfoAsync();
+                var auth = new EmbedAuthorBuilder()
+                {
+                    Name = $"Daily Reset of {TimestampTag.FromDateTime(DateTime.Now, TimestampTagStyles.ShortDate)}",
+                    IconUrl = app.IconUrl,
+                };
+                var foot = new EmbedFooterBuilder()
+                {
+                    Text = $"Powered by Bungie API"
+                };
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Author = auth,
+                    Footer = foot,
+                };
+                embed.Description = "";
+
+                embed.AddField(x =>
+                {
+                    x.Name = "Lost Sectors";
+                    x.Value =
+                        $"Legend {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.CurrentLegendLostSector)} ({LostSectorTrackingConfig.CurrentLegendArmorDrop})\n" +
+                        $"Master: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.GetMasterLostSector())} ({LostSectorTrackingConfig.GetMasterLostSectorArmorDrop()})\n" +
+                        $"*Use command /lostsectorinfo for more info.*";
+                    x.IsInline = true;
+                });
+
+                await channel.SendMessageAsync($"", embed: embed.Build());
+            }
+        }
+
         public async void DailyResetChanges(Object o = null)
         {
             Console.ForegroundColor = ConsoleColor.Green;
@@ -116,8 +154,13 @@ namespace DestinyUtility
             Console.WriteLine($"Legend Lost Sector: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.CurrentLegendLostSector)} ({LostSectorTrackingConfig.CurrentLegendArmorDrop})");
             Console.WriteLine($"Master Lost Sector: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.GetMasterLostSector())} ({LostSectorTrackingConfig.GetMasterLostSectorArmorDrop()})");
 
-            await LostSectorTrackingConfig.PostLostSectorUpdate(_client);
+            // Soon to be depreciated.
+            //await LostSectorTrackingConfig.PostLostSectorUpdate(_client);
 
+            // Taking over lost sector updates.
+            await PostDailyResetUpdate();
+
+            // Send users their tracking if applicable.
             List<LostSectorTrackingConfig.LostSectorLink> temp = new List<LostSectorTrackingConfig.LostSectorLink>();
             foreach (var LSL in LostSectorTrackingConfig.LostSectorLinks)
             {
@@ -734,7 +777,7 @@ namespace DestinyUtility
                     LostSectorTrackingConfig.AddLostSectorsTrackingToConfig(command.User.Id, LS, LSD, EAT);
 
                     await command.RespondAsync($"I will remind you when {LostSectorTrackingConfig.GetLostSectorString(LS)} ({LSD}) is dropping {EAT}, which will be on " +
-                        $"{(LSD == LostSectorTrackingConfig.LostSectorDifficulty.Legend ? $"{DateTime.Now.AddDays(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date:d}" : $"{DateTime.Now.AddDays(1 + LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date:d}")}.",
+                        $"{(LSD == LostSectorTrackingConfig.LostSectorDifficulty.Legend ? $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date, TimestampTagStyles.ShortDate)}" : $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(1 + LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date, TimestampTagStyles.ShortDate)}")}.",
                         ephemeral: true);
                     return;
                 }
