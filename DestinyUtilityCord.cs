@@ -777,7 +777,7 @@ namespace DestinyUtility
                     LostSectorTrackingConfig.AddLostSectorsTrackingToConfig(command.User.Id, LS, LSD, EAT);
 
                     await command.RespondAsync($"I will remind you when {LostSectorTrackingConfig.GetLostSectorString(LS)} ({LSD}) is dropping {EAT}, which will be on " +
-                        $"{(LSD == LostSectorTrackingConfig.LostSectorDifficulty.Legend ? $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date, TimestampTagStyles.ShortDate)}" : $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(1 + LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date, TimestampTagStyles.ShortDate)}")}.",
+                        $"{(LSD == LostSectorTrackingConfig.LostSectorDifficulty.Legend ? $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}" : $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(1 + LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}")}.",
                         ephemeral: true);
                     return;
                 }
@@ -848,8 +848,8 @@ namespace DestinyUtility
                     return;
                 }
 
-                var legendDate = DateTime.Now.AddDays(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date;
-                var masterDate = DateTime.Now.AddDays(1 + LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date;
+                var legendDate = DateTime.Now.AddDays(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10);
+                var masterDate = DateTime.Now.AddDays(1 + LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10);
 
                 if (LS == null)
                 {
@@ -869,8 +869,8 @@ namespace DestinyUtility
                     };
 
                     embed.Description = $"Lost Sector: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.GetPredictedLegendLostSector(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)))}\n" +
-                        $"Legend: **{legendDate.Date:d}**\n" +
-                        $"Master: **{masterDate.Date:d}**";
+                        $"Legend: {TimestampTag.FromDateTime(legendDate, TimestampTagStyles.ShortDate)}\n" +
+                        $"Master: {TimestampTag.FromDateTime(masterDate, TimestampTagStyles.ShortDate)}";
 
                     await command.RespondAsync($"", embed: embed.Build());
                     return;
@@ -893,8 +893,8 @@ namespace DestinyUtility
                     };
 
                     embed.Description = $"Exotic Drop: **{LostSectorTrackingConfig.GetPredictedLegendLostSectorArmorDrop(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT))}**\n" +
-                        $"Legend: **{legendDate.Date:d}**\n" +
-                        $"Master: **{masterDate.Date:d}**";
+                        $"Legend: {TimestampTag.FromDateTime(legendDate, TimestampTagStyles.ShortDate)}\n" +
+                        $"Master: {TimestampTag.FromDateTime(masterDate, TimestampTagStyles.ShortDate)}";
 
                     await command.RespondAsync($"", embed: embed.Build());
                     return;
@@ -916,8 +916,8 @@ namespace DestinyUtility
                         Footer = foot,
                     };
 
-                    embed.Description = $"Legend: **{legendDate.Date:d}**\n" +
-                        $"Master: **{masterDate.Date:d}**";
+                    embed.Description = $"Legend: {TimestampTag.FromDateTime(legendDate, TimestampTagStyles.ShortDate)}\n" +
+                        $"Master: {TimestampTag.FromDateTime(masterDate, TimestampTagStyles.ShortDate)}";
 
                     await command.RespondAsync($"", embed: embed.Build());
                     return;
