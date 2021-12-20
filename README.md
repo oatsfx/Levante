@@ -12,7 +12,7 @@ Click [this link to invite the bot](https://discord.com/oauth2/authorize?client_
 - Leaderboards for things regarding the above
 
 ## Known Issues:
-- Nothing to see here, yet.
+- Leaderboard for Longest Thrallway Session displays incorrect info for sessions greater than 24 hours.
 
 ## Having Issues?
 There are a few things you can do if there are any issues with the official bot user:
