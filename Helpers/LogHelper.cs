@@ -19,7 +19,7 @@ namespace DestinyUtility.Helpers
         public async static Task Log(IMessageChannel Channel, string Message, ComponentBuilder CB)
         {
             if (Channel == null) return;
-            await Channel.SendMessageAsync($"> {GetTimePrefix()} {Message}", component: CB.Build());
+            await Channel.SendMessageAsync($"> {GetTimePrefix()} {Message}", components: CB.Build());
         }
 
         public async static Task Log(IMessageChannel Channel, string Message, EmbedBuilder Embed)
@@ -31,7 +31,7 @@ namespace DestinyUtility.Helpers
         public async static Task Log(IMessageChannel Channel, string Message, EmbedBuilder Embed, ComponentBuilder CB)
         {
             if (Channel == null) return;
-            await Channel.SendMessageAsync($"> {GetTimePrefix()} {Message}", embed: Embed.Build(), component: CB.Build());
+            await Channel.SendMessageAsync($"> {GetTimePrefix()} {Message}", embed: Embed.Build(), components: CB.Build());
         }
 
         private static string GetTimePrefix()

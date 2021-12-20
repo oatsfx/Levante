@@ -128,16 +128,13 @@ namespace DestinyUtility.Commands
         {
             var app = await Context.Client.GetApplicationInfoAsync();
             var embed = new EmbedBuilder();
+
             embed.WithColor(new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
-
             embed.ThumbnailUrl = app.IconUrl;
-
             embed.Title = "Invite Link";
             embed.Description =
                 "__**Invite me to your server!**__" +
-                "\n[Invite](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=bot&permissions=8)" +
-                "\n__**Let me use Slash Commands in your server!**__" +
-                "\n[Slash Commands](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=applications.commands)";
+                "\n[Invite](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=bot&permissions=8&scope=applications.commands)";
 
             await ReplyAsync("", false, embed.Build());
         }
@@ -297,7 +294,7 @@ namespace DestinyUtility.Commands
                 .WithButton("Stop", customId: $"stopAFK", ButtonStyle.Secondary, stopEmote, row: 0)
                 .WithButton("Help", customId: $"viewHelp", ButtonStyle.Secondary, helpEmote, row: 0);
 
-            await hubChannel.SendMessageAsync($"", false, embed.Build(), component: buttonBuilder.Build());
+            await hubChannel.SendMessageAsync($"", false, embed.Build(), components: buttonBuilder.Build());
 
             await ReplyAsync($"{Context.User.Mention}: Hub created at {hubChannel.Mention}. Feel free to move that Category anywhere!");
         }

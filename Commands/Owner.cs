@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DestinyUtility.Configs;
+using DestinyUtility.Rotations;
 
 namespace DestinyUtility.Commands
 {
@@ -28,7 +29,7 @@ namespace DestinyUtility.Commands
             var buttonBuilder = new ComponentBuilder()
                 .WithButton("Force Reset", customId: $"force", ButtonStyle.Secondary, helpEmote, row: 0);
 
-            await ReplyAsync($"This shouldn't really be used...", component: buttonBuilder.Build());
+            await ReplyAsync($"This shouldn't really be used...", components: buttonBuilder.Build());
         }
 
         [Command("maxUsers", RunMode = RunMode.Async)]

@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using DestinyUtility.Configs;
+using Discord;
 using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
@@ -7,9 +8,9 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DestinyUtility.Configs
+namespace DestinyUtility.Rotations
 {
-    public partial class LostSectorTrackingConfig
+    public class LostSectorRotation
     {
         public static readonly int LostSectorCount = 11;
 
@@ -32,17 +33,7 @@ namespace DestinyUtility.Configs
         [JsonProperty("AnnounceLostSectorUpdates")]
         public static List<ulong> AnnounceLostSectorUpdates { get; set; } = new List<ulong>();
 
-        public static async Task PostLostSectorUpdate(DiscordSocketClient Client)
-        {
-            foreach (ulong ChannelID in AnnounceLostSectorUpdates)
-            {
-                var channel = Client.GetChannel(ChannelID) as SocketTextChannel;
-                await channel.SendMessageAsync($"", embed: GetCurrentLegendLostSectorEmbed().Build());
-                await channel.SendMessageAsync($"", embed: GetCurrentMasterLostSectorEmbed().Build());
-            }
-        }
-
-        public partial class LostSectorLink
+        public class LostSectorLink
         {
             [JsonProperty("DiscordID")]
             public ulong DiscordID { get; set; } = 0;
@@ -295,185 +286,6 @@ namespace DestinyUtility.Configs
             return result;
         }
 
-        public static EmbedBuilder GetLostSectorFullEmbed(LostSector ls)
-        {
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = $"Lost Sector Information",
-                IconUrl = GetLostSectorImageURL(CurrentLegendLostSector),
-            };
-            var foot = new EmbedFooterBuilder()
-            {
-                Text = $"{GetLostSectorLocationString(ls)}"
-            };
-            var embed = new EmbedBuilder()
-            {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                Author = auth,
-                Footer = foot,
-            };
-            embed.AddField(y =>
-            {
-                y.Name = "Legend";
-                y.Value = $"Recommended Power: <:LightLevel:844029708077367297>{GetLostSectorDifficultyLight(LostSectorDifficulty.Legend)}";
-                y.IsInline = false;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Champions";
-                y.Value = GetLostSectorChampionsString(ls, LostSectorDifficulty.Legend);
-                y.IsInline = true;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Modifiers";
-                y.Value = GetLostSectorModifiersString(ls, LostSectorDifficulty.Legend);
-                y.IsInline = true;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Shields";
-                y.Value = GetLostSectorShieldsString(ls, LostSectorDifficulty.Legend);
-                y.IsInline = true;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Master";
-                y.Value = $"Recommended Power: <:LightLevel:844029708077367297>{GetLostSectorDifficultyLight(LostSectorDifficulty.Master)}";
-                y.IsInline = false;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Champions";
-                y.Value = GetLostSectorChampionsString(ls, LostSectorDifficulty.Master);
-                y.IsInline = true;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Modifiers";
-                y.Value = GetLostSectorModifiersString(ls, LostSectorDifficulty.Master);
-                y.IsInline = true;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Shields";
-                y.Value = GetLostSectorShieldsString(ls, LostSectorDifficulty.Master);
-                y.IsInline = true;
-            });
-
-            embed.Title = $"{GetLostSectorString(ls)}";
-            embed.Description = $"Boss: {GetLostSectorBossString(ls)}";
-
-            embed.Url = GetLostSectorImageURL(ls);
-            embed.ThumbnailUrl = "https://www.bungie.net/common/destiny2_content/icons/6a2761d2475623125d896d1a424a91f9.png";
-
-            return embed;
-        }
-
-        public static EmbedBuilder GetCurrentLegendLostSectorEmbed()
-        {
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = $"Today's Legend Lost Sector",
-                IconUrl = GetLostSectorImageURL(CurrentLegendLostSector),
-            };
-            var foot = new EmbedFooterBuilder()
-            {
-                Text = $"{GetLostSectorLocationString(CurrentLegendLostSector)}"
-            };
-            var embed = new EmbedBuilder()
-            {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                Author = auth,
-                Footer = foot,
-            };
-            embed.AddField(y =>
-            {
-                y.Name = "Legend";
-                y.Value = $"Recommended Power: <:LightLevel:844029708077367297>{GetLostSectorDifficultyLight(LostSectorDifficulty.Legend)}";
-                y.IsInline = false;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Champions";
-                y.Value = GetLostSectorChampionsString(CurrentLegendLostSector, LostSectorDifficulty.Legend);
-                y.IsInline = true;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Modifiers";
-                y.Value = GetLostSectorModifiersString(CurrentLegendLostSector, LostSectorDifficulty.Legend);
-                y.IsInline = true;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Shields";
-                y.Value = GetLostSectorShieldsString(CurrentLegendLostSector, LostSectorDifficulty.Legend);
-                y.IsInline = true;
-            });
-
-            embed.Title = $"{GetLostSectorString(CurrentLegendLostSector)}";
-            embed.Description = $"Boss: {GetLostSectorBossString(CurrentLegendLostSector)}\n" +
-                $"Exotic Armor Drop: {CurrentLegendArmorDrop}";
-
-            embed.Url = GetLostSectorImageURL(CurrentLegendLostSector);
-            embed.ThumbnailUrl = "https://www.bungie.net/common/destiny2_content/icons/6a2761d2475623125d896d1a424a91f9.png";
-
-            return embed;
-        }
-
-        public static EmbedBuilder GetCurrentMasterLostSectorEmbed()
-        {
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = $"Today's Master Lost Sector",
-                IconUrl = GetLostSectorImageURL(GetMasterLostSector()),
-            };
-            var foot = new EmbedFooterBuilder()
-            {
-                Text = $"{GetLostSectorLocationString(GetMasterLostSector())}"
-            };
-            var embed = new EmbedBuilder()
-            {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                Author = auth,
-                Footer = foot,
-            };
-            embed.AddField(y =>
-            {
-                y.Name = "Master";
-                y.Value = $"Recommended Power: <:LightLevel:844029708077367297>{GetLostSectorDifficultyLight(LostSectorDifficulty.Master)}";
-                y.IsInline = false;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Champions";
-                y.Value = GetLostSectorChampionsString(GetMasterLostSector(), LostSectorDifficulty.Master);
-                y.IsInline = true;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Modifiers";
-                y.Value = GetLostSectorModifiersString(GetMasterLostSector(), LostSectorDifficulty.Master);
-                y.IsInline = true;
-            })
-            .AddField(y =>
-            {
-                y.Name = "Shields";
-                y.Value = GetLostSectorShieldsString(GetMasterLostSector(), LostSectorDifficulty.Master);
-                y.IsInline = true;
-            });
-
-            embed.Title = $"{GetLostSectorString(GetMasterLostSector())}";
-            embed.Description = $"Boss: {GetLostSectorBossString(GetMasterLostSector())}\n" +
-                $"Exotic Armor Drop: {GetMasterLostSectorArmorDrop()}";
-
-            embed.Url = GetLostSectorImageURL(GetMasterLostSector());
-            embed.ThumbnailUrl = "https://www.bungie.net/common/destiny2_content/icons/6a2761d2475623125d896d1a424a91f9.png";
-
-            return embed;
-        }
-
         public static EmbedBuilder GetLostSectorEmbed(LostSector LS, LostSectorDifficulty LSD, ExoticArmorType? EAT = null)
         {
             var auth = new EmbedAuthorBuilder()
@@ -649,10 +461,10 @@ namespace DestinyUtility.Configs
             string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
             AnnounceLostSectorUpdates.Clear();
             LostSectorLinks.Clear();
-            LostSectorTrackingConfig jsonObj = JsonConvert.DeserializeObject<LostSectorTrackingConfig>(json);
+            LostSectorRotation jsonObj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
 
             AnnounceLostSectorUpdates.Add(ChannelID);
-            LostSectorTrackingConfig ac = new LostSectorTrackingConfig();
+            LostSectorRotation ac = new LostSectorRotation();
             string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
             File.WriteAllText(DestinyUtilityCord.LostSectorTrackingConfigPath, output);
         }
@@ -662,7 +474,7 @@ namespace DestinyUtility.Configs
             string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
             AnnounceLostSectorUpdates.Clear();
             LostSectorLinks.Clear();
-            LostSectorTrackingConfig ac = JsonConvert.DeserializeObject<LostSectorTrackingConfig>(json);
+            LostSectorRotation ac = JsonConvert.DeserializeObject<LostSectorRotation>(json);
             for (int i = 0; i < AnnounceLostSectorUpdates.Count; i++)
                 if (AnnounceLostSectorUpdates[i] == ChannelID)
                     AnnounceLostSectorUpdates.RemoveAt(i);
@@ -684,12 +496,12 @@ namespace DestinyUtility.Configs
             string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
             AnnounceLostSectorUpdates.Clear();
             LostSectorLinks.Clear();
-            LostSectorTrackingConfig jsonObj = JsonConvert.DeserializeObject<LostSectorTrackingConfig>(json);
+            LostSectorRotation jsonObj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
         }
 
         public static void UpdateLostSectorsJSON()
         {
-            LostSectorTrackingConfig ac = new LostSectorTrackingConfig();
+            LostSectorRotation ac = new LostSectorRotation();
             string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
             File.WriteAllText(DestinyUtilityCord.LostSectorTrackingConfigPath, output);
         }
@@ -698,7 +510,7 @@ namespace DestinyUtility.Configs
         {
             AnnounceLostSectorUpdates.Clear();
             LostSectorLinks.Clear();
-            string output = JsonConvert.SerializeObject(new LostSectorTrackingConfig(), Formatting.Indented);
+            string output = JsonConvert.SerializeObject(new LostSectorRotation(), Formatting.Indented);
             File.WriteAllText(DestinyUtilityCord.LostSectorTrackingConfigPath, output);
         }
 
@@ -714,10 +526,10 @@ namespace DestinyUtility.Configs
             string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
             AnnounceLostSectorUpdates.Clear();
             LostSectorLinks.Clear();
-            LostSectorTrackingConfig jsonObj = JsonConvert.DeserializeObject<LostSectorTrackingConfig>(json);
+            LostSectorRotation jsonObj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
 
             LostSectorLinks.Add(lsl);
-            LostSectorTrackingConfig ac = new LostSectorTrackingConfig();
+            LostSectorRotation ac = new LostSectorRotation();
             string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
             File.WriteAllText(DestinyUtilityCord.LostSectorTrackingConfigPath, output);
         }
@@ -727,7 +539,7 @@ namespace DestinyUtility.Configs
             string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
             AnnounceLostSectorUpdates.Clear();
             LostSectorLinks.Clear();
-            LostSectorTrackingConfig ac = JsonConvert.DeserializeObject<LostSectorTrackingConfig>(json);
+            LostSectorRotation ac = JsonConvert.DeserializeObject<LostSectorRotation>(json);
             for (int i = 0; i < LostSectorLinks.Count; i++)
                 if (LostSectorLinks[i].DiscordID == DiscordID)
                     LostSectorLinks.RemoveAt(i);
@@ -740,7 +552,7 @@ namespace DestinyUtility.Configs
             string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
             AnnounceLostSectorUpdates.Clear();
             LostSectorLinks.Clear();
-            LostSectorTrackingConfig jsonObj = JsonConvert.DeserializeObject<LostSectorTrackingConfig>(json);
+            LostSectorRotation jsonObj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
             foreach (LostSectorLink dil in LostSectorLinks)
                 if (dil.DiscordID == DiscordID)
                     return true;
@@ -752,7 +564,7 @@ namespace DestinyUtility.Configs
             string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
             AnnounceLostSectorUpdates.Clear();
             LostSectorLinks.Clear();
-            LostSectorTrackingConfig jsonObj = JsonConvert.DeserializeObject<LostSectorTrackingConfig>(json);
+            LostSectorRotation jsonObj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
             foreach (LostSectorLink dil in LostSectorLinks)
                 if (dil.DiscordID == DiscordID)
                     return dil;

@@ -17,6 +17,7 @@ using System.Threading;
 using Discord.Rest;
 using Discord.Net;
 using DestinyUtility.Data;
+using DestinyUtility.Rotations;
 
 namespace DestinyUtility
 {
@@ -48,23 +49,35 @@ namespace DestinyUtility
                 .BuildServiceProvider();
         }
 
-        static void Main(string[] args) => new DestinyUtilityCord().StartAsync().GetAwaiter().GetResult();
+        static void Main(string[] args)
+        {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            string ASCIIName = @"
+   ___          __  _           __  ____  _ ___ __      
+  / _ \___ ___ / /_(_)__  __ __/ / / / /_(_) (_) /___ __
+ / // / -_|_-</ __/ / _ \/ // / /_/ / __/ / / / __/ // /
+/____/\__/___/\__/_/_//_/\_, /\____/\__/_/_/_/\__/\_, / 
+                        /___/                    /___/  
+        ";
+            Console.WriteLine(ASCIIName);
+            
+            new DestinyUtilityCord().StartAsync().GetAwaiter().GetResult();
+        }
 
         public async Task StartAsync()
         {
-            Console.ForegroundColor = ConsoleColor.Cyan;
-
             if (!CheckAndLoadConfigFiles())
                 return;
 
             if (!CheckAndLoadDataFiles())
                 return;
 
+            Console.Title = $"DestinyUtility v{BotConfig.Version}";
             Console.WriteLine($"Current Bot Version: v{BotConfig.Version}");
             Console.WriteLine($"Current Developer Note: {BotConfig.Note}");
 
-            Console.WriteLine($"Legend Lost Sector: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.CurrentLegendLostSector)} ({LostSectorTrackingConfig.CurrentLegendArmorDrop})");
-            Console.WriteLine($"Master Lost Sector: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.GetMasterLostSector())} ({LostSectorTrackingConfig.GetMasterLostSectorArmorDrop()})");
+            Console.WriteLine($"Legend Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.CurrentLegendLostSector)} ({LostSectorRotation.CurrentLegendArmorDrop})");
+            Console.WriteLine($"Master Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetMasterLostSector())} ({LostSectorRotation.GetMasterLostSectorArmorDrop()})");
 
             _client.Log += log =>
             {
@@ -109,16 +122,11 @@ namespace DestinyUtility
 
         private async Task PostDailyResetUpdate()
         {
-            foreach (ulong ChannelID in LostSectorTrackingConfig.AnnounceLostSectorUpdates)
+            foreach (ulong ChannelID in LostSectorRotation.AnnounceLostSectorUpdates)
             {
                 var channel = _client.GetChannel(ChannelID) as SocketTextChannel;
 
                 var app = await _client.GetApplicationInfoAsync();
-                var auth = new EmbedAuthorBuilder()
-                {
-                    Name = $"Daily Reset of {TimestampTag.FromDateTime(DateTime.Now, TimestampTagStyles.ShortDate)}",
-                    IconUrl = app.IconUrl,
-                };
                 var foot = new EmbedFooterBuilder()
                 {
                     Text = $"Powered by Bungie API"
@@ -126,17 +134,18 @@ namespace DestinyUtility
                 var embed = new EmbedBuilder()
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    Author = auth,
                     Footer = foot,
                 };
+                embed.Title = $"Daily Reset of {TimestampTag.FromDateTime(DateTime.Now, TimestampTagStyles.ShortDate)}";
                 embed.Description = "";
+                embed.ThumbnailUrl = app.IconUrl;
 
                 embed.AddField(x =>
                 {
                     x.Name = "Lost Sectors";
                     x.Value =
-                        $"Legend {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.CurrentLegendLostSector)} ({LostSectorTrackingConfig.CurrentLegendArmorDrop})\n" +
-                        $"Master: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.GetMasterLostSector())} ({LostSectorTrackingConfig.GetMasterLostSectorArmorDrop()})\n" +
+                        $"Legend: {LostSectorRotation.GetLostSectorString(LostSectorRotation.CurrentLegendLostSector)} ({LostSectorRotation.CurrentLegendArmorDrop})\n" +
+                        $"Master: {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetMasterLostSector())} ({LostSectorRotation.GetMasterLostSectorArmorDrop()})\n" +
                         $"*Use command /lostsectorinfo for more info.*";
                     x.IsInline = true;
                 });
@@ -149,10 +158,10 @@ namespace DestinyUtility
         {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("\nDaily Reset Occurred.");
-            LostSectorTrackingConfig.LostSectorChange();
+            LostSectorRotation.LostSectorChange();
 
-            Console.WriteLine($"Legend Lost Sector: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.CurrentLegendLostSector)} ({LostSectorTrackingConfig.CurrentLegendArmorDrop})");
-            Console.WriteLine($"Master Lost Sector: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.GetMasterLostSector())} ({LostSectorTrackingConfig.GetMasterLostSectorArmorDrop()})");
+            Console.WriteLine($"Legend Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.CurrentLegendLostSector)} ({LostSectorRotation.CurrentLegendArmorDrop})");
+            Console.WriteLine($"Master Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetMasterLostSector())} ({LostSectorRotation.GetMasterLostSectorArmorDrop()})");
 
             // Soon to be depreciated.
             //await LostSectorTrackingConfig.PostLostSectorUpdate(_client);
@@ -161,13 +170,13 @@ namespace DestinyUtility
             await PostDailyResetUpdate();
 
             // Send users their tracking if applicable.
-            List<LostSectorTrackingConfig.LostSectorLink> temp = new List<LostSectorTrackingConfig.LostSectorLink>();
-            foreach (var LSL in LostSectorTrackingConfig.LostSectorLinks)
+            List<LostSectorRotation.LostSectorLink> temp = new List<LostSectorRotation.LostSectorLink>();
+            foreach (var LSL in LostSectorRotation.LostSectorLinks)
             {
                 bool addBack = true;
-                if (LostSectorTrackingConfig.CurrentLegendLostSector == LSL.LostSector && LSL.Difficulty == LostSectorTrackingConfig.LostSectorDifficulty.Legend)
+                if (LostSectorRotation.CurrentLegendLostSector == LSL.LostSector && LSL.Difficulty == LostSectorRotation.LostSectorDifficulty.Legend)
                 {
-                    if (LostSectorTrackingConfig.CurrentLegendArmorDrop == LSL.ArmorDrop)
+                    if (LostSectorRotation.CurrentLegendArmorDrop == LSL.ArmorDrop)
                     {
                         IUser user;
                         if (_client.GetUser(LSL.DiscordID) == null)
@@ -181,13 +190,13 @@ namespace DestinyUtility
                         }
 
                         await user.SendMessageAsync($"Hey {user.Mention}!\n" +
-                            $"{LostSectorTrackingConfig.GetLostSectorString(LSL.LostSector)} ({LSL.Difficulty}) is dropping {LSL.ArmorDrop} today! I have removed your tracking, good luck!");
+                            $"{LostSectorRotation.GetLostSectorString(LSL.LostSector)} ({LSL.Difficulty}) is dropping {LSL.ArmorDrop} today! I have removed your tracking, good luck!");
                         addBack = false;
                     }
                 }
-                else if (LostSectorTrackingConfig.GetMasterLostSector() == LSL.LostSector && LSL.Difficulty == LostSectorTrackingConfig.LostSectorDifficulty.Master)
+                else if (LostSectorRotation.GetMasterLostSector() == LSL.LostSector && LSL.Difficulty == LostSectorRotation.LostSectorDifficulty.Master)
                 {
-                    if (LostSectorTrackingConfig.GetMasterLostSectorArmorDrop() == LSL.ArmorDrop)
+                    if (LostSectorRotation.GetMasterLostSectorArmorDrop() == LSL.ArmorDrop)
                     {
                         IUser user;
                         if (_client.GetUser(LSL.DiscordID) == null)
@@ -201,7 +210,7 @@ namespace DestinyUtility
                         }
 
                         await user.SendMessageAsync($"Hey {user.Mention}!\n" +
-                            $"{LostSectorTrackingConfig.GetLostSectorString(LSL.LostSector)} ({LSL.Difficulty}) is dropping {LSL.ArmorDrop} today! I have removed your tracking, good luck!");
+                            $"{LostSectorRotation.GetLostSectorString(LSL.LostSector)} ({LSL.Difficulty}) is dropping {LSL.ArmorDrop} today! I have removed your tracking, good luck!");
                         addBack = false;
                     }
                 }
@@ -210,10 +219,10 @@ namespace DestinyUtility
             }
 
             string json = File.ReadAllText(LostSectorTrackingConfigPath);
-            LostSectorTrackingConfig lstConfig = JsonConvert.DeserializeObject<LostSectorTrackingConfig>(json);
+            LostSectorRotation lstConfig = JsonConvert.DeserializeObject<LostSectorRotation>(json);
 
-            LostSectorTrackingConfig.UpdateLostSectorsList();
-            LostSectorTrackingConfig.LostSectorLinks = temp;
+            LostSectorRotation.UpdateLostSectorsList();
+            LostSectorRotation.LostSectorLinks = temp;
             string output = JsonConvert.SerializeObject(lstConfig, Formatting.Indented);
             File.WriteAllText(LostSectorTrackingConfigPath, output);
 
@@ -307,7 +316,7 @@ namespace DestinyUtility
                         tempAau.LastLevelProgress = updatedProgression;
 
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, 
-                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {String.Format("{0:n0}", tempAau.LastLoggedLevel)} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP)");
+                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {tempAau.LastLoggedLevel} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP)");
                     }
                     else if (updatedProgression <= tempAau.LastLevelProgress)
                     {
@@ -604,9 +613,9 @@ namespace DestinyUtility
                 .WithDescription("The Lost Sector you want to be Notified for")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSectorTrackingConfig.LostSector LS in Enum.GetValues(typeof(LostSectorTrackingConfig.LostSector)))
+            foreach (LostSectorRotation.LostSector LS in Enum.GetValues(typeof(LostSectorRotation.LostSector)))
             {
-                scobA.AddChoice($"{LostSectorTrackingConfig.GetLostSectorString(LS)}", (int)LS);
+                scobA.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
             }
 
             var scobB = new SlashCommandOptionBuilder()
@@ -614,7 +623,7 @@ namespace DestinyUtility
                 .WithDescription("The Exotic Armor the Lost Sector should drop")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSectorTrackingConfig.ExoticArmorType EAT in Enum.GetValues(typeof(LostSectorTrackingConfig.ExoticArmorType)))
+            foreach (LostSectorRotation.ExoticArmorType EAT in Enum.GetValues(typeof(LostSectorRotation.ExoticArmorType)))
             {
                 scobB.AddChoice($"{EAT}", (int)EAT);
             }
@@ -639,9 +648,9 @@ namespace DestinyUtility
                 .WithDescription("The Lost Sector you want Information on")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSectorTrackingConfig.LostSector LS in Enum.GetValues(typeof(LostSectorTrackingConfig.LostSector)))
+            foreach (LostSectorRotation.LostSector LS in Enum.GetValues(typeof(LostSectorRotation.LostSector)))
             {
-                scobC.AddChoice($"{LostSectorTrackingConfig.GetLostSectorString(LS)}", (int)LS);
+                scobC.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
             }
 
             lostSectorInfoCommand.AddOption(scobC)
@@ -664,9 +673,9 @@ namespace DestinyUtility
                 .WithDescription("The Lost Sector you want me to get the occurance of")
                 .WithRequired(false)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSectorTrackingConfig.LostSector LS in Enum.GetValues(typeof(LostSectorTrackingConfig.LostSector)))
+            foreach (LostSectorRotation.LostSector LS in Enum.GetValues(typeof(LostSectorRotation.LostSector)))
             {
-                scobD.AddChoice($"{LostSectorTrackingConfig.GetLostSectorString(LS)}", (int)LS);
+                scobD.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
             }
 
             var scobE = new SlashCommandOptionBuilder()
@@ -674,7 +683,7 @@ namespace DestinyUtility
                 .WithDescription("The Exotic Armor you want me to get the occurance of")
                 .WithRequired(false)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSectorTrackingConfig.ExoticArmorType EAT in Enum.GetValues(typeof(LostSectorTrackingConfig.ExoticArmorType)))
+            foreach (LostSectorRotation.ExoticArmorType EAT in Enum.GetValues(typeof(LostSectorRotation.ExoticArmorType)))
             {
                 scobE.AddChoice($"{EAT}", (int)EAT);
             }
@@ -714,114 +723,92 @@ namespace DestinyUtility
                 //await _client.CreateGlobalApplicationCommandAsync(removeAlertCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(rankCommand.Build());
             }
-            catch (ApplicationCommandException exception)
+            catch (HttpException exception)
             {
-                // If our command was invalid, we should catch an ApplicationCommandException. This exception contains the path of the error as well as the error message. You can serialize the Error field in the exception to get a visual of where your error is.
-                var json = JsonConvert.SerializeObject(exception.Error, Formatting.Indented);
-
-                // You can send this error somewhere or just print it to the console, for this example we're just going to print it.
-                Console.WriteLine(json);
+                Console.WriteLine(exception);
             }
         }
-
-        /*private async Task HandleInteraction(SocketInteraction interaction)
-        {
-            // Checking the type of this interaction
-            switch (interaction)
-            {
-                // Slash commands
-                case SocketSlashCommand commandInteraction:
-                    break;
-
-                // Button clicks/selection dropdowns
-                case SocketMessageComponent componentInteraction:
-                    await MyMessageComponentHandler(componentInteraction);
-                    break;
-
-                // Unused or Unknown/Unsupported
-                default:
-                    break;
-            }
-        }*/
 
         private async Task SelectMenuHandler(SocketMessageComponent interaction)
         {
             // Will be used for implementation at some point.
+            // Said implementation will be for daily/weekly reset notification setup.
+            // A slash command will be called and it will respond with a select menu containing Daily and Weekly.
         }
 
         private async Task SlashCommandHandler(SocketSlashCommand command)
         {
             if (command.Data.Name.Equals("lostsectoralert"))
             {
-                if (LostSectorTrackingConfig.IsExistingLinkedLostSectorsTracking(command.User.Id))
+                if (LostSectorRotation.IsExistingLinkedLostSectorsTracking(command.User.Id))
                 {
                     await command.RespondAsync($"You already have an active alert set up!", ephemeral: true);
                     return;
                 }
                 else
                 {
-                    LostSectorTrackingConfig.LostSector LS = 0;
-                    LostSectorTrackingConfig.LostSectorDifficulty LSD = 0;
-                    LostSectorTrackingConfig.ExoticArmorType EAT = 0;
+                    LostSectorRotation.LostSector LS = 0;
+                    LostSectorRotation.LostSectorDifficulty LSD = 0;
+                    LostSectorRotation.ExoticArmorType EAT = 0;
 
                     foreach (var option in command.Data.Options)
                     {
                         if (option.Name.Equals("lost-sector"))
-                            LS = (LostSectorTrackingConfig.LostSector)Convert.ToInt32(option.Value);
+                            LS = (LostSectorRotation.LostSector)Convert.ToInt32(option.Value);
                         else if (option.Name.Equals("difficulty"))
-                            LSD = (LostSectorTrackingConfig.LostSectorDifficulty)Convert.ToInt32(option.Value);
+                            LSD = (LostSectorRotation.LostSectorDifficulty)Convert.ToInt32(option.Value);
                         else if (option.Name.Equals("armor-drop"))
-                            EAT = (LostSectorTrackingConfig.ExoticArmorType)Convert.ToInt32(option.Value);
+                            EAT = (LostSectorRotation.ExoticArmorType)Convert.ToInt32(option.Value);
                     }
 
-                    LostSectorTrackingConfig.AddLostSectorsTrackingToConfig(command.User.Id, LS, LSD, EAT);
+                    LostSectorRotation.AddLostSectorsTrackingToConfig(command.User.Id, LS, LSD, EAT);
 
-                    await command.RespondAsync($"I will remind you when {LostSectorTrackingConfig.GetLostSectorString(LS)} ({LSD}) is dropping {EAT}, which will be on " +
-                        $"{(LSD == LostSectorTrackingConfig.LostSectorDifficulty.Legend ? $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}" : $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(1 + LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}")}.",
+                    await command.RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString(LS)} ({LSD}) is dropping {EAT}, which will be on " +
+                        $"{(LSD == LostSectorRotation.LostSectorDifficulty.Legend ? $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}" : $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(1 + LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}")}.",
                         ephemeral: true);
                     return;
                 }
             }
             else if (command.Data.Name.Equals("removealert"))
             {
-                if (!LostSectorTrackingConfig.IsExistingLinkedLostSectorsTracking(command.User.Id))
+                if (!LostSectorRotation.IsExistingLinkedLostSectorsTracking(command.User.Id))
                 {
                     await command.RespondAsync($"You don't have an active Lost Sector tracker.", ephemeral: true);
                     return;
                 }
 
-                await command.RespondAsync($"Removed your tracking for {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.GetLostSectorsTracking(command.User.Id).LostSector)}" +
-                    $" ({LostSectorTrackingConfig.GetLostSectorsTracking(command.User.Id).Difficulty}).", ephemeral: true);
-                LostSectorTrackingConfig.DeleteLostSectorsTrackingFromConfig(command.User.Id);
+                await command.RespondAsync($"Removed your tracking for {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetLostSectorsTracking(command.User.Id).LostSector)}" +
+                    $" ({LostSectorRotation.GetLostSectorsTracking(command.User.Id).Difficulty}).", ephemeral: true);
+                LostSectorRotation.DeleteLostSectorsTrackingFromConfig(command.User.Id);
                 
             }
             else if (command.Data.Name.Equals("lostsectorinfo"))
             {
-                LostSectorTrackingConfig.LostSector LS = 0;
-                LostSectorTrackingConfig.LostSectorDifficulty LSD = 0;
+                LostSectorRotation.LostSector LS = 0;
+                LostSectorRotation.LostSectorDifficulty LSD = 0;
 
                 foreach (var option in command.Data.Options)
                 {
                     if (option.Name.Equals("lost-sector"))
-                        LS = (LostSectorTrackingConfig.LostSector)Convert.ToInt32(option.Value);
+                        LS = (LostSectorRotation.LostSector)Convert.ToInt32(option.Value);
                     else if (option.Name.Equals("difficulty"))
-                        LSD = (LostSectorTrackingConfig.LostSectorDifficulty)Convert.ToInt32(option.Value);
+                        LSD = (LostSectorRotation.LostSectorDifficulty)Convert.ToInt32(option.Value);
                 }
 
-                await command.RespondAsync($"", embed: LostSectorTrackingConfig.GetLostSectorEmbed(LS, LSD).Build());
+                await command.RespondAsync($"", embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
                 return;
             }
             else if (command.Data.Name.Equals("next"))
             {
-                LostSectorTrackingConfig.LostSector? LS = null;
-                LostSectorTrackingConfig.ExoticArmorType? EAT = null;
+                LostSectorRotation.LostSector? LS = null;
+                LostSectorRotation.ExoticArmorType? EAT = null;
 
                 foreach (var option in command.Data.Options)
                 {
                     if (option.Name.Equals("lost-sector"))
-                        LS = (LostSectorTrackingConfig.LostSector)Convert.ToInt32(option.Value);
+                        LS = (LostSectorRotation.LostSector)Convert.ToInt32(option.Value);
                     else if (option.Name.Equals("armor-drop"))
-                        EAT = (LostSectorTrackingConfig.ExoticArmorType)Convert.ToInt32(option.Value);
+                        EAT = (LostSectorRotation.ExoticArmorType)Convert.ToInt32(option.Value);
                 }
                 
                 if (LS == null && EAT == null)
@@ -841,15 +828,15 @@ namespace DestinyUtility
                         Footer = foot,
                     };
 
-                    embed.Description = $"Legend: **{LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.GetPredictedLegendLostSector(1))}** dropping **{LostSectorTrackingConfig.GetPredictedLegendLostSectorArmorDrop(1)}**\n" +
-                        $"Master: **{LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.CurrentLegendLostSector)}** dropping **{LostSectorTrackingConfig.CurrentLegendArmorDrop}**";
+                    embed.Description = $"Legend: **{LostSectorRotation.GetLostSectorString(LostSectorRotation.GetPredictedLegendLostSector(1))}** dropping **{LostSectorRotation.GetPredictedLegendLostSectorArmorDrop(1)}**\n" +
+                        $"Master: **{LostSectorRotation.GetLostSectorString(LostSectorRotation.CurrentLegendLostSector)}** dropping **{LostSectorRotation.CurrentLegendArmorDrop}**";
 
                     await command.RespondAsync($"", embed: embed.Build());
                     return;
                 }
 
-                var legendDate = DateTime.Now.AddDays(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10);
-                var masterDate = DateTime.Now.AddDays(1 + LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10);
+                var legendDate = DateTime.Now.AddDays(LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10);
+                var masterDate = DateTime.Now.AddDays(1 + LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10);
 
                 if (LS == null)
                 {
@@ -868,7 +855,7 @@ namespace DestinyUtility
                         Footer = foot,
                     };
 
-                    embed.Description = $"Lost Sector: {LostSectorTrackingConfig.GetLostSectorString(LostSectorTrackingConfig.GetPredictedLegendLostSector(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT)))}\n" +
+                    embed.Description = $"Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetPredictedLegendLostSector(LostSectorRotation.DaysUntilNextOccurance(LS, EAT)))}\n" +
                         $"Legend: {TimestampTag.FromDateTime(legendDate, TimestampTagStyles.ShortDate)}\n" +
                         $"Master: {TimestampTag.FromDateTime(masterDate, TimestampTagStyles.ShortDate)}";
 
@@ -879,7 +866,7 @@ namespace DestinyUtility
                 {
                     var auth = new EmbedAuthorBuilder()
                     {
-                        Name = $"Next occurance of {LostSectorTrackingConfig.GetLostSectorString((LostSectorTrackingConfig.LostSector)LS)}",
+                        Name = $"Next occurance of {LostSectorRotation.GetLostSectorString((LostSectorRotation.LostSector)LS)}",
                     };
                     var foot = new EmbedFooterBuilder()
                     {
@@ -892,7 +879,7 @@ namespace DestinyUtility
                         Footer = foot,
                     };
 
-                    embed.Description = $"Exotic Drop: **{LostSectorTrackingConfig.GetPredictedLegendLostSectorArmorDrop(LostSectorTrackingConfig.DaysUntilNextOccurance(LS, EAT))}**\n" +
+                    embed.Description = $"Exotic Drop: **{LostSectorRotation.GetPredictedLegendLostSectorArmorDrop(LostSectorRotation.DaysUntilNextOccurance(LS, EAT))}**\n" +
                         $"Legend: {TimestampTag.FromDateTime(legendDate, TimestampTagStyles.ShortDate)}\n" +
                         $"Master: {TimestampTag.FromDateTime(masterDate, TimestampTagStyles.ShortDate)}";
 
@@ -903,7 +890,7 @@ namespace DestinyUtility
                 {
                     var auth = new EmbedAuthorBuilder()
                     {
-                        Name = $"Next occurance of {LostSectorTrackingConfig.GetLostSectorString((LostSectorTrackingConfig.LostSector)LS)} dropping {EAT}",
+                        Name = $"Next occurance of {LostSectorRotation.GetLostSectorString((LostSectorRotation.LostSector)LS)} dropping {EAT}",
                     };
                     var foot = new EmbedFooterBuilder()
                     {
@@ -1207,7 +1194,7 @@ namespace DestinyUtility
             BotConfig bConfig;
             DataConfig dConfig;
             ActiveConfig aConfig;
-            LostSectorTrackingConfig lstConfig;
+            LostSectorRotation lstConfig;
 
             bool closeProgram = false;
             if (File.Exists(BotConfigPath))
@@ -1271,11 +1258,11 @@ namespace DestinyUtility
             if (File.Exists(LostSectorTrackingConfigPath))
             {
                 string json = File.ReadAllText(LostSectorTrackingConfigPath);
-                lstConfig = JsonConvert.DeserializeObject<LostSectorTrackingConfig>(json);
+                lstConfig = JsonConvert.DeserializeObject<LostSectorRotation>(json);
             }
             else
             {
-                lstConfig = new LostSectorTrackingConfig();
+                lstConfig = new LostSectorRotation();
                 File.WriteAllText(LostSectorTrackingConfigPath, JsonConvert.SerializeObject(lstConfig, Formatting.Indented));
                 Console.WriteLine($"No lostSectorTrackingConfig.json file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.");
                 closeProgram = true;

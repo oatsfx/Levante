@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DestinyUtility.Configs;
+using DestinyUtility.Rotations;
 
 namespace DestinyUtility.Commands
 {
@@ -23,13 +24,13 @@ namespace DestinyUtility.Commands
         [RequireUserPermission(GuildPermission.ManageChannels)]
         public async Task SetUpLSUpdates()
         {
-            if (LostSectorTrackingConfig.IsExistingChannelForLostSectorUpdates(Context.Channel.Id))
+            if (LostSectorRotation.IsExistingChannelForLostSectorUpdates(Context.Channel.Id))
             {
                 await ReplyAsync("Channel has Lost Sector Tracking enabled already!");
                 return;
             }
 
-            LostSectorTrackingConfig.AddChannelToLostSectorUpdates(Context.Channel.Id);
+            LostSectorRotation.AddChannelToLostSectorUpdates(Context.Channel.Id);
             await ReplyAsync("Lost Sector Tracking enabled! Wait for daily reset!");
         }
 
@@ -38,13 +39,13 @@ namespace DestinyUtility.Commands
         [RequireUserPermission(GuildPermission.ManageChannels)]
         public async Task RemoveLSUpdates()
         {
-            if (!LostSectorTrackingConfig.IsExistingChannelForLostSectorUpdates(Context.Channel.Id))
+            if (!LostSectorRotation.IsExistingChannelForLostSectorUpdates(Context.Channel.Id))
             {
                 await ReplyAsync("Channel does not have Lost Sector tracking enabled!");
                 return;
             }
 
-            LostSectorTrackingConfig.RemoveChannelFromLostSectorUpdates(Context.Channel.Id);
+            LostSectorRotation.RemoveChannelFromLostSectorUpdates(Context.Channel.Id);
             await ReplyAsync("Lost Sector Tracking disabled!");
         }
     }

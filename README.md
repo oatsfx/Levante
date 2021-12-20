@@ -12,7 +12,7 @@ Click [this link to invite the bot](https://discord.com/oauth2/authorize?client_
 - Leaderboards for things regarding the above
 
 ## Known Issues:
-- Leaderboard for Longest Thrallway Session displays incorrect info for sessions greater than 24 hours.
+- Nothing to see here, yet.
 
 ## Having Issues?
 There are a few things you can do if there are any issues with the official bot user:
@@ -31,15 +31,17 @@ This project is built using the most recent version of Visual Studio Community 2
 - If their are no XP gains after the base refresh as well as a specific refresh about 20 seconds later, we will assume a wipe has occurred and remove their active logging.
 - After a user is taken out of active logging, we will save their stats into a JSON file which then will be used for leaderboard commands.
 
-### Lost Sector Tracking:
-- We've implemented a "Daily Reset" system which changes the current lost sector at the same time the Destiny 2 Daily Reset occurs. We can do this because Destiny's rotations are set and not random.
-- We have a JSON that stores any potential Lost Sector alerts for a Discord user. If a user wants to be notified of a specific Lost Sector and armor drop, they can use this.
-- We check said JSON and let them know if their desired Lost Sector and Armor Drop is in rotation for that day.
+### Reset Tracking:
+- We've implemented a "Daily/Weekly Reset" system which changes rotations, like Lost Sectors and Raid Challenges, at the same time the Destiny 2 Resets occur. We can do this because most of Destiny's rotations are set and not random.
+- We have a JSON that stores any potential alerts for a Discord user. If a user wants to be notified of a specific rotation, they can use this.
+- We check said JSON and let them know if their desired rotation is active for that day or week.
 - This feature does not use the Bungie API.
-> *Look forward for more rotations tracking!*
+> *We have the basics for more rotations, but I wanted to patch a few things before I finish these.*
 
 ### Leaderboards:
 - We store all of the leaderboard data in its own JSON file and then quick sort it when a command is called.
+
+and more to come...
 
 ---
 
