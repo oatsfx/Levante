@@ -77,6 +77,7 @@ namespace DestinyUtility.Commands
         }
 
         [Command("help", RunMode = RunMode.Async)]
+        [Summary("Replies with the command list of the bot.")]
         public async Task Help()
         {
             var dmChannel = await Context.User.CreateDMChannelAsync();
@@ -208,7 +209,7 @@ namespace DestinyUtility.Commands
                 embed.Description =
                     $"Player: **{DataConfig.GetLinkedUser(user.Id).UniqueBungieName}**\n" +
                     $"Level: **{DataConfig.GetUserSeasonPassLevel(user.Id, out int progress)}**\n" +
-                    $"Progress to Next Level: **{progress}/100000**";
+                    $"Progress to Next Level: **{String.Format("{0:n0}", progress)}/ 100,000**";
 
                 await ReplyAsync($"", false, embed.Build());
             }
@@ -216,14 +217,6 @@ namespace DestinyUtility.Commands
             {
                 await ReplyAsync($"{x}");
             }
-        }
-
-        [Command("rank", RunMode = RunMode.Async)]
-        [Alias("leaderboard")]
-        [Summary("Gets a leaderboard of all registered users.")]
-        public async Task Rank()
-        {
-            await ReplyAsync($"Depreciated to a Slash Command.");
         }
 
         [Command("createHub", RunMode = RunMode.Async)]

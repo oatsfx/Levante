@@ -19,6 +19,8 @@ namespace DestinyUtility.Commands
 {
     public class LostSector : ModuleBase<SocketCommandContext>
     {
+        // This section will be depreciated into a daily and weekly reset situation.
+
         [Command("lostSectorUpdates", RunMode = RunMode.Async)]
         [Summary("Set up the channel the command is used in for Lost Sector tracking updates.")]
         [RequireUserPermission(GuildPermission.ManageChannels)]

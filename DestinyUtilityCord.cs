@@ -1046,7 +1046,7 @@ namespace DestinyUtility
                     return;
                 }
 
-                var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName}").Result;
+                var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName.Replace('#','-')}").Result;
 
                 int userLevel = DataConfig.GetUserSeasonPassLevel(user.Id, out int lvlProg);
                 ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
