@@ -4,7 +4,7 @@ An open-source Discord bot using [Discord.Net-Labs](https://github.com/Discord-N
 Developed by [@OatsFX](https://twitter.com/OatsFX).
 
 ## Invite the Official Bot to your Server:
-Click [this link to invite](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=bot&permissions=8) as well [this link to use Slash Commands](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=applications.commands)!
+Click [this link to invite the bot](https://discord.com/oauth2/authorize?client_id=882303133643047005&scope=bot&permissions=8&scope=applications.commands)!
 
 ## Current Features:
 - Thrallway Logging and Wipe Detection
