@@ -89,7 +89,7 @@ namespace DestinyUtility.Data
             if (LE.GetType() == typeof(LevelData.LevelDataEntry))
                 return $"Level: {(LE as LevelData.LevelDataEntry).LastLoggedLevel}";
             else if (LE.GetType() == typeof(LongestSessionData.LongestSessionEntry))
-                return $"{((LE as LongestSessionData.LongestSessionEntry).Time.TotalHours > 0 ? $"{(LE as LongestSessionData.LongestSessionEntry).Time.TotalHours}h " : "")}" +
+                return $"{(Math.Floor((LE as LongestSessionData.LongestSessionEntry).Time.TotalHours) > 0 ? $"{Math.Floor((LE as LongestSessionData.LongestSessionEntry).Time.TotalHours)}h " : "")}" +
                     $"{((LE as LongestSessionData.LongestSessionEntry).Time.Minutes > 0 ? $"{(LE as LongestSessionData.LongestSessionEntry).Time.Minutes:00}m " : "")}" +
                     $"{(LE as LongestSessionData.LongestSessionEntry).Time.Seconds:00}s";
             else if (LE.GetType() == typeof(XPPerHourData.XPPerHourEntry))

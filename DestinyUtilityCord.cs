@@ -305,7 +305,7 @@ namespace DestinyUtility
 
                         Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {tempAau.UniqueBungieName}.");
 
-                        await CheckLeaderboardData(tempAau);
+                        await Task.Run(() => CheckLeaderboardData(tempAau));
                         addBack = false;
                     }
                     else if (updatedLevel > tempAau.LastLoggedLevel)
@@ -350,7 +350,7 @@ namespace DestinyUtility
             }
             catch (Exception x)
             {
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refresh failed, trying again!");
+                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refresh failed, trying again! Reason: {x.Message}");
                 await Task.Delay(8000);
                 await RefreshBungieAPI();
             }
@@ -360,8 +360,9 @@ namespace DestinyUtility
             await LoadLeaderboards();
         }
 
-        private async Task CheckLeaderboardData(ActiveConfig.ActiveAFKUser AAU)
+        private void CheckLeaderboardData(ActiveConfig.ActiveAFKUser AAU)
         {
+            
             // Generate a Leaderboard entry, and overwrite if the existing one is worse.
             if (XPPerHourData.IsExistingLinkedEntry(AAU.UniqueBungieName))
             {
@@ -508,7 +509,7 @@ namespace DestinyUtility
 
                     Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {tempAau.UniqueBungieName}.");
 
-                    await CheckLeaderboardData(tempAau);
+                    await Task.Run(() => CheckLeaderboardData(tempAau));
                     return null;
                 }
                 else if (updatedProgression < aau.LastLevelProgress)
@@ -595,7 +596,7 @@ namespace DestinyUtility
         {
             var guild = _client.GetGuild(600548936062730259);
             //await guild.DeleteApplicationCommandsAsync();
-            //var cmds = await _client.Rest.GetGlobalApplicationCommands();
+            var cmds = await _client.Rest.GetGlobalApplicationCommands();
 
             /*foreach (var cmd in cmds)
             {
@@ -729,12 +730,12 @@ namespace DestinyUtility
             }
         }
 
-        private async Task SelectMenuHandler(SocketMessageComponent interaction)
+        /*private async Task SelectMenuHandler(SocketMessageComponent interaction)
         {
             // Will be used for implementation at some point.
             // Said implementation will be for daily/weekly reset notification setup.
             // A slash command will be called and it will respond with a select menu containing Daily and Weekly.
-        }
+        }*/
 
         private async Task SlashCommandHandler(SocketSlashCommand command)
         {
@@ -1111,7 +1112,7 @@ namespace DestinyUtility
                 await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: GenerateSessionSummary(aau).Result, CB: GenerateDeleteChannelButton());
                 await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).", GenerateSessionSummary(aau).Result);
 
-                await CheckLeaderboardData(aau);
+                await Task.Run(() => CheckLeaderboardData(aau));
                 ActiveConfig.DeleteActiveUserFromConfig(user.Id);
                 await UpdateBotActivity();
                 await interaction.RespondAsync($"Stopped AFK logging for {aau.UniqueBungieName}.", ephemeral: true);
@@ -1237,7 +1238,7 @@ namespace DestinyUtility
                         aau.LastLoggedLevel = updatedLevel;
                     }
                 }
-                catch (Exception x)
+                catch
                 {
                     DataConfig.UpdateUsersList();
                     Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Bungie API is down, loading stored data and continuing.");
