@@ -1265,5 +1265,27 @@ namespace DestinyUtility
             if (closeProgram == true) return false;
             return true;
         }
+
+        private bool CheckAndLoadLostSectorData()
+        {
+            LostSectorRotation lstConfig;
+
+            bool closeProgram = false;
+            if (File.Exists(LostSectorTrackingConfigPath))
+            {
+                string json = File.ReadAllText(LostSectorTrackingConfigPath);
+                lstConfig = JsonConvert.DeserializeObject<LostSectorRotation>(json);
+            }
+            else
+            {
+                lstConfig = new LostSectorRotation();
+                File.WriteAllText(LostSectorTrackingConfigPath, JsonConvert.SerializeObject(lstConfig, Formatting.Indented));
+                Console.WriteLine($"No lostSectorTrackingConfig.json file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.");
+                closeProgram = true;
+            }
+
+            if (closeProgram == true) return false;
+            return true;
+        }
     }
 }
