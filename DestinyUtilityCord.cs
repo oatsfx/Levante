@@ -66,6 +66,9 @@ namespace DestinyUtility
             if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
 
+            if (!CheckAndLoadLostSectorData())
+                return;
+
             if (!CheckAndLoadDataFiles())
                 return;
 
