@@ -172,9 +172,10 @@ namespace DestinyUtility.Commands
             await ReplyAsync($"", false, embed.Build());
         }
 
-        [Command("afkStats", RunMode = RunMode.Async)]
+        [Command("currentSession", RunMode = RunMode.Async)]
+        [Alias("session", "cs", "sessionStats")]
         [Summary("Pulls stats of current Thrallway session.")]
-        public async Task AFKStats()
+        public async Task SessionStats()
         {
             if (!ActiveConfig.IsExistingActiveUser(Context.User.Id))
             {
