@@ -209,7 +209,7 @@ namespace DestinyUtility
 
         private async void TimerCallback(Object o) => await RefreshBungieAPI();
 
-        private bool IsBungieAPIDown()
+        private bool IsBungieAPIDown(out string Reason)
         {
             using (var client = new HttpClient())
             {
@@ -218,10 +218,12 @@ namespace DestinyUtility
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
+                Reason = "Unknown Error";
                 if (item == null) return true;
 
                 string status = item.ErrorStatus;
 
+                Reason = status;
                 return !status.Equals("Success");
             }
         }
@@ -236,12 +238,12 @@ namespace DestinyUtility
                 return;
             }
 
-            if (IsBungieAPIDown())
+            if (IsBungieAPIDown(out string DownReason))
             {
                 Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Skipping refresh, Bungie API is down...");
                 foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
                 {
-                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refresh denied. Bungie API is temporarily down.");
+                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refresh denied. Bungie API is temporarily down. Status: {DownReason}");
                 }
                 return;
             }
@@ -1016,9 +1018,9 @@ namespace DestinyUtility
                     return;
                 }
 
-                if (IsBungieAPIDown())
+                if (IsBungieAPIDown(out string DownReason))
                 {
-                    await interaction.RespondAsync($"Bungie API is temporarily down, therefore, I cannot enable our logging feature. Try again later.", ephemeral: true);
+                    await interaction.RespondAsync($"Bungie API is temporarily down, therefore, I cannot enable our logging feature. Try again later. Status: {DownReason}", ephemeral: true);
                     return;
                 }
 

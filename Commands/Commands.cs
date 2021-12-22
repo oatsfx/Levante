@@ -257,7 +257,7 @@ namespace DestinyUtility.Commands
                 embed.Description =
                     $"Player: **{DataConfig.GetLinkedUser(user.Id).UniqueBungieName}**\n" +
                     $"Level: **{DataConfig.GetUserSeasonPassLevel(user.Id, out int progress)}**\n" +
-                    $"Progress to Next Level: **{String.Format("{0:n0}", progress)}/ 100,000**";
+                    $"Progress to Next Level: **{String.Format("{0:n0}", progress)}/100,000**";
 
                 await ReplyAsync($"", false, embed.Build());
             }
