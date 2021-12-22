@@ -14,9 +14,6 @@ namespace DestinyUtility.Rotations
     {
         public static readonly int GardenOfSalvationEncounterCount = 4;
 
-        [JsonProperty("CurrentChallengeEncounter")]
-        public static GardenOfSalvationEncounter CurrentChallengeEncounter = GardenOfSalvationEncounter.Evade;
-
         [JsonProperty("GardenOfSalvationLinks")]
         public static List<GardenOfSalvationLink> GardenOfSalvationLinks { get; set; } = new List<GardenOfSalvationLink>();
 
@@ -28,13 +25,13 @@ namespace DestinyUtility.Rotations
             [JsonProperty("Encounter")]
             public GardenOfSalvationEncounter Encounter { get; set; } = GardenOfSalvationEncounter.Evade;
         }
+    }
 
-        public enum GardenOfSalvationEncounter
-        {
-            Evade, // Staying Alive
-            Summon, // A Link to the Chain
-            ConsecratedMind, // To the Top
-            SanctifiedMind, // Zero to One Hundred
-        }
+    public enum GardenOfSalvationEncounter
+    {
+        Evade, // Staying Alive
+        Summon, // A Link to the Chain
+        ConsecratedMind, // To the Top
+        SanctifiedMind, // Zero to One Hundred
     }
 }

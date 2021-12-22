@@ -1,4 +1,5 @@
 ﻿using DestinyUtility.Configs;
+using DestinyUtility.Leaderboards;
 using Discord;
 using Discord.WebSocket;
 using Newtonsoft.Json;
@@ -6,9 +7,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace DestinyUtility.Data
+namespace DestinyUtility.Helpers
 {
-    public class Leaderboards
+    public class LeaderboardHelper
     {
         public static string GetLeaderboardString(Leaderboard LB)
         {
@@ -113,17 +114,5 @@ namespace DestinyUtility.Data
             else
                 return 0;
         }
-    }
-    public interface LeaderboardEntry
-    {
-        public string UniqueBungieName { get; set; }
-    }
-
-    public enum Leaderboard
-    {
-        Level,
-        LongestSession,
-        XPPerHour,
-        MostThrallwayTime,
     }
 }

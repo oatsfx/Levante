@@ -14,8 +14,7 @@ namespace DestinyUtility.Rotations
     {
         public static readonly int LastWishEncounterCount = 5;
 
-        [JsonProperty("CurrentChallengeEncounter")]
-        public static LastWishEncounter CurrentChallengeEncounter = LastWishEncounter.Kalli;
+        
 
         [JsonProperty("LastWishLinks")]
         public static List<LastWishLink> LastWishLinks { get; set; } = new List<LastWishLink>();
@@ -28,14 +27,14 @@ namespace DestinyUtility.Rotations
             [JsonProperty("Encounter")]
             public LastWishEncounter Encounter { get; set; } = LastWishEncounter.Kalli;
         }
+    }
 
-        public enum LastWishEncounter
-        {
-            Kalli, // Summoning Ritual
-            ShuroChi, // Which Witch
-            Morgeth, // Forever Fight
-            Vault, // Keep Out
-            Riven, // Strength of Memory
-        }
+    public enum LastWishEncounter
+    {
+        Kalli, // Summoning Ritual
+        ShuroChi, // Which Witch
+        Morgeth, // Forever Fight
+        Vault, // Keep Out
+        Riven, // Strength of Memory
     }
 }

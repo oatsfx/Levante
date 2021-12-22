@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 
-namespace DestinyUtility.Data
+namespace DestinyUtility.Leaderboards
 {
     public partial class XPPerHourData
     {

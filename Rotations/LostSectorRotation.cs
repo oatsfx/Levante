@@ -74,25 +74,6 @@ namespace DestinyUtility.Rotations
             return (ExoticArmorType)((((int)GetMasterLostSectorArmorDrop()) + Days) % 4);
         }
 
-        public enum LostSector
-        {
-            // Dreaming City
-            BayOfDrownedWishes,
-            ChamberOfStarlight,
-            AphelionsRest,
-            // Tangled Shore
-            TheEmptyTank,
-            // Luna
-            K1Logistics,
-            K1Communion,
-            K1CrewQuarters,
-            K1Revelation,
-            // Europa
-            ConcealedVoid,
-            BunkerE15,
-            Perdition,
-        }
-
         public static string GetLostSectorString(LostSector ls)
         {
             switch (ls)
@@ -373,12 +354,6 @@ namespace DestinyUtility.Rotations
                 return null;
         }
 
-        public enum LostSectorDifficulty
-        {
-            Legend,
-            Master
-        }
-
         public static string GetLostSectorDifficultyLight(LostSectorDifficulty lsd)
         {
             switch (lsd)
@@ -444,14 +419,6 @@ namespace DestinyUtility.Rotations
                 return iterationCount;
             }
             return -1;
-        }
-
-        public enum ExoticArmorType
-        {
-            Helmet,
-            Legs,
-            Arms,
-            Chest
         }
 
         #region JSONFileManagement
@@ -572,5 +539,38 @@ namespace DestinyUtility.Rotations
         }
 
         #endregion
+    }
+
+    public enum LostSector
+    {
+        // Dreaming City
+        BayOfDrownedWishes,
+        ChamberOfStarlight,
+        AphelionsRest,
+        // Tangled Shore
+        TheEmptyTank,
+        // Luna
+        K1Logistics,
+        K1Communion,
+        K1CrewQuarters,
+        K1Revelation,
+        // Europa
+        ConcealedVoid,
+        BunkerE15,
+        Perdition,
+    }
+
+    public enum LostSectorDifficulty
+    {
+        Legend,
+        Master
+    }
+
+    public enum ExoticArmorType
+    {
+        Helmet,
+        Legs,
+        Arms,
+        Chest
     }
 }

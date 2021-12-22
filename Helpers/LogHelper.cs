@@ -9,7 +9,6 @@ namespace DestinyUtility.Helpers
 {
     public static class LogHelper
     {
-        // component: buttonBuilder.Build()
         public async static Task Log(IMessageChannel Channel, string Message)
         {
             if (Channel == null) return;

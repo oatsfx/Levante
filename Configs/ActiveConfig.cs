@@ -18,13 +18,15 @@ namespace DestinyUtility.Configs
         Closed,
     }
 
-    public partial class ActiveConfig
+    public partial class ActiveConfig : IConfig
     {
+        public static string FilePath { get; } = @"Configs/activeConfig.json";
+
         [JsonProperty("ActiveAFKUsers")]
         public static List<ActiveAFKUser> ActiveAFKUsers { get; set; } = new List<ActiveAFKUser>();
 
         [JsonProperty("MaximumThrallwayUsers")]
-        public static int MaximumThrallwayUsers = 40;
+        public static int MaximumThrallwayUsers = 20;
 
         public partial class ActiveAFKUser
         {
@@ -61,7 +63,7 @@ namespace DestinyUtility.Configs
 
         public static ActiveAFKUser GetActiveAFKUser(ulong DiscordID)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.ActiveConfigPath);
+            string json = File.ReadAllText(FilePath);
             ActiveAFKUsers.Clear();
             ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
             foreach (ActiveAFKUser aau in ActiveAFKUsers)
@@ -133,7 +135,7 @@ namespace DestinyUtility.Configs
 
         public static void UpdateActiveAFKUsersList()
         {
-            string json = File.ReadAllText(DestinyUtilityCord.ActiveConfigPath);
+            string json = File.ReadAllText(FilePath);
             ActiveAFKUsers.Clear();
             ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
         }
@@ -142,43 +144,43 @@ namespace DestinyUtility.Configs
         {
             ActiveConfig ac = new ActiveConfig();
             string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.ActiveConfigPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static void ClearActiveAFKUsersList()
         {
             ActiveAFKUsers.Clear();
             string output = JsonConvert.SerializeObject(new ActiveConfig(), Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.ActiveConfigPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static void AddActiveUserToConfig(ActiveAFKUser aau)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.ActiveConfigPath);
+            string json = File.ReadAllText(FilePath);
             ActiveAFKUsers.Clear();
             ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
 
             ActiveAFKUsers.Add(aau);
             ActiveConfig ac = new ActiveConfig();
             string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.ActiveConfigPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static void DeleteActiveUserFromConfig(ulong DiscordID)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.ActiveConfigPath);
+            string json = File.ReadAllText(FilePath);
             ActiveAFKUsers.Clear();
             ActiveConfig ac = JsonConvert.DeserializeObject<ActiveConfig>(json);
             for (int i = 0; i < ActiveAFKUsers.Count; i++)
                 if (ActiveAFKUsers[i].DiscordID == DiscordID)
                     ActiveAFKUsers.RemoveAt(i);
             string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.ActiveConfigPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static bool IsExistingActiveUser(ulong DiscordID)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.ActiveConfigPath);
+            string json = File.ReadAllText(FilePath);
             ActiveAFKUsers.Clear();
             ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
             foreach (ActiveAFKUser aau in ActiveAFKUsers)

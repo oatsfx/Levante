@@ -8,10 +8,18 @@ using static DestinyUtility.Configs.DataConfig;
 
 namespace DestinyUtility.Configs
 {
-    public partial class DataConfig
+    public partial class DataConfig : IConfig
     {
+        public static string FilePath { get; } = @"Configs/dataConfig.json";
+
         [JsonProperty("DiscordIDLinks")]
         public static List<DiscordIDLink> DiscordIDLinks { get; set; } = new List<DiscordIDLink>();
+
+        [JsonProperty("AnnounceDailyLinks")]
+        public static List<ulong> AnnounceDailyLinks { get; set; } = new List<ulong>();
+
+        [JsonProperty("AnnounceWeeklyLinks")]
+        public static List<ulong> AnnounceWeeklyLinks { get; set; } = new List<ulong>();
 
         public partial class DiscordIDLink
         {
@@ -19,7 +27,7 @@ namespace DestinyUtility.Configs
             public ulong DiscordID { get; set; } = 0;
 
             [JsonProperty("BungieMembershipID")]
-            public string BungieMembershipID { get; set; } = "Hello World";
+            public string BungieMembershipID { get; set; } = "-1";
 
             [JsonProperty("BungieMembershipType")]
             public string BungieMembershipType { get; set; } = "-1";
@@ -91,16 +99,9 @@ namespace DestinyUtility.Configs
 
         public static void UpdateUsersList()
         {
-            string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
+            string json = File.ReadAllText(FilePath);
             DiscordIDLinks.Clear();
             DataConfig jsonObj = JsonConvert.DeserializeObject<DataConfig>(json);
-        }
-
-        public static void ClearUsersList()
-        {
-            DiscordIDLinks.Clear();
-            string output = JsonConvert.SerializeObject(new DataConfig(), Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.DataConfigPath, output);
         }
 
         public static DiscordIDLink GetLinkedUser(ulong DiscordID)
@@ -120,49 +121,115 @@ namespace DestinyUtility.Configs
                 BungieMembershipType = MembershipType,
                 UniqueBungieName = BungieName
             };
-            string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
+            string json = File.ReadAllText(FilePath);
             DiscordIDLinks.Clear();
-            DataConfig jsonObj = JsonConvert.DeserializeObject<DataConfig>(json);
+            AnnounceDailyLinks.Clear();
+            AnnounceWeeklyLinks.Clear();
+            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
 
             DiscordIDLinks.Add(dil);
-            DataConfig ac = new DataConfig();
-            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.DataConfigPath, output);
+            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            File.WriteAllText(FilePath, output);
         }
 
         public static void AddUserToConfig(DiscordIDLink dil)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
+            string json = File.ReadAllText(FilePath);
             DiscordIDLinks.Clear();
-            DataConfig jsonObj = JsonConvert.DeserializeObject<DataConfig>(json);
+            AnnounceDailyLinks.Clear();
+            AnnounceWeeklyLinks.Clear();
+            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
 
             DiscordIDLinks.Add(dil);
-            DataConfig ac = new DataConfig();
-            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.DataConfigPath, output);
+            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            File.WriteAllText(FilePath, output);
+        }
+
+        public static void AddChannelToRotationConfig(ulong ChannelID, bool IsDaily)
+        {
+            string json = File.ReadAllText(FilePath);
+            DiscordIDLinks.Clear();
+            AnnounceDailyLinks.Clear();
+            AnnounceWeeklyLinks.Clear();
+            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
+            
+            if (IsDaily)
+            {
+                AnnounceDailyLinks.Add(ChannelID);
+                string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+                File.WriteAllText(FilePath, output);
+            }
+            else
+            {
+                AnnounceWeeklyLinks.Add(ChannelID);
+                string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+                File.WriteAllText(FilePath, output);
+            }
         }
 
         public static void DeleteUserFromConfig(ulong DiscordID)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
+            string json = File.ReadAllText(FilePath);
             DiscordIDLinks.Clear();
-            DataConfig ac = JsonConvert.DeserializeObject<DataConfig>(json);
+            AnnounceDailyLinks.Clear();
+            AnnounceWeeklyLinks.Clear();
+            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
             for (int i = 0; i < DiscordIDLinks.Count; i++)
                 if (DiscordIDLinks[i].DiscordID == DiscordID)
                     DiscordIDLinks.RemoveAt(i);
-            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.DataConfigPath, output);
+            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            File.WriteAllText(FilePath, output);
+        }
+
+        public static void DeleteChannelFromRotationConfig(ulong ChannelID, bool IsDaily)
+        {
+            string json = File.ReadAllText(FilePath);
+            DiscordIDLinks.Clear();
+            AnnounceDailyLinks.Clear();
+            AnnounceWeeklyLinks.Clear();
+            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
+
+            if (IsDaily)
+            {
+                for (int i = 0; i < AnnounceDailyLinks.Count; i++)
+                    if (AnnounceDailyLinks[i] == ChannelID)
+                        DiscordIDLinks.RemoveAt(i);
+            }
+            else
+            {
+                for (int i = 0; i < AnnounceWeeklyLinks.Count; i++)
+                    if (AnnounceWeeklyLinks[i] == ChannelID)
+                        DiscordIDLinks.RemoveAt(i);
+            }
+
+            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            File.WriteAllText(FilePath, output);
         }
 
         public static bool IsExistingLinkedUser(ulong DiscordID)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.DataConfigPath);
-            DiscordIDLinks.Clear();
-            DataConfig jsonObj = JsonConvert.DeserializeObject<DataConfig>(json);
             foreach (DiscordIDLink dil in DiscordIDLinks)
                 if (dil.DiscordID == DiscordID)
                     return true;
             return false;
+        }
+
+        public static bool IsExistingLinkedChannel(ulong ChannelID, bool IsDaily)
+        {
+            if (IsDaily)
+            {
+                foreach (ulong chanId in AnnounceDailyLinks)
+                    if (chanId == ChannelID)
+                        return true;
+                return false;
+            }
+            else
+            {
+                foreach (ulong chanId in AnnounceWeeklyLinks)
+                    if (chanId == ChannelID)
+                        return true;
+                return false;
+            }
         }
 
         // This returns the level, then other parameters are XPProgress (int) and IsInShatteredThrone (bool). Reduces the amount of calls to the Bungie API.
@@ -241,5 +308,12 @@ namespace DestinyUtility.Configs
                 return Level;
             }
         }
+    }
+
+    public enum RotationPostingType
+    {
+        Daily,
+        Weekly,
+        DailyAndWeekly,
     }
 }

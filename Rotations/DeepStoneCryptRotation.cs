@@ -12,9 +12,6 @@ namespace DestinyUtility.Rotations
     {
         public static readonly int DeepStoneCryptEncounterCount = 4;
 
-        [JsonProperty("CurrentChallengeEncounter")]
-        public static DeepStoneCryptEncounter CurrentChallengeEncounter = DeepStoneCryptEncounter.Security;
-
         [JsonProperty("DeepStoneCryptLinks")]
         public static List<DeepStoneCryptLink> DeepStoneCryptLinks { get; set; } = new List<DeepStoneCryptLink>();
 
@@ -26,13 +23,13 @@ namespace DestinyUtility.Rotations
             [JsonProperty("Encounter")]
             public DeepStoneCryptEncounter Encounter { get; set; } = DeepStoneCryptEncounter.Security;
         }
+    }
 
-        public enum DeepStoneCryptEncounter
-        {
-            Security, // Red Rover
-            Atraks1, // Copies of Copies
-            Descent, // Of All Trades
-            Taniks, // The Core Four
-        }
+    public enum DeepStoneCryptEncounter
+    {
+        Security, // Red Rover
+        Atraks1, // Copies of Copies
+        Descent, // Of All Trades
+        Taniks, // The Core Four
     }
 }

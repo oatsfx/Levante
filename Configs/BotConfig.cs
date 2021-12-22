@@ -1,12 +1,15 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace DestinyUtility.Configs
 {
-    public sealed class BotConfig
+    public sealed class BotConfig : IConfig
     {
+        public static string FilePath { get; } = @"Configs/botConfig.json";
+
         [JsonProperty("DiscordToken")]
         public static string DiscordToken { get; set; } = "[YOUR TOKEN HERE]";
 
@@ -20,7 +23,7 @@ namespace DestinyUtility.Configs
         public static double Version { get; set; } = 1.0;
 
         [JsonProperty("DefaultCommandPrefix")]
-        public static string DefaultCommandPrefix { get; set; } = "t!";
+        public static string DefaultCommandPrefix { get; set; } = "d!";
 
         [JsonProperty("Note")]
         public static string Note { get; set; } = "Hello World";
@@ -38,6 +41,24 @@ namespace DestinyUtility.Configs
 
             [JsonProperty("B")]
             public static int B { get; set; } = 0;
+        }
+
+        public bool CheckAndLoadConfig()
+        {
+            BotConfig config;
+            if (File.Exists(FilePath))
+            {
+                string json = File.ReadAllText(FilePath);
+                config = JsonConvert.DeserializeObject<BotConfig>(json);
+                return false;
+            }
+            else
+            {
+                config = new BotConfig();
+                File.WriteAllText(FilePath, JsonConvert.SerializeObject(config, Formatting.Indented));
+                Console.WriteLine($"No {FilePath} file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.");
+                return true;
+            }
         }
     }
 }

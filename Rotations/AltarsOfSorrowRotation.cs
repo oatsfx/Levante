@@ -14,9 +14,6 @@ namespace DestinyUtility.Rotations
     {
         public static readonly int AltarWeaponCount = 3;
 
-        [JsonProperty("CurrentAlterWeapon")]
-        public static AltarsOfSorrow CurrentAlterWeapon = AltarsOfSorrow.Shotgun;
-
         [JsonProperty("AltarsOfSorrowLinks")]
         public static List<AltarsOfSorrowLink> AltarsOfSorrowLinks { get; set; } = new List<AltarsOfSorrowLink>();
 
@@ -28,12 +25,12 @@ namespace DestinyUtility.Rotations
             [JsonProperty("WeaponDrop")]
             public AltarsOfSorrow WeaponDrop { get; set; } = AltarsOfSorrow.Shotgun;
         }
+    }
 
-        public enum AltarsOfSorrow
-        {
-            Shotgun, // Blasphemer
-            Sniper, // Apostate
-            Rocket, // Heretic
-        }
+    public enum AltarsOfSorrow
+    {
+        Shotgun, // Blasphemer
+        Sniper, // Apostate
+        Rocket, // Heretic
     }
 }

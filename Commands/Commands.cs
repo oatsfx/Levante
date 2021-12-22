@@ -9,7 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DestinyUtility.Configs;
-using DestinyUtility.Data;
+using DestinyUtility.Leaderboards;
 
 namespace DestinyUtility.Commands
 {
@@ -170,6 +170,53 @@ namespace DestinyUtility.Commands
             }
 
             await ReplyAsync($"", false, embed.Build());
+        }
+
+        [Command("afkStats", RunMode = RunMode.Async)]
+        [Summary("Pulls stats of current Thrallway session.")]
+        public async Task AFKStats()
+        {
+            if (!ActiveConfig.IsExistingActiveUser(Context.User.Id))
+            {
+                await ReplyAsync("You are not using my logging feature.");
+                return;
+            }
+
+            var aau = ActiveConfig.GetActiveAFKUser(Context.User.Id);
+
+            var app = await Context.Client.GetApplicationInfoAsync();
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Current Session Stats for {aau.UniqueBungieName}",
+                IconUrl = app.IconUrl,
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Thrallway Session Summary"
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = auth,
+                Footer = foot,
+            };
+            int levelsGained = aau.LastLoggedLevel - aau.StartLevel;
+            long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
+            var timeSpan = DateTime.Now - aau.TimeStarted;
+            string timeString = $"{(Math.Floor(timeSpan.TotalHours) > 0 ? $"{Math.Floor(timeSpan.TotalHours)}h " : "")}" +
+                    $"{(timeSpan.Minutes > 0 ? $"{timeSpan.Minutes:00}m " : "")}" +
+                    $"{timeSpan.Seconds:00}s";
+            int xpPerHour = 0;
+            if ((DateTime.Now - aau.TimeStarted).TotalHours >= 1)
+                xpPerHour = (int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours);
+            embed.WithCurrentTimestamp();
+            embed.Description =
+                $"Levels Gained: {levelsGained}\n" +
+                $"XP Gained: {String.Format("{0:n0}", xpGained)}\n" +
+                $"Time: {timeString}\n" +
+                $"XP Per Hour: {String.Format("{0:n0}", xpPerHour)}";
+
+            await ReplyAsync($"", embed: embed.Build());
         }
 
         [Command("level", RunMode = RunMode.Async)]

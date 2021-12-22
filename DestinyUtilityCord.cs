@@ -16,7 +16,7 @@ using System.ComponentModel;
 using System.Threading;
 using Discord.Rest;
 using Discord.Net;
-using DestinyUtility.Data;
+using DestinyUtility.Leaderboards;
 using DestinyUtility.Rotations;
 
 namespace DestinyUtility
@@ -27,9 +27,6 @@ namespace DestinyUtility
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
 
-        public static readonly string BotConfigPath = @"Configs/botConfig.json";
-        public static readonly string DataConfigPath = @"Configs/dataConfig.json";
-        public static readonly string ActiveConfigPath = @"Configs/activeConfig.json";
         public static readonly string LostSectorTrackingConfigPath = @"Configs/lostSectorTrackingConfigPath.json";
 
         public static readonly string LevelDataPath = @"Data/levelData.json";
@@ -57,8 +54,8 @@ namespace DestinyUtility
   / _ \___ ___ / /_(_)__  __ __/ / / / /_(_) (_) /___ __
  / // / -_|_-</ __/ / _ \/ // / /_/ / __/ / / / __/ // /
 /____/\__/___/\__/_/_//_/\_, /\____/\__/_/_/_/\__/\_, / 
-                        /___/                    /___/  
-        ";
+    - dev. by @OatsFX   /___/                    /___/  
+";
             Console.WriteLine(ASCIIName);
             
             new DestinyUtilityCord().StartAsync().GetAwaiter().GetResult();
@@ -66,7 +63,7 @@ namespace DestinyUtility
 
         public async Task StartAsync()
         {
-            if (!CheckAndLoadConfigFiles())
+            if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
 
             if (!CheckAndLoadDataFiles())
@@ -126,31 +123,7 @@ namespace DestinyUtility
             {
                 var channel = _client.GetChannel(ChannelID) as SocketTextChannel;
 
-                var app = await _client.GetApplicationInfoAsync();
-                var foot = new EmbedFooterBuilder()
-                {
-                    Text = $"Powered by Bungie API"
-                };
-                var embed = new EmbedBuilder()
-                {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    Footer = foot,
-                };
-                embed.Title = $"Daily Reset of {TimestampTag.FromDateTime(DateTime.Now, TimestampTagStyles.ShortDate)}";
-                embed.Description = "";
-                embed.ThumbnailUrl = app.IconUrl;
-
-                embed.AddField(x =>
-                {
-                    x.Name = "Lost Sectors";
-                    x.Value =
-                        $"Legend: {LostSectorRotation.GetLostSectorString(LostSectorRotation.CurrentLegendLostSector)} ({LostSectorRotation.CurrentLegendArmorDrop})\n" +
-                        $"Master: {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetMasterLostSector())} ({LostSectorRotation.GetMasterLostSectorArmorDrop()})\n" +
-                        $"*Use command /lostsectorinfo for more info.*";
-                    x.IsInline = true;
-                });
-
-                await channel.SendMessageAsync($"", embed: embed.Build());
+                await channel.SendMessageAsync($"", embed: CurrentRotations.DailyResetEmbed(_client).Result.Build());
             }
         }
 
@@ -174,7 +147,7 @@ namespace DestinyUtility
             foreach (var LSL in LostSectorRotation.LostSectorLinks)
             {
                 bool addBack = true;
-                if (LostSectorRotation.CurrentLegendLostSector == LSL.LostSector && LSL.Difficulty == LostSectorRotation.LostSectorDifficulty.Legend)
+                if (LostSectorRotation.CurrentLegendLostSector == LSL.LostSector && LSL.Difficulty == LostSectorDifficulty.Legend)
                 {
                     if (LostSectorRotation.CurrentLegendArmorDrop == LSL.ArmorDrop)
                     {
@@ -194,7 +167,7 @@ namespace DestinyUtility
                         addBack = false;
                     }
                 }
-                else if (LostSectorRotation.GetMasterLostSector() == LSL.LostSector && LSL.Difficulty == LostSectorRotation.LostSectorDifficulty.Master)
+                else if (LostSectorRotation.GetMasterLostSector() == LSL.LostSector && LSL.Difficulty == LostSectorDifficulty.Master)
                 {
                     if (LostSectorRotation.GetMasterLostSectorArmorDrop() == LSL.ArmorDrop)
                     {
@@ -272,6 +245,7 @@ namespace DestinyUtility
 
             Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refreshing Bungie API...");
             List<ActiveConfig.ActiveAFKUser> temp = new List<ActiveConfig.ActiveAFKUser>();
+            List<ActiveConfig.ActiveAFKUser> refreshAgainList = new List<ActiveConfig.ActiveAFKUser>();
             try // thrallway
             {
                 Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refreshing Thrallway Users...");
@@ -321,7 +295,7 @@ namespace DestinyUtility
                     else if (updatedProgression <= tempAau.LastLevelProgress)
                     {
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"No XP change detected, attempting to refresh API again...");
-                        tempAau = await RefreshSpecificUser(tempAau).ConfigureAwait(true);
+                        tempAau = await RefreshSpecificUser(tempAau).ConfigureAwait(false);
                         if (tempAau == null) addBack = false;
                     }
                     else
@@ -337,13 +311,13 @@ namespace DestinyUtility
                     await Task.Delay(3500); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
 
-                string json = File.ReadAllText(ActiveConfigPath);
+                string json = File.ReadAllText(ActiveConfig.FilePath);
                 ActiveConfig aConfig = JsonConvert.DeserializeObject<ActiveConfig>(json);
 
                 ActiveConfig.UpdateActiveAFKUsersList();
                 ActiveConfig.ActiveAFKUsers = temp;
                 string output = JsonConvert.SerializeObject(aConfig, Formatting.Indented);
-                File.WriteAllText(ActiveConfigPath, output);
+                File.WriteAllText(ActiveConfig.FilePath, output);
 
                 await UpdateBotActivity();
                 Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Bungie API Refreshed!");
@@ -473,7 +447,7 @@ namespace DestinyUtility
 
         private async Task<ActiveConfig.ActiveAFKUser> RefreshSpecificUser(ActiveConfig.ActiveAFKUser aau)
         {
-            await Task.Delay(20000);
+            await Task.Delay(15000);
             Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refreshing Bungie API specifically for {aau.UniqueBungieName}.");
             List<ActiveConfig.ActiveAFKUser> temp = new List<ActiveConfig.ActiveAFKUser>();
             ActiveConfig.ActiveAFKUser tempAau = new ActiveConfig.ActiveAFKUser();
@@ -488,6 +462,9 @@ namespace DestinyUtility
 
                     tempAau.LastLoggedLevel = updatedLevel;
                     tempAau.LastLevelProgress = updatedProgression;
+
+                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel,
+                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {tempAau.LastLoggedLevel} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP)");
                 }
                 else if (updatedProgression == aau.LastLevelProgress)
                 {
@@ -566,14 +543,18 @@ namespace DestinyUtility
             };
             int levelsGained = aau.LastLoggedLevel - aau.StartLevel;
             long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
+            var timeSpan = DateTime.Now - aau.TimeStarted;
+            string timeString = $"{(Math.Floor(timeSpan.TotalHours) > 0 ? $"{Math.Floor(timeSpan.TotalHours)}h " : "")}" +
+                    $"{(timeSpan.Minutes > 0 ? $"{timeSpan.Minutes:00}m " : "")}" +
+                    $"{timeSpan.Seconds:00}s";
             int xpPerHour = 0;
             if ((DateTime.Now - aau.TimeStarted).TotalHours >= 1)
                 xpPerHour = (int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours);
             embed.Description =
-                $"Total Levels Gained: {levelsGained}\n" +
-                $"Total XP Gained: {String.Format("{0:n0}", xpGained)}\n" +
-                $"Total Time: {String.Format("{0:0.00}", (DateTime.Now - aau.TimeStarted).TotalHours)} hours\n" +
-                $"XP Per Hour: {xpPerHour}";
+                $"Levels Gained: {levelsGained}\n" +
+                $"XP Gained: {String.Format("{0:n0}", xpGained)}\n" +
+                $"Time: {timeString}\n" +
+                $"XP Per Hour: {String.Format("{0:n0}", xpPerHour)}";
 
             return embed;
         }
@@ -614,7 +595,7 @@ namespace DestinyUtility
                 .WithDescription("The Lost Sector you want to be Notified for")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSectorRotation.LostSector LS in Enum.GetValues(typeof(LostSectorRotation.LostSector)))
+            foreach (LostSector LS in Enum.GetValues(typeof(LostSector)))
             {
                 scobA.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
             }
@@ -624,7 +605,7 @@ namespace DestinyUtility
                 .WithDescription("The Exotic Armor the Lost Sector should drop")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSectorRotation.ExoticArmorType EAT in Enum.GetValues(typeof(LostSectorRotation.ExoticArmorType)))
+            foreach (ExoticArmorType EAT in Enum.GetValues(typeof(ExoticArmorType)))
             {
                 scobB.AddChoice($"{EAT}", (int)EAT);
             }
@@ -649,7 +630,7 @@ namespace DestinyUtility
                 .WithDescription("The Lost Sector you want Information on")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSectorRotation.LostSector LS in Enum.GetValues(typeof(LostSectorRotation.LostSector)))
+            foreach (LostSector LS in Enum.GetValues(typeof(LostSector)))
             {
                 scobC.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
             }
@@ -674,7 +655,7 @@ namespace DestinyUtility
                 .WithDescription("The Lost Sector you want me to get the occurance of")
                 .WithRequired(false)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSectorRotation.LostSector LS in Enum.GetValues(typeof(LostSectorRotation.LostSector)))
+            foreach (LostSector LS in Enum.GetValues(typeof(LostSector)))
             {
                 scobD.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
             }
@@ -684,7 +665,7 @@ namespace DestinyUtility
                 .WithDescription("The Exotic Armor you want me to get the occurance of")
                 .WithRequired(false)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSectorRotation.ExoticArmorType EAT in Enum.GetValues(typeof(LostSectorRotation.ExoticArmorType)))
+            foreach (ExoticArmorType EAT in Enum.GetValues(typeof(ExoticArmorType)))
             {
                 scobE.AddChoice($"{EAT}", (int)EAT);
             }
@@ -710,10 +691,27 @@ namespace DestinyUtility
                 .WithType(ApplicationCommandOptionType.Integer);
             foreach (Leaderboard LB in Enum.GetValues(typeof(Leaderboard)))
             {
-                scobF.AddChoice($"{Leaderboards.GetLeaderboardString(LB)}", (int)LB);
+                scobF.AddChoice($"{LeaderboardHelper.GetLeaderboardString(LB)}", (int)LB);
             }
 
             rankCommand.AddOption(scobF);
+
+            // ==============================================
+
+            var alertCommand = new SlashCommandBuilder();
+            alertCommand.WithName("alert");
+            alertCommand.WithDescription("Set up announcements for Daily/Weekly Reset");
+
+            var scobG = new SlashCommandOptionBuilder()
+                .WithName("type")
+                .WithDescription("Choose between Daily or Weekly Reset")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+
+            scobG.AddChoice($"Daily", 0);
+            scobG.AddChoice($"Weekly", 1);
+
+            alertCommand.AddOption(scobG);
 
             try
             {
@@ -723,6 +721,7 @@ namespace DestinyUtility
                 //await _client.CreateGlobalApplicationCommandAsync(nextOccuranceCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(removeAlertCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(rankCommand.Build());
+                await _client.CreateGlobalApplicationCommandAsync(alertCommand.Build());
             }
             catch (HttpException exception)
             {
@@ -748,24 +747,24 @@ namespace DestinyUtility
                 }
                 else
                 {
-                    LostSectorRotation.LostSector LS = 0;
-                    LostSectorRotation.LostSectorDifficulty LSD = 0;
-                    LostSectorRotation.ExoticArmorType EAT = 0;
+                    LostSector LS = 0;
+                    LostSectorDifficulty LSD = 0;
+                    ExoticArmorType EAT = 0;
 
                     foreach (var option in command.Data.Options)
                     {
                         if (option.Name.Equals("lost-sector"))
-                            LS = (LostSectorRotation.LostSector)Convert.ToInt32(option.Value);
+                            LS = (LostSector)Convert.ToInt32(option.Value);
                         else if (option.Name.Equals("difficulty"))
-                            LSD = (LostSectorRotation.LostSectorDifficulty)Convert.ToInt32(option.Value);
+                            LSD = (LostSectorDifficulty)Convert.ToInt32(option.Value);
                         else if (option.Name.Equals("armor-drop"))
-                            EAT = (LostSectorRotation.ExoticArmorType)Convert.ToInt32(option.Value);
+                            EAT = (ExoticArmorType)Convert.ToInt32(option.Value);
                     }
 
                     LostSectorRotation.AddLostSectorsTrackingToConfig(command.User.Id, LS, LSD, EAT);
 
                     await command.RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString(LS)} ({LSD}) is dropping {EAT}, which will be on " +
-                        $"{(LSD == LostSectorRotation.LostSectorDifficulty.Legend ? $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}" : $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(1 + LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}")}.",
+                        $"{(LSD == LostSectorDifficulty.Legend ? $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}" : $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(1 + LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}")}.",
                         ephemeral: true);
                     return;
                 }
@@ -785,15 +784,15 @@ namespace DestinyUtility
             }
             else if (command.Data.Name.Equals("lostsectorinfo"))
             {
-                LostSectorRotation.LostSector LS = 0;
-                LostSectorRotation.LostSectorDifficulty LSD = 0;
+                LostSector LS = 0;
+                LostSectorDifficulty LSD = 0;
 
                 foreach (var option in command.Data.Options)
                 {
                     if (option.Name.Equals("lost-sector"))
-                        LS = (LostSectorRotation.LostSector)Convert.ToInt32(option.Value);
+                        LS = (LostSector)Convert.ToInt32(option.Value);
                     else if (option.Name.Equals("difficulty"))
-                        LSD = (LostSectorRotation.LostSectorDifficulty)Convert.ToInt32(option.Value);
+                        LSD = (LostSectorDifficulty)Convert.ToInt32(option.Value);
                 }
 
                 await command.RespondAsync($"", embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
@@ -801,15 +800,15 @@ namespace DestinyUtility
             }
             else if (command.Data.Name.Equals("next"))
             {
-                LostSectorRotation.LostSector? LS = null;
-                LostSectorRotation.ExoticArmorType? EAT = null;
+                LostSector? LS = null;
+                ExoticArmorType? EAT = null;
 
                 foreach (var option in command.Data.Options)
                 {
                     if (option.Name.Equals("lost-sector"))
-                        LS = (LostSectorRotation.LostSector)Convert.ToInt32(option.Value);
+                        LS = (LostSector)Convert.ToInt32(option.Value);
                     else if (option.Name.Equals("armor-drop"))
-                        EAT = (LostSectorRotation.ExoticArmorType)Convert.ToInt32(option.Value);
+                        EAT = (ExoticArmorType)Convert.ToInt32(option.Value);
                 }
                 
                 if (LS == null && EAT == null)
@@ -867,7 +866,7 @@ namespace DestinyUtility
                 {
                     var auth = new EmbedAuthorBuilder()
                     {
-                        Name = $"Next occurance of {LostSectorRotation.GetLostSectorString((LostSectorRotation.LostSector)LS)}",
+                        Name = $"Next occurance of {LostSectorRotation.GetLostSectorString((LostSector)LS)}",
                     };
                     var foot = new EmbedFooterBuilder()
                     {
@@ -891,7 +890,7 @@ namespace DestinyUtility
                 {
                     var auth = new EmbedAuthorBuilder()
                     {
-                        Name = $"Next occurance of {LostSectorRotation.GetLostSectorString((LostSectorRotation.LostSector)LS)} dropping {EAT}",
+                        Name = $"Next occurance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} dropping {EAT}",
                     };
                     var foot = new EmbedFooterBuilder()
                     {
@@ -924,17 +923,36 @@ namespace DestinyUtility
                     }
                 }
 
-
                 EmbedBuilder embed = new EmbedBuilder();
                 switch (LeaderboardType)
                 {
-                    case Leaderboard.Level: embed = Leaderboards.GetLeaderboardEmbed(LevelData.GetSortedLevelData(), command.User); break;
-                    case Leaderboard.LongestSession: embed = Leaderboards.GetLeaderboardEmbed(LongestSessionData.GetSortedLevelData(), command.User); break;
-                    case Leaderboard.XPPerHour: embed = Leaderboards.GetLeaderboardEmbed(XPPerHourData.GetSortedLevelData(), command.User); break;
-                    case Leaderboard.MostThrallwayTime: embed = Leaderboards.GetLeaderboardEmbed(MostThrallwayTimeData.GetSortedLevelData(), command.User); break;
+                    case Leaderboard.Level: embed = LeaderboardHelper.GetLeaderboardEmbed(LevelData.GetSortedLevelData(), command.User); break;
+                    case Leaderboard.LongestSession: embed = LeaderboardHelper.GetLeaderboardEmbed(LongestSessionData.GetSortedLevelData(), command.User); break;
+                    case Leaderboard.XPPerHour: embed = LeaderboardHelper.GetLeaderboardEmbed(XPPerHourData.GetSortedLevelData(), command.User); break;
+                    case Leaderboard.MostThrallwayTime: embed = LeaderboardHelper.GetLeaderboardEmbed(MostThrallwayTimeData.GetSortedLevelData(), command.User); break;
                 }
 
                 await command.RespondAsync($"", embed: embed.Build());
+            }
+            else if (command.Data.Name.Equals("alert"))
+            {
+                bool IsDaily = false;
+                foreach (var option in command.Data.Options)
+                    if (option.Name.Equals("type"))
+                        IsDaily = Convert.ToInt32(option.Value) == 0;
+
+                if (DataConfig.IsExistingLinkedChannel(command.Channel.Id, IsDaily))
+                {
+                    await command.RespondAsync($"This channel already has {(IsDaily ? "Daily" : "Weekly")} reset posts set up!", ephemeral: true);
+                    return;
+                }
+                else
+                {
+                    DataConfig.AddChannelToRotationConfig(command.Channel.Id, IsDaily);
+
+                    await command.RespondAsync($"This channel is now successfully subscribed to {(IsDaily ? "Daily" : "Weekly")} reset posts.", ephemeral: true);
+                    return;
+                }
             }
         }
 
@@ -1016,13 +1034,9 @@ namespace DestinyUtility
                 string memId = DataConfig.GetLinkedUser(user.Id).BungieMembershipID;
                 string memType = DataConfig.GetLinkedUser(user.Id).BungieMembershipType;
 
-                if (!ActiveConfig.IsPlayerOnline(memId, memType))
-                {
-                    await interaction.RespondAsync($"You are not currently playing Destiny 2. Launch Destiny 2 then launch Shattered Throne, get set up, and then click \"Ready\".", ephemeral: true);
-                    return;
-                }
+                int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out bool isInShatteredThrone);
 
-                if (!ActiveConfig.IsInShatteredThrone(memId, memType))
+                if (!isInShatteredThrone)
                 {
                     await interaction.RespondAsync($"You are not in Shattered Throne. Launch Shattered Throne, get set up, and then click \"Ready\".", ephemeral: true);
                     return;
@@ -1047,8 +1061,6 @@ namespace DestinyUtility
                 }
 
                 var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName.Replace('#','-')}").Result;
-
-                int userLevel = DataConfig.GetUserSeasonPassLevel(user.Id, out int lvlProg);
                 ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
                 {
                     DiscordID = user.Id,
@@ -1187,89 +1199,6 @@ namespace DestinyUtility
                     await context.Channel.SendMessageAsync($"[{error}]: Command is missing some arguments.").ConfigureAwait(false);
                 }
             }
-            return true;
-        }
-
-        private bool CheckAndLoadConfigFiles()
-        {
-            BotConfig bConfig;
-            DataConfig dConfig;
-            ActiveConfig aConfig;
-            LostSectorRotation lstConfig;
-
-            bool closeProgram = false;
-            if (File.Exists(BotConfigPath))
-            {
-                string json = File.ReadAllText(BotConfigPath);
-                bConfig = JsonConvert.DeserializeObject<BotConfig>(json);
-            }
-            else
-            {
-                bConfig = new BotConfig();
-                File.WriteAllText(BotConfigPath, JsonConvert.SerializeObject(bConfig, Formatting.Indented));
-                Console.WriteLine($"No botConfig.json file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.");
-                closeProgram = true;
-            }
-
-            if (File.Exists(DataConfigPath))
-            {
-                string json = File.ReadAllText(DataConfigPath);
-                dConfig = JsonConvert.DeserializeObject<DataConfig>(json);
-            }
-            else
-            {
-                dConfig = new DataConfig();
-                File.WriteAllText(DataConfigPath, JsonConvert.SerializeObject(dConfig, Formatting.Indented));
-                Console.WriteLine($"No dataConfig.json file detected. A new one has been created and the program has stopped. No action is needed.");
-                closeProgram = true;
-            }
-
-            if (File.Exists(ActiveConfigPath))
-            {
-                string json = File.ReadAllText(ActiveConfigPath);
-                aConfig = JsonConvert.DeserializeObject<ActiveConfig>(json);
-
-                try
-                {
-                    foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
-                    {
-                        int updatedLevel = DataConfig.GetUserSeasonPassLevel(aau.DiscordID, out int updatedProgression);
-                        aau.LastLevelProgress = updatedProgression;
-                        aau.LastLoggedLevel = updatedLevel;
-                    }
-                }
-                catch
-                {
-                    DataConfig.UpdateUsersList();
-                    Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Bungie API is down, loading stored data and continuing.");
-                }
-                
-
-                string output = JsonConvert.SerializeObject(aConfig, Formatting.Indented);
-                File.WriteAllText(ActiveConfigPath, output);
-            }
-            else
-            {
-                aConfig = new ActiveConfig();
-                File.WriteAllText(ActiveConfigPath, JsonConvert.SerializeObject(aConfig, Formatting.Indented));
-                Console.WriteLine($"No activeConfig.json file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.");
-                closeProgram = true;
-            }
-
-            if (File.Exists(LostSectorTrackingConfigPath))
-            {
-                string json = File.ReadAllText(LostSectorTrackingConfigPath);
-                lstConfig = JsonConvert.DeserializeObject<LostSectorRotation>(json);
-            }
-            else
-            {
-                lstConfig = new LostSectorRotation();
-                File.WriteAllText(LostSectorTrackingConfigPath, JsonConvert.SerializeObject(lstConfig, Formatting.Indented));
-                Console.WriteLine($"No lostSectorTrackingConfig.json file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.");
-                closeProgram = true;
-            }
-
-            if (closeProgram == true) return false;
             return true;
         }
 

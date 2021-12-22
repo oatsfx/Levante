@@ -14,9 +14,6 @@ namespace DestinyUtility.Rotations
     {
         public static readonly int VaultOfGlassEncounterCount = 5;
 
-        [JsonProperty("CurrentChallengeEncounter")]
-        public static VaultOfGlassEncounter CurrentChallengeEncounter = VaultOfGlassEncounter.Confluxes;
-
         [JsonProperty("VaultOfGlassLinks")]
         public static List<VaultOfGlassLink> VaultOfGlassLinks { get; set; } = new List<VaultOfGlassLink>();
 
@@ -28,14 +25,14 @@ namespace DestinyUtility.Rotations
             [JsonProperty("Encounter")]
             public VaultOfGlassEncounter Encounter { get; set; } = VaultOfGlassEncounter.Confluxes;
         }
+    }
 
-        public enum VaultOfGlassEncounter
-        {
-            Confluxes, // Vision of Confluence, Wait for It...
-            Oracles, // Praedyth's Revenge, The Only Oracle for You
-            Templar, // Fatebringer, Out of Its Way
-            Gatekeepers, // Hezen Vengeance, Strangers in Time
-            Atheon, // Corrective Measure, Ensemble's Refrain
-        }
+    public enum VaultOfGlassEncounter
+    {
+        Confluxes, // Vision of Confluence, Wait for It...
+        Oracles, // Praedyth's Revenge, The Only Oracle for You
+        Templar, // Fatebringer, Out of Its Way
+        Gatekeepers, // Hezen Vengeance, Strangers in Time
+        Atheon, // Corrective Measure, Ensemble's Refrain
     }
 }
