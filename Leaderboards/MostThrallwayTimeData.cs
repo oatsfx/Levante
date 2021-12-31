@@ -6,8 +6,10 @@ using System.Net.Http;
 
 namespace DestinyUtility.Leaderboards
 {
-    public partial class MostThrallwayTimeData
+    public class MostThrallwayTimeData
     {
+        public static readonly string FilePath = @"Data/mostThrallwayTimeData.json";
+
         [JsonProperty("MostThrallwayTimeEntries")]
         public static List<MostThrallwayTimeEntry> MostThrallwayTimeEntries { get; set; } = new List<MostThrallwayTimeEntry>();
 
@@ -66,7 +68,7 @@ namespace DestinyUtility.Leaderboards
         {
             MostThrallwayTimeData mttd = new MostThrallwayTimeData();
             string output = JsonConvert.SerializeObject(mttd, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.MostThrallwayTimeDataPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static void AddEntryToConfig(TimeSpan Time, string BungieName)
@@ -76,43 +78,43 @@ namespace DestinyUtility.Leaderboards
                 Time = Time,
                 UniqueBungieName = BungieName
             };
-            string json = File.ReadAllText(DestinyUtilityCord.MostThrallwayTimeDataPath);
+            string json = File.ReadAllText(FilePath);
             MostThrallwayTimeEntries.Clear();
             MostThrallwayTimeData jsonObj = JsonConvert.DeserializeObject<MostThrallwayTimeData>(json);
 
             MostThrallwayTimeEntries.Add(mtt);
             MostThrallwayTimeData mttd = new MostThrallwayTimeData();
             string output = JsonConvert.SerializeObject(mttd, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.MostThrallwayTimeDataPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static void AddEntryToConfig(MostThrallwayTimeEntry lde)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.MostThrallwayTimeDataPath);
+            string json = File.ReadAllText(FilePath);
             MostThrallwayTimeEntries.Clear();
             MostThrallwayTimeData jsonObj = JsonConvert.DeserializeObject<MostThrallwayTimeData>(json);
 
             MostThrallwayTimeEntries.Add(lde);
             MostThrallwayTimeData mttd = new MostThrallwayTimeData();
             string output = JsonConvert.SerializeObject(mttd, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.MostThrallwayTimeDataPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static void DeleteEntryFromConfig(string BungieName)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.MostThrallwayTimeDataPath);
+            string json = File.ReadAllText(FilePath);
             MostThrallwayTimeEntries.Clear();
             MostThrallwayTimeData mttd = JsonConvert.DeserializeObject<MostThrallwayTimeData>(json);
             for (int i = 0; i < MostThrallwayTimeEntries.Count; i++)
                 if (MostThrallwayTimeEntries[i].UniqueBungieName.Equals(BungieName))
                     MostThrallwayTimeEntries.RemoveAt(i);
             string output = JsonConvert.SerializeObject(mttd, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.MostThrallwayTimeDataPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static bool IsExistingLinkedEntry(string BungieName)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.MostThrallwayTimeDataPath);
+            string json = File.ReadAllText(FilePath);
             MostThrallwayTimeEntries.Clear();
             MostThrallwayTimeData jsonObj = JsonConvert.DeserializeObject<MostThrallwayTimeData>(json);
             foreach (MostThrallwayTimeEntry mtt in MostThrallwayTimeEntries)
@@ -123,7 +125,7 @@ namespace DestinyUtility.Leaderboards
 
         public static MostThrallwayTimeEntry GetExistingLinkedEntry(string BungieName)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.MostThrallwayTimeDataPath);
+            string json = File.ReadAllText(FilePath);
             MostThrallwayTimeEntries.Clear();
             MostThrallwayTimeData jsonObj = JsonConvert.DeserializeObject<MostThrallwayTimeData>(json);
             foreach (MostThrallwayTimeEntry mtt in MostThrallwayTimeEntries)

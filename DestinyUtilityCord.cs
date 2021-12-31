@@ -18,6 +18,7 @@ using Discord.Rest;
 using Discord.Net;
 using DestinyUtility.Leaderboards;
 using DestinyUtility.Rotations;
+using DestinyUtility.Util;
 
 namespace DestinyUtility
 {
@@ -28,11 +29,6 @@ namespace DestinyUtility
         private readonly IServiceProvider _services;
 
         public static readonly string LostSectorTrackingConfigPath = @"Configs/lostSectorTrackingConfigPath.json";
-
-        public static readonly string LevelDataPath = @"Data/levelData.json";
-        public static readonly string XPPerHourDataPath = @"Data/xpPerHourData.json";
-        public static readonly string MostThrallwayTimeDataPath = @"Data/mostThrallwayTimeData.json";
-        public static readonly string LongestSessionDataPath = @"Data/longestSessionData.json";
 
         private Timer DailyResetTimer;
 
@@ -66,13 +62,14 @@ namespace DestinyUtility
             if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
 
+            await Task.Run(() => Console.Title = $"DestinyUtility v{BotConfig.Version}");
+
             if (!CheckAndLoadLostSectorData())
                 return;
 
-            if (!CheckAndLoadDataFiles())
+            if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
-
-            Console.Title = $"DestinyUtility v{BotConfig.Version}";
+            
             Console.WriteLine($"Current Bot Version: v{BotConfig.Version}");
             Console.WriteLine($"Current Developer Note: {BotConfig.Note}");
 
@@ -257,7 +254,7 @@ namespace DestinyUtility
                 foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
-                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isInShatteredThrone);
+                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isInShatteredThrone, out _, out _);
                     bool addBack = true;
 
                     Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Checking user: {tempAau.UniqueBungieName}");
@@ -431,12 +428,49 @@ namespace DestinyUtility
             {
                 Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Pulling data for leaderboards...");
                 LevelData.LevelDataEntries.Clear();
+                PowerLevelData.PowerLevelDataEntries.Clear();
                 foreach (var link in DataConfig.DiscordIDLinks) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
                 {
+                    int Level = 0;
+                    int PowerLevel = -1;
+                    using (var client = new HttpClient())
+                    {
+                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                        var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + link.BungieMembershipType + "/Profile/" + link.BungieMembershipID + "/?components=100,200,202").Result;
+                        var content = response.Content.ReadAsStringAsync().Result;
+                        dynamic item = JsonConvert.DeserializeObject(content);
+
+                        //first 100 levels: 4095505052
+                        //anything after: 1531004716
+
+                        for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                        {
+                            string charId = $"{item.Response.profile.data.characterIds[i]}";
+                            int powerLevelComp = (int)item.Response.characters.data[charId].light;
+                            if (PowerLevel <= powerLevelComp)
+                                PowerLevel = powerLevelComp;
+                        }
+
+                        if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level == 100)
+                        {
+                            int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].level;
+                            Level = 100 + extraLevel;
+                        }
+                        else
+                        {
+                            Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level;
+                        }
+                    }
                     // populate list
                     LevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
                     {
-                        LastLoggedLevel = DataConfig.GetUserSeasonPassLevel(link.DiscordID, out _),
+                        LastLoggedLevel = Level,
+                        UniqueBungieName = link.UniqueBungieName,
+                    });
+                    PowerLevelData.PowerLevelDataEntries.Add(new PowerLevelData.PowerLevelDataEntry()
+                    {
+                        PowerLevel = PowerLevel,
                         UniqueBungieName = link.UniqueBungieName,
                     });
                     await Task.Delay(150);
@@ -726,7 +760,7 @@ namespace DestinyUtility
                 //await _client.CreateGlobalApplicationCommandAsync(nextOccuranceCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(removeAlertCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(rankCommand.Build());
-                await _client.CreateGlobalApplicationCommandAsync(alertCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(alertCommand.Build());
             }
             catch (HttpException exception)
             {
@@ -935,6 +969,7 @@ namespace DestinyUtility
                     case Leaderboard.LongestSession: embed = LeaderboardHelper.GetLeaderboardEmbed(LongestSessionData.GetSortedLevelData(), command.User); break;
                     case Leaderboard.XPPerHour: embed = LeaderboardHelper.GetLeaderboardEmbed(XPPerHourData.GetSortedLevelData(), command.User); break;
                     case Leaderboard.MostThrallwayTime: embed = LeaderboardHelper.GetLeaderboardEmbed(MostThrallwayTimeData.GetSortedLevelData(), command.User); break;
+                    case Leaderboard.PowerLevel: embed = LeaderboardHelper.GetLeaderboardEmbed(PowerLevelData.GetSortedLevelData(), command.User); break;
                 }
 
                 await command.RespondAsync($"", embed: embed.Build());
@@ -1039,7 +1074,7 @@ namespace DestinyUtility
                 string memId = DataConfig.GetLinkedUser(user.Id).BungieMembershipID;
                 string memType = DataConfig.GetLinkedUser(user.Id).BungieMembershipType;
 
-                int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out bool isInShatteredThrone);
+                int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out bool isInShatteredThrone, out PrivacySetting fireteamPrivacy, out string CharacterId);
 
                 if (!isInShatteredThrone)
                 {
@@ -1076,7 +1111,7 @@ namespace DestinyUtility
                     LastLoggedLevel = userLevel,
                     StartLevelProgress = lvlProg,
                     LastLevelProgress = lvlProg,
-                    PrivacySetting = ActiveConfig.GetFireteamPrivacy(memId, memType)
+                    PrivacySetting = fireteamPrivacy
                 };
 
                 await userLogChannel.ModifyAsync(x =>
@@ -1103,7 +1138,8 @@ namespace DestinyUtility
                 }
                 await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLoggedLevel} ({String.Format("{0:n0}", newUser.LastLevelProgress)}/100,000 XP).");
                 string recommend = newUser.PrivacySetting == PrivacySetting.Open || newUser.PrivacySetting == PrivacySetting.ClanAndFriendsOnly || newUser.PrivacySetting == PrivacySetting.FriendsOnly ? " It is recommended to change your privacy to prevent people from joining you." : "";
-                await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
+                var guardian = new Guardian(newUser.UniqueBungieName, newUser.BungieMembershipID, DataConfig.GetLinkedUser(user.Id).BungieMembershipType, CharacterId);
+                await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}", guardian.GetGuardianEmbed());
 
                 ActiveConfig.AddActiveUserToConfig(newUser);
                 await UpdateBotActivity();
@@ -1204,70 +1240,6 @@ namespace DestinyUtility
                     await context.Channel.SendMessageAsync($"[{error}]: Command is missing some arguments.").ConfigureAwait(false);
                 }
             }
-            return true;
-        }
-
-        private bool CheckAndLoadDataFiles()
-        {
-            LevelData ld;
-            XPPerHourData xph;
-            LongestSessionData ls;
-            MostThrallwayTimeData mtt;
-
-            bool closeProgram = false;
-            if (File.Exists(LevelDataPath))
-            {
-                string json = File.ReadAllText(LevelDataPath);
-                ld = JsonConvert.DeserializeObject<LevelData>(json);
-            }
-            else
-            {
-                ld = new LevelData();
-                File.WriteAllText(LevelDataPath, JsonConvert.SerializeObject(ld, Formatting.Indented));
-                Console.WriteLine($"No levelData.json file detected. A new one has been created and the program has stopped.");
-                closeProgram = true;
-            }
-
-            if (File.Exists(XPPerHourDataPath))
-            {
-                string json = File.ReadAllText(XPPerHourDataPath);
-                xph = JsonConvert.DeserializeObject<XPPerHourData>(json);
-            }
-            else
-            {
-                xph = new XPPerHourData();
-                File.WriteAllText(XPPerHourDataPath, JsonConvert.SerializeObject(xph, Formatting.Indented));
-                Console.WriteLine($"No xpPerHourData.json file detected. A new one has been created and the program has stopped.");
-                closeProgram = true;
-            }
-
-            if (File.Exists(LongestSessionDataPath))
-            {
-                string json = File.ReadAllText(LongestSessionDataPath);
-                ls = JsonConvert.DeserializeObject<LongestSessionData>(json);
-            }
-            else
-            {
-                ls = new LongestSessionData();
-                File.WriteAllText(LongestSessionDataPath, JsonConvert.SerializeObject(ls, Formatting.Indented));
-                Console.WriteLine($"No longestSessionData.json file detected. A new one has been created and the program has stopped.");
-                closeProgram = true;
-            }
-
-            if (File.Exists(MostThrallwayTimeDataPath))
-            {
-                string json = File.ReadAllText(MostThrallwayTimeDataPath);
-                mtt = JsonConvert.DeserializeObject<MostThrallwayTimeData>(json);
-            }
-            else
-            {
-                mtt = new MostThrallwayTimeData();
-                File.WriteAllText(MostThrallwayTimeDataPath, JsonConvert.SerializeObject(mtt, Formatting.Indented));
-                Console.WriteLine($"No mostThrallwayTimeData.json file detected. A new one has been created and the program has stopped.");
-                closeProgram = true;
-            }
-
-            if (closeProgram == true) return false;
             return true;
         }
 

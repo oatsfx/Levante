@@ -5,6 +5,7 @@ using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace DestinyUtility.Helpers
@@ -19,6 +20,7 @@ namespace DestinyUtility.Helpers
                 case Leaderboard.LongestSession: return "Longest Thrallway Session";
                 case Leaderboard.XPPerHour: return "Most Thrallway XP Per Hour";
                 case Leaderboard.MostThrallwayTime: return "Total Thrallway Time";
+                case Leaderboard.PowerLevel: return "Equipped Power Level";
                 default: return "Leaderboard";
             }
         }
@@ -97,6 +99,8 @@ namespace DestinyUtility.Helpers
                 return $"XP Per Hour: {String.Format("{0:n0}", (LE as XPPerHourData.XPPerHourEntry).XPPerHour)}";
             else if (LE.GetType() == typeof(MostThrallwayTimeData.MostThrallwayTimeEntry))
                 return $"Hours: {Math.Floor((LE as MostThrallwayTimeData.MostThrallwayTimeEntry).Time.TotalHours)}";
+            else if (LE.GetType() == typeof(PowerLevelData.PowerLevelDataEntry))
+                return $"Power: {(LE as PowerLevelData.PowerLevelDataEntry).PowerLevel}";
             else
                 return $"{LE.UniqueBungieName}";
         }
@@ -111,8 +115,88 @@ namespace DestinyUtility.Helpers
                 return Leaderboard.XPPerHour;
             else if (T == typeof(MostThrallwayTimeData.MostThrallwayTimeEntry))
                 return Leaderboard.MostThrallwayTime;
+            else if (T == typeof(PowerLevelData.PowerLevelDataEntry))
+                return Leaderboard.PowerLevel;
             else
                 return 0;
+        }
+
+        public static bool CheckAndLoadDataFiles()
+        {
+            LevelData ld;
+            XPPerHourData xph;
+            LongestSessionData ls;
+            MostThrallwayTimeData mtt;
+            PowerLevelData pld;
+
+            bool closeProgram = false;
+            if (File.Exists(LevelData.FilePath))
+            {
+                string json = File.ReadAllText(LevelData.FilePath);
+                ld = JsonConvert.DeserializeObject<LevelData>(json);
+            }
+            else
+            {
+                ld = new LevelData();
+                File.WriteAllText(LevelData.FilePath, JsonConvert.SerializeObject(ld, Formatting.Indented));
+                Console.WriteLine($"No levelData.json file detected. A new one has been created and the program has stopped.");
+                closeProgram = true;
+            }
+
+            if (File.Exists(XPPerHourData.FilePath))
+            {
+                string json = File.ReadAllText(XPPerHourData.FilePath);
+                xph = JsonConvert.DeserializeObject<XPPerHourData>(json);
+            }
+            else
+            {
+                xph = new XPPerHourData();
+                File.WriteAllText(XPPerHourData.FilePath, JsonConvert.SerializeObject(xph, Formatting.Indented));
+                Console.WriteLine($"No xpPerHourData.json file detected. A new one has been created and the program has stopped.");
+                closeProgram = true;
+            }
+
+            if (File.Exists(LongestSessionData.FilePath))
+            {
+                string json = File.ReadAllText(LongestSessionData.FilePath);
+                ls = JsonConvert.DeserializeObject<LongestSessionData>(json);
+            }
+            else
+            {
+                ls = new LongestSessionData();
+                File.WriteAllText(LongestSessionData.FilePath, JsonConvert.SerializeObject(ls, Formatting.Indented));
+                Console.WriteLine($"No longestSessionData.json file detected. A new one has been created and the program has stopped.");
+                closeProgram = true;
+            }
+
+            if (File.Exists(MostThrallwayTimeData.FilePath))
+            {
+                string json = File.ReadAllText(MostThrallwayTimeData.FilePath);
+                mtt = JsonConvert.DeserializeObject<MostThrallwayTimeData>(json);
+            }
+            else
+            {
+                mtt = new MostThrallwayTimeData();
+                File.WriteAllText(MostThrallwayTimeData.FilePath, JsonConvert.SerializeObject(mtt, Formatting.Indented));
+                Console.WriteLine($"No mostThrallwayTimeData.json file detected. A new one has been created and the program has stopped.");
+                closeProgram = true;
+            }
+
+            if (File.Exists(PowerLevelData.FilePath))
+            {
+                string json = File.ReadAllText(PowerLevelData.FilePath);
+                pld = JsonConvert.DeserializeObject<PowerLevelData>(json);
+            }
+            else
+            {
+                pld = new PowerLevelData();
+                File.WriteAllText(PowerLevelData.FilePath, JsonConvert.SerializeObject(mtt, Formatting.Indented));
+                Console.WriteLine($"No powerLevelData.json file detected. A new one has been created and the program has stopped.");
+                closeProgram = true;
+            }
+
+            if (closeProgram == true) return false;
+            return true;
         }
     }
 }

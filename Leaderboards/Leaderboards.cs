@@ -20,5 +20,6 @@ namespace DestinyUtility.Leaderboards
         LongestSession,
         XPPerHour,
         MostThrallwayTime,
+        PowerLevel,
     }
 }

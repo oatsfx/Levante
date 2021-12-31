@@ -233,7 +233,7 @@ namespace DestinyUtility.Configs
         }
 
         // This returns the level, then other parameters are XPProgress (int) and IsInShatteredThrone (bool). Reduces the amount of calls to the Bungie API.
-        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsInShatteredThrone)
+        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsInShatteredThrone, out PrivacySetting FireteamPrivacy, out string CharacterId)
         {
             using (var client = new HttpClient())
             {
@@ -242,12 +242,13 @@ namespace DestinyUtility.Configs
 
                 var dil = GetLinkedUser(DiscordID);
 
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,202,204").Result;
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,202,204,1000").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
                 IsInShatteredThrone = false;
 
+                CharacterId = "NO DATA";
                 for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
                 {
                     string charId = item.Response.profile.data.characterIds[i];
@@ -255,8 +256,11 @@ namespace DestinyUtility.Configs
                     if (activityHash == 2032534090) // shattered throne
                     {
                         IsInShatteredThrone = true;
+                        CharacterId = $"{charId}";
                     }
                 }
+
+                FireteamPrivacy = item.Response.profileTransitoryData.data.joinability.privacySetting;
 
                 //first 100 levels: 4095505052
                 //anything after: 1531004716

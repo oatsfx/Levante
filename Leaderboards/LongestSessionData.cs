@@ -6,8 +6,10 @@ using System.Net.Http;
 
 namespace DestinyUtility.Leaderboards
 {
-    public partial class LongestSessionData
+    public class LongestSessionData
     {
+        public static readonly string FilePath = @"Data/longestSessionData.json";
+
         [JsonProperty("LongestSessionEntries")]
         public static List<LongestSessionEntry> LongestSessionEntries { get; set; } = new List<LongestSessionEntry>();
 
@@ -66,7 +68,7 @@ namespace DestinyUtility.Leaderboards
         {
             LongestSessionData mttd = new LongestSessionData();
             string output = JsonConvert.SerializeObject(mttd, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LongestSessionDataPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static void AddEntryToConfig(TimeSpan Time, string BungieName)
@@ -76,43 +78,43 @@ namespace DestinyUtility.Leaderboards
                 Time = Time,
                 UniqueBungieName = BungieName
             };
-            string json = File.ReadAllText(DestinyUtilityCord.LongestSessionDataPath);
+            string json = File.ReadAllText(FilePath);
             LongestSessionEntries.Clear();
             LongestSessionData jsonObj = JsonConvert.DeserializeObject<LongestSessionData>(json);
 
             LongestSessionEntries.Add(mtt);
             LongestSessionData lsd = new LongestSessionData();
             string output = JsonConvert.SerializeObject(lsd, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LongestSessionDataPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static void AddEntryToConfig(LongestSessionEntry lde)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.LongestSessionDataPath);
+            string json = File.ReadAllText(FilePath);
             LongestSessionEntries.Clear();
             LongestSessionData jsonObj = JsonConvert.DeserializeObject<LongestSessionData>(json);
 
             LongestSessionEntries.Add(lde);
             LongestSessionData lsd = new LongestSessionData();
             string output = JsonConvert.SerializeObject(lsd, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LongestSessionDataPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static void DeleteEntryFromConfig(string BungieName)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.LongestSessionDataPath);
+            string json = File.ReadAllText(FilePath);
             LongestSessionEntries.Clear();
             LongestSessionData lsd = JsonConvert.DeserializeObject<LongestSessionData>(json);
             for (int i = 0; i < LongestSessionEntries.Count; i++)
                 if (LongestSessionEntries[i].UniqueBungieName.Equals(BungieName))
                     LongestSessionEntries.RemoveAt(i);
             string output = JsonConvert.SerializeObject(lsd, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LongestSessionDataPath, output);
+            File.WriteAllText(FilePath, output);
         }
 
         public static bool IsExistingLinkedEntry(string BungieName)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.LongestSessionDataPath);
+            string json = File.ReadAllText(FilePath);
             LongestSessionEntries.Clear();
             LongestSessionData jsonObj = JsonConvert.DeserializeObject<LongestSessionData>(json);
             foreach (LongestSessionEntry mtt in LongestSessionEntries)
@@ -123,7 +125,7 @@ namespace DestinyUtility.Leaderboards
 
         public static LongestSessionEntry GetExistingLinkedEntry(string BungieName)
         {
-            string json = File.ReadAllText(DestinyUtilityCord.LongestSessionDataPath);
+            string json = File.ReadAllText(FilePath);
             LongestSessionEntries.Clear();
             LongestSessionData jsonObj = JsonConvert.DeserializeObject<LongestSessionData>(json);
             foreach (LongestSessionEntry mtt in LongestSessionEntries)
