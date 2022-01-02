@@ -12,7 +12,7 @@ Click [this link to invite the bot](https://discord.com/oauth2/authorize?client_
 - Leaderboards for things regarding the above
 
 ## Known Issues:
-- Nothing to see here, yet.
+- Issue with Bungie API refresh for Thrallway where bot would consistantly refresh the API and causing wipe messages to appear. Cause of unexpected activity is unknown.
 
 ## Having Issues?
 There are a few things you can do if there are any issues with the official bot user:
