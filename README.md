@@ -13,6 +13,7 @@ Click [this link to invite the bot](https://discord.com/oauth2/authorize?client_
 
 ## Known Issues:
 - Issue with Bungie API refresh for Thrallway where bot would consistantly refresh the API and causing wipe messages to appear. Cause of unexpected activity is unknown.
+- If a player is detected as not in Shattered Throne as their cause of session termination, they will not receive a session summary via Direct Message.
 
 ## Having Issues?
 There are a few things you can do if there are any issues with the official bot user:
