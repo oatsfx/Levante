@@ -130,11 +130,11 @@ namespace DestinyUtility
         public async void DailyResetChanges(Object o = null)
         {
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("\nDaily Reset Occurred.");
+            LogHelper.ConsoleLog("\nDaily Reset Occurred.");
             LostSectorRotation.LostSectorChange();
 
-            Console.WriteLine($"Legend Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.CurrentLegendLostSector)} ({LostSectorRotation.CurrentLegendArmorDrop})");
-            Console.WriteLine($"Master Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetMasterLostSector())} ({LostSectorRotation.GetMasterLostSectorArmorDrop()})");
+            LogHelper.ConsoleLog($"Legend Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.CurrentLegendLostSector)} ({LostSectorRotation.CurrentLegendArmorDrop})");
+            LogHelper.ConsoleLog($"Master Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetMasterLostSector())} ({LostSectorRotation.GetMasterLostSectorArmorDrop()})");
 
             // Soon to be depreciated.
             //await LostSectorTrackingConfig.PostLostSectorUpdate(_client);
@@ -204,24 +204,32 @@ namespace DestinyUtility
             Console.ForegroundColor = ConsoleColor.Cyan;
         }
 
-        private async void TimerCallback(Object o) => await RefreshBungieAPI();
+        private async void TimerCallback(Object o) => await RefreshBungieAPI().ConfigureAwait(false);
 
         private bool IsBungieAPIDown(out string Reason)
         {
-            using (var client = new HttpClient())
+            try
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                var response = client.GetAsync("https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/3/" + Uri.EscapeDataString("OatsFX#5630")).Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    var response = client.GetAsync("https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/3/" + Uri.EscapeDataString("OatsFX#5630")).Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
 
-                Reason = "Unknown Error";
-                if (item == null) return true;
+                    Reason = "Unknown Error";
+                    if (item == null) return true;
 
-                string status = item.ErrorStatus;
+                    string status = item.ErrorStatus;
 
-                Reason = status;
-                return !status.Equals("Success");
+                    Reason = status;
+                    return !status.Equals("Success");
+                }
+            }
+            catch
+            {
+                Reason = "ResponseError";
+                return true;
             }
         }
 
@@ -230,40 +238,39 @@ namespace DestinyUtility
         {
             if (ActiveConfig.ActiveAFKUsers.Count <= 0)
             {
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Skipping refresh, no active AFK users...");
+                LogHelper.ConsoleLog($"Skipping refresh, no active AFK users...");
                 await LoadLeaderboards();
                 return;
             }
 
             if (IsBungieAPIDown(out string DownReason))
             {
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Skipping refresh, Bungie API is down...");
+                LogHelper.ConsoleLog($"Skipping refresh, refresh denied...");
                 foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
                 {
-                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refresh denied. Bungie API is temporarily down. Status: {DownReason}");
+                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refresh denied. Reason: {DownReason}");
                 }
                 return;
             }
 
-            Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refreshing Bungie API...");
-            List<ActiveConfig.ActiveAFKUser> temp = new List<ActiveConfig.ActiveAFKUser>();
-            List<ActiveConfig.ActiveAFKUser> refreshAgainList = new List<ActiveConfig.ActiveAFKUser>();
+            LogHelper.ConsoleLog($"Refreshing Bungie API...");
+            List<ActiveConfig.ActiveAFKUser> newActiveList = new List<ActiveConfig.ActiveAFKUser>();
             try // thrallway
             {
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refreshing Thrallway Users...");
-                foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
+                LogHelper.ConsoleLog($"Refreshing Thrallway Users...");
+                List<ActiveConfig.ActiveAFKUser> temp = ActiveConfig.ActiveAFKUsers;
+                foreach (ActiveConfig.ActiveAFKUser aau in temp)
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
-                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isInShatteredThrone, out _, out _);
-                    bool addBack = true;
+                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isInShatteredThrone);
 
-                    Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Checking user: {tempAau.UniqueBungieName}");
+                    LogHelper.ConsoleLog($"Checking {tempAau.UniqueBungieName}.");
 
                     if (!isInShatteredThrone)
                     {
                         string uniqueName = tempAau.UniqueBungieName;
 
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player {uniqueName} is no longer in Shattered Throne.");
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player is no longer in Shattered Throne.");
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau).Result, GenerateDeleteChannelButton());
 
                         IUser user;
@@ -276,20 +283,21 @@ namespace DestinyUtility
                         {
                             user = _client.GetUser(tempAau.DiscordID);
                         }
-                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player {uniqueName} is no longer in Shattered Throne. Logging will be terminated for {uniqueName}.");
-                        //await (_client.GetChannel(tempAau.DiscordChannelID) as SocketGuildChannel).DeleteAsync();
+                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player is no longer in Shattered Throne. Logging will be terminated for {uniqueName}.");
+                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", GenerateSessionSummary(tempAau).Result);
 
-                        Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {tempAau.UniqueBungieName}.");
+                        LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
+                        ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
 
                         await Task.Run(() => CheckLeaderboardData(tempAau));
-                        addBack = false;
                     }
                     else if (updatedLevel > tempAau.LastLoggedLevel)
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected. {tempAau.LastLoggedLevel} -> {updatedLevel}");
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected: {tempAau.LastLoggedLevel} -> {updatedLevel}");
 
                         tempAau.LastLoggedLevel = updatedLevel;
                         tempAau.LastLevelProgress = updatedProgression;
+                        newActiveList.Add(tempAau);
 
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, 
                             $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {tempAau.LastLoggedLevel} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP)");
@@ -297,8 +305,8 @@ namespace DestinyUtility
                     else if (updatedProgression <= tempAau.LastLevelProgress)
                     {
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"No XP change detected, attempting to refresh API again...");
-                        tempAau = await RefreshSpecificUser(tempAau).ConfigureAwait(false);
-                        if (tempAau == null) addBack = false;
+                        if (await RefreshSpecificUser(tempAau).ConfigureAwait(false) == null) ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
+                        else newActiveList.Add(tempAau);
                     }
                     else
                     {
@@ -306,39 +314,39 @@ namespace DestinyUtility
 
                         tempAau.LastLoggedLevel = updatedLevel;
                         tempAau.LastLevelProgress = updatedProgression;
+                        newActiveList.Add(tempAau);
                     }
-                    if (addBack)
-                        temp.Add(tempAau);
+                    /*if (addBack)
+                        temp.Add(tempAau);*/
 
                     await Task.Delay(3500); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
-
                 string json = File.ReadAllText(ActiveConfig.FilePath);
                 ActiveConfig aConfig = JsonConvert.DeserializeObject<ActiveConfig>(json);
 
                 ActiveConfig.UpdateActiveAFKUsersList();
-                ActiveConfig.ActiveAFKUsers = temp;
+                ActiveConfig.ActiveAFKUsers = newActiveList;
                 string output = JsonConvert.SerializeObject(aConfig, Formatting.Indented);
                 File.WriteAllText(ActiveConfig.FilePath, output);
 
                 await UpdateBotActivity();
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Bungie API Refreshed!");
+                LogHelper.ConsoleLog($"Bungie API Refreshed!");
             }
             catch (Exception x)
             {
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refresh failed, trying again! Reason: {x.Message}");
+                LogHelper.ConsoleLog($"Refresh failed, trying again! Reason: {x.Message}");
                 await Task.Delay(8000);
-                await RefreshBungieAPI();
+                await RefreshBungieAPI().ConfigureAwait(false);
+                return;
             }
 
             // data loading
-            await Task.Delay(25000); // wait to prevent numerous API calls
+            await Task.Delay(45000); // wait to prevent numerous API calls
             await LoadLeaderboards();
         }
 
         private void CheckLeaderboardData(ActiveConfig.ActiveAFKUser AAU)
         {
-            
             // Generate a Leaderboard entry, and overwrite if the existing one is worse.
             if (XPPerHourData.IsExistingLinkedEntry(AAU.UniqueBungieName))
             {
@@ -426,7 +434,7 @@ namespace DestinyUtility
         {
             try
             {
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Pulling data for leaderboards...");
+                LogHelper.ConsoleLog($"Pulling data for leaderboards...");
                 LevelData.LevelDataEntries.Clear();
                 PowerLevelData.PowerLevelDataEntries.Clear();
                 foreach (var link in DataConfig.DiscordIDLinks) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
@@ -473,37 +481,35 @@ namespace DestinyUtility
                         PowerLevel = PowerLevel,
                         UniqueBungieName = link.UniqueBungieName,
                     });
-                    await Task.Delay(150);
+                    await Task.Delay(250);
                 }
                 LevelData.UpdateEntriesConfig();
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Data pulling complete!");
+                LogHelper.ConsoleLog($"Data pulling complete!");
             }
             catch
             {
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Error while updating leaderboards, trying again at next refresh.");
+                LogHelper.ConsoleLog($"Error while updating leaderboards, trying again at next refresh.");
             }
         }
 
         private async Task<ActiveConfig.ActiveAFKUser> RefreshSpecificUser(ActiveConfig.ActiveAFKUser aau)
         {
             await Task.Delay(15000);
-            Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refreshing Bungie API specifically for {aau.UniqueBungieName}.");
-            List<ActiveConfig.ActiveAFKUser> temp = new List<ActiveConfig.ActiveAFKUser>();
-            ActiveConfig.ActiveAFKUser tempAau = new ActiveConfig.ActiveAFKUser();
+            LogHelper.ConsoleLog($"Refreshing Bungie API specifically for {aau.UniqueBungieName}.");
+            ActiveConfig.ActiveAFKUser tempAau = aau;
             try
             {
-                tempAau = aau;
                 int updatedLevel = DataConfig.GetUserSeasonPassLevel(tempAau.DiscordID, out int updatedProgression);
 
                 if (updatedLevel > aau.LastLoggedLevel)
                 {
-                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected. {tempAau.LastLoggedLevel} -> {updatedLevel}");
+                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected: {tempAau.LastLoggedLevel} -> {updatedLevel}");
 
                     tempAau.LastLoggedLevel = updatedLevel;
                     tempAau.LastLevelProgress = updatedProgression;
 
                     await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel,
-                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {tempAau.LastLoggedLevel} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP)");
+                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {tempAau.LastLoggedLevel} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP).");
                 }
                 else if (updatedProgression == aau.LastLevelProgress)
                 {
@@ -521,17 +527,16 @@ namespace DestinyUtility
                         user = _client.GetUser(tempAau.DiscordID);
                     }
                     await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Potential wipe detected. Logging will be terminated for {tempAau.UniqueBungieName}.");
-                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {tempAau.TimeStarted:G} (UTC-7).", GenerateSessionSummary(tempAau).Result);
+                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", GenerateSessionSummary(tempAau).Result);
 
-                    Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Stopped logging for {tempAau.UniqueBungieName}.");
+                    LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
 
                     await Task.Run(() => CheckLeaderboardData(tempAau));
                     return null;
                 }
                 else if (updatedProgression < aau.LastLevelProgress)
                 {
-                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"API backstepped. Waiting for next refresh.");
-                    return tempAau;
+                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"XP Value was less than before, waiting for next refresh.");
                 }
                 else
                 {
@@ -540,13 +545,13 @@ namespace DestinyUtility
                     tempAau.LastLevelProgress = updatedProgression;
                 }
 
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] API Refreshed for {tempAau.UniqueBungieName}!");
+                LogHelper.ConsoleLog($"API Refreshed for {tempAau.UniqueBungieName}!");
 
                 return tempAau;
             }
             catch (Exception x)
             {
-                Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:{String.Format("{0:00}", DateTime.Now.Minute)}:{String.Format("{0:00}", DateTime.Now.Second)}] Refresh for {tempAau.UniqueBungieName} failed!");
+                LogHelper.ConsoleLog($"Refresh for {tempAau.UniqueBungieName} failed!");
                 await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Exception found: {x}");
                 return null;
             }
@@ -894,7 +899,7 @@ namespace DestinyUtility
                         Footer = foot,
                     };
 
-                    embed.Description = $"Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetPredictedLegendLostSector(LostSectorRotation.DaysUntilNextOccurance(LS, EAT)))}\n" +
+                    embed.Description = $"Lost Sector: **{LostSectorRotation.GetLostSectorString(LostSectorRotation.GetPredictedLegendLostSector(LostSectorRotation.DaysUntilNextOccurance(LS, EAT)))}**\n" +
                         $"Legend: {TimestampTag.FromDateTime(legendDate, TimestampTagStyles.ShortDate)}\n" +
                         $"Master: {TimestampTag.FromDateTime(masterDate, TimestampTagStyles.ShortDate)}";
 
@@ -1117,7 +1122,7 @@ namespace DestinyUtility
                 await userLogChannel.ModifyAsync(x =>
                 {
                     x.CategoryId = cc.Id;
-                    x.Topic = $"{uniqueName} (Starting Level: {newUser.StartLevel} [{String.Format("{0:n0}", newUser.StartLevelProgress)}/100,000 XP]) - Time Started: {DateTime.UtcNow}-UTC";
+                    x.Topic = $"{uniqueName} (Starting Level: {newUser.StartLevel} [{String.Format("{0:n0}", newUser.StartLevelProgress)}/100,000 XP]) - Time Started: {TimestampTag.FromDateTime(newUser.TimeStarted)}";
                     x.PermissionOverwrites = new[]
                     {
                         new Overwrite(user.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
@@ -1136,15 +1141,16 @@ namespace DestinyUtility
                     case PrivacySetting.Closed: privacy = "Closed"; break;
                     default: break;
                 }
-                await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLoggedLevel} ({String.Format("{0:n0}", newUser.LastLevelProgress)}/100,000 XP).");
-                string recommend = newUser.PrivacySetting == PrivacySetting.Open || newUser.PrivacySetting == PrivacySetting.ClanAndFriendsOnly || newUser.PrivacySetting == PrivacySetting.FriendsOnly ? " It is recommended to change your privacy to prevent people from joining you." : "";
                 var guardian = new Guardian(newUser.UniqueBungieName, newUser.BungieMembershipID, DataConfig.GetLinkedUser(user.Id).BungieMembershipType, CharacterId);
-                await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}", guardian.GetGuardianEmbed());
+                await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLoggedLevel} ({String.Format("{0:n0}", newUser.LastLevelProgress)}/100,000 XP).", guardian.GetGuardianEmbed());
+                string recommend = newUser.PrivacySetting == PrivacySetting.Open || newUser.PrivacySetting == PrivacySetting.ClanAndFriendsOnly || newUser.PrivacySetting == PrivacySetting.FriendsOnly ? $" It is recommended to change your privacy to prevent people from joining you. {user.Mention}" : "";
+                await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
 
                 ActiveConfig.AddActiveUserToConfig(newUser);
                 await UpdateBotActivity();
 
                 await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
+                LogHelper.ConsoleLog($"Started logging for {newUser.UniqueBungieName}.");
             }
             else if (customId.Contains($"stopAFK"))
             {
@@ -1163,12 +1169,13 @@ namespace DestinyUtility
                 var aau = ActiveConfig.GetActiveAFKUser(user.Id);
 
                 await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: GenerateSessionSummary(aau).Result, CB: GenerateDeleteChannelButton());
-                await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {aau.TimeStarted:G} (UTC-7).", GenerateSessionSummary(aau).Result);
+                await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(aau.TimeStarted)}.", GenerateSessionSummary(aau).Result);
 
                 await Task.Run(() => CheckLeaderboardData(aau));
                 ActiveConfig.DeleteActiveUserFromConfig(user.Id);
                 await UpdateBotActivity();
                 await interaction.RespondAsync($"Stopped AFK logging for {aau.UniqueBungieName}.", ephemeral: true);
+                LogHelper.ConsoleLog($"Stopped logging for {aau.UniqueBungieName} via user request.");
             }
             else if (customId.Contains("deleteChannel"))
             {

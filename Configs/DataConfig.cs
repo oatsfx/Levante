@@ -292,6 +292,58 @@ namespace DestinyUtility.Configs
             }
         }
 
+        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsInShatteredThrone)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    int Level = 0;
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                    var dil = GetLinkedUser(DiscordID);
+
+                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,202,204,1000").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+
+                    IsInShatteredThrone = false;
+                    for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                    {
+                        string charId = item.Response.profile.data.characterIds[i];
+                        ulong activityHash = item.Response.characterActivities.data[$"{charId}"].currentActivityHash;
+                        if (activityHash == 2032534090) // shattered throne
+                        {
+                            IsInShatteredThrone = true;
+                        }
+                    }
+
+                    //first 100 levels: 4095505052
+                    //anything after: 1531004716
+
+                    if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level == 100)
+                    {
+                        int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].level;
+                        Level = 100 + extraLevel;
+                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].progressToNextLevel;
+                    }
+                    else
+                    {
+                        Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level;
+                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].progressToNextLevel;
+                    }
+
+                    return Level;
+                }
+            }
+            catch
+            {
+                XPProgress = -1;
+                IsInShatteredThrone = false;
+                return -1;
+            }
+        }
+
         public static int GetUserSeasonPassLevel(ulong DiscordID, out int XPProgress)
         {
             using (var client = new HttpClient())
