@@ -1,12 +1,10 @@
 ﻿using DestinyUtility.Configs;
 using DestinyUtility.Leaderboards;
 using Discord;
-using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace DestinyUtility.Helpers
 {
@@ -38,7 +36,7 @@ namespace DestinyUtility.Helpers
             {
                 for (int i = 0; i < 10; i++)
                 {
-                    if (SortedList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
+                    if (DataConfig.IsExistingLinkedUser(User.Id) && SortedList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
                     {
                         embedDesc += $"{i + 1}) **{SortedList[i].UniqueBungieName}** ({GetValueString(SortedList[i])})\n";
                         isTop10 = true;
@@ -47,7 +45,7 @@ namespace DestinyUtility.Helpers
                         embedDesc += $"{i + 1}) {SortedList[i].UniqueBungieName} ({GetValueString(SortedList[i])})\n";
                 }
 
-                if (!isTop10)
+                if (!isTop10 && DataConfig.IsExistingLinkedUser(User.Id))
                 {
                     embedDesc += "...\n";
                     for (int i = 10; i < SortedList.Count; i++)
@@ -61,7 +59,7 @@ namespace DestinyUtility.Helpers
             {
                 for (int i = 0; i < SortedList.Count; i++)
                 {
-                    if (SortedList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
+                    if (DataConfig.IsExistingLinkedUser(User.Id) && SortedList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
                         embedDesc += $"{i + 1}) **{SortedList[i].UniqueBungieName}** ({GetValueString(SortedList[i])})\n";
                     else
                         embedDesc += $"{i + 1}) {SortedList[i].UniqueBungieName} ({GetValueString(SortedList[i])})\n";

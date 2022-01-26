@@ -1,37 +1,20 @@
 ﻿using DestinyUtility.Configs;
+using DestinyUtility.Util;
 using Discord;
-using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DestinyUtility.Rotations
 {
     public class LostSectorRotation
     {
         public static readonly int LostSectorCount = 11;
-
-        public static void LostSectorChange()
-        {
-            CurrentLegendLostSector = CurrentLegendLostSector == LostSector.Perdition ? LostSector.BayOfDrownedWishes : CurrentLegendLostSector + 1;
-            CurrentLegendArmorDrop = CurrentLegendArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : CurrentLegendArmorDrop + 1;
-            UpdateLostSectorsJSON();
-        }
-
-        [JsonProperty("CurrentLegendLostSector")]
-        public static LostSector CurrentLegendLostSector = LostSector.BayOfDrownedWishes;
-
-        [JsonProperty("CurrentLegendArmorDrop")]
-        public static ExoticArmorType CurrentLegendArmorDrop = ExoticArmorType.Arms;
+        public static readonly string FilePath = @"Trackers/lostSector.json";
 
         [JsonProperty("LostSectorLinks")]
         public static List<LostSectorLink> LostSectorLinks { get; set; } = new List<LostSectorLink>();
-
-        [JsonProperty("AnnounceLostSectorUpdates")]
-        public static List<ulong> AnnounceLostSectorUpdates { get; set; } = new List<ulong>();
 
         public class LostSectorLink
         {
@@ -39,39 +22,33 @@ namespace DestinyUtility.Rotations
             public ulong DiscordID { get; set; } = 0;
 
             [JsonProperty("LostSector")]
-            public LostSector LostSector { get; set; } = LostSector.AphelionsRest;
+            public LostSector? LostSector { get; set; } = 0;
 
             [JsonProperty("Difficulty")]
-            public LostSectorDifficulty Difficulty { get; set; } = LostSectorDifficulty.Legend;
+            public LostSectorDifficulty? Difficulty { get; set; } = LostSectorDifficulty.Legend;
 
             [JsonProperty("ArmorDrop")]
-            public ExoticArmorType ArmorDrop { get; set; } = ExoticArmorType.Helmet;
+            public ExoticArmorType? ArmorDrop { get; set; } = ExoticArmorType.Helmet;
         }
-
-        public static LostSector GetLegendLostSector() => CurrentLegendLostSector;
-        public static ExoticArmorType GetLegendLostSectorArmorDrop() => CurrentLegendArmorDrop;
-
-        public static LostSector GetMasterLostSector() => CurrentLegendLostSector - 1 < 0 ? LostSector.Perdition : CurrentLegendLostSector - 1;
-        public static ExoticArmorType GetMasterLostSectorArmorDrop() => CurrentLegendArmorDrop - 1 < 0 ? ExoticArmorType.Chest : CurrentLegendArmorDrop - 1;
 
         public static LostSector GetPredictedLegendLostSector(int Days)
         {
-            return (LostSector)((((int)GetLegendLostSector()) + Days) % LostSectorCount);
+            return (LostSector)((((int)CurrentRotations.LegendLostSector) + Days) % LostSectorCount);
         }
 
         public static ExoticArmorType GetPredictedLegendLostSectorArmorDrop(int Days)
         {
-            return (ExoticArmorType)((((int)GetLegendLostSectorArmorDrop()) + Days) % 4);
+            return (ExoticArmorType)((((int)CurrentRotations.LegendLostSectorArmorDrop) + Days) % 4);
         }
 
         public static LostSector GetPredictedMasterLostSector(int Days)
         {
-            return (LostSector)((((int)GetMasterLostSector()) + Days) % LostSectorCount);
+            return (LostSector)((((int)CurrentRotations.MasterLostSector) + Days) % LostSectorCount);
         }
 
         public static ExoticArmorType GetPredictedMasterLostSectorArmorDrop(int Days)
         {
-            return (ExoticArmorType)((((int)GetMasterLostSectorArmorDrop()) + Days) % 4);
+            return (ExoticArmorType)((((int)CurrentRotations.MasterLostSectorArmorDrop) + Days) % 4);
         }
 
         public static string GetLostSectorString(LostSector ls)
@@ -150,38 +127,50 @@ namespace DestinyUtility.Rotations
             }
         }
 
+        public static string GetArmorEmote(ExoticArmorType EAT)
+        {
+            switch (EAT)
+            {
+                case ExoticArmorType.Helmet: return $"{DestinyEmote.Helmet}";
+                case ExoticArmorType.Legs: return $"{DestinyEmote.Legs}";
+                case ExoticArmorType.Arms: return $"{DestinyEmote.Arms}";
+                case ExoticArmorType.Chest: return $"{DestinyEmote.Chest}";
+                default: return "Lost Sector Armor Emote";
+            }
+        }
+
         public static string GetLostSectorChampionsString(LostSector ls, LostSectorDifficulty lsd)
         {
             if (lsd == LostSectorDifficulty.Legend)
                 switch (ls)
                 {
-                    case LostSector.BayOfDrownedWishes: return "3 <:Unstoppable:900045499162320896> (Unstoppable)\n2 <:Barrier:900045481319731221> (Barrier)";
-                    case LostSector.ChamberOfStarlight: return "3 <:Unstoppable:900045499162320896> (Unstoppable)\n1 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.AphelionsRest: return "2 <:Unstoppable:900045499162320896> (Unstoppable)\n2 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.TheEmptyTank: return "2 <:Barrier:900045481319731221> (Barrier)\n2 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.K1Logistics: return "3 <:Barrier:900045481319731221> (Barrier)\n2 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.K1Communion: return "3 <:Barrier:900045481319731221> (Barrier)\n2 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.K1CrewQuarters: return "3 <:Barrier:900045481319731221> (Barrier)\n2 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.K1Revelation: return "3 <:Unstoppable:900045499162320896> (Upstoppable)\n4 <:Barrier:900045481319731221> (Barrier)";
-                    case LostSector.ConcealedVoid: return "1 <:Barrier:900045481319731221> (Barrier)\n3 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.BunkerE15: return "1 <:Barrier:900045481319731221> (Barrier)\n4 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.Perdition: return "2 <:Barrier:900045481319731221> (Barrier)\n2 <:Overload:900045490987610172> (Overload)";
+                    case LostSector.BayOfDrownedWishes: return $"3 {DestinyEmote.Unstoppable} (Unstoppable)\n2 {DestinyEmote.Barrier} (Barrier)";
+                    case LostSector.ChamberOfStarlight: return $"3 {DestinyEmote.Unstoppable} (Unstoppable)\n1 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.AphelionsRest: return $"2 {DestinyEmote.Unstoppable} (Unstoppable)\n2 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.TheEmptyTank: return $"2 {DestinyEmote.Barrier} (Barrier)\n2 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.K1Logistics: return $"3 {DestinyEmote.Barrier} (Barrier)\n2 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.K1Communion: return $"3 {DestinyEmote.Barrier} (Barrier)\n2 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.K1CrewQuarters: return $"3 {DestinyEmote.Barrier} (Barrier)\n2 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.K1Revelation: return $"3 {DestinyEmote.Unstoppable} (Upstoppable)\n4 {DestinyEmote.Barrier} (Barrier)";
+                    case LostSector.ConcealedVoid: return $"1 {DestinyEmote.Barrier} (Barrier)\n3 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.BunkerE15: return $"1 {DestinyEmote.Barrier} (Barrier)\n4 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.Perdition: return $"2 {DestinyEmote.Barrier} (Barrier)\n2 {DestinyEmote.Overload} (Overload)";
                     default: return "";
                 }
             else if (lsd == LostSectorDifficulty.Master)
                 switch (ls)
                 {
-                    case LostSector.BayOfDrownedWishes: return "3 <:Unstoppable:900045499162320896> (Unstoppable)\n3 <:Barrier:900045481319731221> (Barrier)";
-                    case LostSector.ChamberOfStarlight: return "6 <:Unstoppable:900045499162320896> (Unstoppable)\n3 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.AphelionsRest: return "3 <:Unstoppable:900045499162320896> (Unstoppable)\n4 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.TheEmptyTank: return "5 <:Barrier:900045481319731221> (Barrier)\n3 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.K1Logistics: return "4 <:Barrier:900045481319731221> (Barrier)\n6 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.K1Communion: return "4 <:Barrier:900045481319731221> (Barrier)\n6 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.K1CrewQuarters: return "4 <:Barrier:900045481319731221> (Barrier)\n6 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.K1Revelation: return "3 <:Unstoppable:900045499162320896> (Upstoppable)\n7 <:Barrier:900045481319731221> (Barrier)";
-                    case LostSector.ConcealedVoid: return "3 <:Barrier:900045481319731221> (Barrier)\n5 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.BunkerE15: return "2 <:Barrier:900045481319731221> (Barrier)\n4 <:Overload:900045490987610172> (Overload)";
-                    case LostSector.Perdition: return "4 <:Barrier:900045481319731221> (Barrier)\n2 <:Overload:900045490987610172> (Overload)";
+                    case LostSector.BayOfDrownedWishes: return $"3 {DestinyEmote.Unstoppable} (Unstoppable)\n3 {DestinyEmote.Barrier} (Barrier)";
+                    case LostSector.ChamberOfStarlight: return $"6 {DestinyEmote.Unstoppable} (Unstoppable)\n3 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.AphelionsRest: return $"3 {DestinyEmote.Unstoppable} (Unstoppable)\n4 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.TheEmptyTank: return $"5 {DestinyEmote.Barrier} (Barrier)\n3 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.K1Logistics: return $"4 {DestinyEmote.Barrier} (Barrier)\n6 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.K1Communion: return $"4 {DestinyEmote.Barrier} (Barrier)\n6 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.K1CrewQuarters: return $"4 {DestinyEmote.Barrier} (Barrier)\n6 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.K1Revelation: return $"3 {DestinyEmote.Unstoppable} (Upstoppable)\n7 {DestinyEmote.Barrier} (Barrier)";
+                    case LostSector.ConcealedVoid: return $"3 {DestinyEmote.Barrier} (Barrier)\n5 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.BunkerE15: return $"2 {DestinyEmote.Barrier} (Barrier)\n4 {DestinyEmote.Overload} (Overload)";
+                    case LostSector.Perdition: return $"4 {DestinyEmote.Barrier} (Barrier)\n2 {DestinyEmote.Overload} (Overload)";
                     default: return "";
                 }
             else
@@ -193,33 +182,33 @@ namespace DestinyUtility.Rotations
             if (lsd == LostSectorDifficulty.Legend)
                 switch (ls)
                 {
-                    case LostSector.BayOfDrownedWishes: return "1 <:Void:900144180288958474>";
-                    case LostSector.ChamberOfStarlight: return "2 <:Solar:900144171267022888>\n17 <:Void:900144180288958474>";
-                    case LostSector.AphelionsRest: return "9 <:Void:900144180288958474>";
-                    case LostSector.TheEmptyTank: return "1 <:Arc:900144187696099359>";
-                    case LostSector.K1Logistics: return "8 <:Solar:900144171267022888>\n3 <:Arc:900144187696099359>";
-                    case LostSector.K1Communion: return "1 <:Solar:900144171267022888>\n2 <:Void:900144180288958474>";
-                    case LostSector.K1CrewQuarters: return "10 <:Solar:900144171267022888>";
-                    case LostSector.K1Revelation: return "4 <:Arc:900144187696099359>";
-                    case LostSector.ConcealedVoid: return "2 <:Solar:900144171267022888>\n3 <:Void:900144180288958474>\n1 <:Arc:900144187696099359>";
-                    case LostSector.BunkerE15: return "2 <:Void:900144180288958474>";
-                    case LostSector.Perdition: return "2 <:Void:900144180288958474>\n22 <:Arc:900144187696099359>";
+                    case LostSector.BayOfDrownedWishes: return $"1 {DestinyEmote.Void}";
+                    case LostSector.ChamberOfStarlight: return $"2 {DestinyEmote.Solar}\n17 {DestinyEmote.Void}";
+                    case LostSector.AphelionsRest: return $"9 {DestinyEmote.Void}";
+                    case LostSector.TheEmptyTank: return $"1 {DestinyEmote.Arc}";
+                    case LostSector.K1Logistics: return $"8 {DestinyEmote.Solar}\n3 {DestinyEmote.Arc}";
+                    case LostSector.K1Communion: return $"1 {DestinyEmote.Solar}\n2 {DestinyEmote.Void}";
+                    case LostSector.K1CrewQuarters: return $"10 {DestinyEmote.Solar}";
+                    case LostSector.K1Revelation: return $"4 {DestinyEmote.Arc}";
+                    case LostSector.ConcealedVoid: return $"2 {DestinyEmote.Solar}\n3 {DestinyEmote.Void}\n1 {DestinyEmote.Arc}";
+                    case LostSector.BunkerE15: return $"2 {DestinyEmote.Void}";
+                    case LostSector.Perdition: return $"2 {DestinyEmote.Void}\n22 {DestinyEmote.Arc}";
                     default: return "";
                 }
             else if (lsd == LostSectorDifficulty.Master)
                 switch (ls)
                 {
-                    case LostSector.BayOfDrownedWishes: return "1 <:Void:900144180288958474>";
-                    case LostSector.ChamberOfStarlight: return "2 <:Solar:900144171267022888>\n23 <:Void:900144180288958474>";
-                    case LostSector.AphelionsRest: return "9 <:Void:900144180288958474>";
-                    case LostSector.TheEmptyTank: return "2 <:Arc:900144187696099359>";
-                    case LostSector.K1Logistics: return "8 <:Solar:900144171267022888>\n3 <:Arc:900144187696099359>";
-                    case LostSector.K1Communion: return "1 <:Solar:900144171267022888>";
-                    case LostSector.K1CrewQuarters: return "10 <:Solar:900144171267022888>";
-                    case LostSector.K1Revelation: return "1 <:Arc:900144187696099359>";
-                    case LostSector.ConcealedVoid: return "2 <:Solar:900144171267022888>\n3 <:Void:900144180288958474>";
-                    case LostSector.BunkerE15: return "2 <:Void:900144180288958474>";
-                    case LostSector.Perdition: return "2 <:Void:900144180288958474>\n22 <:Arc:900144187696099359>";
+                    case LostSector.BayOfDrownedWishes: return $"1 {DestinyEmote.Void}";
+                    case LostSector.ChamberOfStarlight: return $"2 {DestinyEmote.Solar}\n23 {DestinyEmote.Void}";
+                    case LostSector.AphelionsRest: return $"9 {DestinyEmote.Void}";
+                    case LostSector.TheEmptyTank: return $"2 {DestinyEmote.Arc}";
+                    case LostSector.K1Logistics: return $"8 {DestinyEmote.Solar}\n3 {DestinyEmote.Arc}";
+                    case LostSector.K1Communion: return $"1 {DestinyEmote.Solar}";
+                    case LostSector.K1CrewQuarters: return $"10 {DestinyEmote.Solar}";
+                    case LostSector.K1Revelation: return $"1 {DestinyEmote.Arc}";
+                    case LostSector.ConcealedVoid: return $"2 {DestinyEmote.Solar}\n3 {DestinyEmote.Void}";
+                    case LostSector.BunkerE15: return $"2 {DestinyEmote.Void}";
+                    case LostSector.Perdition: return $"2 {DestinyEmote.Void}\n22 {DestinyEmote.Arc}";
                     default: return "";
                 }
             else
@@ -287,7 +276,7 @@ namespace DestinyUtility.Rotations
             embed.AddField(y =>
             {
                 y.Name = LSD == LostSectorDifficulty.Legend ? "Legend" : "Master";
-                y.Value = $"Recommended Power: <:LightLevel:844029708077367297>{(LSD == LostSectorDifficulty.Legend ? GetLostSectorDifficultyLight(LostSectorDifficulty.Legend) : GetLostSectorDifficultyLight(LostSectorDifficulty.Master))}";
+                y.Value = $"Recommended Power: {DestinyEmote.Light}{(LSD == LostSectorDifficulty.Legend ? GetLostSectorDifficultyLight(LostSectorDifficulty.Legend) : GetLostSectorDifficultyLight(LostSectorDifficulty.Master))}";
                 y.IsInline = false;
             })
             .AddField(y =>
@@ -321,39 +310,6 @@ namespace DestinyUtility.Rotations
             return embed;
         }
 
-        public static LostSector? ParseLostSectorString(string LS)
-        {
-            if (LS.ToLower().Contains("bay") || LS.ToLower().Contains("drowned") || LS.ToLower().Contains("wishes"))
-                return LostSector.BayOfDrownedWishes;
-            else if (LS.ToLower().Contains("chamber") || LS.ToLower().Contains("starlight"))
-                return LostSector.ChamberOfStarlight;
-            else if (LS.ToLower().Contains("aphelion") || LS.ToLower().Contains("rest"))
-                return LostSector.AphelionsRest;
-            else if (LS.ToLower().Contains("empty") || LS.ToLower().Contains("tank"))
-                return LostSector.TheEmptyTank;
-            else if (LS.ToLower().Contains("k1"))
-            {
-                if (LS.ToLower().Contains("logistics"))
-                    return LostSector.K1Logistics;
-                else if (LS.ToLower().Contains("communion"))
-                    return LostSector.K1Communion;
-                else if (LS.ToLower().Contains("crew") || LS.ToLower().Contains("quarters"))
-                    return LostSector.K1CrewQuarters;
-                else if (LS.ToLower().Contains("revelation"))
-                    return LostSector.K1Revelation;
-                else
-                    return null;
-            }
-            else if (LS.ToLower().Contains("concealed") || LS.ToLower().Contains("void"))
-                return LostSector.ConcealedVoid;
-            else if (LS.ToLower().Contains("bunker") || LS.ToLower().Contains("e15"))
-                return LostSector.BunkerE15;
-            else if (LS.ToLower().Contains("perdition"))
-                return LostSector.Perdition;
-            else
-                return null;
-        }
-
         public static string GetLostSectorDifficultyLight(LostSectorDifficulty lsd)
         {
             switch (lsd)
@@ -364,181 +320,91 @@ namespace DestinyUtility.Rotations
             }
         }
 
-        public static ExoticArmorType? ParseArmorString(string Armor)
+        public static void AddUserTracking(ulong DiscordID, LostSector? LS, LostSectorDifficulty? LSD, ExoticArmorType? EAT = null)
         {
-            if (Armor.ToLower().Contains("head") || Armor.ToLower().Contains("helmet"))
-                return ExoticArmorType.Helmet;
-            else if (Armor.ToLower().Contains("arms") || Armor.ToLower().Contains("gauntlets"))
-                return ExoticArmorType.Arms;
-            else if (Armor.ToLower().Contains("legs") || Armor.ToLower().Contains("boots"))
-                return ExoticArmorType.Legs;
-            else if (Armor.ToLower().Contains("chest") || Armor.ToLower().Contains("robe"))
-                return ExoticArmorType.Chest;
-            else
-                return null;
+            LostSectorLinks.Add(new LostSectorLink() { DiscordID = DiscordID, LostSector = LS, Difficulty = LSD, ArmorDrop = EAT });
+            UpdateJSON();
         }
 
-        public static int DaysUntilNextOccurance(LostSector? LS = null, ExoticArmorType? ArmorType = null)
+        public static void RemoveUserTracking(ulong DiscordID)
         {
-            ExoticArmorType iterationEAT = CurrentLegendArmorDrop;
-            LostSector iterationLS = CurrentLegendLostSector;
-            if (LS == null && ArmorType != null)
-            {
-                int iterationCount = 0;
-                while (iterationEAT != ArmorType)
+            LostSectorLinks.Remove(GetUserTracking(DiscordID, out _, out _, out _));
+            UpdateJSON();
+        }
+
+        // Returns null if no tracking is found.
+        public static LostSectorLink GetUserTracking(ulong DiscordID, out LostSector? LS, out LostSectorDifficulty? LSD, out ExoticArmorType? EAT)
+        {
+            foreach (var Link in LostSectorLinks)
+                if (Link.DiscordID == DiscordID)
                 {
-                    iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
-                    iterationCount++;
+                    LS = Link.LostSector;
+                    LSD = Link.Difficulty;
+                    EAT = Link.ArmorDrop;
+                    return Link;
                 }
-                return iterationCount;
-            }
-            else if (ArmorType == null && LS != null)
-            {
-                int iterationCount = 0;
-                while (iterationLS != LS)
-                {
-                    iterationLS = iterationLS == LostSector.Perdition ? LostSector.BayOfDrownedWishes : iterationLS + 1;
-                    iterationCount++;
-                }
-                return iterationCount;
-            }
-            else if (ArmorType != null && LS != null)
-            {
-                int iterationCount = 0;
-                bool dayFound = false;
-                while (!dayFound)
-                {
-                    iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
-                    iterationLS = iterationLS == LostSector.Perdition ? LostSector.BayOfDrownedWishes : iterationLS + 1;
-                    iterationCount++;
-                    if (iterationEAT == ArmorType && iterationLS == LS)
-                    {
-                        dayFound = true;
-                    }
-                }
-                return iterationCount;
-            }
-            return -1;
-        }
-
-        #region JSONFileManagement
-
-        public static void AddChannelToLostSectorUpdates(ulong ChannelID)
-        {
-            string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
-            AnnounceLostSectorUpdates.Clear();
-            LostSectorLinks.Clear();
-            LostSectorRotation jsonObj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
-
-            AnnounceLostSectorUpdates.Add(ChannelID);
-            LostSectorRotation ac = new LostSectorRotation();
-            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LostSectorTrackingConfigPath, output);
-        }
-
-        public static void RemoveChannelFromLostSectorUpdates(ulong ChannelID)
-        {
-            string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
-            AnnounceLostSectorUpdates.Clear();
-            LostSectorLinks.Clear();
-            LostSectorRotation ac = JsonConvert.DeserializeObject<LostSectorRotation>(json);
-            for (int i = 0; i < AnnounceLostSectorUpdates.Count; i++)
-                if (AnnounceLostSectorUpdates[i] == ChannelID)
-                    AnnounceLostSectorUpdates.RemoveAt(i);
-            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LostSectorTrackingConfigPath, output);
-        }
-
-        public static bool IsExistingChannelForLostSectorUpdates(ulong ChannelID)
-        {
-            for (int i = 0; i < AnnounceLostSectorUpdates.Count; i++)
-                if (AnnounceLostSectorUpdates[i] == ChannelID)
-                    return true;
-
-            return false;
-        }
-
-        public static void UpdateLostSectorsList()
-        {
-            string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
-            AnnounceLostSectorUpdates.Clear();
-            LostSectorLinks.Clear();
-            LostSectorRotation jsonObj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
-        }
-
-        public static void UpdateLostSectorsJSON()
-        {
-            LostSectorRotation ac = new LostSectorRotation();
-            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LostSectorTrackingConfigPath, output);
-        }
-
-        public static void ClearLostSectorsList()
-        {
-            AnnounceLostSectorUpdates.Clear();
-            LostSectorLinks.Clear();
-            string output = JsonConvert.SerializeObject(new LostSectorRotation(), Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LostSectorTrackingConfigPath, output);
-        }
-
-        public static void AddLostSectorsTrackingToConfig(ulong DiscordID, LostSector LS, LostSectorDifficulty Difficulty, ExoticArmorType ArmorDrop)
-        {
-            LostSectorLink lsl = new LostSectorLink()
-            {
-                DiscordID = DiscordID,
-                LostSector = LS,
-                Difficulty = Difficulty,
-                ArmorDrop = ArmorDrop
-            };
-            string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
-            AnnounceLostSectorUpdates.Clear();
-            LostSectorLinks.Clear();
-            LostSectorRotation jsonObj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
-
-            LostSectorLinks.Add(lsl);
-            LostSectorRotation ac = new LostSectorRotation();
-            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LostSectorTrackingConfigPath, output);
-        }
-
-        public static void DeleteLostSectorsTrackingFromConfig(ulong DiscordID)
-        {
-            string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
-            AnnounceLostSectorUpdates.Clear();
-            LostSectorLinks.Clear();
-            LostSectorRotation ac = JsonConvert.DeserializeObject<LostSectorRotation>(json);
-            for (int i = 0; i < LostSectorLinks.Count; i++)
-                if (LostSectorLinks[i].DiscordID == DiscordID)
-                    LostSectorLinks.RemoveAt(i);
-            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(DestinyUtilityCord.LostSectorTrackingConfigPath, output);
-        }
-
-        public static bool IsExistingLinkedLostSectorsTracking(ulong DiscordID)
-        {
-            string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
-            AnnounceLostSectorUpdates.Clear();
-            LostSectorLinks.Clear();
-            LostSectorRotation jsonObj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
-            foreach (LostSectorLink dil in LostSectorLinks)
-                if (dil.DiscordID == DiscordID)
-                    return true;
-            return false;
-        }
-
-        public static LostSectorLink GetLostSectorsTracking(ulong DiscordID)
-        {
-            string json = File.ReadAllText(DestinyUtilityCord.LostSectorTrackingConfigPath);
-            AnnounceLostSectorUpdates.Clear();
-            LostSectorLinks.Clear();
-            LostSectorRotation jsonObj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
-            foreach (LostSectorLink dil in LostSectorLinks)
-                if (dil.DiscordID == DiscordID)
-                    return dil;
+            LS = null;
+            LSD = null;
+            EAT = null;
             return null;
         }
 
-        #endregion
+        public static void CreateJSON()
+        {
+            LostSectorRotation obj;
+            if (File.Exists(FilePath))
+            {
+                string json = File.ReadAllText(FilePath);
+                obj = JsonConvert.DeserializeObject<LostSectorRotation>(json);
+            }
+            else
+            {
+                obj = new LostSectorRotation();
+                File.WriteAllText(FilePath, JsonConvert.SerializeObject(obj, Formatting.Indented));
+                Console.WriteLine($"No {FilePath} file detected. No action needed.");
+            }
+        }
+
+        public static void UpdateJSON()
+        {
+            var obj = new LostSectorRotation();
+            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
+            File.WriteAllText(FilePath, output);
+        }
+
+        // This predicts for Legend Difficulty, add a day for Master Difficulty.
+        public static DateTime DatePrediction(LostSector? LS, LostSectorDifficulty? LSD, ExoticArmorType? ArmorType)
+        {
+            ExoticArmorType iterationEAT = CurrentRotations.LegendLostSectorArmorDrop;
+            LostSector iterationLS = CurrentRotations.LegendLostSector;
+            int DaysUntil = LSD == LostSectorDifficulty.Master ? 1 : 0;
+            if (LS == null && ArmorType != null)
+            {
+                do
+                {
+                    iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
+                    DaysUntil++;
+                } while (iterationEAT != ArmorType);
+            }
+            else if (ArmorType == null && LS != null)
+            {
+                do
+                {
+                    iterationLS = iterationLS == LostSector.Perdition ? LostSector.BayOfDrownedWishes : iterationLS + 1;
+                    DaysUntil++;
+                } while (iterationLS != LS);
+            }
+            else if (ArmorType != null && LS != null)
+            {
+                do
+                {
+                    iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
+                    iterationLS = iterationLS == LostSector.Perdition ? LostSector.BayOfDrownedWishes : iterationLS + 1;
+                    DaysUntil++;
+                } while (iterationEAT != ArmorType && iterationLS != LS);
+            }
+            return CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil);
+        }
     }
 
     public enum LostSector

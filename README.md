@@ -8,7 +8,7 @@ Click [this link to invite the bot](https://discord.com/oauth2/authorize?client_
 
 ## Current Features:
 - Thrallway Logging and Wipe Detection
-- Lost Sector Updates and Tracking
+- Most Activity Rotations Updates and Tracking
 - Leaderboards for things regarding the above
 
 ## Known Issues:
@@ -32,11 +32,10 @@ This project is built using the most recent version of Visual Studio Community 2
 - After a user is taken out of active logging, we will save their stats into a JSON file which then will be used for leaderboard commands.
 
 ### Reset Tracking:
-- We've implemented a "Daily/Weekly Reset" system which changes rotations, like Lost Sectors and Raid Challenges, at the same time the Destiny 2 Resets occur. We can do this because most of Destiny's rotations are set and not random.
+- We've implemented a "Daily/Weekly Reset" system which changes rotations, like Lost Sectors and Raid Challenges, at the same time the Destiny 2 Resets occur. We can do this because most of Destiny's rotations are set and not random. *Random rotations tracking soon?*
 - We have a JSON that stores any potential alerts for a Discord user. If a user wants to be notified of a specific rotation, they can use this.
 - We check said JSON and let them know if their desired rotation is active for that day or week.
 - This feature does not use the Bungie API.
-> *We have the basics for more rotations, but I wanted to patch a few things before I finish these.*
 
 ### Leaderboards:
 - We store all of the leaderboard data in its own JSON file and then quick sort it when a command is called.

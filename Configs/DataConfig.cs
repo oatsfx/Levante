@@ -1,10 +1,11 @@
-﻿using Newtonsoft.Json;
+﻿using DestinyUtility.Rotations;
+using Discord.WebSocket;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Text;
-using static DestinyUtility.Configs.DataConfig;
+using System.Threading.Tasks;
 
 namespace DestinyUtility.Configs
 {
@@ -193,13 +194,13 @@ namespace DestinyUtility.Configs
             {
                 for (int i = 0; i < AnnounceDailyLinks.Count; i++)
                     if (AnnounceDailyLinks[i] == ChannelID)
-                        DiscordIDLinks.RemoveAt(i);
+                        AnnounceDailyLinks.RemoveAt(i);
             }
             else
             {
                 for (int i = 0; i < AnnounceWeeklyLinks.Count; i++)
                     if (AnnounceWeeklyLinks[i] == ChannelID)
-                        DiscordIDLinks.RemoveAt(i);
+                        AnnounceWeeklyLinks.RemoveAt(i);
             }
 
             string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
@@ -233,7 +234,7 @@ namespace DestinyUtility.Configs
         }
 
         // This returns the level, then other parameters are XPProgress (int) and IsInShatteredThrone (bool). Reduces the amount of calls to the Bungie API.
-        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsInShatteredThrone, out PrivacySetting FireteamPrivacy, out string CharacterId)
+        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsInShatteredThrone, out PrivacySetting FireteamPrivacy, out string CharacterId, out string ErrorStatus)
         {
             try
             {
@@ -247,6 +248,16 @@ namespace DestinyUtility.Configs
                     var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,202,204,1000").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
                     dynamic item = JsonConvert.DeserializeObject(content);
+
+                    ErrorStatus = $"{item.ErrorStatus}";
+                    if (!ErrorStatus.Equals("Success"))
+                    {
+                        XPProgress = -1;
+                        IsInShatteredThrone = false;
+                        FireteamPrivacy = PrivacySetting.Open;
+                        CharacterId = null;
+                        return -1;
+                    }
 
                     IsInShatteredThrone = false;
 
@@ -284,6 +295,7 @@ namespace DestinyUtility.Configs
             }
             catch
             {
+                ErrorStatus = $"ResponseError";
                 XPProgress = -1;
                 IsInShatteredThrone = false;
                 FireteamPrivacy = PrivacySetting.Open;
@@ -292,7 +304,7 @@ namespace DestinyUtility.Configs
             }
         }
 
-        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsInShatteredThrone)
+        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsInShatteredThrone, out string ErrorStatus)
         {
             try
             {
@@ -307,7 +319,9 @@ namespace DestinyUtility.Configs
                     var content = response.Content.ReadAsStringAsync().Result;
                     dynamic item = JsonConvert.DeserializeObject(content);
 
+                    ErrorStatus = $"{item.ErrorStatus}";
                     IsInShatteredThrone = false;
+
                     for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
                     {
                         string charId = item.Response.profile.data.characterIds[i];
@@ -338,6 +352,7 @@ namespace DestinyUtility.Configs
             }
             catch
             {
+                ErrorStatus = $"ResponseError";
                 XPProgress = -1;
                 IsInShatteredThrone = false;
                 return -1;
@@ -375,12 +390,23 @@ namespace DestinyUtility.Configs
                 return Level;
             }
         }
-    }
 
-    public enum RotationPostingType
-    {
-        Daily,
-        Weekly,
-        DailyAndWeekly,
+        public static async Task PostDailyResetUpdate(DiscordSocketClient Client)
+        {
+            foreach (ulong ChannelID in AnnounceDailyLinks)
+            {
+                var channel = Client.GetChannel(ChannelID) as SocketTextChannel;
+                await channel.SendMessageAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
+            }
+        }
+
+        public static async Task PostWeeklyResetUpdate(DiscordSocketClient Client)
+        {
+            foreach (ulong ChannelID in AnnounceWeeklyLinks)
+            {
+                var channel = Client.GetChannel(ChannelID) as SocketTextChannel;
+                await channel.SendMessageAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
+            }
+        }
     }
 }

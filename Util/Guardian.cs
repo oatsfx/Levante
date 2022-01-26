@@ -1,5 +1,4 @@
-﻿
-using DestinyUtility.Configs;
+﻿using DestinyUtility.Configs;
 using Discord;
 using Newtonsoft.Json;
 using System.Net.Http;
@@ -47,9 +46,9 @@ namespace DestinyUtility.Util
         {
             switch (GetClass())
             {
-                case Class.Titan: return "<:Titan:844031790950776842>";
-                case Class.Hunter: return "<:Hunter:844031780108763146>";
-                case Class.Warlock: return "<:Warlock:844031791119073320>";
+                case Class.Titan: return $"{DestinyEmote.Titan}";
+                case Class.Hunter: return $"{DestinyEmote.Hunter}";
+                case Class.Warlock: return $"{DestinyEmote.Warlock}";
                 default:
                     break;
             }
@@ -99,7 +98,7 @@ namespace DestinyUtility.Util
             };
             embed.Description =
                 $"{GetClassEmote()} **{GetRace()} {GetGender()} {GetClass()}** {GetClassEmote()}\n" +
-                $"Light Level: <:LightLevel:844029708077367297>{GetLightLevel()}\n";
+                $"Light Level: {DestinyEmote.Light}{GetLightLevel()}\n";
             embed.ThumbnailUrl = GetEmblem().GetIconUrl();
 
             dynamic item = JsonConvert.DeserializeObject(GuardianContent);
@@ -113,11 +112,11 @@ namespace DestinyUtility.Util
             }).AddField(x =>
             {
                 x.Name = "Armor";
-                x.Value = $"<:Helmet:926269144406577173>: {new Weapon((long)item.Response.equipment.data.items[3].itemHash).GetName()}\n" +
-                    $"<:Arms:926269107823853698>: {new Weapon((long)item.Response.equipment.data.items[4].itemHash).GetName()}\n" +
-                    $"<:Chest:926269118821306448>: {new Weapon((long)item.Response.equipment.data.items[5].itemHash).GetName()}\n" +
-                    $"<:Legs:926269152744853524>: {new Weapon((long)item.Response.equipment.data.items[6].itemHash).GetName()}\n" +
-                    $"<:Class:926269133660753981>: {new Weapon((long)item.Response.equipment.data.items[7].itemHash).GetName()}";
+                x.Value = $"{DestinyEmote.Helmet}: {new Weapon((long)item.Response.equipment.data.items[3].itemHash).GetName()}\n" +
+                    $"{DestinyEmote.Arms}: {new Weapon((long)item.Response.equipment.data.items[4].itemHash).GetName()}\n" +
+                    $"{DestinyEmote.Chest}: {new Weapon((long)item.Response.equipment.data.items[5].itemHash).GetName()}\n" +
+                    $"{DestinyEmote.Legs}: {new Weapon((long)item.Response.equipment.data.items[6].itemHash).GetName()}\n" +
+                    $"{DestinyEmote.Class}: {new Weapon((long)item.Response.equipment.data.items[7].itemHash).GetName()}";
                 x.IsInline = true;
             });
 

@@ -12,9 +12,7 @@ using System.Collections.Generic;
 using DestinyUtility.Configs;
 using System.Net.Http;
 using DestinyUtility.Helpers;
-using System.ComponentModel;
 using System.Threading;
-using Discord.Rest;
 using Discord.Net;
 using DestinyUtility.Leaderboards;
 using DestinyUtility.Rotations;
@@ -27,8 +25,6 @@ namespace DestinyUtility
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
-
-        public static readonly string LostSectorTrackingConfigPath = @"Configs/lostSectorTrackingConfigPath.json";
 
         private Timer DailyResetTimer;
 
@@ -64,17 +60,33 @@ namespace DestinyUtility
 
             await Task.Run(() => Console.Title = $"DestinyUtility v{BotConfig.Version}");
 
-            if (!CheckAndLoadLostSectorData())
-                return;
-
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
+
+            CurrentRotations.CreateJSONs();
             
             Console.WriteLine($"Current Bot Version: v{BotConfig.Version}");
             Console.WriteLine($"Current Developer Note: {BotConfig.Note}");
 
-            Console.WriteLine($"Legend Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.CurrentLegendLostSector)} ({LostSectorRotation.CurrentLegendArmorDrop})");
-            Console.WriteLine($"Master Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetMasterLostSector())} ({LostSectorRotation.GetMasterLostSectorArmorDrop()})");
+            Console.WriteLine($"Legend Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LegendLostSector)} ({CurrentRotations.LegendLostSectorArmorDrop})");
+            Console.WriteLine($"Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.MasterLostSector)} ({CurrentRotations.MasterLostSectorArmorDrop})");
+            Console.WriteLine();
+            Console.WriteLine($"Altar Weapon: {AltarsOfSorrowRotation.GetWeaponNameString(CurrentRotations.AltarWeapon)} ({CurrentRotations.AltarWeapon})");
+            Console.WriteLine();
+            Console.WriteLine($"Last Wish Challenge: {LastWishRotation.GetEncounterString(CurrentRotations.LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(CurrentRotations.LWChallengeEncounter)})");
+            Console.WriteLine($"Garden of Salvation Challenge: {GardenOfSalvationRotation.GetEncounterString(CurrentRotations.GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(CurrentRotations.GoSChallengeEncounter)})");
+            Console.WriteLine($"Deep Stone Crypt Challenge: {DeepStoneCryptRotation.GetEncounterString(CurrentRotations.DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(CurrentRotations.DSCChallengeEncounter)})");
+            Console.WriteLine($"Vault of Glass Challenge: {VaultOfGlassRotation.GetEncounterString(CurrentRotations.VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(CurrentRotations.VoGChallengeEncounter)})");
+            Console.WriteLine();
+            Console.WriteLine($"Curse Week: {CurrentRotations.CurseWeek}");
+            Console.WriteLine($"Ascendant Challenge: {AscendantChallengeRotation.GetChallengeNameString(CurrentRotations.AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(CurrentRotations.AscendantChallenge)})");
+            Console.WriteLine();
+            Console.WriteLine($"Nightfall: {NightfallRotation.GetStrikeNameString(CurrentRotations.Nightfall)} ({NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrops[0])}/{NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrops[1])})");
+            Console.WriteLine();
+            Console.WriteLine($"Altar Weapon: {EmpireHuntRotation.GetHuntNameString(CurrentRotations.EmpireHunt)}");
+            Console.WriteLine();
+            Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
+            Console.WriteLine();
 
             _client.Log += log =>
             {
@@ -85,15 +97,11 @@ namespace DestinyUtility
             Timer timer = new Timer(TimerCallback, null, 25000, 240000);
 
             if (DateTime.Now.Hour >= 10) // after daily reset
-            {
                 SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 0));
-            }
             else
-            {
                 SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 0, 0));
-            }
 
-            await InitializeCommands().ConfigureAwait(false);
+            await InitializeListeners().ConfigureAwait(false);
 
             await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken).ConfigureAwait(false);
             await _client.StartAsync().ConfigureAwait(false);
@@ -113,125 +121,42 @@ namespace DestinyUtility
         {
             // this is called to get the timer set up to run at every daily reset
             TimeSpan timeToGo = new TimeSpan(alertTime.Ticks - DateTime.Now.Ticks);
-            Console.WriteLine($"Time until Daily Reset: {timeToGo.Days:00}:{timeToGo.Hours:00}:{timeToGo.Minutes:00}:{timeToGo.Seconds:00}");
             DailyResetTimer = new Timer(DailyResetChanges, null, (long)timeToGo.TotalMilliseconds, Timeout.Infinite);
-        }
-
-        private async Task PostDailyResetUpdate()
-        {
-            foreach (ulong ChannelID in LostSectorRotation.AnnounceLostSectorUpdates)
-            {
-                var channel = _client.GetChannel(ChannelID) as SocketTextChannel;
-
-                await channel.SendMessageAsync($"", embed: CurrentRotations.DailyResetEmbed(_client).Result.Build());
-            }
         }
 
         public async void DailyResetChanges(Object o = null)
         {
             Console.ForegroundColor = ConsoleColor.Green;
-            LogHelper.ConsoleLog("\nDaily Reset Occurred.");
-            LostSectorRotation.LostSectorChange();
 
-            LogHelper.ConsoleLog($"Legend Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.CurrentLegendLostSector)} ({LostSectorRotation.CurrentLegendArmorDrop})");
-            LogHelper.ConsoleLog($"Master Lost Sector: {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetMasterLostSector())} ({LostSectorRotation.GetMasterLostSectorArmorDrop()})");
-
-            // Soon to be depreciated.
-            //await LostSectorTrackingConfig.PostLostSectorUpdate(_client);
-
-            // Taking over lost sector updates.
-            await PostDailyResetUpdate();
-
-            // Send users their tracking if applicable.
-            List<LostSectorRotation.LostSectorLink> temp = new List<LostSectorRotation.LostSectorLink>();
-            foreach (var LSL in LostSectorRotation.LostSectorLinks)
+            if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
             {
-                bool addBack = true;
-                if (LostSectorRotation.CurrentLegendLostSector == LSL.LostSector && LSL.Difficulty == LostSectorDifficulty.Legend)
-                {
-                    if (LostSectorRotation.CurrentLegendArmorDrop == LSL.ArmorDrop)
-                    {
-                        IUser user;
-                        if (_client.GetUser(LSL.DiscordID) == null)
-                        {
-                            var _rClient = _client.Rest;
-                            user =  _rClient.GetUserAsync(LSL.DiscordID).Result;
-                        }
-                        else
-                        {
-                            user = _client.GetUser(LSL.DiscordID);
-                        }
-
-                        await user.SendMessageAsync($"Hey {user.Mention}!\n" +
-                            $"{LostSectorRotation.GetLostSectorString(LSL.LostSector)} ({LSL.Difficulty}) is dropping {LSL.ArmorDrop} today! I have removed your tracking, good luck!");
-                        addBack = false;
-                    }
-                }
-                else if (LostSectorRotation.GetMasterLostSector() == LSL.LostSector && LSL.Difficulty == LostSectorDifficulty.Master)
-                {
-                    if (LostSectorRotation.GetMasterLostSectorArmorDrop() == LSL.ArmorDrop)
-                    {
-                        IUser user;
-                        if (_client.GetUser(LSL.DiscordID) == null)
-                        {
-                            var _rClient = _client.Rest;
-                            user = _rClient.GetUserAsync(LSL.DiscordID).Result;
-                        }
-                        else
-                        {
-                            user = _client.GetUser(LSL.DiscordID);
-                        }
-
-                        await user.SendMessageAsync($"Hey {user.Mention}!\n" +
-                            $"{LostSectorRotation.GetLostSectorString(LSL.LostSector)} ({LSL.Difficulty}) is dropping {LSL.ArmorDrop} today! I have removed your tracking, good luck!");
-                        addBack = false;
-                    }
-                }
-                if (addBack)
-                    temp.Add(LSL);
+                CurrentRotations.WeeklyRotation();
+                Console.WriteLine("Weekly Reset Occurred.");
+            }
+            else
+            {
+                CurrentRotations.DailyRotation();
+                Console.WriteLine("Daily Reset Occurred.");
             }
 
-            string json = File.ReadAllText(LostSectorTrackingConfigPath);
-            LostSectorRotation lstConfig = JsonConvert.DeserializeObject<LostSectorRotation>(json);
+            // Send reset embeds if applicable.
+            if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
+                await DataConfig.PostWeeklyResetUpdate(_client);
 
-            LostSectorRotation.UpdateLostSectorsList();
-            LostSectorRotation.LostSectorLinks = temp;
-            string output = JsonConvert.SerializeObject(lstConfig, Formatting.Indented);
-            File.WriteAllText(LostSectorTrackingConfigPath, output);
+            await DataConfig.PostDailyResetUpdate(_client);
 
-            // start the next timer
+            // Send users their tracking if applicable.
+            if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
+                await CurrentRotations.CheckUsersWeeklyTracking(_client);
+
+            await CurrentRotations.CheckUsersDailyTracking(_client);
+
+            // Start the next timer.
             SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 0));
             Console.ForegroundColor = ConsoleColor.Cyan;
         }
 
         private async void TimerCallback(Object o) => await RefreshBungieAPI().ConfigureAwait(false);
-
-        private bool IsBungieAPIDown(out string Reason)
-        {
-            try
-            {
-                using (var client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    var response = client.GetAsync("https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/3/" + Uri.EscapeDataString("OatsFX#5630")).Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
-
-                    Reason = "Unknown Error";
-                    if (item == null) return true;
-
-                    string status = item.ErrorStatus;
-
-                    Reason = status;
-                    return !status.Equals("Success");
-                }
-            }
-            catch
-            {
-                Reason = "ResponseError";
-                return true;
-            }
-        }
 
         #region ThrallwayLogging
         private async Task RefreshBungieAPI()
@@ -240,16 +165,6 @@ namespace DestinyUtility
             {
                 LogHelper.ConsoleLog($"Skipping refresh, no active AFK users...");
                 await LoadLeaderboards();
-                return;
-            }
-
-            if (IsBungieAPIDown(out string DownReason))
-            {
-                LogHelper.ConsoleLog($"Skipping refresh, refresh denied...");
-                foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers)
-                {
-                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refresh denied. Reason: {DownReason}");
-                }
                 return;
             }
 
@@ -262,7 +177,15 @@ namespace DestinyUtility
                 foreach (ActiveConfig.ActiveAFKUser aau in temp)
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
-                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isInShatteredThrone);
+                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isInShatteredThrone, out string errorStatus);
+
+                    if (!errorStatus.Equals("Success"))
+                    {
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
+                        LogHelper.ConsoleLog($"Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
+                        // Move onto the next user so everyone gets the message.
+                        continue;
+                    }
 
                     LogHelper.ConsoleLog($"Checking {tempAau.UniqueBungieName}.");
 
@@ -287,7 +210,6 @@ namespace DestinyUtility
                         await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", GenerateSessionSummary(tempAau).Result);
 
                         LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
-                        ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
 
                         await Task.Run(() => CheckLeaderboardData(tempAau));
                     }
@@ -305,8 +227,7 @@ namespace DestinyUtility
                     else if (updatedProgression <= tempAau.LastLevelProgress)
                     {
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"No XP change detected, attempting to refresh API again...");
-                        if (await RefreshSpecificUser(tempAau).ConfigureAwait(false) == null) ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
-                        else newActiveList.Add(tempAau);
+                        if (await RefreshSpecificUser(tempAau).ConfigureAwait(false) != null) newActiveList.Add(tempAau);
                     }
                     else
                     {
@@ -316,8 +237,6 @@ namespace DestinyUtility
                         tempAau.LastLevelProgress = updatedProgression;
                         newActiveList.Add(tempAau);
                     }
-                    /*if (addBack)
-                        temp.Add(tempAau);*/
 
                     await Task.Delay(3500); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
@@ -334,7 +253,7 @@ namespace DestinyUtility
             }
             catch (Exception x)
             {
-                LogHelper.ConsoleLog($"Refresh failed, trying again! Reason: {x.Message}");
+                LogHelper.ConsoleLog($"Refresh failed, trying again! Reason: {x.Message} ({x.StackTrace})");
                 await Task.Delay(8000);
                 await RefreshBungieAPI().ConfigureAwait(false);
                 return;
@@ -604,7 +523,7 @@ namespace DestinyUtility
         }
         #endregion
 
-        private async Task InitializeCommands()
+        private async Task InitializeListeners()
         {
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
             _client.MessageReceived += HandleMessageAsync;
@@ -614,123 +533,319 @@ namespace DestinyUtility
             _client.SlashCommandExecuted += SlashCommandHandler;
 
             _client.ButtonExecuted += ButtonHandler;
-            //_client.SelectMenuExecuted += SelectMenuHandler;
+            _client.SelectMenuExecuted += SelectMenuHandler;
         }
 
         private async Task InitializeSlashCommands()
         {
-            var guild = _client.GetGuild(600548936062730259);
-            //await guild.DeleteApplicationCommandsAsync();
+            var guild = _client.GetGuild(397846250797662208);
+            await guild.DeleteApplicationCommandsAsync();
             var cmds = await _client.Rest.GetGlobalApplicationCommands();
 
-            /*foreach (var cmd in cmds)
+            foreach (var cmd in cmds)
             {
-                if (cmd.Name.Equals("nextarmor"))
-                {
-                    await cmd.DeleteAsync();
-                }
-            }*/
-
-            var lostSectorAlertCommand = new SlashCommandBuilder();
-            lostSectorAlertCommand.WithName("lostsectoralert");
-            lostSectorAlertCommand.WithDescription("Be notified when a Lost Sector comes into Rotation");
-            var scobA = new SlashCommandOptionBuilder()
-                .WithName("lost-sector")
-                .WithDescription("The Lost Sector you want to be Notified for")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSector LS in Enum.GetValues(typeof(LostSector)))
-            {
-                scobA.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
+                await cmd.DeleteAsync();
             }
-
-            var scobB = new SlashCommandOptionBuilder()
-                .WithName("armor-drop")
-                .WithDescription("The Exotic Armor the Lost Sector should drop")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (ExoticArmorType EAT in Enum.GetValues(typeof(ExoticArmorType)))
-            {
-                scobB.AddChoice($"{EAT}", (int)EAT);
-            }
-
-            lostSectorAlertCommand.AddOption(scobA)
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("difficulty")
-                    .WithDescription("Desired Difficulty of the Lost Sector")
-                    .WithRequired(true)
-                    .AddChoice("Legend", 0)
-                    .AddChoice("Master", 1)
-                    .WithType(ApplicationCommandOptionType.Integer))
-                .AddOption(scobB);
 
             // ==============================================
 
-            var lostSectorInfoCommand = new SlashCommandBuilder();
-            lostSectorInfoCommand.WithName("lostsectorinfo");
-            lostSectorInfoCommand.WithDescription("Get Info on a Lost Sector based on Difficulty");
-            var scobC = new SlashCommandOptionBuilder()
-                .WithName("lost-sector")
-                .WithDescription("The Lost Sector you want Information on")
+            var altarsScob = new SlashCommandOptionBuilder()
+                    .WithName("weapon")
+                    .WithDescription("Altars of Sorrow weapon.")
+                    .WithRequired(true)
+                    .WithType(ApplicationCommandOptionType.Integer);
+            foreach (AltarsOfSorrow AOS in Enum.GetValues(typeof(AltarsOfSorrow)))
+            {
+                altarsScob.AddChoice($"{AltarsOfSorrowRotation.GetWeaponNameString(AOS)} ({AOS})", (int)AOS);
+            }
+
+            // ---
+
+            var ascentantScob = new SlashCommandOptionBuilder()
+                .WithName("ascendant-challenge")
+                .WithDescription("Ascendant Challenge name.")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSector LS in Enum.GetValues(typeof(LostSector)))
+            foreach (AscendantChallenge AC in Enum.GetValues(typeof(AscendantChallenge)))
             {
-                scobC.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
+                ascentantScob.AddChoice($"{AscendantChallengeRotation.GetChallengeNameString(AC)} ({AscendantChallengeRotation.GetChallengeLocationString(AC)})", (int)AC);
             }
 
-            lostSectorInfoCommand.AddOption(scobC)
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("difficulty")
-                    .WithDescription("The Difficulty of the Lost Sector")
-                    .WithRequired(true)
-                    .AddChoice("Legend", 0)
-                    .AddChoice("Master", 1)
-                    .WithType(ApplicationCommandOptionType.Integer));
+            // ---
 
-            // ==============================================
+            var curseWeekScob = new SlashCommandOptionBuilder()
+                .WithName("strength")
+                .WithDescription("Curse Week strength.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (CurseWeek CW in Enum.GetValues(typeof(CurseWeek)))
+            {
+                curseWeekScob.AddChoice($"{CW}", (int)CW);
+            }
 
-            var nextOccuranceCommand = new SlashCommandBuilder();
-            nextOccuranceCommand.WithName("next");
-            nextOccuranceCommand.WithDescription("Find out when the next occurance of a lost sector and/or Exotic Armor type is");
+            // ---
 
-            var scobD = new SlashCommandOptionBuilder()
+            var dscScob = new SlashCommandOptionBuilder()
+                .WithName("challenge")
+                .WithDescription("Deep Stone Crypt challenge.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (DeepStoneCryptEncounter DSCE in Enum.GetValues(typeof(DeepStoneCryptEncounter)))
+            {
+                dscScob.AddChoice($"{DeepStoneCryptRotation.GetEncounterString(DSCE)} ({DeepStoneCryptRotation.GetChallengeString(DSCE)})", (int)DSCE);
+            }
+
+            // ---
+
+            var empireHuntScob = new SlashCommandOptionBuilder()
+                .WithName("empire-hunt")
+                .WithDescription("Empire Hunt boss.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (EmpireHunt EH in Enum.GetValues(typeof(EmpireHunt)))
+            {
+                empireHuntScob.AddChoice($"{EmpireHuntRotation.GetHuntBossString(EH)}", (int)EH);
+            }
+
+            // ---
+
+            var gosScob = new SlashCommandOptionBuilder()
+                .WithName("challenge")
+                .WithDescription("Garden of Salvation challenge.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (GardenOfSalvationEncounter GOSE in Enum.GetValues(typeof(GardenOfSalvationEncounter)))
+            {
+                gosScob.AddChoice($"{GardenOfSalvationRotation.GetEncounterString(GOSE)} ({GardenOfSalvationRotation.GetChallengeString(GOSE)})", (int)GOSE);
+            }
+
+            // ---
+
+            var lwScob = new SlashCommandOptionBuilder()
+                .WithName("challenge")
+                .WithDescription("Last Wish challenge.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (LastWishEncounter LWE in Enum.GetValues(typeof(LastWishEncounter)))
+            {
+                lwScob.AddChoice($"{LastWishRotation.GetEncounterString(LWE)} ({LastWishRotation.GetChallengeString(LWE)})", (int)LWE);
+            }
+
+            // ---
+
+            var lostSectorScob = new SlashCommandOptionBuilder()
                 .WithName("lost-sector")
-                .WithDescription("The Lost Sector you want me to get the occurance of")
-                .WithRequired(false)
+                .WithDescription("Lost Sector name.")
+                .WithRequired(false) // False so people don't need to track the other option.
                 .WithType(ApplicationCommandOptionType.Integer);
             foreach (LostSector LS in Enum.GetValues(typeof(LostSector)))
             {
-                scobD.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
+                lostSectorScob.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
             }
 
-            var scobE = new SlashCommandOptionBuilder()
+            var difficultyScob = new SlashCommandOptionBuilder()
+                    .WithName("difficulty")
+                    .WithDescription("Lost Sector difficulty.")
+                    .WithRequired(false) // False so people don't need to track the other option.
+                    .AddChoice("Legend", 0)
+                    .AddChoice("Master", 1)
+                    .WithType(ApplicationCommandOptionType.Integer);
+
+            var armorScob = new SlashCommandOptionBuilder()
                 .WithName("armor-drop")
-                .WithDescription("The Exotic Armor you want me to get the occurance of")
-                .WithRequired(false)
+                .WithDescription("Lost Sector Exotic armor drop.")
+                .WithRequired(false) // False so people don't need to track the other option.
                 .WithType(ApplicationCommandOptionType.Integer);
             foreach (ExoticArmorType EAT in Enum.GetValues(typeof(ExoticArmorType)))
             {
-                scobE.AddChoice($"{EAT}", (int)EAT);
+                armorScob.AddChoice($"{EAT}", (int)EAT);
             }
 
-            nextOccuranceCommand.AddOption(scobD).AddOption(scobE);
+            // ---
 
-            //  ==============================================
+            var nightfallScob = new SlashCommandOptionBuilder()
+                .WithName("nightfall")
+                .WithDescription("Nightfall Strike.")
+                .WithRequired(false) // False so people don't need to track the other option.
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (Nightfall NF in Enum.GetValues(typeof(Nightfall)))
+            {
+                nightfallScob.AddChoice($"{NightfallRotation.GetStrikeNameString(NF)}", (int)NF);
+            }
 
-            var removeAlertCommand = new SlashCommandBuilder();
-            removeAlertCommand.WithName("removealert");
-            removeAlertCommand.WithDescription("Remove an active tracking alert");
+            var nightfallWeaponScob = new SlashCommandOptionBuilder()
+                .WithName("weapon")
+                .WithDescription("Nightfall Strike Weapon drop.")
+                .WithRequired(false) // False so people don't need to track the other option.
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (NightfallWeapon NFW in Enum.GetValues(typeof(NightfallWeapon)))
+            {
+                nightfallWeaponScob.AddChoice($"{NightfallRotation.GetWeaponString(NFW)}", (int)NFW);
+            }
+
+            // ---
+
+            var nightmareHuntScob = new SlashCommandOptionBuilder()
+                .WithName("nightmare-hunt")
+                .WithDescription("Nightmare Hunt boss.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (NightmareHunt NH in Enum.GetValues(typeof(NightmareHunt)))
+            {
+                nightmareHuntScob.AddChoice($"{NightmareHuntRotation.GetHuntNameString(NH)} ({NightmareHuntRotation.GetHuntBossString(NH)})", (int)NH);
+            }
+
+            // ---
+
+            var vogScob = new SlashCommandOptionBuilder()
+                .WithName("challenge")
+                .WithDescription("Vault of Glass challenge.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (VaultOfGlassEncounter VOGE in Enum.GetValues(typeof(VaultOfGlassEncounter)))
+            {
+                vogScob.AddChoice($"{VaultOfGlassRotation.GetEncounterString(VOGE)} ({VaultOfGlassRotation.GetChallengeString(VOGE)})", (int)VOGE);
+            }
+
+            // ---
+
+            var notifyCommand = new SlashCommandBuilder()
+                .WithName("notify")
+                .WithDescription("Be notified when a specific rotation is active.")
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("altars-of-sorrow")
+                    .WithDescription("Be notified when an Altars of Sorrow weapon is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(altarsScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("ascendant-challenge")
+                    .WithDescription("Be notified when an Ascendant Challenge is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(ascentantScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("curse-week")
+                    .WithDescription("Be notified when a Curse Week strength is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(curseWeekScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("deep-stone-crypt")
+                    .WithDescription("Be notified when a Deep Stone Crypt challenge is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(dscScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("empire-hunt")
+                    .WithDescription("Be notified when an Empire Hunt is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(empireHuntScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("garden-of-salvation")
+                    .WithDescription("Be notified when a Garden of Salvation challenge is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(gosScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("last-wish")
+                    .WithDescription("Be notified when a Last Wish challenge is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(lwScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("lost-sector")
+                    .WithDescription("Be notified when a Lost Sector and/or Armor Drop is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(lostSectorScob)
+                    .AddOption(difficultyScob)
+                    .AddOption(armorScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("nightfall")
+                    .WithDescription("Be notified when a Nightfall and/or Weapon is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(nightfallScob)
+                    .AddOption(nightfallWeaponScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("nightmare-hunt")
+                    .WithDescription("Be notified when a Nightmare Hunt is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(nightmareHuntScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("vault-of-glass")
+                    .WithDescription("Be notified when a Vault of Glass challenge is active.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(vogScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("remove")
+                    .WithDescription("Remove an active tracking notification.")
+                    .WithType(ApplicationCommandOptionType.SubCommand));
+
+            // ==============================================
+
+            var raidCommand = new SlashCommandBuilder()
+                .WithName("raid")
+                .WithDescription("Display Raid information.")
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("raid")
+                    .WithDescription("Raid name.")
+                    .WithType(ApplicationCommandOptionType.Integer)
+                    .AddChoice("Last Wish", 0)
+                    .AddChoice("Garden of Salvation", 1)
+                    .AddChoice("Deep Stone Crypt", 2)
+                    .AddChoice("Vault of Glass", 3));
+
+            // ==============================================
+
+            var nightfallScob2 = new SlashCommandOptionBuilder()
+                .WithName("nightfall")
+                .WithDescription("Nightfall Strike.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (Nightfall NF in Enum.GetValues(typeof(Nightfall)))
+            {
+                nightfallScob2.AddChoice($"{NightfallRotation.GetStrikeNameString(NF)}", (int)NF);
+            }
+
+            var nightfallCommand = new SlashCommandBuilder()
+                .WithName("nightfall")
+                .WithDescription("Display Nightfall information.")
+                .AddOption(nightfallScob2);
+
+            // ==============================================
+
+            var patrolCommand = new SlashCommandBuilder()
+                .WithName("patrol")
+                .WithDescription("Display Patrol information.")
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("location")
+                    .WithDescription("Patrol location.")
+                    .WithType(ApplicationCommandOptionType.Integer)
+                    .AddChoice("The Dreaming City", 0)
+                    .AddChoice("The Moon", 1)
+                    .AddChoice("Europa", 2));
+
+            // ==============================================
+
+            var freeEmblemsCommand = new SlashCommandBuilder();
+            freeEmblemsCommand.WithName("free-emblems");
+            freeEmblemsCommand.WithDescription("Display a list of universal emblem codes.");
+
+            // ==============================================
+
+            var dailyCommand = new SlashCommandBuilder();
+            dailyCommand.WithName("daily");
+            dailyCommand.WithDescription("Display Daily reset information.");
+
+            // ==============================================
+
+            var weeklyCommand = new SlashCommandBuilder();
+            weeklyCommand.WithName("weekly");
+            weeklyCommand.WithDescription("Display Weekly reset information.");
 
             // ==============================================
 
             var rankCommand = new SlashCommandBuilder();
             rankCommand.WithName("rank");
-            rankCommand.WithDescription("Display a Destiny 2 leaderboard of choice");
+            rankCommand.WithDescription("Display a Destiny 2 leaderboard of choice.");
 
             var scobF = new SlashCommandOptionBuilder()
                 .WithName("leaderboard")
-                .WithDescription("Specific leaderboard to display")
+                .WithDescription("Specific leaderboard to display.")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.Integer);
             foreach (Leaderboard LB in Enum.GetValues(typeof(Leaderboard)))
@@ -742,13 +857,37 @@ namespace DestinyUtility
 
             // ==============================================
 
+            var lostSectorInfoCommand = new SlashCommandBuilder();
+            lostSectorInfoCommand.WithName("lost-sector");
+            lostSectorInfoCommand.WithDescription("Get Info on a Lost Sector based on Difficulty.");
+            var scobC = new SlashCommandOptionBuilder()
+                .WithName("lost-sector")
+                .WithDescription("The Lost Sector you want Information on.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer);
+            foreach (LostSector LS in Enum.GetValues(typeof(LostSector)))
+            {
+                scobC.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
+            }
+
+            lostSectorInfoCommand.AddOption(scobC)
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("difficulty")
+                    .WithDescription("The Difficulty of the Lost Sector.")
+                    .WithRequired(true)
+                    .AddChoice("Legend", 0)
+                    .AddChoice("Master", 1)
+                    .WithType(ApplicationCommandOptionType.Integer));
+
+            // ==============================================
+
             var alertCommand = new SlashCommandBuilder();
             alertCommand.WithName("alert");
-            alertCommand.WithDescription("Set up announcements for Daily/Weekly Reset");
+            alertCommand.WithDescription("Set up announcements for Daily/Weekly Reset.");
 
             var scobG = new SlashCommandOptionBuilder()
                 .WithName("type")
-                .WithDescription("Choose between Daily or Weekly Reset")
+                .WithDescription("Choose between Daily or Weekly Reset.")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.Integer);
 
@@ -759,74 +898,30 @@ namespace DestinyUtility
 
             try
             {
-                //await guild.CreateApplicationCommandAsync(globalCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(lostSectorAlertCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(lostSectorInfoCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(nextOccuranceCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(removeAlertCommand.Build());
+                //await guild.CreateApplicationCommandAsync(notifyCommand.Build());
+
+                //await _client.CreateGlobalApplicationCommandAsync(notifyCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(raidCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(nightfallCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(patrolCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(freeEmblemsCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(rankCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(lostSectorInfoCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(alertCommand.Build());
+
+                //await _client.CreateGlobalApplicationCommandAsync(dailyCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(weeklyCommand.Build());
             }
             catch (HttpException exception)
             {
-                Console.WriteLine(exception);
+                var json = JsonConvert.SerializeObject(exception.Errors, Formatting.Indented);
+                Console.WriteLine(json);
             }
         }
-
-        /*private async Task SelectMenuHandler(SocketMessageComponent interaction)
-        {
-            // Will be used for implementation at some point.
-            // Said implementation will be for daily/weekly reset notification setup.
-            // A slash command will be called and it will respond with a select menu containing Daily and Weekly.
-        }*/
-
+        
         private async Task SlashCommandHandler(SocketSlashCommand command)
         {
-            if (command.Data.Name.Equals("lostsectoralert"))
-            {
-                if (LostSectorRotation.IsExistingLinkedLostSectorsTracking(command.User.Id))
-                {
-                    await command.RespondAsync($"You already have an active alert set up!", ephemeral: true);
-                    return;
-                }
-                else
-                {
-                    LostSector LS = 0;
-                    LostSectorDifficulty LSD = 0;
-                    ExoticArmorType EAT = 0;
-
-                    foreach (var option in command.Data.Options)
-                    {
-                        if (option.Name.Equals("lost-sector"))
-                            LS = (LostSector)Convert.ToInt32(option.Value);
-                        else if (option.Name.Equals("difficulty"))
-                            LSD = (LostSectorDifficulty)Convert.ToInt32(option.Value);
-                        else if (option.Name.Equals("armor-drop"))
-                            EAT = (ExoticArmorType)Convert.ToInt32(option.Value);
-                    }
-
-                    LostSectorRotation.AddLostSectorsTrackingToConfig(command.User.Id, LS, LSD, EAT);
-
-                    await command.RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString(LS)} ({LSD}) is dropping {EAT}, which will be on " +
-                        $"{(LSD == LostSectorDifficulty.Legend ? $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}" : $"{TimestampTag.FromDateTime(DateTime.Now.AddDays(1 + LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10), TimestampTagStyles.ShortDate)}")}.",
-                        ephemeral: true);
-                    return;
-                }
-            }
-            else if (command.Data.Name.Equals("removealert"))
-            {
-                if (!LostSectorRotation.IsExistingLinkedLostSectorsTracking(command.User.Id))
-                {
-                    await command.RespondAsync($"You don't have an active Lost Sector tracker.", ephemeral: true);
-                    return;
-                }
-
-                await command.RespondAsync($"Removed your tracking for {LostSectorRotation.GetLostSectorString(LostSectorRotation.GetLostSectorsTracking(command.User.Id).LostSector)}" +
-                    $" ({LostSectorRotation.GetLostSectorsTracking(command.User.Id).Difficulty}).", ephemeral: true);
-                LostSectorRotation.DeleteLostSectorsTrackingFromConfig(command.User.Id);
-                
-            }
-            else if (command.Data.Name.Equals("lostsectorinfo"))
+            if (command.Data.Name.Equals("lost-sector"))
             {
                 LostSector LS = 0;
                 LostSectorDifficulty LSD = 0;
@@ -841,118 +936,6 @@ namespace DestinyUtility
 
                 await command.RespondAsync($"", embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
                 return;
-            }
-            else if (command.Data.Name.Equals("next"))
-            {
-                LostSector? LS = null;
-                ExoticArmorType? EAT = null;
-
-                foreach (var option in command.Data.Options)
-                {
-                    if (option.Name.Equals("lost-sector"))
-                        LS = (LostSector)Convert.ToInt32(option.Value);
-                    else if (option.Name.Equals("armor-drop"))
-                        EAT = (ExoticArmorType)Convert.ToInt32(option.Value);
-                }
-                
-                if (LS == null && EAT == null)
-                {
-                    var auth = new EmbedAuthorBuilder()
-                    {
-                        Name = $"Tomorrow's Lost Sectors",
-                    };
-                    var foot = new EmbedFooterBuilder()
-                    {
-                        Text = $"This is a prediction and is subject to change"
-                    };
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                        Author = auth,
-                        Footer = foot,
-                    };
-
-                    embed.Description = $"Legend: **{LostSectorRotation.GetLostSectorString(LostSectorRotation.GetPredictedLegendLostSector(1))}** dropping **{LostSectorRotation.GetPredictedLegendLostSectorArmorDrop(1)}**\n" +
-                        $"Master: **{LostSectorRotation.GetLostSectorString(LostSectorRotation.CurrentLegendLostSector)}** dropping **{LostSectorRotation.CurrentLegendArmorDrop}**";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-
-                var legendDate = DateTime.Now.AddDays(LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10);
-                var masterDate = DateTime.Now.AddDays(1 + LostSectorRotation.DaysUntilNextOccurance(LS, EAT)).Date.AddHours(10);
-
-                if (LS == null)
-                {
-                    var auth = new EmbedAuthorBuilder()
-                    {
-                        Name = $"Next Occurance of {EAT}",
-                    };
-                    var foot = new EmbedFooterBuilder()
-                    {
-                        Text = $"This is a prediction and is subject to change"
-                    };
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                        Author = auth,
-                        Footer = foot,
-                    };
-
-                    embed.Description = $"Lost Sector: **{LostSectorRotation.GetLostSectorString(LostSectorRotation.GetPredictedLegendLostSector(LostSectorRotation.DaysUntilNextOccurance(LS, EAT)))}**\n" +
-                        $"Legend: {TimestampTag.FromDateTime(legendDate, TimestampTagStyles.ShortDate)}\n" +
-                        $"Master: {TimestampTag.FromDateTime(masterDate, TimestampTagStyles.ShortDate)}";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (EAT == null)
-                {
-                    var auth = new EmbedAuthorBuilder()
-                    {
-                        Name = $"Next occurance of {LostSectorRotation.GetLostSectorString((LostSector)LS)}",
-                    };
-                    var foot = new EmbedFooterBuilder()
-                    {
-                        Text = $"This is a prediction and is subject to change"
-                    };
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                        Author = auth,
-                        Footer = foot,
-                    };
-
-                    embed.Description = $"Exotic Drop: **{LostSectorRotation.GetPredictedLegendLostSectorArmorDrop(LostSectorRotation.DaysUntilNextOccurance(LS, EAT))}**\n" +
-                        $"Legend: {TimestampTag.FromDateTime(legendDate, TimestampTagStyles.ShortDate)}\n" +
-                        $"Master: {TimestampTag.FromDateTime(masterDate, TimestampTagStyles.ShortDate)}";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else
-                {
-                    var auth = new EmbedAuthorBuilder()
-                    {
-                        Name = $"Next occurance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} dropping {EAT}",
-                    };
-                    var foot = new EmbedFooterBuilder()
-                    {
-                        Text = $"This is a prediction and is subject to change"
-                    };
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                        Author = auth,
-                        Footer = foot,
-                    };
-
-                    embed.Description = $"Legend: {TimestampTag.FromDateTime(legendDate, TimestampTagStyles.ShortDate)}\n" +
-                        $"Master: {TimestampTag.FromDateTime(masterDate, TimestampTagStyles.ShortDate)}";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
             }
             else if (command.Data.Name.Equals("rank"))
             {
@@ -988,7 +971,9 @@ namespace DestinyUtility
 
                 if (DataConfig.IsExistingLinkedChannel(command.Channel.Id, IsDaily))
                 {
-                    await command.RespondAsync($"This channel already has {(IsDaily ? "Daily" : "Weekly")} reset posts set up!", ephemeral: true);
+                    DataConfig.DeleteChannelFromRotationConfig(command.Channel.Id, IsDaily);
+
+                    await command.RespondAsync($"This channel will no longer receive {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command to re-subscribe to them!", ephemeral: true);
                     return;
                 }
                 else
@@ -999,23 +984,521 @@ namespace DestinyUtility
                     return;
                 }
             }
+            else if (command.Data.Name.Equals("notify"))
+            {
+                var notifyType = command.Data.Options.First().Name;
+
+                if (notifyType.Equals("altars-of-sorrow"))
+                {
+                    if (AltarsOfSorrowRotation.GetUserTracking(command.User.Id, out var Weapon) != null)
+                    {
+                        await command.RespondAsync($"You already have tracking for Altars of Sorrow. I am watching for {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}).", ephemeral: true);
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("weapon"))
+                            Weapon = (AltarsOfSorrow)Convert.ToInt32(option.Value);
+
+                    AltarsOfSorrowRotation.AddUserTracking(command.User.Id, Weapon);
+                    await command.RespondAsync($"I will remind you when {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}) is in rotation, which will be on {TimestampTag.FromDateTime(AltarsOfSorrowRotation.DatePrediction(Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    return;
+                }
+                else if (notifyType.Equals("ascendant-challenge"))
+                {
+                    if (AscendantChallengeRotation.GetUserTracking(command.User.Id, out var AscendantChallenge) != null)
+                    {
+                        await command.RespondAsync($"You already have tracking for Ascendant Challenges. I am watching for {AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}).", ephemeral: true);
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("ascendant-challenge"))
+                            AscendantChallenge = (AscendantChallenge)Convert.ToInt32(option.Value);
+
+                    AscendantChallengeRotation.AddUserTracking(command.User.Id, AscendantChallenge);
+                    await command.RespondAsync($"I will remind you when {AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}) is in rotation, which will be on {TimestampTag.FromDateTime(AscendantChallengeRotation.DatePrediction(AscendantChallenge), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    return;
+                }
+                else if (notifyType.Equals("curse-week"))
+                {
+                    if (CurseWeekRotation.GetUserTracking(command.User.Id, out var CurseWeek) != null)
+                    {
+                        await command.RespondAsync($"You already have tracking for Curse Weeks. I am watching for {CurseWeek} Strength.", ephemeral: true);
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("strength"))
+                            CurseWeek = (CurseWeek)Convert.ToInt32(option.Value);
+
+                    CurseWeekRotation.AddUserTracking(command.User.Id, CurseWeek);
+                    await command.RespondAsync($"I will remind you when {CurseWeek} Strength is in rotation, which will be on {TimestampTag.FromDateTime(CurseWeekRotation.DatePrediction(CurseWeek), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    return;
+                }
+                else if (notifyType.Equals("deep-stone-crypt"))
+                {
+                    if (DeepStoneCryptRotation.GetUserTracking(command.User.Id, out var Encounter) != null)
+                    {
+                        await command.RespondAsync($"You already have tracking for Deep Stone Crypt challenges. I am watching for {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("challenge"))
+                            Encounter = (DeepStoneCryptEncounter)Convert.ToInt32(option.Value);
+
+                    DeepStoneCryptRotation.AddUserTracking(command.User.Id, Encounter);
+                    await command.RespondAsync($"I will remind you when {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(DeepStoneCryptRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    return;
+                }
+                else if (notifyType.Equals("empire-hunt"))
+                {
+                    if (EmpireHuntRotation.GetUserTracking(command.User.Id, out var Hunt) != null)
+                    {
+                        await command.RespondAsync($"You already have tracking for Empire Hunts. I am watching for {EmpireHuntRotation.GetHuntBossString(Hunt)}.", ephemeral: true);
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("empire-hunt"))
+                            Hunt = (EmpireHunt)Convert.ToInt32(option.Value);
+
+                    EmpireHuntRotation.AddUserTracking(command.User.Id, Hunt);
+                    await command.RespondAsync($"I will remind you when {EmpireHuntRotation.GetHuntBossString(Hunt)} is in rotation, which will be on {TimestampTag.FromDateTime(EmpireHuntRotation.DatePrediction(Hunt), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    return;
+                }
+                else if (notifyType.Equals("garden-of-salvation"))
+                {
+                    if (GardenOfSalvationRotation.GetUserTracking(command.User.Id, out var Encounter) != null)
+                    {
+                        await command.RespondAsync($"You already have tracking for Garden of Salvation challenges. I am watching for {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("challenge"))
+                            Encounter = (GardenOfSalvationEncounter)Convert.ToInt32(option.Value);
+
+                    GardenOfSalvationRotation.AddUserTracking(command.User.Id, Encounter);
+                    await command.RespondAsync($"I will remind you when {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(GardenOfSalvationRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    return;
+                }
+                else if (notifyType.Equals("last-wish"))
+                {
+                    if (LastWishRotation.GetUserTracking(command.User.Id, out var Encounter) != null)
+                    {
+                        await command.RespondAsync($"You already have tracking for Last Wish challenges. I am watching for {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("challenge"))
+                            Encounter = (LastWishEncounter)Convert.ToInt32(option.Value);
+
+                    LastWishRotation.AddUserTracking(command.User.Id, Encounter);
+                    await command.RespondAsync($"I will remind you when {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(LastWishRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    return;
+                }
+                else if (notifyType.Equals("lost-sector"))
+                {
+                    if (LostSectorRotation.GetUserTracking(command.User.Id, out var LS, out var LSD, out var EAT) != null)
+                    {
+                        if (LS == null && LSD == null && EAT == null)
+                            await command.RespondAsync($"An error has occurred.", ephemeral: true);
+                        else if (LS != null && LSD == null && EAT == null)
+                            await command.RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)}.", ephemeral: true);
+                        else if (LS != null && LSD != null && EAT == null)
+                            await command.RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}).", ephemeral: true);
+                        else if (LS == null && LSD == null && EAT != null)
+                            await command.RespondAsync($"You already have tracking for Lost Sectors. I am watching for {EAT} armor drop.", ephemeral: true);
+                        else if (LS == null && LSD != null && EAT != null)
+                            await command.RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LSD} {EAT} armor drop.", ephemeral: true);
+                        else if (LS != null && LSD != null && EAT != null)
+                            await command.RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) dropping {EAT}.", ephemeral: true);
+
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                    {
+                        if (option.Name.Equals("lost-sector"))
+                            LS = (LostSector)Convert.ToInt32(option.Value);
+                        else if (option.Name.Equals("difficulty"))
+                            LSD = (LostSectorDifficulty)Convert.ToInt32(option.Value);
+                        else if (option.Name.Equals("armor-drop"))
+                            EAT = (ExoticArmorType)Convert.ToInt32(option.Value);
+                    }
+
+                    if (LS == null && LSD != null && EAT == null)
+                    {
+                        await command.RespondAsync($"I cannot track a difficulty, they are always active.", ephemeral: true);
+                        return;
+                    }
+
+                    LostSectorRotation.AddUserTracking(command.User.Id, LS, LSD, EAT);
+                    if (LS == null && LSD == null && EAT == null)
+                        await command.RespondAsync($"An error has occurred.", ephemeral: true);
+                    else if (LS != null && LSD == null && EAT == null)
+                        await command.RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    else if (LS != null && LSD != null && EAT == null)
+                        await command.RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    else if (LS == null && LSD == null && EAT != null)
+                        await command.RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    else if (LS == null && LSD != null && EAT != null)
+                        await command.RespondAsync($"I will remind you when {LSD} Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    else if (LS != null && LSD != null && EAT != null)
+                        await command.RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+
+                    return;
+                }
+                else if (notifyType.Equals("nightfall"))
+                {
+                    if (NightfallRotation.GetUserTracking(command.User.Id, out var NF, out var Weapon) != null)
+                    {
+                        if (NF == null && Weapon == null)
+                            await command.RespondAsync($"An error has occurred.", ephemeral: true);
+                        else if (NF != null && Weapon == null)
+                            await command.RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.GetStrikeNameString((Nightfall)NF)}.", ephemeral: true);
+                        else if (NF == null && Weapon != null)
+                            await command.RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} weapon drops.", ephemeral: true);
+                        else if (NF != null && Weapon != null)
+                            await command.RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.GetStrikeNameString((Nightfall)NF)} with {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} weapon drops.", ephemeral: true);
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                    {
+                        if (option.Name.Equals("nightfall"))
+                            NF = (Nightfall)Convert.ToInt32(option.Value);
+                        else if (option.Name.Equals("weapon"))
+                            Weapon = (NightfallWeapon)Convert.ToInt32(option.Value);
+                    }
+
+                    NightfallRotation.AddUserTracking(command.User.Id, NF, Weapon);
+                    if (NF == null && Weapon == null)
+                        await command.RespondAsync($"An error has occurred.", ephemeral: true);
+                    else if (NF != null && Weapon == null)
+                        await command.RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    else if (NF == null && Weapon != null)
+                        await command.RespondAsync($"I will remind you when {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    else if (NF != null && Weapon != null)
+                        await command.RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    return;
+                }
+                else if (notifyType.Equals("nightmare-hunt"))
+                {
+                    if (NightmareHuntRotation.GetUserTracking(command.User.Id, out var Hunt) != null)
+                    {
+                        await command.RespondAsync($"You already have tracking for Nightmare Hunts. I am watching for {NightmareHuntRotation.GetHuntNameString(Hunt)} ({NightmareHuntRotation.GetHuntBossString(Hunt)}).", ephemeral: true);
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("nightmare-hunt"))
+                            Hunt = (NightmareHunt)Convert.ToInt32(option.Value);
+
+                    NightmareHuntRotation.AddUserTracking(command.User.Id, Hunt);
+                    await command.RespondAsync($"I will remind you when {NightmareHuntRotation.GetHuntNameString(Hunt)} ({NightmareHuntRotation.GetHuntBossString(Hunt)}) is in rotation, which will be on {TimestampTag.FromDateTime(NightmareHuntRotation.DatePrediction(Hunt), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    return;
+                }
+                else if (notifyType.Equals("vault-of-glass"))
+                {
+                    if (VaultOfGlassRotation.GetUserTracking(command.User.Id, out var Encounter) != null)
+                    {
+                        await command.RespondAsync($"You already have tracking for Vault of Glass challenges. I am watching for {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                        return;
+                    }
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("challenge"))
+                            Encounter = (VaultOfGlassEncounter)Convert.ToInt32(option.Value);
+
+                    VaultOfGlassRotation.AddUserTracking(command.User.Id, Encounter);
+                    await command.RespondAsync($"I will remind you when {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(VaultOfGlassRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    return;
+                }
+                else if (notifyType.Equals("remove"))
+                {
+                    // Build a selection menu with a list of all of the active trackings a user has.
+                    var menuBuilder = new SelectMenuBuilder()
+                        .WithPlaceholder("Select one of your active trackers")
+                        .WithCustomId("notifyRemovalMenu")
+                        .WithMinValues(1)
+                        .WithMaxValues(1);
+
+                    if (AltarsOfSorrowRotation.GetUserTracking(command.User.Id, out var Weapon) != null)
+                        menuBuilder.AddOption("Altars of Sorrow", "altars-of-sorrow", $"{AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon})");
+
+                    if (AscendantChallengeRotation.GetUserTracking(command.User.Id, out var Challenge) != null)
+                        menuBuilder.AddOption("Ascendant Challenge", "ascendant-challenge", $"{AscendantChallengeRotation.GetChallengeNameString(Challenge)} ({AscendantChallengeRotation.GetChallengeLocationString(Challenge)})");
+
+                    if (CurseWeekRotation.GetUserTracking(command.User.Id, out var Strength) != null)
+                        menuBuilder.AddOption("Curse Week", "curse-week", $"{Strength} Strength");
+
+                    if (DeepStoneCryptRotation.GetUserTracking(command.User.Id, out var DSCEncounter) != null)
+                        menuBuilder.AddOption("Deep Stone Crypt Challenge", "dsc-challenge", $"{DeepStoneCryptRotation.GetEncounterString(DSCEncounter)} ({DeepStoneCryptRotation.GetChallengeString(DSCEncounter)})");
+
+                    if (EmpireHuntRotation.GetUserTracking(command.User.Id, out var EmpireHunt) != null)
+                        menuBuilder.AddOption("Empire Hunt", "empire-hunt", $"{EmpireHuntRotation.GetHuntBossString(EmpireHunt)}");
+
+                    if (GardenOfSalvationRotation.GetUserTracking(command.User.Id, out var GoSEncounter) != null)
+                        menuBuilder.AddOption("Garden of Salvation Challenge", "gos-challenge", $"{GardenOfSalvationRotation.GetEncounterString(GoSEncounter)} ({GardenOfSalvationRotation.GetChallengeString(GoSEncounter)})");
+
+                    if (LastWishRotation.GetUserTracking(command.User.Id, out var LWEncounter) != null)
+                        menuBuilder.AddOption("Last Wish Challenge", "lw-challenge", $"{LastWishRotation.GetEncounterString(LWEncounter)} ({LastWishRotation.GetChallengeString(LWEncounter)})");
+
+                    if (LostSectorRotation.GetUserTracking(command.User.Id, out var LS, out var LSD, out var EAT) != null)
+                    {
+                        if (LS == null && LSD == null && EAT == null)
+                            menuBuilder.AddOption("Lost Sector", "remove-error", $"Nothing found");
+                        else if (LS != null && LSD == null && EAT == null)
+                            menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)}");
+                        else if (LS != null && LSD != null && EAT == null)
+                            menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD})");
+                        else if (LS == null && LSD == null && EAT != null)
+                            menuBuilder.AddOption("Lost Sector", "lost-sector", $"{EAT} Drop");
+                        else if (LS == null && LSD != null && EAT != null)
+                            menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LSD} {EAT} Drop");
+                        else if (LS != null && LSD != null && EAT != null)
+                            menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) dropping {EAT}");
+                    }
+
+                    if (NightfallRotation.GetUserTracking(command.User.Id, out var NF, out var NFWeapon) != null)
+                    {
+                        if (NF == null && NFWeapon == null)
+                            menuBuilder.AddOption("Nightfall", "remove-error", $"Nothing found");
+                        else if (NF != null && NFWeapon == null)
+                            menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.GetStrikeNameString((Nightfall)NF)}");
+                        else if (NF == null && NFWeapon != null)
+                            menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.GetWeaponString((NightfallWeapon)NFWeapon)} Drop");
+                        else if (NF != null && NFWeapon != null)
+                            menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.GetStrikeNameString((Nightfall)NF)} dropping {NightfallRotation.GetWeaponString((NightfallWeapon)NFWeapon)}");
+                    }
+
+                    if (NightmareHuntRotation.GetUserTracking(command.User.Id, out var NightmareHunt) != null)
+                        menuBuilder.AddOption("Nightmare Hunt", "nightmare-hunt", $"{NightmareHuntRotation.GetHuntNameString(NightmareHunt)} ({NightmareHuntRotation.GetHuntBossString(NightmareHunt)})");
+
+                    if (VaultOfGlassRotation.GetUserTracking(command.User.Id, out var VoGEncounter) != null)
+                        menuBuilder.AddOption("Vault of Glass Challenge", "vog-challenge", $"{VaultOfGlassRotation.GetEncounterString(VoGEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGEncounter)})");
+
+                    var builder = new ComponentBuilder()
+                        .WithSelectMenu(menuBuilder);
+
+                    try
+                    {
+                        await command.RespondAsync($"Which rotation tracker did you want me to remove? Please dismiss this message after you are done.", ephemeral: true, components: builder.Build());
+                    }
+                    catch
+                    {
+                        await command.RespondAsync($"You do not have any active trackers. Use '/notify' to activate your first one!", ephemeral: true);
+                    }
+                }
+            }
+            else if (command.Data.Name.Equals("free-emblems"))
+            {
+                var auth = new EmbedAuthorBuilder()
+                {
+                    Name = $"Universal Emblem Codes",
+                    IconUrl = _client.GetApplicationInfoAsync().Result.IconUrl,
+                };
+                var foot = new EmbedFooterBuilder()
+                {
+                    Text = $"These codes are not limited to one account and can be used by anyone."
+                };
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Author = auth,
+                    Footer = foot,
+                };
+                embed.Title = "";
+                embed.Description =
+                    $"[The Visionary](https://www.bungie.net/common/destiny2_content/icons/65b4047b1b83aeeeb2e628305071fcea.jpg): **XFV-KHP-N97**\n" +
+                    $"[Cryonautics](https://www.bungie.net/common/destiny2_content/icons/6719dde48dca592addb4102cb747e097.jpg): **RA9-XPH-6KJ**\n" +
+                    $"[Galilean Excursion](https://bungie.net/common/destiny2_content/icons/3e99d575d00fb307c15fb5513dee13c6.jpg): **JYN-JAA-Y7D**\n" +
+                    $"[Future in Shadow](https://bungie.net/common/destiny2_content/icons/dd9af60ef15319ee986a1f6cc029fe71.jpg): **7LV-GTK-T7J**\n" +
+                    $"[Sequence Flourish](https://www.bungie.net/common/destiny2_content/icons/01e9b3863c14f9149ff4035b896ad5ed.jpg): **7D4-PKR-MD7**\n" +
+                    $"[A Classy Order](https://www.bungie.net/common/destiny2_content/icons/adaf0e2c15610cdfff750725701222ec.jpg): **YRC-C3D-YNC**\n" +
+                    $"[Be True](https://www.bungie.net/common/destiny2_content/icons/a6d9b66f124b25ac73969ebe4bc45b90.jpg): **ML3-FD4-ND9**\n" +
+                    $"[Heliotrope Warren](https://www.bungie.net/common/destiny2_content/icons/385c302dc22e6dafb8b50c253486d040.jpg): **L7T-CVV-3RD**\n" +
+                    $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*";
+                embed.ThumbnailUrl = _client.GetApplicationInfoAsync().Result.IconUrl;
+
+                await command.RespondAsync("", embed: embed.Build());
+            }
+            else if (command.Data.Name.Equals("raid"))
+            {
+                await command.RespondAsync($"Command is under construction! Wait for the next update.", ephemeral: true);
+                return;
+            }
+            else if (command.Data.Name.Equals("patrol"))
+            {
+                await command.RespondAsync($"Command is under construction! Wait for the next update.", ephemeral: true);
+                return;
+            }
+            else if (command.Data.Name.Equals("nightfall"))
+            {
+                await command.RespondAsync($"Command is under construction! Wait for the next update.", ephemeral: true);
+                return;
+            }
+            else if (command.Data.Name.Equals("daily"))
+            {
+                await command.RespondAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
+                return;
+            }
+            else if (command.Data.Name.Equals("weekly"))
+            {
+                await command.RespondAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
+                return;
+            }
+            else
+            {
+                await command.RespondAsync($"Command is under construction! Wait for the next update.", ephemeral: true);
+                return;
+            }
+        }
+
+        private async Task SelectMenuHandler(SocketMessageComponent interaction)
+        {
+            string trackerType = interaction.Data.Values.First();
+
+            if (trackerType.Equals("altars-of-sorrow"))
+            {
+                if (AltarsOfSorrowRotation.GetUserTracking(interaction.User.Id, out var Weapon) == null)
+                {
+                    await interaction.RespondAsync($"No Altars of Sorrow tracking enabled.", ephemeral: true);
+                    return;
+                }
+                AltarsOfSorrowRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Altars of Sorrow tracking, you will not be notified when {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}) is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("ascendant-challenge"))
+            {
+                if (AscendantChallengeRotation.GetUserTracking(interaction.User.Id, out var Challenge) == null)
+                {
+                    await interaction.RespondAsync($"No Ascendant Challenge tracking enabled.", ephemeral: true);
+                    return;
+                }
+                AscendantChallengeRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Ascendant Challenge tracking, you will not be notified when {AscendantChallengeRotation.GetChallengeNameString(Challenge)} ({AscendantChallengeRotation.GetChallengeLocationString(Challenge)}) is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("curse-week"))
+            {
+                if (CurseWeekRotation.GetUserTracking(interaction.User.Id, out var Strength) == null)
+                {
+                    await interaction.RespondAsync($"No Curse Week tracking enabled.", ephemeral: true);
+                    return;
+                }
+                CurseWeekRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Curse Week tracking, you will not be notified when {Strength} Strength is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("dsc-challenge"))
+            {
+                if (DeepStoneCryptRotation.GetUserTracking(interaction.User.Id, out var DSCEncounter) == null)
+                {
+                    await interaction.RespondAsync($"No Deep Stone Crypt challenges tracking enabled.", ephemeral: true);
+                    return;
+                }
+                DeepStoneCryptRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Deep Stone Crypt challenges tracking, you will not be notified when {DeepStoneCryptRotation.GetEncounterString(DSCEncounter)} ({DeepStoneCryptRotation.GetChallengeString(DSCEncounter)}) is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("empire-hunt"))
+            {
+                if (EmpireHuntRotation.GetUserTracking(interaction.User.Id, out var EmpireHunt) == null)
+                {
+                    await interaction.RespondAsync($"No Empire Hunt tracking enabled.", ephemeral: true);
+                    return;
+                }
+                EmpireHuntRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Empire Hunt tracking, you will not be notified when {EmpireHuntRotation.GetHuntBossString(EmpireHunt)} is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("gos-challenge"))
+            {
+                if (GardenOfSalvationRotation.GetUserTracking(interaction.User.Id, out var GoSEncounter) == null)
+                {
+                    await interaction.RespondAsync($"No Garden of Salvation challenges tracking enabled.", ephemeral: true);
+                    return;
+                }
+                GardenOfSalvationRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Garden of Salvation challenges tracking, you will not be notified when {GardenOfSalvationRotation.GetEncounterString(GoSEncounter)} ({GardenOfSalvationRotation.GetChallengeString(GoSEncounter)}) is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("lw-challenge"))
+            {
+                if (LastWishRotation.GetUserTracking(interaction.User.Id, out var LWEncounter) == null)
+                {
+                    await interaction.RespondAsync($"No Last Wish challenges tracking enabled.", ephemeral: true);
+                    return;
+                }
+                LastWishRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Last Wish challenges tracking, you will not be notified when {LastWishRotation.GetEncounterString(LWEncounter)} ({LastWishRotation.GetChallengeString(LWEncounter)}) is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("lost-sector"))
+            {
+                if (LostSectorRotation.GetUserTracking(interaction.User.Id, out var LS, out var LSD, out var EAT) == null)
+                {
+                    await interaction.RespondAsync($"No Lost Sector tracking enabled.", ephemeral: true);
+                    return;
+                }
+                LostSectorRotation.RemoveUserTracking(interaction.User.Id);
+                if (LS == null && LSD == null && EAT == null)
+                    await interaction.RespondAsync($"An error has occurred.", ephemeral: true);
+                else if (LS != null && LSD == null && EAT == null)
+                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is available.", ephemeral: true);
+                else if (LS != null && LSD != null && EAT == null)
+                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is available.", ephemeral: true);
+                else if (LS == null && LSD == null && EAT != null)
+                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when Lost Sectors are dropping {EAT}.", ephemeral: true);
+                else if (LS == null && LSD != null && EAT != null)
+                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LSD} Lost Sectors are dropping {EAT}.", ephemeral: true);
+                else if (LS != null && LSD != null && EAT != null)
+                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is dropping {EAT}.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("nightfall"))
+            {
+                if (NightfallRotation.GetUserTracking(interaction.User.Id, out var NF, out var NFWeapon) == null)
+                {
+                    await interaction.RespondAsync($"No Nightfall tracking enabled.", ephemeral: true);
+                    return;
+                }
+                NightfallRotation.RemoveUserTracking(interaction.User.Id);
+                if (NF == null && NFWeapon == null)
+                    await interaction.RespondAsync($"An error has occurred.", ephemeral: true);
+                else if (NF != null && NFWeapon == null)
+                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is available.", ephemeral: true);
+                else if (NF == null && NFWeapon != null)
+                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.GetWeaponString((NightfallWeapon)NFWeapon)} is available.", ephemeral: true);
+                else if (NF != null && NFWeapon != null)
+                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is dropping {NightfallRotation.GetWeaponString((NightfallWeapon)NFWeapon)}.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("nightmare-hunt"))
+            {
+                if (NightmareHuntRotation.GetUserTracking(interaction.User.Id, out var NightmareHunt) == null)
+                {
+                    await interaction.RespondAsync($"No Nightmare Hunt tracking enabled.", ephemeral: true);
+                    return;
+                }
+                NightmareHuntRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Nightmare Hunt tracking, you will not be notified when {NightmareHuntRotation.GetHuntNameString(NightmareHunt)} ({NightmareHuntRotation.GetHuntBossString(NightmareHunt)}) is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("vog-challenge"))
+            {
+                if (VaultOfGlassRotation.GetUserTracking(interaction.User.Id, out var VoGEncounter) == null)
+                {
+                    await interaction.RespondAsync($"No Vault of Glass challenges tracking enabled.", ephemeral: true);
+                    return;
+                }
+                VaultOfGlassRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Vault of Glass challenges tracking, you will not be notified when {VaultOfGlassRotation.GetEncounterString(VoGEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGEncounter)}) is available.", ephemeral: true);
+                return;
+            }
         }
 
         private async Task ButtonHandler(SocketMessageComponent interaction)
         {
-            // Get the custom ID 
             var customId = interaction.Data.CustomId;
-            // Get the user
             var user = (SocketGuildUser)interaction.User;
-            // Get the guild
             var guild = user.Guild;
-            // Get the channel
             var channel = interaction.Channel;
-
-            // Respond with the update message. This edits the message which this component resides.
-            //await interaction.UpdateAsync(msgProps => msgProps.Content = $"Clicked {interaction.Data.CustomId}!");
-
-            // Also you can followup with a additional messages
 
             if (customId.Equals("viewHelp"))
             {
@@ -1058,12 +1541,6 @@ namespace DestinyUtility
                     return;
                 }
 
-                if (IsBungieAPIDown(out string DownReason))
-                {
-                    await interaction.RespondAsync($"Bungie API is temporarily down, therefore, I cannot enable our logging feature. Try again later. Status: {DownReason}", ephemeral: true);
-                    return;
-                }
-
                 if (!DataConfig.IsExistingLinkedUser(user.Id))
                 {
                     await interaction.RespondAsync($"You are not registered! Use \"{BotConfig.DefaultCommandPrefix}linkHelp\" to learn how to register.", ephemeral: true);
@@ -1079,7 +1556,13 @@ namespace DestinyUtility
                 string memId = DataConfig.GetLinkedUser(user.Id).BungieMembershipID;
                 string memType = DataConfig.GetLinkedUser(user.Id).BungieMembershipType;
 
-                int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out bool isInShatteredThrone, out PrivacySetting fireteamPrivacy, out string CharacterId);
+                int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out bool isInShatteredThrone, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus);
+
+                if (!errorStatus.Equals("Success"))
+                {
+                    await interaction.RespondAsync($"Bungie API is temporarily down, therefore, I cannot enable our logging feature. Try again later. Reason: {errorStatus}", ephemeral: true);
+                    return;
+                }
 
                 if (!isInShatteredThrone)
                 {
@@ -1204,12 +1687,6 @@ namespace DestinyUtility
                     return;
                 }
 
-                /*if (CheckIfDisabledCommand(arg, prefix)) // Check for disabled command
-                {
-                    await arg.Channel.SendMessageAsync($"That command is disabled. Try again later.");
-                    return;
-                }*/
-
                 var handled = await TryHandleCommandAsync(msg, argPos).ConfigureAwait(false);
                 if (handled) return;
             }
@@ -1247,28 +1724,6 @@ namespace DestinyUtility
                     await context.Channel.SendMessageAsync($"[{error}]: Command is missing some arguments.").ConfigureAwait(false);
                 }
             }
-            return true;
-        }
-
-        private bool CheckAndLoadLostSectorData()
-        {
-            LostSectorRotation lstConfig;
-
-            bool closeProgram = false;
-            if (File.Exists(LostSectorTrackingConfigPath))
-            {
-                string json = File.ReadAllText(LostSectorTrackingConfigPath);
-                lstConfig = JsonConvert.DeserializeObject<LostSectorRotation>(json);
-            }
-            else
-            {
-                lstConfig = new LostSectorRotation();
-                File.WriteAllText(LostSectorTrackingConfigPath, JsonConvert.SerializeObject(lstConfig, Formatting.Indented));
-                Console.WriteLine($"No lostSectorTrackingConfig.json file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.");
-                closeProgram = true;
-            }
-
-            if (closeProgram == true) return false;
             return true;
         }
     }

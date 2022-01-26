@@ -1,11 +1,8 @@
-﻿using DestinyUtility;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Net.Http;
-using System.Text;
 
 namespace DestinyUtility.Configs
 {

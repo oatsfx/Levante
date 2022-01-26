@@ -1,16 +1,6 @@
 ﻿using Discord.Commands;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using System.IO;
-using System.Net.Http;
 using Discord;
-using System.Globalization;
-using System.Collections.Concurrent;
-using System.Linq;
-using Discord.WebSocket;
 using DestinyUtility.Configs;
 
 namespace DestinyUtility.Commands

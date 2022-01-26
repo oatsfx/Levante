@@ -7,6 +7,7 @@ namespace DestinyUtility.Util
 {
     public abstract class InventoryItem
     {
+        [JsonProperty("HashCode")]
         protected long HashCode { get; set; }
         protected string APIUrl { get; set; }
         protected string Content { get; set; }

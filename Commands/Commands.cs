@@ -3,13 +3,9 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using DestinyUtility.Configs;
-using DestinyUtility.Leaderboards;
 
 namespace DestinyUtility.Commands
 {
@@ -175,15 +171,26 @@ namespace DestinyUtility.Commands
         [Command("currentSession", RunMode = RunMode.Async)]
         [Alias("session", "cs", "sessionStats")]
         [Summary("Pulls stats of current Thrallway session.")]
-        public async Task SessionStats()
+        public async Task SessionStats([Remainder] SocketGuildUser user = null)
         {
-            if (!ActiveConfig.IsExistingActiveUser(Context.User.Id))
+            if (user == null)
+                user = Context.User as SocketGuildUser;
+
+            if (!ActiveConfig.IsExistingActiveUser(user.Id))
             {
-                await ReplyAsync("You are not using my logging feature.");
-                return;
+                if (Context.User.Id == user.Id)
+                {
+                    await ReplyAsync("You are not using my logging feature.");
+                    return;
+                }
+                else
+                {
+                    await ReplyAsync($"{user.Nickname} is not using my logging feature.");
+                    return;
+                }
             }
 
-            var aau = ActiveConfig.GetActiveAFKUser(Context.User.Id);
+            var aau = ActiveConfig.GetActiveAFKUser(user.Id);
 
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
