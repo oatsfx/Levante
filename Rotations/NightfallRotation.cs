@@ -37,7 +37,7 @@ namespace DestinyUtility.Rotations
                 case Nightfall.LakeOfShadows: return "Lake of Shadows";
                 case Nightfall.ExodusCrash: return "Exodus Crash";
                 case Nightfall.TheCorrupted: return "The Corrupted";
-                case Nightfall.TheDevilsLair: return "The Devil's Lair";
+                case Nightfall.TheDevilsLair: return "The Devils' Lair";
                 case Nightfall.ProvingGrounds: return "Proving Grounds";
                 default: return "Nightfall: The Ordeal";
             }
@@ -222,7 +222,7 @@ namespace DestinyUtility.Rotations
             embed.AddField(y =>
             {
                 y.Name = $"Adept";
-                y.Value = $"Recommended Power: <:LightLevel:844029708077367297>1250\n" +
+                y.Value = $"Recommended Power: {DestinyEmote.Light}1250\n" +
                     $"Champions: None.\n" +
                     $"Modifiers: ";
                 y.IsInline = false;

@@ -185,7 +185,7 @@ namespace DestinyUtility.Commands
                 }
                 else
                 {
-                    await ReplyAsync($"{user.Nickname} is not using my logging feature.");
+                    await ReplyAsync($"{user.Username} is not using my logging feature.");
                     return;
                 }
             }

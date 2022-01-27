@@ -173,8 +173,7 @@ namespace DestinyUtility
             try // thrallway
             {
                 LogHelper.ConsoleLog($"Refreshing Thrallway Users...");
-                List<ActiveConfig.ActiveAFKUser> temp = ActiveConfig.ActiveAFKUsers;
-                foreach (ActiveConfig.ActiveAFKUser aau in temp)
+                foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers.ToList())
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
                     int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isInShatteredThrone, out string errorStatus);
