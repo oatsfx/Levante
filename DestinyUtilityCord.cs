@@ -209,7 +209,7 @@ namespace DestinyUtility
                         await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", GenerateSessionSummary(tempAau).Result);
 
                         LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
-
+                        listOfRemovals.Add(tempAau);
                         await Task.Run(() => CheckLeaderboardData(tempAau));
                     }
                     else if (updatedLevel > tempAau.LastLoggedLevel)
