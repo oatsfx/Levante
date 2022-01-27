@@ -237,15 +237,12 @@ namespace DestinyUtility
 
                     await Task.Delay(3500); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
-                string json = File.ReadAllText(ActiveConfig.FilePath);
-                ActiveConfig aConfig = JsonConvert.DeserializeObject<ActiveConfig>(json);
 
                 foreach (var user in listOfRemovals)
                     if (ActiveConfig.GetActiveAFKUser(user.DiscordID) != null)
                         ActiveConfig.DeleteActiveUserFromConfig(user.DiscordID);
 
-                string output = JsonConvert.SerializeObject(aConfig, Formatting.Indented);
-                File.WriteAllText(ActiveConfig.FilePath, output);
+                ActiveConfig.UpdateActiveAFKUsersConfig();
 
                 await UpdateBotActivity();
                 LogHelper.ConsoleLog($"Bungie API Refreshed!");
