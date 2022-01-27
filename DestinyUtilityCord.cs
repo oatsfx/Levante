@@ -169,7 +169,7 @@ namespace DestinyUtility
             }
 
             LogHelper.ConsoleLog($"Refreshing Bungie API...");
-            List<ActiveConfig.ActiveAFKUser> newActiveList = new List<ActiveConfig.ActiveAFKUser>();
+            List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
             try // thrallway
             {
                 LogHelper.ConsoleLog($"Refreshing Thrallway Users...");
@@ -218,7 +218,6 @@ namespace DestinyUtility
 
                         tempAau.LastLoggedLevel = updatedLevel;
                         tempAau.LastLevelProgress = updatedProgression;
-                        newActiveList.Add(tempAau);
 
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, 
                             $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {tempAau.LastLoggedLevel} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP)");
@@ -226,7 +225,7 @@ namespace DestinyUtility
                     else if (updatedProgression <= tempAau.LastLevelProgress)
                     {
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"No XP change detected, attempting to refresh API again...");
-                        if (await RefreshSpecificUser(tempAau).ConfigureAwait(false) != null) newActiveList.Add(tempAau);
+                        if (await RefreshSpecificUser(tempAau).ConfigureAwait(false) == null) listOfRemovals.Add(tempAau);
                     }
                     else
                     {
@@ -234,7 +233,6 @@ namespace DestinyUtility
 
                         tempAau.LastLoggedLevel = updatedLevel;
                         tempAau.LastLevelProgress = updatedProgression;
-                        newActiveList.Add(tempAau);
                     }
 
                     await Task.Delay(3500); // we dont want to spam API if we have a ton of AFK subscriptions
@@ -242,8 +240,10 @@ namespace DestinyUtility
                 string json = File.ReadAllText(ActiveConfig.FilePath);
                 ActiveConfig aConfig = JsonConvert.DeserializeObject<ActiveConfig>(json);
 
-                ActiveConfig.UpdateActiveAFKUsersList();
-                ActiveConfig.ActiveAFKUsers = newActiveList;
+                foreach (var user in listOfRemovals)
+                    if (ActiveConfig.GetActiveAFKUser(user.DiscordID) != null)
+                        ActiveConfig.DeleteActiveUserFromConfig(user.DiscordID);
+
                 string output = JsonConvert.SerializeObject(aConfig, Formatting.Indented);
                 File.WriteAllText(ActiveConfig.FilePath, output);
 
