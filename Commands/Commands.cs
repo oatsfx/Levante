@@ -157,12 +157,19 @@ namespace DestinyUtility.Commands
                 Author = auth,
                 Footer = foot,
             };
-            embed.Description = $"__AFK List:__\n";
 
-            foreach (var aau in ActiveConfig.ActiveAFKUsers)
+            if (ActiveConfig.ActiveAFKUsers.Count >= 1)
             {
-                embed.Description +=
-                    $"{aau.UniqueBungieName} (<@{aau.DiscordID}>): Level {aau.LastLoggedLevel}\n";
+                embed.Description = $"__AFK List:__\n";
+                foreach (var aau in ActiveConfig.ActiveAFKUsers)
+                {
+                    embed.Description +=
+                        $"{aau.UniqueBungieName} (<@{aau.DiscordID}>): Level {aau.LastLoggedLevel}\n";
+                }
+            }
+            else
+            {
+                embed.Description = "No users are using my logging feature.";
             }
 
             await ReplyAsync($"", false, embed.Build());
