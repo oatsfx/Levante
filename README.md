@@ -1,4 +1,4 @@
-# DestinyUtility
+# Levante
 An open-source Discord bot using [Discord.Net-Labs](https://github.com/Discord-Net-Labs/Discord.Net-Labs) for various Destiny 2 Needs.
 
 Developed by [@OatsFX](https://twitter.com/OatsFX).
@@ -18,7 +18,7 @@ Click [this link to invite the bot](https://discord.com/oauth2/authorize?client_
 There are a few things you can do if there are any issues with the official bot user:
 1. Please make sure your issue is not already a [Known Issue](#known-issues).
 2. Create an Issue here on GitHub.
-3. Join the [official support server](https://discord.gg/ZDAcbVrHVC) and shoot a message in the #report channel.
+3. Join the [official support server](https://discord.gg/XCyngRkqAa) and shoot a message in the #report channel.
 
 # Stuff for Nerds
 
