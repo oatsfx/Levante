@@ -1,9 +1,9 @@
-﻿using DestinyUtility.Configs;
+﻿using Levante.Configs;
 using Discord;
 using Newtonsoft.Json;
 using System.Net.Http;
 
-namespace DestinyUtility.Util
+namespace Levante.Util
 {
     public class Guardian
     {
@@ -98,7 +98,8 @@ namespace DestinyUtility.Util
             };
             embed.Description =
                 $"{GetClassEmote()} **{GetRace()} {GetGender()} {GetClass()}** {GetClassEmote()}\n" +
-                $"Light Level: {DestinyEmote.Light}{GetLightLevel()}\n";
+                $"Light Level: {DestinyEmote.Light}{GetLightLevel()}\n" +
+                $"Emblem: {GetEmblem().GetName()} ({GetEmblem().GetItemHash()})";
             embed.ThumbnailUrl = GetEmblem().GetIconUrl();
 
             dynamic item = JsonConvert.DeserializeObject(GuardianContent);

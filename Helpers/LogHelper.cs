@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Discord;
 
-namespace DestinyUtility.Helpers
+namespace Levante.Helpers
 {
     public static class LogHelper
     {

@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace DestinyUtility.Util
+namespace Levante.Util
 {
     public abstract class InventoryItem
     {

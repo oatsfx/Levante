@@ -1,8 +1,9 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
-namespace DestinyUtility.Configs
+namespace Levante.Configs
 {
     public sealed class BotConfig : IConfig
     {
@@ -15,7 +16,7 @@ namespace DestinyUtility.Configs
         public static string BungieApiKey { get; set; } = "[YOUR API KEY HERE]";
 
         [JsonProperty("TimeBetweenRefresh")]
-        public static int TimeBetweenRefresh { get; set; } = 5;
+        public static int TimeBetweenRefresh { get; set; } = 4;
 
         [JsonProperty("Version")]
         public static double Version { get; set; } = 1.0;
@@ -25,6 +26,12 @@ namespace DestinyUtility.Configs
 
         [JsonProperty("Note")]
         public static string Note { get; set; } = "Hello World";
+
+        [JsonProperty("DurationToWaitForNextMessage")]
+        public static int DurationToWaitForNextMessage { get; set; } = 20;
+
+        [JsonProperty("BotStaff")]
+        public static List<ulong> BotStaffDiscordIDs { get; set; } = new List<ulong>();
 
         [JsonProperty("EmbedColor")]
         public static EmbedColorGroup EmbedColor { get; set; } = new EmbedColorGroup();

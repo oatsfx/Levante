@@ -1,12 +1,12 @@
-﻿using DestinyUtility.Configs;
-using DestinyUtility.Util;
+﻿using Levante.Configs;
+using Levante.Util;
 using Discord;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace DestinyUtility.Rotations
+namespace Levante.Rotations
 {
     public class LostSectorRotation
     {
@@ -378,6 +378,11 @@ namespace DestinyUtility.Rotations
             ExoticArmorType iterationEAT = CurrentRotations.LegendLostSectorArmorDrop;
             LostSector iterationLS = CurrentRotations.LegendLostSector;
             int DaysUntil = LSD == LostSectorDifficulty.Master ? 1 : 0;
+
+            // Special case where if the user happens to get tomorrow's Master Lost Sector.
+            if (LSD == LostSectorDifficulty.Master && LS == iterationLS && ArmorType == iterationEAT)
+                return CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil);
+
             if (LS == null && ArmorType != null)
             {
                 do
@@ -404,6 +409,33 @@ namespace DestinyUtility.Rotations
                 } while (iterationEAT != ArmorType && iterationLS != LS);
             }
             return CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil);
+        }
+
+        public static LostSector ActivityPrediction(DateTime Date, LostSectorDifficulty Difficulty, out ExoticArmorType ArmorDrop)
+        {
+            DateTime iterationDate = CurrentRotations.WeeklyResetTimestamp;
+            ExoticArmorType iterationEAT;
+            LostSector iterationLS;
+            if (Difficulty == LostSectorDifficulty.Legend)
+            {
+                iterationEAT = CurrentRotations.LegendLostSectorArmorDrop;
+                iterationLS = CurrentRotations.LegendLostSector;
+            }
+            else
+            {
+                iterationEAT = CurrentRotations.MasterLostSectorArmorDrop;
+                iterationLS = CurrentRotations.MasterLostSector;
+            }
+
+            do
+            {
+                iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
+                iterationLS = iterationLS == LostSector.Perdition ? LostSector.BayOfDrownedWishes : iterationLS + 1;
+                iterationDate.AddDays(1);
+            } while ((iterationDate - Date).Days >= 1);
+
+            ArmorDrop = iterationEAT;
+            return iterationLS;
         }
     }
 

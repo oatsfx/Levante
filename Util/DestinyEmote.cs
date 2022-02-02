@@ -1,4 +1,4 @@
-﻿namespace DestinyUtility.Util
+﻿namespace Levante.Util
 {
     // This class contains all of the Discord Emote strings to use for UI elements in Destiny.
     public static class DestinyEmote
@@ -13,6 +13,7 @@
         public static readonly string ArcBurn = "<:ArcBurn:900142018280456213>";
         public static readonly string Attrition = "<:Attrition:900142029487632395>";
         public static readonly string Chaff = "<:Chaff:900142037020598293>";
+        public static readonly string Empath = "<:Empath:938569958806392902>";
         public static readonly string Epitaph = "<:Epitaph:900142044368994315>";
         public static readonly string EquipmentLocked = "<:EquipmentLocked:900142051725819965>";
         public static readonly string Extinguish = "<:Extinguish:935313319110254592>";
@@ -22,14 +23,17 @@
         public static readonly string FirePit = "<:FirePit:900142069182521345>";
         public static readonly string GrandmasterModifiers = "<:GrandmasterModifiers:935312672856092703>";
         public static readonly string HotKnife = "<:HotKnife:900142076673540096>";
+        public static readonly string IgnovunsChallenge = "<:IgnovunsChallenge:938570421534601277>";
         public static readonly string LimitedRevives = "<:LimitedRevives:900142086270115901>";
         public static readonly string MatchGame = "<:MatchGame:900142096013459516>";
         public static readonly string RaiderShield = "<:RaiderShield:900142103697428562>";
         public static readonly string SediasDurance = "<:SediasDurance:935306050683404288>";
+        public static readonly string SepiksGaze = "<:SepiksGaze:937512845111857222>";
         public static readonly string ScorchedEarth = "<:ScorchedEarth:935381186136641546>";
         public static readonly string Shocker = "<:Shocker:900142114426486844>";
         public static readonly string SolarBurn = "<:SolarBurn:900142136996020224>";
         public static readonly string ThaviksImplant = "<:ThaviksImplant:935381584159342642>";
+        public static readonly string Togetherness = "<:Togetherness:937513440933740584>";
         public static readonly string VoidBurn = "<:VoidBurn:900142150338105404>";
 
         // Elements

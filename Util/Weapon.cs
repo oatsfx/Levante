@@ -1,7 +1,7 @@
-﻿using DestinyUtility.Configs;
+﻿using Levante.Configs;
 using System.Net.Http;
 
-namespace DestinyUtility.Util
+namespace Levante.Util
 {
     public class Weapon : InventoryItem
     {

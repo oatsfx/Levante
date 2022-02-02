@@ -1,17 +1,19 @@
-﻿using DestinyUtility.Configs;
+﻿using Levante.Configs;
 using Discord;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace DestinyUtility.Util
+namespace Levante.Util
 {
     public class EmblemOffer
     {
         public static List<EmblemOffer> CurrentOffers = new List<EmblemOffer>();
 
-        [JsonProperty("OfferedEmblem")]
+        [JsonProperty("EmblemHashCode")]
+        public readonly long EmblemHashCode;
+
         public readonly Emblem OfferedEmblem;
 
         [JsonProperty("OfferType")]
@@ -32,23 +34,11 @@ namespace DestinyUtility.Util
         [JsonProperty("SpecialUrl")]
         public readonly string SpecialUrl;
 
-        public EmblemOffer(long HashCode, EmblemOfferType offerType, DateTime startDate, DateTime endDate, string desc, string imageUrl, string specialUrl = null)
+        [JsonConstructor]
+        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime endDate, string desc, string imageUrl, string specialUrl = null)
         {
-            OfferedEmblem = new Emblem(HashCode);
-            OfferType = offerType;
-            StartDate = startDate;
-            EndDate = endDate;
-            Description = desc;
-            ImageUrl = imageUrl;
-            SpecialUrl = specialUrl;
-
-            CurrentOffers.Add(this);
-            CreateJSON(this);
-        }
-
-        public EmblemOffer(Emblem emblem, EmblemOfferType offerType, DateTime startDate, DateTime endDate, string desc, string imageUrl, string specialUrl = null)
-        {
-            OfferedEmblem = emblem;
+            EmblemHashCode = emblemHashCode;
+            OfferedEmblem = new Emblem(EmblemHashCode);
             OfferType = offerType;
             StartDate = startDate;
             EndDate = endDate;
@@ -69,7 +59,7 @@ namespace DestinyUtility.Util
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by @OatsFX"
+                Text = $"Powered by GoGo, Jaken, and OatsFX"
             };
             int[] emblemRGB = OfferedEmblem.GetRGBAsIntArray();
             var embed = new EmbedBuilder()
@@ -81,13 +71,15 @@ namespace DestinyUtility.Util
             embed.Description =
                 $"__How to get this emblem:__\n" +
                 $"{Description} {(SpecialUrl != null ? $"\n[LINK]({SpecialUrl})" : "")}\n" +
-                $"Time Window (M/D/Y): **{GetDateRange()}**\n";
+                $"Offer Type: {GetOfferTypeString(OfferType)}\n" +
+                $"Time Window: {GetDateRange()}\n" +
+                $"Ends {TimestampTag.FromDateTime(EndDate, TimestampTagStyles.Relative)}.";
             embed.ThumbnailUrl = OfferedEmblem.GetIconUrl();
             embed.ImageUrl = ImageUrl;
             return embed;
         }
 
-        public string GetDateRange() => $"{TimestampTag.FromDateTime(StartDate)} - {TimestampTag.FromDateTime(EndDate)}";
+        public string GetDateRange() => $"{TimestampTag.FromDateTime(StartDate, TimestampTagStyles.ShortDate)} - {TimestampTag.FromDateTime(EndDate, TimestampTagStyles.ShortDate)}";
 
         public static EmbedBuilder GetRandomOfferEmbed()
         {
@@ -121,7 +113,7 @@ namespace DestinyUtility.Util
             {
                 foreach (var Offer in CurrentOffers)
                     desc += $"> [{Offer.OfferedEmblem.GetName()}]({Offer.ImageUrl}) ({Offer.OfferedEmblem.GetItemHash()})\n";
-                desc += $"\n*Want specific details? Use the command '/emblem-offers [HASH CODE]'.*";
+                desc += $"\n*Want specific details? Use the command '{BotConfig.DefaultCommandPrefix}offers [HASH CODE]'.*";
             }
             else
                 desc = "There are currently no limited time emblem offers; you are all caught up!";
@@ -152,12 +144,12 @@ namespace DestinyUtility.Util
         public static void LoadCurrentOffers()
         {
             CurrentOffers.Clear();
-            string emblemOfferPath = @"Configs/CurrentEmblemOffers/";
+            string emblemOfferPath = @"Configs/EmblemOffers/";
 
             foreach (string fileName in Directory.GetFiles(emblemOfferPath))
             {
                 string json = File.ReadAllText(fileName);
-                CurrentOffers.Add(JsonConvert.DeserializeObject<EmblemOffer>(json));
+                var _ = JsonConvert.DeserializeObject<EmblemOffer>(json);
             }
         }
 
@@ -186,9 +178,23 @@ namespace DestinyUtility.Util
 
         public static void DeleteOffer(EmblemOffer offerToDelete)
         {
-            string emblemOfferPath = @"Configs/CurrentEmblemOffers/";
+            string emblemOfferPath = @"Configs/EmblemOffers/";
             CurrentOffers.Remove(offerToDelete);
             File.Delete(emblemOfferPath + @"/" + offerToDelete.OfferedEmblem.GetItemHash() + @".txt");
+        }
+
+        public static string GetOfferTypeString(EmblemOfferType OfferType)
+        {
+            switch (OfferType)
+            {
+                case EmblemOfferType.InGame: return "In-Game";
+                case EmblemOfferType.BungieStore: return "Bungie Store";
+                case EmblemOfferType.BungieRewards: return "Bungie Rewards";
+                case EmblemOfferType.Donation: return "Donation";
+                case EmblemOfferType.ThirdParty: return "Third Party";
+                case EmblemOfferType.Other: return "Other";
+                default: return "Emblem Offer Type";
+            }
         }
     }
 

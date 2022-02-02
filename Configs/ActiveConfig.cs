@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 
-namespace DestinyUtility.Configs
+namespace Levante.Configs
 {
     public enum PrivacySetting
     {

@@ -1,12 +1,12 @@
-﻿using DestinyUtility.Configs;
-using DestinyUtility.Leaderboards;
+﻿using Levante.Configs;
+using Levante.Leaderboards;
 using Discord;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace DestinyUtility.Helpers
+namespace Levante.Helpers
 {
     public class LeaderboardHelper
     {

@@ -1,4 +1,4 @@
-﻿namespace DestinyUtility.Configs
+﻿namespace Levante.Configs
 {
     public interface IConfig
     {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace DestinyUtility.Leaderboards
+namespace Levante.Leaderboards
 {
     public class XPPerHourData
     {

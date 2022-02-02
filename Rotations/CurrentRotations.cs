@@ -1,5 +1,5 @@
-﻿using DestinyUtility.Configs;
-using DestinyUtility.Util;
+﻿using Levante.Configs;
+using Levante.Util;
 using Discord;
 using Discord.WebSocket;
 using Newtonsoft.Json;
@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace DestinyUtility.Rotations
+namespace Levante.Rotations
 {
     public class CurrentRotations
     {
@@ -287,7 +287,7 @@ namespace DestinyUtility.Rotations
                     user = Client.GetUser(Link.DiscordID);
 
                 if (AltarWeapon == Link.WeaponDrop)
-                    await user.SendMessageAsync($"Hey {user.Mention}! Altars of Sorrow is dropping **{AltarsOfSorrowRotation.GetWeaponNameString(AltarWeapon)}** (**{AltarWeapon}**) today. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! Altars of Sorrow is dropping **{AltarsOfSorrowRotation.GetWeaponNameString(AltarWeapon)}** (**{AltarWeapon}**) today. I have removed your tracking, good luck!");
                 else
                     altarTemp.Add(Link);
             }
@@ -306,18 +306,18 @@ namespace DestinyUtility.Rotations
                 if (Link.Difficulty != null)
                 {
                     if (Link.Difficulty == LostSectorDifficulty.Legend && (LegendLostSector == Link.LostSector || LegendLostSectorArmorDrop == Link.ArmorDrop))
-                        await user.SendMessageAsync($"Hey {user.Mention}! The Legend Lost Sector is **{LostSectorRotation.GetLostSectorString(LegendLostSector)}** and is dropping **{LegendLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Legend Lost Sector is **{LostSectorRotation.GetLostSectorString(LegendLostSector)}** and is dropping **{LegendLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
                     else if (Link.Difficulty == LostSectorDifficulty.Master && (MasterLostSector == Link.LostSector || MasterLostSectorArmorDrop == Link.ArmorDrop))
-                        await user.SendMessageAsync($"Hey {user.Mention}! The Master Lost Sector is **{LostSectorRotation.GetLostSectorString(MasterLostSector)}** and is dropping **{MasterLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Master Lost Sector is **{LostSectorRotation.GetLostSectorString(MasterLostSector)}** and is dropping **{MasterLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
                     else
                         lsTemp.Add(Link);
                 }
                 else
                 {
                     if (LegendLostSector == Link.LostSector || LegendLostSectorArmorDrop == Link.ArmorDrop)
-                        await user.SendMessageAsync($"Hey {user.Mention}! The Legend Lost Sector is **{LostSectorRotation.GetLostSectorString(LegendLostSector)}** and is dropping **{LegendLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Legend Lost Sector is **{LostSectorRotation.GetLostSectorString(LegendLostSector)}** and is dropping **{LegendLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
                     else if (MasterLostSector == Link.LostSector || MasterLostSectorArmorDrop == Link.ArmorDrop)
-                        await user.SendMessageAsync($"Hey {user.Mention}! The Master Lost Sector is **{LostSectorRotation.GetLostSectorString(MasterLostSector)}** and is dropping **{MasterLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Master Lost Sector is **{LostSectorRotation.GetLostSectorString(MasterLostSector)}** and is dropping **{MasterLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
                     else
                         lsTemp.Add(Link);
                 }
@@ -338,7 +338,7 @@ namespace DestinyUtility.Rotations
                     user = Client.GetUser(Link.DiscordID);
 
                 if (AscendantChallenge == Link.AscendantChallenge)
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Ascendant Challenge is **{AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)}** (**{AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}**) this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Ascendant Challenge is **{AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)}** (**{AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}**) this week. I have removed your tracking, good luck!");
                 else
                     chalTemp.Add(Link);
             }
@@ -355,7 +355,7 @@ namespace DestinyUtility.Rotations
                     user = Client.GetUser(Link.DiscordID);
 
                 if (CurseWeek == Link.Strength)
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Curse Strength is **{CurseWeek}** this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Curse Strength is **{CurseWeek}** this week. I have removed your tracking, good luck!");
                 else
                     curseTemp.Add(Link);
             }
@@ -372,7 +372,7 @@ namespace DestinyUtility.Rotations
                     user = Client.GetUser(Link.DiscordID);
 
                 if (DSCChallengeEncounter == Link.Encounter)
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Deep Stone Crypt challenge is **{DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)}** (**{DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Deep Stone Crypt challenge is **{DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)}** (**{DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
                 else
                     dscTemp.Add(Link);
             }
@@ -389,7 +389,7 @@ namespace DestinyUtility.Rotations
                     user = Client.GetUser(Link.DiscordID);
 
                 if (EmpireHunt == Link.EmpireHunt)
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Empire Hunt is **{EmpireHuntRotation.GetHuntBossString(EmpireHunt)}** this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Empire Hunt is **{EmpireHuntRotation.GetHuntBossString(EmpireHunt)}** this week. I have removed your tracking, good luck!");
                 else
                     ehuntTemp.Add(Link);
             }
@@ -406,7 +406,7 @@ namespace DestinyUtility.Rotations
                     user = Client.GetUser(Link.DiscordID);
 
                 if (GoSChallengeEncounter == Link.Encounter)
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Garden of Salvation challenge is **{GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)}** (**{GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Garden of Salvation challenge is **{GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)}** (**{GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
                 else
                     gosTemp.Add(Link);
 
@@ -424,7 +424,7 @@ namespace DestinyUtility.Rotations
                     user = Client.GetUser(Link.DiscordID);
 
                 if (LWChallengeEncounter == Link.Encounter)
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Last Wish challenge is **{LastWishRotation.GetChallengeString(LWChallengeEncounter)}** (**{LastWishRotation.GetEncounterString(LWChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Last Wish challenge is **{LastWishRotation.GetChallengeString(LWChallengeEncounter)}** (**{LastWishRotation.GetEncounterString(LWChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
                 else
                     lwTemp.Add(Link);
             }
@@ -441,7 +441,7 @@ namespace DestinyUtility.Rotations
                     user = Client.GetUser(Link.DiscordID);
 
                 if (Link.Nightfall == Nightfall || Link.WeaponDrop == NightfallWeaponDrops[0] || Link.WeaponDrop == NightfallWeaponDrops[1])
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrops[0])}** and **{NightfallRotation.GetWeaponString(NightfallWeaponDrops[1])}** this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrops[0])}** and **{NightfallRotation.GetWeaponString(NightfallWeaponDrops[1])}** this week. I have removed your tracking, good luck!");
                 else
                     nfTemp.Add(Link);
             }
@@ -458,11 +458,11 @@ namespace DestinyUtility.Rotations
                     user = Client.GetUser(Link.DiscordID);
 
                 if (NightmareHunts[0] == Link.NightmareHunt)
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[0])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[0])}**) this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[0])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[0])}**) this week. I have removed your tracking, good luck!");
                 else if (NightmareHunts[1] == Link.NightmareHunt)
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[1])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[1])}**) this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[1])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[1])}**) this week. I have removed your tracking, good luck!");
                 else if (NightmareHunts[2] == Link.NightmareHunt)
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[2])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[2])}**) this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[2])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[2])}**) this week. I have removed your tracking, good luck!");
                 else
                     nhuntTemp.Add(Link);
             }
@@ -479,7 +479,7 @@ namespace DestinyUtility.Rotations
                     user = Client.GetUser(Link.DiscordID);
 
                 if (VoGChallengeEncounter == Link.Encounter)
-                    await user.SendMessageAsync($"Hey {user.Mention}! The Vault of Glass challenge is **{VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)}** (**{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Vault of Glass challenge is **{VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)}** (**{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
                 else
                     vogTemp.Add(Link);
             }

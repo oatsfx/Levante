@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace DestinyUtility.Rotations
+namespace Levante.Rotations
 {
     public class AltarsOfSorrowRotation
     {

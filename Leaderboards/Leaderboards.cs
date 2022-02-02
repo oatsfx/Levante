@@ -1,4 +1,4 @@
-﻿namespace DestinyUtility.Leaderboards
+﻿namespace Levante.Leaderboards
 {
     public interface LeaderboardEntry
     {

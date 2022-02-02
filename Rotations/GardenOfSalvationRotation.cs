@@ -1,12 +1,12 @@
-﻿using DestinyUtility.Configs;
-using DestinyUtility.Util;
+﻿using Levante.Configs;
+using Levante.Util;
 using Discord;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace DestinyUtility.Rotations
+namespace Levante.Rotations
 {
     public class GardenOfSalvationRotation
     {

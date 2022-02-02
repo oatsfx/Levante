@@ -1,4 +1,5 @@
-﻿using DestinyUtility.Rotations;
+﻿using Levante.Rotations;
+using Discord;
 using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
@@ -7,7 +8,7 @@ using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace DestinyUtility.Configs
+namespace Levante.Configs
 {
     public partial class DataConfig : IConfig
     {
@@ -22,7 +23,10 @@ namespace DestinyUtility.Configs
         [JsonProperty("AnnounceWeeklyLinks")]
         public static List<ulong> AnnounceWeeklyLinks { get; set; } = new List<ulong>();
 
-        public partial class DiscordIDLink
+        [JsonProperty("AnnounceEmblemLinks")]
+        public static List<EmblemAnnounceLink> AnnounceEmblemLinks { get; set; } = new List<EmblemAnnounceLink>();
+
+        public class DiscordIDLink
         {
             [JsonProperty("DiscordID")]
             public ulong DiscordID { get; set; } = 0;
@@ -35,6 +39,15 @@ namespace DestinyUtility.Configs
 
             [JsonProperty("UniqueBungieName")]
             public string UniqueBungieName { get; set; } = "Guardian#0000";
+        }
+
+        public class EmblemAnnounceLink
+        {
+            [JsonProperty("ChannelID")]
+            public ulong ChannelID { get; set; } = 0;
+
+            [JsonProperty("RoleID")]
+            public ulong RoleID { get; set; } = 0;
         }
 
         public static string GetValidDestinyMembership(string BungieTag, out string MembershipType)
@@ -126,6 +139,7 @@ namespace DestinyUtility.Configs
             DiscordIDLinks.Clear();
             AnnounceDailyLinks.Clear();
             AnnounceWeeklyLinks.Clear();
+            AnnounceEmblemLinks.Clear();
             DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
 
             DiscordIDLinks.Add(dil);
@@ -139,6 +153,7 @@ namespace DestinyUtility.Configs
             DiscordIDLinks.Clear();
             AnnounceDailyLinks.Clear();
             AnnounceWeeklyLinks.Clear();
+            AnnounceEmblemLinks.Clear();
             DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
 
             DiscordIDLinks.Add(dil);
@@ -152,6 +167,7 @@ namespace DestinyUtility.Configs
             DiscordIDLinks.Clear();
             AnnounceDailyLinks.Clear();
             AnnounceWeeklyLinks.Clear();
+            AnnounceEmblemLinks.Clear();
             DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
             
             if (IsDaily)
@@ -168,12 +184,31 @@ namespace DestinyUtility.Configs
             }
         }
 
+        public static void AddEmblemChannel(ulong ChannelID, IRole Role)
+        {
+            string json = File.ReadAllText(FilePath);
+            DiscordIDLinks.Clear();
+            AnnounceDailyLinks.Clear();
+            AnnounceWeeklyLinks.Clear();
+            AnnounceEmblemLinks.Clear();
+            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
+
+            if (Role != null)
+                AnnounceEmblemLinks.Add(new EmblemAnnounceLink() { ChannelID = ChannelID, RoleID = Role.Id });
+            else
+                AnnounceEmblemLinks.Add(new EmblemAnnounceLink() { ChannelID = ChannelID, RoleID = 0 });
+
+            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            File.WriteAllText(FilePath, output);
+        }
+
         public static void DeleteUserFromConfig(ulong DiscordID)
         {
             string json = File.ReadAllText(FilePath);
             DiscordIDLinks.Clear();
             AnnounceDailyLinks.Clear();
             AnnounceWeeklyLinks.Clear();
+            AnnounceEmblemLinks.Clear();
             DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
             for (int i = 0; i < DiscordIDLinks.Count; i++)
                 if (DiscordIDLinks[i].DiscordID == DiscordID)
@@ -188,6 +223,7 @@ namespace DestinyUtility.Configs
             DiscordIDLinks.Clear();
             AnnounceDailyLinks.Clear();
             AnnounceWeeklyLinks.Clear();
+            AnnounceEmblemLinks.Clear();
             DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
 
             if (IsDaily)
@@ -202,6 +238,23 @@ namespace DestinyUtility.Configs
                     if (AnnounceWeeklyLinks[i] == ChannelID)
                         AnnounceWeeklyLinks.RemoveAt(i);
             }
+
+            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            File.WriteAllText(FilePath, output);
+        }
+
+        public static void DeleteEmblemChannelFromRotationConfig(ulong ChannelID)
+        {
+            string json = File.ReadAllText(FilePath);
+            DiscordIDLinks.Clear();
+            AnnounceDailyLinks.Clear();
+            AnnounceWeeklyLinks.Clear();
+            AnnounceEmblemLinks.Clear();
+            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
+
+            for (int i = 0; i < AnnounceEmblemLinks.Count; i++)
+                if (AnnounceEmblemLinks[i].ChannelID == ChannelID)
+                    AnnounceEmblemLinks.RemoveAt(i);
 
             string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
             File.WriteAllText(FilePath, output);
@@ -231,6 +284,14 @@ namespace DestinyUtility.Configs
                         return true;
                 return false;
             }
+        }
+
+        public static bool IsExistingEmblemLinkedChannel(ulong ChannelID)
+        {
+            foreach (var Link in AnnounceEmblemLinks)
+                if (Link.ChannelID == ChannelID)
+                    return true;
+            return false;
         }
 
         // This returns the level, then other parameters are XPProgress (int) and IsInShatteredThrone (bool). Reduces the amount of calls to the Bungie API.

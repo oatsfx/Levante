@@ -1,9 +1,9 @@
-﻿using DestinyUtility.Configs;
+﻿using Levante.Configs;
 using Newtonsoft.Json;
 using System;
 using System.IO;
 
-namespace DestinyUtility.Helpers
+namespace Levante.Helpers
 {
     public class ConfigHelper
     {

@@ -9,18 +9,19 @@ using Newtonsoft.Json;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using DestinyUtility.Configs;
+using Levante.Configs;
 using System.Net.Http;
-using DestinyUtility.Helpers;
+using Levante.Helpers;
 using System.Threading;
 using Discord.Net;
-using DestinyUtility.Leaderboards;
-using DestinyUtility.Rotations;
-using DestinyUtility.Util;
+using Levante.Leaderboards;
+using Levante.Rotations;
+using Levante.Util;
+using Fergun.Interactive;
 
-namespace DestinyUtility
+namespace Levante
 {
-    public sealed class DestinyUtilityCord
+    public sealed class LevanteCord
     {
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
@@ -28,13 +29,13 @@ namespace DestinyUtility
 
         private Timer DailyResetTimer;
 
-        public DestinyUtilityCord()
+        public LevanteCord()
         {
             _client = new DiscordSocketClient();
             _commands = new CommandService();
             _services = new ServiceCollection()
                 .AddSingleton(_client)
-                //.AddSingleton<InteractiveService>()
+                .AddSingleton<InteractiveService>()
                 .BuildServiceProvider();
         }
 
@@ -42,15 +43,14 @@ namespace DestinyUtility
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
             string ASCIIName = @"
-   ___          __  _           __  ____  _ ___ __      
-  / _ \___ ___ / /_(_)__  __ __/ / / / /_(_) (_) /___ __
- / // / -_|_-</ __/ / _ \/ // / /_/ / __/ / / / __/ // /
-/____/\__/___/\__/_/_//_/\_, /\____/\__/_/_/_/\__/\_, / 
-    - dev. by @OatsFX   /___/                    /___/  
-";
+   __                      __     
+  / /  ___ _  _____ ____  / /____ 
+ / /__/ -_) |/ / _ `/ _ \/ __/ -_)
+/____/\__/|___/\_,_/_//_/\__/\__/   dev. by @OatsFX
+            ";
             Console.WriteLine(ASCIIName);
             
-            new DestinyUtilityCord().StartAsync().GetAwaiter().GetResult();
+            new LevanteCord().StartAsync().GetAwaiter().GetResult();
         }
 
         public async Task StartAsync()
@@ -58,12 +58,13 @@ namespace DestinyUtility
             if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
 
-            await Task.Run(() => Console.Title = $"DestinyUtility v{BotConfig.Version}");
+            await Task.Run(() => Console.Title = $"Levante v{BotConfig.Version}");
 
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
 
             CurrentRotations.CreateJSONs();
+            EmblemOffer.LoadCurrentOffers();
             
             Console.WriteLine($"Current Bot Version: v{BotConfig.Version}");
             Console.WriteLine($"Current Developer Note: {BotConfig.Note}");
@@ -94,7 +95,7 @@ namespace DestinyUtility
                 return Task.CompletedTask;
             };
 
-            Timer timer = new Timer(TimerCallback, null, 25000, 240000);
+            Timer timer = new Timer(TimerCallback, null, 25000, BotConfig.TimeBetweenRefresh * 60000);
 
             if (DateTime.Now.Hour >= 10) // after daily reset
                 SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 0));
@@ -106,15 +107,45 @@ namespace DestinyUtility
             await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken).ConfigureAwait(false);
             await _client.StartAsync().ConfigureAwait(false);
 
-            await UpdateBotActivity();
+            await UpdateBotActivity(1);
 
             await Task.Delay(-1);
         }
-        
-        private async Task UpdateBotActivity()
+
+        // Set to 0 for Watching X/Y Thrallway Users
+        // Set to 1 for Playing {note} | v{version}
+        // Set to 2 for Watching for {prefix}help | v{version}
+        // Set to 3 for Watching X Servers | v{version}
+        // Set to 4 for Watching @Levante_Bot on Twitter
+        private async Task UpdateBotActivity(int SetRNG = -1)
         {
-            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "" : "s";
-            await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumThrallwayUsers} Thrallway Farmer{s}", ActivityType.Watching));
+            int RNG = 0;
+            int RNGMax = 20;
+            if (SetRNG != -1 && SetRNG < RNGMax)
+                RNG = SetRNG;
+            else
+            {
+                Random rand = new Random();
+                RNG = rand.Next(0, RNGMax);
+            }
+
+            switch (RNG)
+            {
+                case 0:
+                    string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "" : "s";
+                    await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumThrallwayUsers} Thrallway Farmer{s}", ActivityType.Watching)); break;
+                case 1:
+                    await _client.SetActivityAsync(new Game($"{BotConfig.Note} | v{BotConfig.Version}", ActivityType.Playing)); break;
+                case 2:
+                    await _client.SetActivityAsync(new Game($"for {BotConfig.DefaultCommandPrefix}help | v{BotConfig.Version}", ActivityType.Watching)); break;
+                case 3:
+                    await _client.SetActivityAsync(new Game($"{_client.Rest.GetGuildsAsync().Result.Count} Servers | v{BotConfig.Version}", ActivityType.Watching)); break;
+                case 4:
+                    await _client.SetActivityAsync(new Game($"@Levante_Bot on Twitter", ActivityType.Watching)); break;
+                case 5:
+                    await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count} Linked Users | v{BotConfig.Version}", ActivityType.Watching)); break;
+                default: break;
+            }
         }
 
         private void SetUpTimer(DateTime alertTime)
@@ -244,7 +275,7 @@ namespace DestinyUtility
 
                 ActiveConfig.UpdateActiveAFKUsersConfig();
 
-                await UpdateBotActivity();
+                await UpdateBotActivity(0);
                 LogHelper.ConsoleLog($"Bungie API Refreshed!");
             }
             catch (Exception x)
@@ -525,7 +556,7 @@ namespace DestinyUtility
             _client.MessageReceived += HandleMessageAsync;
             //_client.InteractionCreated += HandleInteraction;
 
-            //_client.Ready += InitializeSlashCommands;
+            _client.Ready += InitializeSlashCommands;
             _client.SlashCommandExecuted += SlashCommandHandler;
 
             _client.ButtonExecuted += ButtonHandler;
@@ -534,14 +565,15 @@ namespace DestinyUtility
 
         private async Task InitializeSlashCommands()
         {
-            var guild = _client.GetGuild(397846250797662208);
-            await guild.DeleteApplicationCommandsAsync();
+            var guild = _client.GetGuild(915020047154565220);
+            //397846250797662208
+            //await guild.DeleteApplicationCommandsAsync();
             var cmds = await _client.Rest.GetGlobalApplicationCommands();
 
-            foreach (var cmd in cmds)
+            /*foreach (var cmd in cmds)
             {
                 await cmd.DeleteAsync();
-            }
+            }*/
 
             // ==============================================
 
@@ -773,6 +805,70 @@ namespace DestinyUtility
 
             // ==============================================
 
+            var nextCommand = new SlashCommandBuilder()
+                .WithName("next")
+                .WithDescription("Find out when a rotation is active next.")
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("altars-of-sorrow")
+                    .WithDescription("Find out when an Altars of Sorrow rotation is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(altarsScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("ascendant-challenge")
+                    .WithDescription("Find out when an Ascendant Challenge is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(ascentantScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("curse-week")
+                    .WithDescription("Find out when a Curse Week is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(curseWeekScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("deep-stone-crypt")
+                    .WithDescription("Find out when a Deep Stone Crypt Challenge encounter is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(dscScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("empire-hunt")
+                    .WithDescription("Find out when an Empire Hunt is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(empireHuntScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("garden-of-salvation")
+                    .WithDescription("Find out when a Garden of Salvation Challenge encounter is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(gosScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("last-wish")
+                    .WithDescription("Find out when a Last Wish Challenge encounter is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(lwScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("lost-sector")
+                    .WithDescription("Find out when a Lost Sector and/or Exotic Armor is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(lostSectorScob)
+                    .AddOption(difficultyScob)
+                    .AddOption(armorScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("nightfall")
+                    .WithDescription("Find out when a Nightfall and/or Nightfall Weapon is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(nightfallScob)
+                    .AddOption(nightfallWeaponScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("nightmare-hunt")
+                    .WithDescription("Find out when a Nightmare Hunt is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(nightmareHuntScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("vault-of-glass")
+                    .WithDescription("Find out when a Vault of Glass Challenge encounter is active next.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(vogScob));
+
+            // ==============================================
+
             var raidCommand = new SlashCommandBuilder()
                 .WithName("raid")
                 .WithDescription("Display Raid information.")
@@ -823,6 +919,23 @@ namespace DestinyUtility
 
             // ==============================================
 
+            var linkCommand = new SlashCommandBuilder();
+            linkCommand.WithName("link");
+            linkCommand.WithDescription("Link your Bungie tag to your Discord account.")
+            .AddOption(new SlashCommandOptionBuilder()
+                .WithName("bungie-tag")
+                .WithDescription("Your Bungie tag you wish to link with.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.String));
+
+            // ==============================================
+
+            var unlinkCommand = new SlashCommandBuilder();
+            unlinkCommand.WithName("unlink");
+            unlinkCommand.WithDescription("Unlink your Bungie tag from your Discord account.");
+
+            // ==============================================
+
             var dailyCommand = new SlashCommandBuilder();
             dailyCommand.WithName("daily");
             dailyCommand.WithDescription("Display Daily reset information.");
@@ -832,6 +945,41 @@ namespace DestinyUtility
             var weeklyCommand = new SlashCommandBuilder();
             weeklyCommand.WithName("weekly");
             weeklyCommand.WithDescription("Display Weekly reset information.");
+
+            // ==============================================
+
+            var guardiansScob = new SlashCommandOptionBuilder()
+                .WithName("class")
+                .WithDescription("Guardian Class to get information for.")
+                .WithRequired(true)
+                .WithType(ApplicationCommandOptionType.Integer)
+                .AddChoice("Titan", 0)
+                .AddChoice("Hunter", 1)
+                .AddChoice("Warlock", 2);
+
+            var guardianCommand = new SlashCommandBuilder();
+            guardianCommand.WithName("guardians");
+            guardianCommand.WithDescription("Display Guardian information.")
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("linked-user")
+                    .WithDescription("Get Guardian information of a Linked User.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(new SlashCommandOptionBuilder()
+                        .WithName("user")
+                        .WithDescription("User to get Guardian information for.")
+                        .WithRequired(true)
+                        .WithType(ApplicationCommandOptionType.User))
+                    .AddOption(guardiansScob))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("bungie-tag")
+                    .WithDescription("Get Guardian information of any player.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(new SlashCommandOptionBuilder()
+                        .WithName("player")
+                        .WithDescription("Player's Bungie tag to get Guardian information for.")
+                        .WithRequired(true)
+                        .WithType(ApplicationCommandOptionType.String))
+                    .AddOption(guardiansScob));
 
             // ==============================================
 
@@ -877,12 +1025,8 @@ namespace DestinyUtility
 
             // ==============================================
 
-            var alertCommand = new SlashCommandBuilder();
-            alertCommand.WithName("alert");
-            alertCommand.WithDescription("Set up announcements for Daily/Weekly Reset.");
-
             var scobG = new SlashCommandOptionBuilder()
-                .WithName("type")
+                .WithName("reset-type")
                 .WithDescription("Choose between Daily or Weekly Reset.")
                 .WithRequired(true)
                 .WithType(ApplicationCommandOptionType.Integer);
@@ -890,11 +1034,33 @@ namespace DestinyUtility
             scobG.AddChoice($"Daily", 0);
             scobG.AddChoice($"Weekly", 1);
 
-            alertCommand.AddOption(scobG);
+            var scobH = new SlashCommandOptionBuilder()
+                .WithName("role")
+                .WithDescription("Add a role to be pinged when a new Emblem Offer is posted.")
+                .WithRequired(false)
+                .WithType(ApplicationCommandOptionType.Role);
+
+            var alertCommand = new SlashCommandBuilder()
+                .WithName("alert")
+                .WithDescription("Set up announcements for Daily/Weekly Reset and Emblem Offers.")
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("resets")
+                    .WithDescription("Set up announcements for Daily/Weekly Reset.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(scobG))
+                .AddOption(new SlashCommandOptionBuilder()
+                    .WithName("emblem-offers")
+                    .WithDescription("Set up announcements for Emblem Offers.")
+                    .WithType(ApplicationCommandOptionType.SubCommand)
+                    .AddOption(scobH));
 
             try
             {
-                //await guild.CreateApplicationCommandAsync(notifyCommand.Build());
+                //await guild.CreateApplicationCommandAsync(alertCommand.Build());
+                //await guild.CreateApplicationCommandAsync(nextCommand.Build());
+                //await guild.CreateApplicationCommandAsync(guardianCommand.Build());
+                await guild.CreateApplicationCommandAsync(linkCommand.Build());
+                await guild.CreateApplicationCommandAsync(unlinkCommand.Build());
 
                 //await _client.CreateGlobalApplicationCommandAsync(notifyCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(raidCommand.Build());
@@ -960,24 +1126,51 @@ namespace DestinyUtility
             }
             else if (command.Data.Name.Equals("alert"))
             {
-                bool IsDaily = false;
-                foreach (var option in command.Data.Options)
-                    if (option.Name.Equals("type"))
-                        IsDaily = Convert.ToInt32(option.Value) == 0;
+                var alertType = command.Data.Options.First().Name;
 
-                if (DataConfig.IsExistingLinkedChannel(command.Channel.Id, IsDaily))
+                if (alertType.Equals("resets"))
                 {
-                    DataConfig.DeleteChannelFromRotationConfig(command.Channel.Id, IsDaily);
+                    bool IsDaily = false;
+                    foreach (var option in command.Data.Options)
+                        if (option.Name.Equals("type"))
+                            IsDaily = Convert.ToInt32(option.Value) == 0;
 
-                    await command.RespondAsync($"This channel will no longer receive {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command to re-subscribe to them!", ephemeral: true);
-                    return;
+                    if (DataConfig.IsExistingLinkedChannel(command.Channel.Id, IsDaily))
+                    {
+                        DataConfig.DeleteChannelFromRotationConfig(command.Channel.Id, IsDaily);
+
+                        await command.RespondAsync($"This channel will no longer receive {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command to re-subscribe to them!", ephemeral: true);
+                        return;
+                    }
+                    else
+                    {
+                        DataConfig.AddChannelToRotationConfig(command.Channel.Id, IsDaily);
+
+                        await command.RespondAsync($"This channel is now successfully subscribed to {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command again to remove this type of alert!", ephemeral: true);
+                        return;
+                    }
                 }
-                else
+                else if (alertType.Equals("emblem-offers"))
                 {
-                    DataConfig.AddChannelToRotationConfig(command.Channel.Id, IsDaily);
+                    IRole RoleToPing = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("role"))
+                            RoleToPing = (IRole)option.Value;
 
-                    await command.RespondAsync($"This channel is now successfully subscribed to {(IsDaily ? "Daily" : "Weekly")} reset posts.", ephemeral: true);
-                    return;
+                    if (DataConfig.IsExistingEmblemLinkedChannel(command.Channel.Id))
+                    {
+                        DataConfig.DeleteEmblemChannelFromRotationConfig(command.Channel.Id);
+
+                        await command.RespondAsync($"This channel will no longer receive Emblem Offer reset posts. Run this command to re-subscribe to them!", ephemeral: true);
+                        return;
+                    }
+                    else
+                    {
+                        DataConfig.AddEmblemChannel(command.Channel.Id, RoleToPing);
+
+                        await command.RespondAsync($"This channel is now successfully subscribed to Emblem Offer posts. Run this command again to remove this type of alert!", ephemeral: true);
+                        return;
+                    }
                 }
             }
             else if (command.Data.Name.Equals("notify"))
@@ -1166,7 +1359,7 @@ namespace DestinyUtility
                     if (NF == null && Weapon == null)
                         await command.RespondAsync($"An error has occurred.", ephemeral: true);
                     else if (NF != null && Weapon == null)
-                        await command.RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                        await command.RespondAsync($"[{NightfallRotation.ActivityPrediction(NightfallRotation.DatePrediction(NF, Weapon), out NightfallWeapon[] WeaponDrops)} | Drops: {WeaponDrops[0]} {WeaponDrops[1]}]:I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                     else if (NF == null && Weapon != null)
                         await command.RespondAsync($"I will remind you when {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                     else if (NF != null && Weapon != null)
@@ -1280,6 +1473,244 @@ namespace DestinyUtility
                     }
                 }
             }
+            else if (command.Data.Name.Equals("next"))
+            {
+                var nextType = command.Data.Options.First().Name;
+
+                if (nextType.Equals("altars-of-sorrow"))
+                {
+                    AltarsOfSorrow? Weapon = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("weapon"))
+                            Weapon = (AltarsOfSorrow)Convert.ToInt32(option.Value);
+
+                    var predictedDate = AltarsOfSorrowRotation.DatePrediction((AltarsOfSorrow)Weapon);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Altars of Sorrow";
+                    embed.Description =
+                        $"Next occurrance of {AltarsOfSorrowRotation.GetWeaponNameString((AltarsOfSorrow)Weapon)} ({Weapon}) " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+                else if (nextType.Equals("ascendant-challenge"))
+                {
+                    AscendantChallenge? AscendantChallenge = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("ascendant-challenge"))
+                            AscendantChallenge = (AscendantChallenge)Convert.ToInt32(option.Value);
+
+                    var predictedDate = AscendantChallengeRotation.DatePrediction((AscendantChallenge)AscendantChallenge);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Ascendant Challenge";
+                    embed.Description =
+                        $"Next occurrance of {AscendantChallengeRotation.GetChallengeNameString((AscendantChallenge)AscendantChallenge)} " +
+                            $"({AscendantChallengeRotation.GetChallengeLocationString((AscendantChallenge)AscendantChallenge)}) is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+                else if (nextType.Equals("curse-week"))
+                {
+                    CurseWeek? CurseWeek = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("strength"))
+                            CurseWeek = (CurseWeek)Convert.ToInt32(option.Value);
+
+                    var predictedDate = CurseWeekRotation.DatePrediction((CurseWeek)CurseWeek);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Curse Week";
+                    embed.Description =
+                        $"Next occurrance of {CurseWeek} Curse Strength " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+                else if (nextType.Equals("deep-stone-crypt"))
+                {
+                    DeepStoneCryptEncounter? Encounter = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("challenge"))
+                            Encounter = (DeepStoneCryptEncounter)Convert.ToInt32(option.Value);
+
+                    var predictedDate = DeepStoneCryptRotation.DatePrediction((DeepStoneCryptEncounter)Encounter);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Deep Stone Crypt";
+                    embed.Description =
+                        $"Next occurrance of {DeepStoneCryptRotation.GetEncounterString((DeepStoneCryptEncounter)Encounter)} ({DeepStoneCryptRotation.GetChallengeString((DeepStoneCryptEncounter)Encounter)}) " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+                else if (nextType.Equals("empire-hunt"))
+                {
+                    EmpireHunt? Hunt = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("empire-hunt"))
+                            Hunt = (EmpireHunt)Convert.ToInt32(option.Value);
+
+                    var predictedDate = EmpireHuntRotation.DatePrediction((EmpireHunt)Hunt);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Empire Hunt";
+                    embed.Description =
+                        $"Next occurrance of {EmpireHuntRotation.GetHuntNameString((EmpireHunt)Hunt)} " +
+                            $"({EmpireHuntRotation.GetHuntBossString((EmpireHunt)Hunt)}) is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+                else if (nextType.Equals("garden-of-salvation"))
+                {
+                    GardenOfSalvationEncounter? Encounter = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("challenge"))
+                            Encounter = (GardenOfSalvationEncounter)Convert.ToInt32(option.Value);
+
+                    var predictedDate = GardenOfSalvationRotation.DatePrediction((GardenOfSalvationEncounter)Encounter);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Garden of Salvation";
+                    embed.Description =
+                        $"Next occurrance of {GardenOfSalvationRotation.GetEncounterString((GardenOfSalvationEncounter)Encounter)} ({GardenOfSalvationRotation.GetChallengeString((GardenOfSalvationEncounter)Encounter)}) " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+                else if (nextType.Equals("last-wish"))
+                {
+                    LastWishEncounter? Encounter = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("challenge"))
+                            Encounter = (LastWishEncounter)Convert.ToInt32(option.Value);
+
+                    var predictedDate = LastWishRotation.DatePrediction((LastWishEncounter)Encounter);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Last Wish";
+                    embed.Description =
+                        $"Next occurrance of {LastWishRotation.GetEncounterString((LastWishEncounter)Encounter)} ({LastWishRotation.GetChallengeString((LastWishEncounter)Encounter)}) " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+                else if (nextType.Equals("lost-sector"))
+                {
+                    LostSector? LS = null;
+                    LostSectorDifficulty? LSD = null;
+                    ExoticArmorType? EAT = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                    {
+                        if (option.Name.Equals("lost-sector"))
+                            LS = (LostSector)Convert.ToInt32(option.Value);
+                        else if (option.Name.Equals("difficulty"))
+                            LSD = (LostSectorDifficulty)Convert.ToInt32(option.Value);
+                        else if (option.Name.Equals("armor-drop"))
+                            EAT = (ExoticArmorType)Convert.ToInt32(option.Value);
+                    }
+
+                    var predictedDate = LostSectorRotation.DatePrediction(LS, LSD, EAT);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Lost Sectors";
+                    embed.Description =
+                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} {(LSD != LostSectorDifficulty.Legend ? $" (Master)" : " (Legend)")}" +
+                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+                else if (nextType.Equals("nightfall"))
+                {
+                    Nightfall? NF = null;
+                    NightfallWeapon? Weapon = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                    {
+                        if (option.Name.Equals("nightfall"))
+                            NF = (Nightfall)Convert.ToInt32(option.Value);
+                        else if (option.Name.Equals("weapon"))
+                            Weapon = (NightfallWeapon)Convert.ToInt32(option.Value);
+                    }
+
+                    var predictedDate = NightfallRotation.DatePrediction(NF, Weapon);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Nightfall";
+                    embed.Description =
+                        $"Next occurrance of {NightfallRotation.GetStrikeNameString((Nightfall)NF)}" +
+                            $"{(Weapon != null ? $" dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+                else if (nextType.Equals("nightmare-hunt"))
+                {
+                    NightmareHunt? Hunt = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("nightmare-hunt"))
+                            Hunt = (NightmareHunt)Convert.ToInt32(option.Value);
+
+                    var predictedDate = NightmareHuntRotation.DatePrediction((NightmareHunt)Hunt);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Nightmare Hunt";
+                    embed.Description =
+                        $"Next occurrance of {NightmareHuntRotation.GetHuntNameString((NightmareHunt)Hunt)} " +
+                            $"({NightmareHuntRotation.GetHuntBossString((NightmareHunt)Hunt)}) is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+                else if (nextType.Equals("vault-of-glass"))
+                {
+                    VaultOfGlassEncounter? Encounter = null;
+                    foreach (var option in command.Data.Options.First().Options)
+                        if (option.Name.Equals("challenge"))
+                            Encounter = (VaultOfGlassEncounter)Convert.ToInt32(option.Value);
+
+                    var predictedDate = VaultOfGlassRotation.DatePrediction((VaultOfGlassEncounter)Encounter);
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    };
+                    embed.Title = "Vault of Glass";
+                    embed.Description =
+                        $"Next occurrance of {VaultOfGlassRotation.GetEncounterString((VaultOfGlassEncounter)Encounter)} ({VaultOfGlassRotation.GetChallengeString((VaultOfGlassEncounter)Encounter)}), " +
+                            $"which drops {VaultOfGlassRotation.GetChallengeRewardString((VaultOfGlassEncounter)Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                    await command.RespondAsync($"", embed: embed.Build());
+                    return;
+                }
+            }
             else if (command.Data.Name.Equals("free-emblems"))
             {
                 var auth = new EmbedAuthorBuilder()
@@ -1314,17 +1745,17 @@ namespace DestinyUtility
             }
             else if (command.Data.Name.Equals("raid"))
             {
-                await command.RespondAsync($"Command is under construction! Wait for the next update.", ephemeral: true);
+                await command.RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
                 return;
             }
             else if (command.Data.Name.Equals("patrol"))
             {
-                await command.RespondAsync($"Command is under construction! Wait for the next update.", ephemeral: true);
+                await command.RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
                 return;
             }
             else if (command.Data.Name.Equals("nightfall"))
             {
-                await command.RespondAsync($"Command is under construction! Wait for the next update.", ephemeral: true);
+                await command.RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
                 return;
             }
             else if (command.Data.Name.Equals("daily"))
@@ -1337,9 +1768,212 @@ namespace DestinyUtility
                 await command.RespondAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
                 return;
             }
+            else if (command.Data.Name.Equals("guardians"))
+            {
+                var guardiansType = command.Data.Options.First().Name;
+
+                if (guardiansType.Equals("linked-user"))
+                {
+                    DataConfig.DiscordIDLink LinkedUser = new DataConfig.DiscordIDLink();
+                    Guardian.Class ClassType = 0;
+                    foreach (var option in command.Data.Options.First().Options)
+                    {
+                        if (option.Name.Equals("user"))
+                            LinkedUser = DataConfig.GetLinkedUser(((IUser)option.Value).Id);
+                        else if (option.Name.Equals("class"))
+                            ClassType = (Guardian.Class)Convert.ToInt32(option.Value);
+                    }
+
+                    await command.DeferAsync();
+
+                    if (LinkedUser == null || !DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
+                    {
+                        await command.ModifyOriginalResponseAsync(message => { message.Content = $"User is not linked; tell them to link using {BotConfig.DefaultCommandPrefix}link [THEIR BUNGIE TAG]."; });
+                        return;
+                    }
+
+                    using (var client = new HttpClient())
+                    {
+                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                        var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + LinkedUser.BungieMembershipType + "/Profile/" + LinkedUser.BungieMembershipID + "?components=100,200").Result;
+                        var content = response.Content.ReadAsStringAsync().Result;
+                        dynamic item = JsonConvert.DeserializeObject(content);
+
+                        if (DataConfig.IsBungieAPIDown(content))
+                        {
+                            await command.ModifyOriginalResponseAsync(message => { message.Content = $"Bungie API is temporary down, try again later."; });
+                            return;
+                        }
+
+                        if (item.ErrorCode != 1)
+                        {
+                            await command.ModifyOriginalResponseAsync(message => { message.Content = $"An error occured with that account. Is there a connected Destiny 2 account?"; });
+                            return;
+                        }
+
+                        Guardian userGuardian = null;
+                        for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                        {
+                            try
+                            {
+                                string charId = $"{item.Response.profile.data.characterIds[i]}";
+                                if ((Guardian.Class)item.Response.characters.data[$"{charId}"].classType == ClassType)
+                                    userGuardian = new Guardian(LinkedUser.UniqueBungieName, LinkedUser.BungieMembershipID, LinkedUser.BungieMembershipType, charId);
+                            }
+                            catch (Exception x)
+                            {
+                                Console.WriteLine($"{x}");
+                            }
+                        }
+
+                        if (userGuardian == null)
+                        {
+                            await command.ModifyOriginalResponseAsync(message => { message.Content = $"No guardian found."; });
+                            return;
+                        }
+
+                        await command.ModifyOriginalResponseAsync(message => { message.Embed = userGuardian.GetGuardianEmbed().Build(); });
+                        return;
+                    }
+                }
+                else if (guardiansType.Equals("bungie-tag"))
+                {
+                    string BungieTag = null;
+                    Guardian.Class ClassType = 0;
+                    foreach (var option in command.Data.Options.First().Options)
+                    {
+                        if (option.Name.Equals("player"))
+                            BungieTag = $"{option.Value}";
+                        else if (option.Name.Equals("class"))
+                            ClassType = (Guardian.Class)Convert.ToInt32(option.Value);
+                    }
+
+                    await command.DeferAsync();
+
+                    string MembershipType = null;
+                    string MembershipID = null;
+                    using (var client = new HttpClient())
+                    {
+                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                        var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/-1/" + Uri.EscapeDataString(BungieTag)).Result;
+                        var content = response.Content.ReadAsStringAsync().Result;
+                        dynamic item = JsonConvert.DeserializeObject(content);
+
+                        string memId = "";
+                        string memType = "";
+                        for (int i = 0; i < item.Response.Count; i++)
+                        {
+                            memId = item.Response[i].membershipId;
+                            memType = item.Response[i].membershipType;
+
+                            var memResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + memType + "/Profile/" + memId + "/?components=100").Result;
+                            var memContent = memResponse.Content.ReadAsStringAsync().Result;
+                            dynamic memItem = JsonConvert.DeserializeObject(memContent);
+
+                            if (memItem.ErrorCode == 1 && (int)memItem.Response.profile.data.userInfo.crossSaveOverride == (int)memItem.Response.profile.data.userInfo.membershipType)
+                            {
+                                MembershipType = memType;
+                                MembershipID =  memId;
+                                break;
+                            }
+                        }
+                    }
+
+                    using (var client = new HttpClient())
+                    {
+                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                        var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "?components=100,200").Result;
+                        var content = response.Content.ReadAsStringAsync().Result;
+                        dynamic item = JsonConvert.DeserializeObject(content);
+
+                        if (DataConfig.IsBungieAPIDown(content))
+                        {
+                            await command.ModifyOriginalResponseAsync(message => { message.Content = $"Bungie API is temporary down, try again later."; });
+                            return;
+                        }
+
+                        if (item.ErrorCode != 1)
+                        {
+                            await command.ModifyOriginalResponseAsync(message => { message.Content = $"An error occured with that account. Is there a connected Destiny 2 account?"; });
+                            return;
+                        }
+
+                        Guardian userGuardian = null;
+                        for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                        {
+                            try
+                            {
+                                string charId = $"{item.Response.profile.data.characterIds[i]}";
+                                if ((Guardian.Class)item.Response.characters.data[$"{charId}"].classType == ClassType)
+                                    userGuardian = new Guardian(BungieTag, MembershipID, MembershipType, charId);
+                            }
+                            catch (Exception x)
+                            {
+                                Console.WriteLine($"{x}");
+                            }
+                        }
+
+                        if (userGuardian == null)
+                        {
+                            await command.ModifyOriginalResponseAsync(message => { message.Content = "No guardian found."; });
+                            return;
+                        }
+
+                        await command.ModifyOriginalResponseAsync(message => { message.Embed = userGuardian.GetGuardianEmbed().Build(); });
+                        return;
+                    }
+                }
+            }
+            else if (command.Data.Name.Equals("link"))
+            {
+                string BungieTag = null;
+                foreach (var option in command.Data.Options)
+                {
+                    if (option.Name.Equals("bungie-tag"))
+                        BungieTag = $"{option.Value}";
+                }
+
+                if (DataConfig.IsExistingLinkedUser(command.User.Id))
+                {
+                    await command.RespondAsync($"You have an account linked already. Your linked account: {DataConfig.GetLinkedUser(command.User.Id).UniqueBungieName}", ephemeral: true);
+                    return;
+                }
+
+                string memId = DataConfig.GetValidDestinyMembership(BungieTag, out string memType);
+
+                if (memId == null && memType == null)
+                {
+                    await command.RespondAsync($"Something went wrong. Is your Bungie Tag correct?", ephemeral: true);
+                    return;
+                }
+
+                if (!DataConfig.IsPublicAccount(BungieTag))
+                {
+                    await command.RespondAsync($"Your account privacy is not set to public. I cannot access your information otherwise.", ephemeral: true);
+                    return;
+                }
+
+                DataConfig.AddUserToConfig(command.User.Id, memId, memType, BungieTag);
+                await command.RespondAsync($"Linked {command.User.Mention} to {BungieTag}.", ephemeral: true);
+            }
+            else if (command.Data.Name.Equals("unlink"))
+            {
+                if (!DataConfig.IsExistingLinkedUser(command.User.Id))
+                {
+                    await command.RespondAsync("You do not have a Bungie account linked. Use the command \"/link\" to link!", ephemeral: true);
+                    return;
+                }
+
+                var linkedUser = DataConfig.GetLinkedUser(command.User.Id);
+                DataConfig.DeleteUserFromConfig(command.User.Id);
+                await command.RespondAsync($"Your Bungie account: {linkedUser.UniqueBungieName} has been unlinked. Use the command \"/link\" if you want to re-link!", ephemeral: true);
+            }
             else
             {
-                await command.RespondAsync($"Command is under construction! Wait for the next update.", ephemeral: true);
+                await command.RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
                 return;
             }
         }
@@ -1539,7 +2173,7 @@ namespace DestinyUtility
 
                 if (!DataConfig.IsExistingLinkedUser(user.Id))
                 {
-                    await interaction.RespondAsync($"You are not registered! Use \"{BotConfig.DefaultCommandPrefix}linkHelp\" to learn how to register.", ephemeral: true);
+                    await interaction.RespondAsync($"You are not registered! Use \"{BotConfig.DefaultCommandPrefix}link [YOUR BUNGIE TAG]\" to register.", ephemeral: true);
                     return;
                 }
 
@@ -1626,7 +2260,7 @@ namespace DestinyUtility
                 await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
 
                 ActiveConfig.AddActiveUserToConfig(newUser);
-                await UpdateBotActivity();
+                await UpdateBotActivity(0);
 
                 await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
                 LogHelper.ConsoleLog($"Started logging for {newUser.UniqueBungieName}.");
@@ -1635,7 +2269,7 @@ namespace DestinyUtility
             {
                 if (!DataConfig.IsExistingLinkedUser(user.Id))
                 {
-                    await interaction.RespondAsync($"You are not registered! Use \"{BotConfig.DefaultCommandPrefix}linkHelp\" to learn how to register.", ephemeral: true);
+                    await interaction.RespondAsync($"You are not registered! Use \"{BotConfig.DefaultCommandPrefix}link [YOUR BUNGIE TAG]\" to register.", ephemeral: true);
                     return;
                 }
 
@@ -1652,7 +2286,7 @@ namespace DestinyUtility
 
                 await Task.Run(() => CheckLeaderboardData(aau));
                 ActiveConfig.DeleteActiveUserFromConfig(user.Id);
-                await UpdateBotActivity();
+                await UpdateBotActivity(0);
                 await interaction.RespondAsync($"Stopped AFK logging for {aau.UniqueBungieName}.", ephemeral: true);
                 LogHelper.ConsoleLog($"Stopped logging for {aau.UniqueBungieName} via user request.");
             }
@@ -1670,14 +2304,21 @@ namespace DestinyUtility
 
             int argPos = 0; // Position to check for command arguments
 
-            string prefix = BotConfig.DefaultCommandPrefix;
-
             var msg = arg as SocketUserMessage;
             if (msg == null) return;
 
-            if (msg.HasStringPrefix(prefix, ref argPos))
+            // Ratio Module.
+            if (msg.MentionedUsers.FirstOrDefault(x => x.Id == _client.CurrentUser.Id) != null && msg.Content.ToLower().Contains("ratio"))
             {
-                if (arg.Channel.GetType() == typeof(SocketDMChannel) && arg.Author.Id != 261121732704862208) // Send message if received via a DM
+                await msg.ReplyAsync("Counter + L + You fell off + You don't have Wish Ascended");
+                await msg.AddReactionAsync(new Emoji("👎"));
+            }
+
+            await UpdateBotActivity();
+
+            if (msg.HasStringPrefix(BotConfig.DefaultCommandPrefix, ref argPos))
+            {
+                if (arg.Channel.GetType() == typeof(SocketDMChannel) && !BotConfig.BotStaffDiscordIDs.Contains(arg.Author.Id)) // Send message if received via a DM
                 {
                     await arg.Channel.SendMessageAsync($"I do not accept commands through Direct Messages.");
                     return;

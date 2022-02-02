@@ -1,8 +1,8 @@
-﻿using DestinyUtility.Configs;
+﻿using Levante.Configs;
 using Newtonsoft.Json;
 using System.Net.Http;
 
-namespace DestinyUtility.Util
+namespace Levante.Util
 {
     public class Emblem : InventoryItem
     {
@@ -48,5 +48,38 @@ namespace DestinyUtility.Util
             dynamic item = JsonConvert.DeserializeObject(Content);
             return "https://www.bungie.net" + item.Response.secondaryIcon;
         }
+
+        public static bool HashIsAnEmblem(long HashCode)
+        {
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Manifest/DestinyInventoryItemDefinition/" + HashCode).Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                dynamic item = JsonConvert.DeserializeObject(content);
+                string displayType = $"{item.Response.itemTypeDisplayName}";
+                if (!displayType.Equals($"Emblem"))
+                    return false;
+                else
+                    return true;
+            }
+        }
+    }
+
+    public class EmblemSearch
+    {
+        private long HashCode;
+        private string Name;
+
+        public EmblemSearch(long hashCode, string name)
+        {
+            HashCode = hashCode;
+            Name = name;
+        }
+
+        public string GetName() => Name;
+
+        public long GetEmblemHash() => HashCode;
     }
 }

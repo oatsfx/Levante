@@ -1,12 +1,12 @@
-﻿using DestinyUtility.Configs;
-using DestinyUtility.Util;
+﻿using Levante.Configs;
+using Levante.Util;
 using Discord;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace DestinyUtility.Rotations
+namespace Levante.Rotations
 {
     public class NightfallRotation
     {
@@ -131,8 +131,8 @@ namespace DestinyUtility.Rotations
                         case NightfallDifficulty.Hero: return $"{DestinyEmote.ScorchedEarth} {DestinyEmote.ThaviksImplant}";
                         case NightfallDifficulty.Legend: return $"{DestinyEmote.ScorchedEarth} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.ThaviksImplant}";
                         case NightfallDifficulty.Master: return $"{DestinyEmote.ScorchedEarth} {DestinyEmote.Chaff} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.ThaviksImplant}";
-                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.ArachNO} {DestinyEmote.ScorchedEarth} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} {DestinyEmote.EquipmentLocked}" +
-                                $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.ThaviksImplant}";
+                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.ArachNO} {DestinyEmote.ScorchedEarth} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} " +
+                                $"{DestinyEmote.EquipmentLocked} {DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.ThaviksImplant}";
                         default: return "None.";
                     }
                 case Nightfall.TheCorrupted:
@@ -142,28 +142,30 @@ namespace DestinyUtility.Rotations
                         case NightfallDifficulty.Hero: return $"{DestinyEmote.Epitaph} {DestinyEmote.SediasDurance}";
                         case NightfallDifficulty.Legend: return $"{DestinyEmote.Epitaph} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SediasDurance}";
                         case NightfallDifficulty.Master: return $"{DestinyEmote.Epitaph} {DestinyEmote.Famine} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SediasDurance}";
-                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.Epitaph} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} {DestinyEmote.EquipmentLocked}" +
+                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.Epitaph} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} {DestinyEmote.EquipmentLocked} " +
                                 $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.SediasDurance}";
                         default: return "None.";
                     }
                 case Nightfall.TheDevilsLair:
                     switch (Difficulty)
                     {
-                        case NightfallDifficulty.Adept: return $"";
-                        case NightfallDifficulty.Hero: return $"";
-                        case NightfallDifficulty.Legend: return $"";
-                        case NightfallDifficulty.Master: return $"";
-                        case NightfallDifficulty.Grandmaster: return $"";
+                        case NightfallDifficulty.Adept: return $"{DestinyEmote.HotKnife}";
+                        case NightfallDifficulty.Hero: return $"{DestinyEmote.HotKnife} {DestinyEmote.SepiksGaze}";
+                        case NightfallDifficulty.Legend: return $"{DestinyEmote.HotKnife} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SepiksGaze}";
+                        case NightfallDifficulty.Master: return $"{DestinyEmote.HotKnife} {DestinyEmote.Togetherness} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SepiksGaze}";
+                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.ArachNO} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} " +
+                                $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.SepiksGaze}";
                         default: return "None.";
                     }
                 case Nightfall.ProvingGrounds:
                     switch (Difficulty)
                     {
-                        case NightfallDifficulty.Adept: return $"";
-                        case NightfallDifficulty.Hero: return $"";
-                        case NightfallDifficulty.Legend: return $"";
-                        case NightfallDifficulty.Master: return $"";
-                        case NightfallDifficulty.Grandmaster: return $"";
+                        case NightfallDifficulty.Adept: return $"{DestinyEmote.Empath}";
+                        case NightfallDifficulty.Hero: return $"{DestinyEmote.Empath} {DestinyEmote.IgnovunsChallenge}";
+                        case NightfallDifficulty.Legend: return $"{DestinyEmote.Empath} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.IgnovunsChallenge}";
+                        case NightfallDifficulty.Master: return $"{DestinyEmote.Empath} {DestinyEmote.Attrition} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.IgnovunsChallenge}";
+                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.ScorchedEarth} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} " +
+                                $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.IgnovunsChallenge}";
                         default: return "None.";
                     }
                 default: return "None.";
@@ -320,6 +322,24 @@ namespace DestinyUtility.Rotations
                 } while (iterationStrike != NightfallStrike && (iterationWeapons[0] != WeaponDrop && iterationWeapons[1] != WeaponDrop));
             }
             return CurrentRotations.WeeklyResetTimestamp.AddDays(WeeksUntil * 7); // Because there is no .AddWeeks().
+        }
+
+        public static Nightfall ActivityPrediction(DateTime Date, out NightfallWeapon[] WeaponDrops)
+        {
+            DateTime iterationDate = CurrentRotations.WeeklyResetTimestamp;
+            NightfallWeapon[] iterationWeapons = CurrentRotations.NightfallWeaponDrops;
+            Nightfall iterationStrike = CurrentRotations.Nightfall;
+
+            do
+            {
+                iterationWeapons[0] = iterationWeapons[0] >= NightfallWeapon.PlugOne1 ? NightfallWeapon.ThePalindrome : iterationWeapons[0] + 2;
+                iterationWeapons[1] = iterationWeapons[1] >= NightfallWeapon.PlugOne1 ? NightfallWeapon.TheSWARM : iterationWeapons[1] + 2;
+                iterationStrike = iterationStrike == Nightfall.ProvingGrounds ? Nightfall.TheHollowedLair : iterationStrike + 1;
+                iterationDate.AddDays(7);
+            } while ((iterationDate - Date).Days >= 7);
+
+            WeaponDrops = iterationWeapons;
+            return iterationStrike;
         }
     }
 
