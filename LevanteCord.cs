@@ -556,7 +556,7 @@ namespace Levante
             _client.MessageReceived += HandleMessageAsync;
             //_client.InteractionCreated += HandleInteraction;
 
-            _client.Ready += InitializeSlashCommands;
+            //_client.Ready += InitializeSlashCommands;
             _client.SlashCommandExecuted += SlashCommandHandler;
 
             _client.ButtonExecuted += ButtonHandler;
@@ -567,7 +567,7 @@ namespace Levante
         {
             var guild = _client.GetGuild(915020047154565220);
             //397846250797662208
-            //await guild.DeleteApplicationCommandsAsync();
+            await guild.DeleteApplicationCommandsAsync();
             var cmds = await _client.Rest.GetGlobalApplicationCommands();
 
             /*foreach (var cmd in cmds)
@@ -1059,8 +1059,8 @@ namespace Levante
                 //await guild.CreateApplicationCommandAsync(alertCommand.Build());
                 //await guild.CreateApplicationCommandAsync(nextCommand.Build());
                 //await guild.CreateApplicationCommandAsync(guardianCommand.Build());
-                await guild.CreateApplicationCommandAsync(linkCommand.Build());
-                await guild.CreateApplicationCommandAsync(unlinkCommand.Build());
+                //await guild.CreateApplicationCommandAsync(linkCommand.Build());
+                //await guild.CreateApplicationCommandAsync(unlinkCommand.Build());
 
                 //await _client.CreateGlobalApplicationCommandAsync(notifyCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(raidCommand.Build());
@@ -1073,6 +1073,12 @@ namespace Levante
 
                 //await _client.CreateGlobalApplicationCommandAsync(dailyCommand.Build());
                 //await _client.CreateGlobalApplicationCommandAsync(weeklyCommand.Build());
+
+                //await _client.CreateGlobalApplicationCommandAsync(alertCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(nextCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(guardianCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(linkCommand.Build());
+                //await _client.CreateGlobalApplicationCommandAsync(unlinkCommand.Build());
             }
             catch (HttpException exception)
             {
