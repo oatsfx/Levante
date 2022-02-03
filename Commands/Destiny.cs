@@ -101,7 +101,9 @@ namespace Levante.Commands
             try
             {
                 emblem = new Emblem(HashCode);
-                bitmap = (Bitmap)GetImageFromPicPath(emblem.GetBackgroundUrl()); // Load the image file.
+                WebClient client = new WebClient();
+                Stream stream = client.OpenRead(emblem.GetBackgroundUrl());
+                bitmap = new Bitmap(stream);
             }
             catch (Exception)
             {
