@@ -1143,7 +1143,7 @@ namespace Levante
                 if (alertType.Equals("resets"))
                 {
                     bool IsDaily = false;
-                    foreach (var option in command.Data.Options)
+                    foreach (var option in command.Data.Options.First().Options)
                         if (option.Name.Equals("reset-type"))
                             IsDaily = Convert.ToInt32(option.Value) == 0;
 
