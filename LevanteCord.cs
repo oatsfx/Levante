@@ -1134,11 +1134,17 @@ namespace Levante
             {
                 var alertType = command.Data.Options.First().Name;
 
+                if (!(command.User as SocketGuildUser).GuildPermissions.ManageChannels)
+                {
+                    await command.RespondAsync($"You do not have the necessary permissions for this command.", ephemeral: true);
+                    return;
+                }
+
                 if (alertType.Equals("resets"))
                 {
                     bool IsDaily = false;
                     foreach (var option in command.Data.Options)
-                        if (option.Name.Equals("type"))
+                        if (option.Name.Equals("reset-type"))
                             IsDaily = Convert.ToInt32(option.Value) == 0;
 
                     if (DataConfig.IsExistingLinkedChannel(command.Channel.Id, IsDaily))
