@@ -23,7 +23,7 @@ namespace Levante.Util
         public readonly DateTime StartDate;
 
         [JsonProperty("EndDate")]
-        public readonly DateTime EndDate;
+        public readonly DateTime? EndDate;
 
         [JsonProperty("Description")]
         public readonly string Description;
@@ -35,7 +35,7 @@ namespace Levante.Util
         public readonly string SpecialUrl;
 
         [JsonConstructor]
-        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime endDate, string desc, string imageUrl, string specialUrl = null)
+        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime? endDate, string desc, string imageUrl, string specialUrl = null)
         {
             EmblemHashCode = emblemHashCode;
             OfferedEmblem = new Emblem(EmblemHashCode);
@@ -73,13 +73,13 @@ namespace Levante.Util
                 $"{Description} {(SpecialUrl != null ? $"\n[LINK]({SpecialUrl})" : "")}\n" +
                 $"Offer Type: {GetOfferTypeString(OfferType)}\n" +
                 $"Time Window: {GetDateRange()}\n" +
-                $"Ends {TimestampTag.FromDateTime(EndDate, TimestampTagStyles.Relative)}.";
+                $"{(EndDate != null ? $"Ends {TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.ShortDate)}." : "There is no apparent end to this offer.")}";
             embed.ThumbnailUrl = OfferedEmblem.GetIconUrl();
             embed.ImageUrl = ImageUrl;
             return embed;
         }
 
-        public string GetDateRange() => $"{TimestampTag.FromDateTime(StartDate, TimestampTagStyles.ShortDate)} - {TimestampTag.FromDateTime(EndDate, TimestampTagStyles.ShortDate)}";
+        public string GetDateRange() => $"{TimestampTag.FromDateTime(StartDate, TimestampTagStyles.ShortDate)} - {(EndDate != null ? $"{TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.ShortDate)}" : "UNKNOWN")}";
 
         public static EmbedBuilder GetRandomOfferEmbed()
         {

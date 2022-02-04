@@ -46,7 +46,7 @@ namespace Levante.Util
         public string GetBackgroundUrl()
         {
             dynamic item = JsonConvert.DeserializeObject(Content);
-            return "https://www.bungie.net/" + item.Response.secondaryIcon;
+            return "https://www.bungie.net" + item.Response.secondaryIcon;
         }
 
         public static bool HashIsAnEmblem(long HashCode)

@@ -12,6 +12,7 @@ using Levante.Util;
 using System.Net;
 using System.Collections.Generic;
 using Fergun.Interactive;
+using SkiaSharp;
 
 namespace Levante.Commands
 {
@@ -97,13 +98,13 @@ namespace Levante.Commands
                 name = Context.User.Username;
 
             Emblem emblem;
-            Bitmap bitmap;
+            SKBitmap bitmap;
             try
             {
                 emblem = new Emblem(HashCode);
                 WebClient client = new WebClient();
                 Stream stream = client.OpenRead(emblem.GetBackgroundUrl());
-                bitmap = new Bitmap(stream);
+                bitmap = SKBitmap.Decode(stream);
             }
             catch (Exception)
             {
@@ -111,27 +112,24 @@ namespace Levante.Commands
                 return;
             }
 
-            using (Graphics graphics = Graphics.FromImage(bitmap))
-            {
-                using (Font font = new Font("Neue Haas Grotesk Display Pro", 18, FontStyle.Bold))
-                {
-                    graphics.DrawString(name, font, Brushes.White, new PointF(83f, 7f));
-                }
-
-                using (Font font = new Font("Neue Haas Grotesk Display Pro", 14))
-                {
-                    graphics.DrawString($"Levante Bot{(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", font, new SolidBrush(System.Drawing.Color.FromArgb(128, System.Drawing.Color.White)), new PointF(84f, 37f));
-                }
-            }
+            var canvas = new SKCanvas(bitmap);
+            SKPaint text = new SKPaint();
+            SKTypeface tf = SKTypeface.FromFile("NeueHaasDisplayRoman.ttf");
+            SKTypeface tfBold = SKTypeface.FromFile("NeueHaasDisplayMediu.ttf");
+            text.Color = SKColors.White;
+            text.IsAntialias = true;
+            canvas.Scale(2);
+            canvas.DrawText(name, 40, 14, tfBold.ToFont(), text);
+            canvas.Scale(0.7f);
+            text.Color = SKColors.White.WithAlpha(120);
+            canvas.DrawText($"Levante Bot{(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", 57, 36, tf.ToFont(), text);
 
             using (var stream = new MemoryStream())
             {
-                bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
-                byte[] bytes = stream.ToArray();
+                var image = SKImage.FromBitmap(bitmap);
                 using (var fs = new FileStream(@"temp.png", FileMode.Create))
                 {
-                    fs.Write(bytes, 0, bytes.Length);
-                    fs.Close();
+                    image.Encode(SKEncodedImageFormat.Png, 100).SaveTo(fs);
                 }
             }
 
