@@ -88,7 +88,7 @@ namespace Levante
             Console.WriteLine();
             Console.WriteLine($"Nightfall: {NightfallRotation.GetStrikeNameString(CurrentRotations.Nightfall)} ({NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrops[0])}/{NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrops[1])})");
             Console.WriteLine();
-            Console.WriteLine($"Altar Weapon: {EmpireHuntRotation.GetHuntNameString(CurrentRotations.EmpireHunt)}");
+            Console.WriteLine($"Empire Hunt: {EmpireHuntRotation.GetHuntNameString(CurrentRotations.EmpireHunt)}");
             Console.WriteLine();
             Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
             Console.WriteLine();
@@ -456,7 +456,6 @@ namespace Levante
 
             _interaction.SlashCommandExecuted += SlashCommandExecuted;
 
-            //_client.ButtonExecuted += ButtonHandler;
             _client.SelectMenuExecuted += SelectMenuHandler;
         }
 
@@ -632,13 +631,6 @@ namespace Levante
 
             var msg = arg as SocketUserMessage;
             if (msg == null) return;
-
-            // Ratio Module.
-            if (msg.MentionedUsers.FirstOrDefault(x => x.Id == _client.CurrentUser.Id) != null && msg.Content.ToLower().Contains("ratio"))
-            {
-                await msg.ReplyAsync("Counter + L + You fell off + You don't have Wish Ascended");
-                await msg.AddReactionAsync(new Emoji("👎"));
-            }
 
             await UpdateBotActivity();
 
