@@ -10,6 +10,9 @@ using System.Text;
 using Fergun.Interactive;
 using Newtonsoft.Json;
 using Discord.WebSocket;
+using System.IO;
+using Levante.Helpers;
+using Levante.Rotations;
 
 namespace Levante.Commands
 {
@@ -28,6 +31,65 @@ namespace Levante.Commands
                 .WithButton("Force Reset", customId: $"force", ButtonStyle.Secondary, helpEmote, row: 0);
 
             await ReplyAsync($"This shouldn't really be used...", components: buttonBuilder.Build());
+        }
+
+        [Command("giveConfig", RunMode = RunMode.Async)]
+        [Alias("config", "getConfig")]
+        [RequireOwner]
+        public async Task GiveConfigs() => await Context.User.SendFileAsync(BotConfig.FilePath);
+
+        [Command("replaceConfig", RunMode = RunMode.Async)]
+        [RequireOwner]
+        public async Task ReplaceConfig()
+        {
+            var attachments = Context.Message.Attachments;
+            if (attachments.Count == 0)
+            {
+                await ReplyAsync("No file attached.");
+                return;
+            }
+
+            using (var httpCilent = new HttpClient())
+            {
+                var url = attachments.First().Url;
+                byte[] bytes = await httpCilent.GetByteArrayAsync(url);
+                using (var fs = new FileStream(BotConfig.FilePath, FileMode.Create))
+                {
+                    fs.Write(bytes, 0, bytes.Length);
+                }
+            }
+
+            await Refresh();
+            await ReplyAsync($"Config replaced and bot is refreshed.");
+        }
+
+        [Command("refresh", RunMode = RunMode.Async)]
+        [Summary("Refreshes activity.")]
+        [RequireOwner]
+        public async Task Refresh()
+        {
+            ConfigHelper.CheckAndLoadConfigFiles();
+            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Note} | v{BotConfig.Version}", ActivityType.Playing));
+
+            var react = Emote.Parse("<:complete:927315594951426048>");
+
+            await Context.Message.AddReactionAsync(react);
+        }
+
+        [Command("deleteBotMessage", RunMode = RunMode.Async)]
+        [RequireOwner]
+        public async Task DeleteBotMessage(ulong MessageId)
+        {
+            var app = await Context.Client.GetApplicationInfoAsync();
+            var msg = await Context.Channel.GetMessageAsync(MessageId);
+
+            if (msg.Author.Id != app.Id)
+            {
+                await ReplyAsync($"Message does not belong to {Context.Client.GetUser(app.Id).Mention}.");
+                return;
+            }
+
+            await msg.DeleteAsync();
         }
 
         [Command("newEmblemOffer", RunMode = RunMode.Async)]
@@ -153,6 +215,24 @@ namespace Levante.Commands
             await ReplyAsync($"I'll see you shortly.");
             System.Diagnostics.Process.Start(AppDomain.CurrentDomain.FriendlyName);
             Environment.Exit(0);
+        }
+
+        [Command("flushTracking")]
+        [Summary("If the resets break, use this command to send out the tracking reminders.")]
+        [RequireOwner]
+        public async Task FlushTracking()
+        {
+            // Send reset embeds if applicable.
+            if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
+                await DataConfig.PostWeeklyResetUpdate(Context.Client);
+
+            await DataConfig.PostDailyResetUpdate(Context.Client);
+
+            // Send users their tracking if applicable.
+            if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
+                await CurrentRotations.CheckUsersWeeklyTracking(Context.Client);
+
+            await CurrentRotations.CheckUsersDailyTracking(Context.Client);
         }
 
         [Command("maxUsers", RunMode = RunMode.Async)]

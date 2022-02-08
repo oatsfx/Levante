@@ -334,6 +334,16 @@ namespace Levante.Configs
                         }
                     }
 
+                    if (!IsInShatteredThrone)
+                    {
+                        ErrorStatus = $"PlayerNotInShatteredThrone";
+                        XPProgress = -1;
+                        IsInShatteredThrone = false;
+                        FireteamPrivacy = PrivacySetting.Open;
+                        CharacterId = null;
+                        return -1;
+                    }
+
                     FireteamPrivacy = item.Response.profileTransitoryData.data.joinability.privacySetting;
 
                     //first 100 levels: 4095505052
@@ -456,8 +466,15 @@ namespace Levante.Configs
         {
             foreach (ulong ChannelID in AnnounceDailyLinks)
             {
-                var channel = Client.GetChannel(ChannelID) as SocketTextChannel;
-                await channel.SendMessageAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
+                try
+                {
+                    var channel = Client.GetChannel(ChannelID) as SocketTextChannel;
+                    await channel.SendMessageAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
+                }
+                catch
+                {
+                    Console.WriteLine($"Missing Permissions in Channel ID: {ChannelID}");
+                }
             }
         }
 
@@ -465,8 +482,15 @@ namespace Levante.Configs
         {
             foreach (ulong ChannelID in AnnounceWeeklyLinks)
             {
-                var channel = Client.GetChannel(ChannelID) as SocketTextChannel;
-                await channel.SendMessageAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
+                try
+                {
+                    var channel = Client.GetChannel(ChannelID) as SocketTextChannel;
+                    await channel.SendMessageAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
+                }
+                catch
+                {
+                    Console.WriteLine($"Missing Permissions in Channel ID: {ChannelID}");
+                }
             }
         }
     }

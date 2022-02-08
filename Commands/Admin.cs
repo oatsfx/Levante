@@ -26,7 +26,7 @@ namespace Levante.Commands
 
             ICategoryChannel cc = null;
             foreach (var categoryChan in Context.Guild.CategoryChannels)
-                if (categoryChan.Name.Equals($"Thrallway Logger"))
+                if (categoryChan.Name.Contains($"Thrallway Logger"))
                 {
                     cc = categoryChan;
                     // Remove an existing hub.

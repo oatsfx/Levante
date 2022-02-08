@@ -111,6 +111,21 @@ namespace Levante.Rotations
             // We don't call UpdateRotationsJSON() because it's called in DailyRotation().
         }
 
+        public static int GetTotalLinks()
+        {
+            return AltarsOfSorrowRotation.AltarsOfSorrowLinks.Count +
+                AscendantChallengeRotation.AscendantChallengeLinks.Count +
+                CurseWeekRotation.CurseWeekLinks.Count +
+                DeepStoneCryptRotation.DeepStoneCryptLinks.Count +
+                EmpireHuntRotation.EmpireHuntLinks.Count +
+                GardenOfSalvationRotation.GardenOfSalvationLinks.Count +
+                LastWishRotation.LastWishLinks.Count +
+                LostSectorRotation.LostSectorLinks.Count +
+                NightfallRotation.NightfallLinks.Count +
+                NightmareHuntRotation.NightmareHuntLinks.Count +
+                VaultOfGlassRotation.VaultOfGlassLinks.Count;
+        }
+
         public static void CreateJSONs()
         {
             CurrentRotations cr;

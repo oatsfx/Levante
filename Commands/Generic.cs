@@ -84,7 +84,7 @@ namespace Levante.Commands
             string slashCmdList = "";
             foreach (var slashCommand in slashCommands)
                 if (!slashCmdList.Contains(slashCommand.Name))
-                    slashCmdList += $"{slashCommand.Name}\n";
+                    slashCmdList += $"/{slashCommand.Name}\n";
 
             if (builder.Fields.Count == 0)
             {
@@ -130,7 +130,7 @@ namespace Levante.Commands
 
             embed.Title = "Bot Information";
             embed.Description =
-                "Destiny Utility is an [open-source](https://github.com/oatsfx/DestinyUtility) Discord bot using Discord.Net-Labs for various Destiny 2 Needs. " +
+                "Levante is an [open-source](https://github.com/oatsfx/Levante) Discord bot using Discord.Net-Labs (Discord.NET Wrapper Nightly) for various Destiny 2 Needs. " +
                 "This bot is actively developed by [@OatsFX](https://twitter.com/OatsFX). It pulls most of its information from the Bungie API.";
 
             await ReplyAsync("", false, embed.Build());

@@ -12,7 +12,6 @@ using Levante.Util;
 using System.Net;
 using System.Collections.Generic;
 using Fergun.Interactive;
-using SkiaSharp;
 
 namespace Levante.Commands
 {
@@ -95,16 +94,20 @@ namespace Levante.Commands
         public async Task TryOut(long HashCode = -1, [Remainder] string name = null)
         {
             if (name == null)
-                name = Context.User.Username;
+            {
+                var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
+                if (linkedUser != null)
+                    name = linkedUser.UniqueBungieName.Substring(0, linkedUser.UniqueBungieName.Length - 5);
+                else
+                    name = Context.User.Username;
+            }
 
             Emblem emblem;
-            SKBitmap bitmap;
+            Bitmap bitmap;
             try
             {
                 emblem = new Emblem(HashCode);
-                WebClient client = new WebClient();
-                Stream stream = client.OpenRead(emblem.GetBackgroundUrl());
-                bitmap = SKBitmap.Decode(stream);
+                bitmap = (Bitmap)GetImageFromPicPath(emblem.GetBackgroundUrl()); //load the image file
             }
             catch (Exception)
             {
@@ -112,24 +115,27 @@ namespace Levante.Commands
                 return;
             }
 
-            var canvas = new SKCanvas(bitmap);
-            SKPaint text = new SKPaint();
-            SKTypeface tf = SKTypeface.FromFile("NeueHaasDisplayRoman.ttf");
-            SKTypeface tfBold = SKTypeface.FromFile("NeueHaasDisplayMediu.ttf");
-            text.Color = SKColors.White;
-            text.IsAntialias = true;
-            canvas.Scale(2);
-            canvas.DrawText(name, 40, 14, tfBold.ToFont(), text);
-            canvas.Scale(0.7f);
-            text.Color = SKColors.White.WithAlpha(120);
-            canvas.DrawText($"Levante Bot{(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", 57, 36, tf.ToFont(), text);
+            using (Graphics graphics = Graphics.FromImage(bitmap))
+            {
+                using (Font font = new Font("Neue Haas Grotesk Display Pro", 18, FontStyle.Bold))
+                {
+                    graphics.DrawString(name, font, Brushes.White, new PointF(83f, 7f));
+                }
+
+                using (Font font = new Font("Neue Haas Grotesk Display Pro", 14))
+                {
+                    graphics.DrawString($"Levante Bot{(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", font, new SolidBrush(System.Drawing.Color.FromArgb(128, System.Drawing.Color.White)), new PointF(84f, 37f));
+                }
+            }
 
             using (var stream = new MemoryStream())
             {
-                var image = SKImage.FromBitmap(bitmap);
+                bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                byte[] bytes = stream.ToArray();
                 using (var fs = new FileStream(@"temp.png", FileMode.Create))
                 {
-                    image.Encode(SKEncodedImageFormat.Png, 100).SaveTo(fs);
+                    fs.Write(bytes, 0, bytes.Length);
+                    fs.Close();
                 }
             }
 

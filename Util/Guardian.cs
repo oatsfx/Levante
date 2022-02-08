@@ -143,5 +143,15 @@ namespace Levante.Util
             Male,
             Female
         }
+
+        public enum Platform
+        {
+            None, // Not Used
+            Xbox,
+            PSN,
+            Steam,
+            Blizzard, // Not Used
+            Stadia,
+        }
     }
 }

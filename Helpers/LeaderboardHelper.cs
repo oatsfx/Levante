@@ -196,5 +196,90 @@ namespace Levante.Helpers
             if (closeProgram == true) return false;
             return true;
         }
+
+        public static void CheckLeaderboardData(ActiveConfig.ActiveAFKUser AAU)
+        {
+            // Generate a Leaderboard entry, and overwrite if the existing one is worse.
+            if (XPPerHourData.IsExistingLinkedEntry(AAU.UniqueBungieName))
+            {
+                var entry = XPPerHourData.GetExistingLinkedEntry(AAU.UniqueBungieName);
+
+                int xpPerHour = 0;
+                if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
+                    xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+
+                // Only add back if the entry is better than their previous.
+                if (xpPerHour > entry.XPPerHour)
+                {
+                    XPPerHourData.DeleteEntryFromConfig(AAU.UniqueBungieName);
+                    XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
+                    {
+                        XPPerHour = xpPerHour,
+                        UniqueBungieName = AAU.UniqueBungieName
+                    });
+                }
+            }
+            else
+            {
+                int xpPerHour = 0;
+                if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
+                    xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+
+                XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
+                {
+                    XPPerHour = xpPerHour,
+                    UniqueBungieName = AAU.UniqueBungieName
+                });
+            }
+
+            if (LongestSessionData.IsExistingLinkedEntry(AAU.UniqueBungieName))
+            {
+                var entry = LongestSessionData.GetExistingLinkedEntry(AAU.UniqueBungieName);
+
+                var sessionTime = DateTime.Now - AAU.TimeStarted;
+
+                // Only add back if the entry is better than their previous.
+                if (sessionTime > entry.Time)
+                {
+                    LongestSessionData.DeleteEntryFromConfig(AAU.UniqueBungieName);
+                    LongestSessionData.AddEntryToConfig(new LongestSessionData.LongestSessionEntry()
+                    {
+                        Time = sessionTime,
+                        UniqueBungieName = AAU.UniqueBungieName
+                    });
+                }
+            }
+            else
+            {
+                LongestSessionData.AddEntryToConfig(new LongestSessionData.LongestSessionEntry()
+                {
+                    Time = DateTime.Now - AAU.TimeStarted,
+                    UniqueBungieName = AAU.UniqueBungieName
+                });
+            }
+
+            if (MostThrallwayTimeData.IsExistingLinkedEntry(AAU.UniqueBungieName))
+            {
+                var entry = MostThrallwayTimeData.GetExistingLinkedEntry(AAU.UniqueBungieName);
+
+                var newTotalTime = (DateTime.Now - AAU.TimeStarted) + entry.Time;
+
+                // Overwrite the existing entry with new data.
+                MostThrallwayTimeData.DeleteEntryFromConfig(AAU.UniqueBungieName);
+                MostThrallwayTimeData.AddEntryToConfig(new MostThrallwayTimeData.MostThrallwayTimeEntry()
+                {
+                    Time = newTotalTime,
+                    UniqueBungieName = AAU.UniqueBungieName
+                });
+            }
+            else
+            {
+                MostThrallwayTimeData.AddEntryToConfig(new MostThrallwayTimeData.MostThrallwayTimeEntry()
+                {
+                    Time = DateTime.Now - AAU.TimeStarted,
+                    UniqueBungieName = AAU.UniqueBungieName
+                });
+            }
+        }
     }
 }

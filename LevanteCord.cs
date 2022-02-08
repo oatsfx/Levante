@@ -18,6 +18,7 @@ using Levante.Leaderboards;
 using Levante.Rotations;
 using Levante.Util;
 using Fergun.Interactive;
+using Discord.Interactions;
 
 namespace Levante
 {
@@ -25,6 +26,7 @@ namespace Levante
     {
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
+        private readonly InteractionService _interaction;
         private readonly IServiceProvider _services;
 
         private Timer DailyResetTimer;
@@ -33,9 +35,11 @@ namespace Levante
         {
             _client = new DiscordSocketClient();
             _commands = new CommandService();
+            _interaction = new InteractionService(_client);
             _services = new ServiceCollection()
                 .AddSingleton(_client)
                 .AddSingleton<InteractiveService>()
+                .AddSingleton<InteractionService>()
                 .BuildServiceProvider();
         }
 
@@ -89,7 +93,16 @@ namespace Levante
             Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
             Console.WriteLine();
 
-            _client.Log += log =>
+            var client = _services.GetRequiredService<DiscordSocketClient>();
+            var commands = _services.GetRequiredService<InteractionService>();
+
+            client.Log += log =>
+            {
+                Console.WriteLine(log.ToString());
+                return Task.CompletedTask;
+            };
+
+            commands.Log += log =>
             {
                 Console.WriteLine(log.ToString());
                 return Task.CompletedTask;
@@ -102,10 +115,10 @@ namespace Levante
             else
                 SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 0, 0));
 
-            await InitializeListeners().ConfigureAwait(false);
+            await InitializeListeners();
 
-            await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken).ConfigureAwait(false);
-            await _client.StartAsync().ConfigureAwait(false);
+            await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
+            await _client.StartAsync();
 
             await UpdateBotActivity(1);
 
@@ -117,10 +130,12 @@ namespace Levante
         // Set to 2 for Watching for {prefix}help | v{version}
         // Set to 3 for Watching X Servers | v{version}
         // Set to 4 for Watching @Levante_Bot on Twitter
+        // Set to 5 for Watching X Linked Users | v{version}
+        // Set to 6 for Watching X Rotation Trackers | v{version}
         private async Task UpdateBotActivity(int SetRNG = -1)
         {
             int RNG = 0;
-            int RNGMax = 20;
+            int RNGMax = 30;
             if (SetRNG != -1 && SetRNG < RNGMax)
                 RNG = SetRNG;
             else
@@ -144,6 +159,8 @@ namespace Levante
                     await _client.SetActivityAsync(new Game($"@Levante_Bot on Twitter", ActivityType.Watching)); break;
                 case 5:
                     await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count} Linked Users | v{BotConfig.Version}", ActivityType.Watching)); break;
+                case 6:
+                    await _client.SetActivityAsync(new Game($"{CurrentRotations.GetTotalLinks()} Rotation Trackers | v{BotConfig.Version}", ActivityType.Watching)); break;
                 default: break;
             }
         }
@@ -224,7 +241,7 @@ namespace Levante
                         string uniqueName = tempAau.UniqueBungieName;
 
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player is no longer in Shattered Throne.");
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau).Result, GenerateDeleteChannelButton());
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", ThrallwayHelper.GenerateSessionSummary(tempAau), ThrallwayHelper.GenerateDeleteChannelButton());
 
                         IUser user;
                         if (_client.GetUser(tempAau.DiscordID) == null)
@@ -237,11 +254,11 @@ namespace Levante
                             user = _client.GetUser(tempAau.DiscordID);
                         }
                         await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player is no longer in Shattered Throne. Logging will be terminated for {uniqueName}.");
-                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", GenerateSessionSummary(tempAau).Result);
+                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", ThrallwayHelper.GenerateSessionSummary(tempAau));
 
                         LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
                         listOfRemovals.Add(tempAau);
-                        await Task.Run(() => CheckLeaderboardData(tempAau));
+                        await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                     }
                     else if (updatedLevel > tempAau.LastLoggedLevel)
                     {
@@ -289,91 +306,6 @@ namespace Levante
             // data loading
             await Task.Delay(45000); // wait to prevent numerous API calls
             await LoadLeaderboards();
-        }
-
-        private void CheckLeaderboardData(ActiveConfig.ActiveAFKUser AAU)
-        {
-            // Generate a Leaderboard entry, and overwrite if the existing one is worse.
-            if (XPPerHourData.IsExistingLinkedEntry(AAU.UniqueBungieName))
-            {
-                var entry = XPPerHourData.GetExistingLinkedEntry(AAU.UniqueBungieName);
-
-                int xpPerHour = 0;
-                if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
-                    xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
-                
-                // Only add back if the entry is better than their previous.
-                if (xpPerHour > entry.XPPerHour)
-                {
-                    XPPerHourData.DeleteEntryFromConfig(AAU.UniqueBungieName);
-                    XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
-                    {
-                        XPPerHour = xpPerHour,
-                        UniqueBungieName = AAU.UniqueBungieName
-                    });
-                }
-            }
-            else
-            {
-                int xpPerHour = 0;
-                if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
-                    xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
-
-                XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
-                {
-                    XPPerHour = xpPerHour,
-                    UniqueBungieName = AAU.UniqueBungieName
-                });
-            }
-
-            if (LongestSessionData.IsExistingLinkedEntry(AAU.UniqueBungieName))
-            {
-                var entry = LongestSessionData.GetExistingLinkedEntry(AAU.UniqueBungieName);
-
-                var sessionTime = DateTime.Now - AAU.TimeStarted;
-
-                // Only add back if the entry is better than their previous.
-                if (sessionTime > entry.Time)
-                {
-                    LongestSessionData.DeleteEntryFromConfig(AAU.UniqueBungieName);
-                    LongestSessionData.AddEntryToConfig(new LongestSessionData.LongestSessionEntry()
-                    {
-                        Time = sessionTime,
-                        UniqueBungieName = AAU.UniqueBungieName
-                    });
-                }
-            }
-            else
-            {
-                LongestSessionData.AddEntryToConfig(new LongestSessionData.LongestSessionEntry()
-                {
-                    Time = DateTime.Now - AAU.TimeStarted,
-                    UniqueBungieName = AAU.UniqueBungieName
-                });
-            }
-
-            if (MostThrallwayTimeData.IsExistingLinkedEntry(AAU.UniqueBungieName))
-            {
-                var entry = MostThrallwayTimeData.GetExistingLinkedEntry(AAU.UniqueBungieName);
-
-                var newTotalTime = (DateTime.Now - AAU.TimeStarted) + entry.Time;
-
-                // Overwrite the existing entry with new data.
-                MostThrallwayTimeData.DeleteEntryFromConfig(AAU.UniqueBungieName);
-                MostThrallwayTimeData.AddEntryToConfig(new MostThrallwayTimeData.MostThrallwayTimeEntry()
-                { 
-                    Time = newTotalTime,
-                    UniqueBungieName = AAU.UniqueBungieName
-                });
-            }
-            else
-            {
-                MostThrallwayTimeData.AddEntryToConfig(new MostThrallwayTimeData.MostThrallwayTimeEntry()
-                {
-                    Time = DateTime.Now - AAU.TimeStarted,
-                    UniqueBungieName = AAU.UniqueBungieName
-                });
-            }
         }
 
         private async Task LoadLeaderboards()
@@ -460,7 +392,7 @@ namespace Levante
                 else if (updatedProgression == aau.LastLevelProgress)
                 {
                     await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Potential wipe detected.");
-                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau).Result, GenerateDeleteChannelButton());
+                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", ThrallwayHelper.GenerateSessionSummary(tempAau), ThrallwayHelper.GenerateDeleteChannelButton());
 
                     IUser user;
                     if (_client.GetUser(tempAau.DiscordID) == null)
@@ -473,11 +405,11 @@ namespace Levante
                         user = _client.GetUser(tempAau.DiscordID);
                     }
                     await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Potential wipe detected. Logging will be terminated for {tempAau.UniqueBungieName}.");
-                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", GenerateSessionSummary(tempAau).Result);
+                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", ThrallwayHelper.GenerateSessionSummary(tempAau));
 
                     LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
 
-                    await Task.Run(() => CheckLeaderboardData(tempAau));
+                    await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                     return null;
                 }
                 else if (updatedProgression < aau.LastLevelProgress)
@@ -502,1495 +434,47 @@ namespace Levante
                 return null;
             }
         }
-
-        private ComponentBuilder GenerateDeleteChannelButton()
-        {
-            Emoji deleteEmote = new Emoji("⛔");
-
-            var buttonBuilder = new ComponentBuilder()
-                .WithButton("Delete Log Channel", customId: $"deleteChannel", ButtonStyle.Secondary, deleteEmote, row: 0);
-
-            return buttonBuilder;
-        }
-
-        private async Task<EmbedBuilder> GenerateSessionSummary(ActiveConfig.ActiveAFKUser aau)
-        {
-            var app = await _client.GetApplicationInfoAsync();
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = $"Session Summary: {aau.UniqueBungieName}",
-                IconUrl = app.IconUrl,
-            };
-            var foot = new EmbedFooterBuilder()
-            {
-                Text = $"Thrallway Session Summary"
-            };
-            var embed = new EmbedBuilder()
-            {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                Author = auth,
-                Footer = foot,
-            };
-            int levelsGained = aau.LastLoggedLevel - aau.StartLevel;
-            long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
-            var timeSpan = DateTime.Now - aau.TimeStarted;
-            string timeString = $"{(Math.Floor(timeSpan.TotalHours) > 0 ? $"{Math.Floor(timeSpan.TotalHours)}h " : "")}" +
-                    $"{(timeSpan.Minutes > 0 ? $"{timeSpan.Minutes:00}m " : "")}" +
-                    $"{timeSpan.Seconds:00}s";
-            int xpPerHour = 0;
-            if ((DateTime.Now - aau.TimeStarted).TotalHours >= 1)
-                xpPerHour = (int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours);
-            embed.Description =
-                $"Levels Gained: {levelsGained}\n" +
-                $"XP Gained: {String.Format("{0:n0}", xpGained)}\n" +
-                $"Time: {timeString}\n" +
-                $"XP Per Hour: {String.Format("{0:n0}", xpPerHour)}";
-
-            return embed;
-        }
         #endregion
 
         private async Task InitializeListeners()
         {
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
+            await _interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
+
             _client.MessageReceived += HandleMessageAsync;
-            //_client.InteractionCreated += HandleInteraction;
+            _client.InteractionCreated += HandleInteraction;
 
-            //_client.Ready += InitializeSlashCommands;
-            _client.SlashCommandExecuted += SlashCommandHandler;
+            // This tells us how to build slash commands. If we are not in a DEBUG instance, build the slash commands for all guilds.
+            _client.Ready += async () =>
+            {
+                #if DEBUG
+                    await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
+                #else
+                    await _interaction.RegisterCommandsGloballyAsync(true);
+                #endif
+            };
 
-            _client.ButtonExecuted += ButtonHandler;
+            _interaction.SlashCommandExecuted += SlashCommandExecuted;
+
+            //_client.ButtonExecuted += ButtonHandler;
             _client.SelectMenuExecuted += SelectMenuHandler;
         }
 
-        private async Task InitializeSlashCommands()
+        private async Task SlashCommandExecuted(SlashCommandInfo info, Discord.IInteractionContext context, Discord.Interactions.IResult result)
         {
-            var guild = _client.GetGuild(915020047154565220);
-            //397846250797662208
-            await guild.DeleteApplicationCommandsAsync();
-            var cmds = await _client.Rest.GetGlobalApplicationCommands();
-
-            /*foreach (var cmd in cmds)
+            if (!result.IsSuccess)
             {
-                await cmd.DeleteAsync();
-            }*/
-
-            // ==============================================
-
-            var altarsScob = new SlashCommandOptionBuilder()
-                    .WithName("weapon")
-                    .WithDescription("Altars of Sorrow weapon.")
-                    .WithRequired(true)
-                    .WithType(ApplicationCommandOptionType.Integer);
-            foreach (AltarsOfSorrow AOS in Enum.GetValues(typeof(AltarsOfSorrow)))
-            {
-                altarsScob.AddChoice($"{AltarsOfSorrowRotation.GetWeaponNameString(AOS)} ({AOS})", (int)AOS);
+                switch (result.Error)
+                {
+                    case InteractionCommandError.UnmetPrecondition:
+                        await context.Interaction.RespondAsync("You do not have the necessary permissions to run this command.", ephemeral: true);
+                        break;
+                    default:
+                        break;
+                }
             }
 
-            // ---
-
-            var ascentantScob = new SlashCommandOptionBuilder()
-                .WithName("ascendant-challenge")
-                .WithDescription("Ascendant Challenge name.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (AscendantChallenge AC in Enum.GetValues(typeof(AscendantChallenge)))
-            {
-                ascentantScob.AddChoice($"{AscendantChallengeRotation.GetChallengeNameString(AC)} ({AscendantChallengeRotation.GetChallengeLocationString(AC)})", (int)AC);
-            }
-
-            // ---
-
-            var curseWeekScob = new SlashCommandOptionBuilder()
-                .WithName("strength")
-                .WithDescription("Curse Week strength.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (CurseWeek CW in Enum.GetValues(typeof(CurseWeek)))
-            {
-                curseWeekScob.AddChoice($"{CW}", (int)CW);
-            }
-
-            // ---
-
-            var dscScob = new SlashCommandOptionBuilder()
-                .WithName("challenge")
-                .WithDescription("Deep Stone Crypt challenge.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (DeepStoneCryptEncounter DSCE in Enum.GetValues(typeof(DeepStoneCryptEncounter)))
-            {
-                dscScob.AddChoice($"{DeepStoneCryptRotation.GetEncounterString(DSCE)} ({DeepStoneCryptRotation.GetChallengeString(DSCE)})", (int)DSCE);
-            }
-
-            // ---
-
-            var empireHuntScob = new SlashCommandOptionBuilder()
-                .WithName("empire-hunt")
-                .WithDescription("Empire Hunt boss.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (EmpireHunt EH in Enum.GetValues(typeof(EmpireHunt)))
-            {
-                empireHuntScob.AddChoice($"{EmpireHuntRotation.GetHuntBossString(EH)}", (int)EH);
-            }
-
-            // ---
-
-            var gosScob = new SlashCommandOptionBuilder()
-                .WithName("challenge")
-                .WithDescription("Garden of Salvation challenge.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (GardenOfSalvationEncounter GOSE in Enum.GetValues(typeof(GardenOfSalvationEncounter)))
-            {
-                gosScob.AddChoice($"{GardenOfSalvationRotation.GetEncounterString(GOSE)} ({GardenOfSalvationRotation.GetChallengeString(GOSE)})", (int)GOSE);
-            }
-
-            // ---
-
-            var lwScob = new SlashCommandOptionBuilder()
-                .WithName("challenge")
-                .WithDescription("Last Wish challenge.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LastWishEncounter LWE in Enum.GetValues(typeof(LastWishEncounter)))
-            {
-                lwScob.AddChoice($"{LastWishRotation.GetEncounterString(LWE)} ({LastWishRotation.GetChallengeString(LWE)})", (int)LWE);
-            }
-
-            // ---
-
-            var lostSectorScob = new SlashCommandOptionBuilder()
-                .WithName("lost-sector")
-                .WithDescription("Lost Sector name.")
-                .WithRequired(false) // False so people don't need to track the other option.
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSector LS in Enum.GetValues(typeof(LostSector)))
-            {
-                lostSectorScob.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
-            }
-
-            var difficultyScob = new SlashCommandOptionBuilder()
-                    .WithName("difficulty")
-                    .WithDescription("Lost Sector difficulty.")
-                    .WithRequired(false) // False so people don't need to track the other option.
-                    .AddChoice("Legend", 0)
-                    .AddChoice("Master", 1)
-                    .WithType(ApplicationCommandOptionType.Integer);
-
-            var armorScob = new SlashCommandOptionBuilder()
-                .WithName("armor-drop")
-                .WithDescription("Lost Sector Exotic armor drop.")
-                .WithRequired(false) // False so people don't need to track the other option.
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (ExoticArmorType EAT in Enum.GetValues(typeof(ExoticArmorType)))
-            {
-                armorScob.AddChoice($"{EAT}", (int)EAT);
-            }
-
-            // ---
-
-            var nightfallScob = new SlashCommandOptionBuilder()
-                .WithName("nightfall")
-                .WithDescription("Nightfall Strike.")
-                .WithRequired(false) // False so people don't need to track the other option.
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (Nightfall NF in Enum.GetValues(typeof(Nightfall)))
-            {
-                nightfallScob.AddChoice($"{NightfallRotation.GetStrikeNameString(NF)}", (int)NF);
-            }
-
-            var nightfallWeaponScob = new SlashCommandOptionBuilder()
-                .WithName("weapon")
-                .WithDescription("Nightfall Strike Weapon drop.")
-                .WithRequired(false) // False so people don't need to track the other option.
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (NightfallWeapon NFW in Enum.GetValues(typeof(NightfallWeapon)))
-            {
-                nightfallWeaponScob.AddChoice($"{NightfallRotation.GetWeaponString(NFW)}", (int)NFW);
-            }
-
-            // ---
-
-            var nightmareHuntScob = new SlashCommandOptionBuilder()
-                .WithName("nightmare-hunt")
-                .WithDescription("Nightmare Hunt boss.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (NightmareHunt NH in Enum.GetValues(typeof(NightmareHunt)))
-            {
-                nightmareHuntScob.AddChoice($"{NightmareHuntRotation.GetHuntNameString(NH)} ({NightmareHuntRotation.GetHuntBossString(NH)})", (int)NH);
-            }
-
-            // ---
-
-            var vogScob = new SlashCommandOptionBuilder()
-                .WithName("challenge")
-                .WithDescription("Vault of Glass challenge.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (VaultOfGlassEncounter VOGE in Enum.GetValues(typeof(VaultOfGlassEncounter)))
-            {
-                vogScob.AddChoice($"{VaultOfGlassRotation.GetEncounterString(VOGE)} ({VaultOfGlassRotation.GetChallengeString(VOGE)})", (int)VOGE);
-            }
-
-            // ---
-
-            var notifyCommand = new SlashCommandBuilder()
-                .WithName("notify")
-                .WithDescription("Be notified when a specific rotation is active.")
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("altars-of-sorrow")
-                    .WithDescription("Be notified when an Altars of Sorrow weapon is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(altarsScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("ascendant-challenge")
-                    .WithDescription("Be notified when an Ascendant Challenge is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(ascentantScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("curse-week")
-                    .WithDescription("Be notified when a Curse Week strength is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(curseWeekScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("deep-stone-crypt")
-                    .WithDescription("Be notified when a Deep Stone Crypt challenge is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(dscScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("empire-hunt")
-                    .WithDescription("Be notified when an Empire Hunt is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(empireHuntScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("garden-of-salvation")
-                    .WithDescription("Be notified when a Garden of Salvation challenge is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(gosScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("last-wish")
-                    .WithDescription("Be notified when a Last Wish challenge is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(lwScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("lost-sector")
-                    .WithDescription("Be notified when a Lost Sector and/or Armor Drop is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(lostSectorScob)
-                    .AddOption(difficultyScob)
-                    .AddOption(armorScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("nightfall")
-                    .WithDescription("Be notified when a Nightfall and/or Weapon is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(nightfallScob)
-                    .AddOption(nightfallWeaponScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("nightmare-hunt")
-                    .WithDescription("Be notified when a Nightmare Hunt is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(nightmareHuntScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("vault-of-glass")
-                    .WithDescription("Be notified when a Vault of Glass challenge is active.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(vogScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("remove")
-                    .WithDescription("Remove an active tracking notification.")
-                    .WithType(ApplicationCommandOptionType.SubCommand));
-
-            // ==============================================
-
-            var nextCommand = new SlashCommandBuilder()
-                .WithName("next")
-                .WithDescription("Find out when a rotation is active next.")
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("altars-of-sorrow")
-                    .WithDescription("Find out when an Altars of Sorrow rotation is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(altarsScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("ascendant-challenge")
-                    .WithDescription("Find out when an Ascendant Challenge is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(ascentantScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("curse-week")
-                    .WithDescription("Find out when a Curse Week is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(curseWeekScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("deep-stone-crypt")
-                    .WithDescription("Find out when a Deep Stone Crypt Challenge encounter is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(dscScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("empire-hunt")
-                    .WithDescription("Find out when an Empire Hunt is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(empireHuntScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("garden-of-salvation")
-                    .WithDescription("Find out when a Garden of Salvation Challenge encounter is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(gosScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("last-wish")
-                    .WithDescription("Find out when a Last Wish Challenge encounter is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(lwScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("lost-sector")
-                    .WithDescription("Find out when a Lost Sector and/or Exotic Armor is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(lostSectorScob)
-                    .AddOption(difficultyScob)
-                    .AddOption(armorScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("nightfall")
-                    .WithDescription("Find out when a Nightfall and/or Nightfall Weapon is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(nightfallScob)
-                    .AddOption(nightfallWeaponScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("nightmare-hunt")
-                    .WithDescription("Find out when a Nightmare Hunt is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(nightmareHuntScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("vault-of-glass")
-                    .WithDescription("Find out when a Vault of Glass Challenge encounter is active next.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(vogScob));
-
-            // ==============================================
-
-            var raidCommand = new SlashCommandBuilder()
-                .WithName("raid")
-                .WithDescription("Display Raid information.")
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("raid")
-                    .WithDescription("Raid name.")
-                    .WithType(ApplicationCommandOptionType.Integer)
-                    .AddChoice("Last Wish", 0)
-                    .AddChoice("Garden of Salvation", 1)
-                    .AddChoice("Deep Stone Crypt", 2)
-                    .AddChoice("Vault of Glass", 3));
-
-            // ==============================================
-
-            var nightfallScob2 = new SlashCommandOptionBuilder()
-                .WithName("nightfall")
-                .WithDescription("Nightfall Strike.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (Nightfall NF in Enum.GetValues(typeof(Nightfall)))
-            {
-                nightfallScob2.AddChoice($"{NightfallRotation.GetStrikeNameString(NF)}", (int)NF);
-            }
-
-            var nightfallCommand = new SlashCommandBuilder()
-                .WithName("nightfall")
-                .WithDescription("Display Nightfall information.")
-                .AddOption(nightfallScob2);
-
-            // ==============================================
-
-            var patrolCommand = new SlashCommandBuilder()
-                .WithName("patrol")
-                .WithDescription("Display Patrol information.")
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("location")
-                    .WithDescription("Patrol location.")
-                    .WithType(ApplicationCommandOptionType.Integer)
-                    .AddChoice("The Dreaming City", 0)
-                    .AddChoice("The Moon", 1)
-                    .AddChoice("Europa", 2));
-
-            // ==============================================
-
-            var freeEmblemsCommand = new SlashCommandBuilder();
-            freeEmblemsCommand.WithName("free-emblems");
-            freeEmblemsCommand.WithDescription("Display a list of universal emblem codes.");
-
-            // ==============================================
-
-            var linkCommand = new SlashCommandBuilder();
-            linkCommand.WithName("link");
-            linkCommand.WithDescription("Link your Bungie tag to your Discord account.")
-            .AddOption(new SlashCommandOptionBuilder()
-                .WithName("bungie-tag")
-                .WithDescription("Your Bungie tag you wish to link with.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.String));
-
-            // ==============================================
-
-            var unlinkCommand = new SlashCommandBuilder();
-            unlinkCommand.WithName("unlink");
-            unlinkCommand.WithDescription("Unlink your Bungie tag from your Discord account.");
-
-            // ==============================================
-
-            var dailyCommand = new SlashCommandBuilder();
-            dailyCommand.WithName("daily");
-            dailyCommand.WithDescription("Display Daily reset information.");
-
-            // ==============================================
-
-            var weeklyCommand = new SlashCommandBuilder();
-            weeklyCommand.WithName("weekly");
-            weeklyCommand.WithDescription("Display Weekly reset information.");
-
-            // ==============================================
-
-            var guardiansScob = new SlashCommandOptionBuilder()
-                .WithName("class")
-                .WithDescription("Guardian Class to get information for.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer)
-                .AddChoice("Titan", 0)
-                .AddChoice("Hunter", 1)
-                .AddChoice("Warlock", 2);
-
-            var guardianCommand = new SlashCommandBuilder();
-            guardianCommand.WithName("guardians");
-            guardianCommand.WithDescription("Display Guardian information.")
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("linked-user")
-                    .WithDescription("Get Guardian information of a Linked User.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(new SlashCommandOptionBuilder()
-                        .WithName("user")
-                        .WithDescription("User to get Guardian information for.")
-                        .WithRequired(true)
-                        .WithType(ApplicationCommandOptionType.User))
-                    .AddOption(guardiansScob))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("bungie-tag")
-                    .WithDescription("Get Guardian information of any player.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(new SlashCommandOptionBuilder()
-                        .WithName("player")
-                        .WithDescription("Player's Bungie tag to get Guardian information for.")
-                        .WithRequired(true)
-                        .WithType(ApplicationCommandOptionType.String))
-                    .AddOption(guardiansScob));
-
-            // ==============================================
-
-            var rankCommand = new SlashCommandBuilder();
-            rankCommand.WithName("rank");
-            rankCommand.WithDescription("Display a Destiny 2 leaderboard of choice.");
-
-            var scobF = new SlashCommandOptionBuilder()
-                .WithName("leaderboard")
-                .WithDescription("Specific leaderboard to display.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (Leaderboard LB in Enum.GetValues(typeof(Leaderboard)))
-            {
-                scobF.AddChoice($"{LeaderboardHelper.GetLeaderboardString(LB)}", (int)LB);
-            }
-
-            rankCommand.AddOption(scobF);
-
-            // ==============================================
-
-            var lostSectorInfoCommand = new SlashCommandBuilder();
-            lostSectorInfoCommand.WithName("lost-sector");
-            lostSectorInfoCommand.WithDescription("Get Info on a Lost Sector based on Difficulty.");
-            var scobC = new SlashCommandOptionBuilder()
-                .WithName("lost-sector")
-                .WithDescription("The Lost Sector you want Information on.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-            foreach (LostSector LS in Enum.GetValues(typeof(LostSector)))
-            {
-                scobC.AddChoice($"{LostSectorRotation.GetLostSectorString(LS)}", (int)LS);
-            }
-
-            lostSectorInfoCommand.AddOption(scobC)
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("difficulty")
-                    .WithDescription("The Difficulty of the Lost Sector.")
-                    .WithRequired(true)
-                    .AddChoice("Legend", 0)
-                    .AddChoice("Master", 1)
-                    .WithType(ApplicationCommandOptionType.Integer));
-
-            // ==============================================
-
-            var scobG = new SlashCommandOptionBuilder()
-                .WithName("reset-type")
-                .WithDescription("Choose between Daily or Weekly Reset.")
-                .WithRequired(true)
-                .WithType(ApplicationCommandOptionType.Integer);
-
-            scobG.AddChoice($"Daily", 0);
-            scobG.AddChoice($"Weekly", 1);
-
-            var scobH = new SlashCommandOptionBuilder()
-                .WithName("role")
-                .WithDescription("Add a role to be pinged when a new Emblem Offer is posted.")
-                .WithRequired(false)
-                .WithType(ApplicationCommandOptionType.Role);
-
-            var alertCommand = new SlashCommandBuilder()
-                .WithName("alert")
-                .WithDescription("Set up announcements for Daily/Weekly Reset and Emblem Offers.")
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("resets")
-                    .WithDescription("Set up announcements for Daily/Weekly Reset.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(scobG))
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("emblem-offers")
-                    .WithDescription("Set up announcements for Emblem Offers.")
-                    .WithType(ApplicationCommandOptionType.SubCommand)
-                    .AddOption(scobH));
-
-            try
-            {
-                //await guild.CreateApplicationCommandAsync(alertCommand.Build());
-                //await guild.CreateApplicationCommandAsync(nextCommand.Build());
-                //await guild.CreateApplicationCommandAsync(guardianCommand.Build());
-                //await guild.CreateApplicationCommandAsync(linkCommand.Build());
-                //await guild.CreateApplicationCommandAsync(unlinkCommand.Build());
-
-                //await _client.CreateGlobalApplicationCommandAsync(notifyCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(raidCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(nightfallCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(patrolCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(freeEmblemsCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(rankCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(lostSectorInfoCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(alertCommand.Build());
-
-                //await _client.CreateGlobalApplicationCommandAsync(dailyCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(weeklyCommand.Build());
-
-                //await _client.CreateGlobalApplicationCommandAsync(alertCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(nextCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(guardianCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(linkCommand.Build());
-                //await _client.CreateGlobalApplicationCommandAsync(unlinkCommand.Build());
-            }
-            catch (HttpException exception)
-            {
-                var json = JsonConvert.SerializeObject(exception.Errors, Formatting.Indented);
-                Console.WriteLine(json);
-            }
-        }
-        
-        private async Task SlashCommandHandler(SocketSlashCommand command)
-        {
-            if (command.Data.Name.Equals("lost-sector"))
-            {
-                LostSector LS = 0;
-                LostSectorDifficulty LSD = 0;
-
-                foreach (var option in command.Data.Options)
-                {
-                    if (option.Name.Equals("lost-sector"))
-                        LS = (LostSector)Convert.ToInt32(option.Value);
-                    else if (option.Name.Equals("difficulty"))
-                        LSD = (LostSectorDifficulty)Convert.ToInt32(option.Value);
-                }
-
-                await command.RespondAsync($"", embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
-                return;
-            }
-            else if (command.Data.Name.Equals("rank"))
-            {
-                Leaderboard LeaderboardType = 0;
-                // Using this foreach Loop for future parameters, such as Seasonal leaderboards because we will be resetting the leaderboards each season.
-                foreach (var option in command.Data.Options)
-                {
-                    if (option.Name.Equals("leaderboard"))
-                    {
-                        // Using Leaderboard enum Values to determine what kind of Leaderboard we should generate.
-                        LeaderboardType = (Leaderboard)Convert.ToInt32(option.Value);
-                    }
-                }
-
-                EmbedBuilder embed = new EmbedBuilder();
-                switch (LeaderboardType)
-                {
-                    case Leaderboard.Level: embed = LeaderboardHelper.GetLeaderboardEmbed(LevelData.GetSortedLevelData(), command.User); break;
-                    case Leaderboard.LongestSession: embed = LeaderboardHelper.GetLeaderboardEmbed(LongestSessionData.GetSortedLevelData(), command.User); break;
-                    case Leaderboard.XPPerHour: embed = LeaderboardHelper.GetLeaderboardEmbed(XPPerHourData.GetSortedLevelData(), command.User); break;
-                    case Leaderboard.MostThrallwayTime: embed = LeaderboardHelper.GetLeaderboardEmbed(MostThrallwayTimeData.GetSortedLevelData(), command.User); break;
-                    case Leaderboard.PowerLevel: embed = LeaderboardHelper.GetLeaderboardEmbed(PowerLevelData.GetSortedLevelData(), command.User); break;
-                }
-
-                await command.RespondAsync($"", embed: embed.Build());
-            }
-            else if (command.Data.Name.Equals("alert"))
-            {
-                var alertType = command.Data.Options.First().Name;
-
-                if (!(command.User as SocketGuildUser).GuildPermissions.ManageChannels)
-                {
-                    await command.RespondAsync($"You do not have the necessary permissions for this command.", ephemeral: true);
-                    return;
-                }
-
-                if (alertType.Equals("resets"))
-                {
-                    bool IsDaily = false;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("reset-type"))
-                            IsDaily = Convert.ToInt32(option.Value) == 0;
-
-                    if (DataConfig.IsExistingLinkedChannel(command.Channel.Id, IsDaily))
-                    {
-                        DataConfig.DeleteChannelFromRotationConfig(command.Channel.Id, IsDaily);
-
-                        await command.RespondAsync($"This channel will no longer receive {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command to re-subscribe to them!", ephemeral: true);
-                        return;
-                    }
-                    else
-                    {
-                        DataConfig.AddChannelToRotationConfig(command.Channel.Id, IsDaily);
-
-                        await command.RespondAsync($"This channel is now successfully subscribed to {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command again to remove this type of alert!", ephemeral: true);
-                        return;
-                    }
-                }
-                else if (alertType.Equals("emblem-offers"))
-                {
-                    IRole RoleToPing = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("role"))
-                            RoleToPing = (IRole)option.Value;
-
-                    if (DataConfig.IsExistingEmblemLinkedChannel(command.Channel.Id))
-                    {
-                        DataConfig.DeleteEmblemChannelFromRotationConfig(command.Channel.Id);
-
-                        await command.RespondAsync($"This channel will no longer receive Emblem Offer reset posts. Run this command to re-subscribe to them!", ephemeral: true);
-                        return;
-                    }
-                    else
-                    {
-                        DataConfig.AddEmblemChannel(command.Channel.Id, RoleToPing);
-
-                        await command.RespondAsync($"This channel is now successfully subscribed to Emblem Offer posts. Run this command again to remove this type of alert!", ephemeral: true);
-                        return;
-                    }
-                }
-            }
-            else if (command.Data.Name.Equals("notify"))
-            {
-                var notifyType = command.Data.Options.First().Name;
-
-                if (notifyType.Equals("altars-of-sorrow"))
-                {
-                    if (AltarsOfSorrowRotation.GetUserTracking(command.User.Id, out var Weapon) != null)
-                    {
-                        await command.RespondAsync($"You already have tracking for Altars of Sorrow. I am watching for {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}).", ephemeral: true);
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("weapon"))
-                            Weapon = (AltarsOfSorrow)Convert.ToInt32(option.Value);
-
-                    AltarsOfSorrowRotation.AddUserTracking(command.User.Id, Weapon);
-                    await command.RespondAsync($"I will remind you when {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}) is in rotation, which will be on {TimestampTag.FromDateTime(AltarsOfSorrowRotation.DatePrediction(Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    return;
-                }
-                else if (notifyType.Equals("ascendant-challenge"))
-                {
-                    if (AscendantChallengeRotation.GetUserTracking(command.User.Id, out var AscendantChallenge) != null)
-                    {
-                        await command.RespondAsync($"You already have tracking for Ascendant Challenges. I am watching for {AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}).", ephemeral: true);
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("ascendant-challenge"))
-                            AscendantChallenge = (AscendantChallenge)Convert.ToInt32(option.Value);
-
-                    AscendantChallengeRotation.AddUserTracking(command.User.Id, AscendantChallenge);
-                    await command.RespondAsync($"I will remind you when {AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}) is in rotation, which will be on {TimestampTag.FromDateTime(AscendantChallengeRotation.DatePrediction(AscendantChallenge), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    return;
-                }
-                else if (notifyType.Equals("curse-week"))
-                {
-                    if (CurseWeekRotation.GetUserTracking(command.User.Id, out var CurseWeek) != null)
-                    {
-                        await command.RespondAsync($"You already have tracking for Curse Weeks. I am watching for {CurseWeek} Strength.", ephemeral: true);
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("strength"))
-                            CurseWeek = (CurseWeek)Convert.ToInt32(option.Value);
-
-                    CurseWeekRotation.AddUserTracking(command.User.Id, CurseWeek);
-                    await command.RespondAsync($"I will remind you when {CurseWeek} Strength is in rotation, which will be on {TimestampTag.FromDateTime(CurseWeekRotation.DatePrediction(CurseWeek), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    return;
-                }
-                else if (notifyType.Equals("deep-stone-crypt"))
-                {
-                    if (DeepStoneCryptRotation.GetUserTracking(command.User.Id, out var Encounter) != null)
-                    {
-                        await command.RespondAsync($"You already have tracking for Deep Stone Crypt challenges. I am watching for {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}).", ephemeral: true);
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("challenge"))
-                            Encounter = (DeepStoneCryptEncounter)Convert.ToInt32(option.Value);
-
-                    DeepStoneCryptRotation.AddUserTracking(command.User.Id, Encounter);
-                    await command.RespondAsync($"I will remind you when {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(DeepStoneCryptRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    return;
-                }
-                else if (notifyType.Equals("empire-hunt"))
-                {
-                    if (EmpireHuntRotation.GetUserTracking(command.User.Id, out var Hunt) != null)
-                    {
-                        await command.RespondAsync($"You already have tracking for Empire Hunts. I am watching for {EmpireHuntRotation.GetHuntBossString(Hunt)}.", ephemeral: true);
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("empire-hunt"))
-                            Hunt = (EmpireHunt)Convert.ToInt32(option.Value);
-
-                    EmpireHuntRotation.AddUserTracking(command.User.Id, Hunt);
-                    await command.RespondAsync($"I will remind you when {EmpireHuntRotation.GetHuntBossString(Hunt)} is in rotation, which will be on {TimestampTag.FromDateTime(EmpireHuntRotation.DatePrediction(Hunt), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    return;
-                }
-                else if (notifyType.Equals("garden-of-salvation"))
-                {
-                    if (GardenOfSalvationRotation.GetUserTracking(command.User.Id, out var Encounter) != null)
-                    {
-                        await command.RespondAsync($"You already have tracking for Garden of Salvation challenges. I am watching for {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}).", ephemeral: true);
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("challenge"))
-                            Encounter = (GardenOfSalvationEncounter)Convert.ToInt32(option.Value);
-
-                    GardenOfSalvationRotation.AddUserTracking(command.User.Id, Encounter);
-                    await command.RespondAsync($"I will remind you when {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(GardenOfSalvationRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    return;
-                }
-                else if (notifyType.Equals("last-wish"))
-                {
-                    if (LastWishRotation.GetUserTracking(command.User.Id, out var Encounter) != null)
-                    {
-                        await command.RespondAsync($"You already have tracking for Last Wish challenges. I am watching for {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}).", ephemeral: true);
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("challenge"))
-                            Encounter = (LastWishEncounter)Convert.ToInt32(option.Value);
-
-                    LastWishRotation.AddUserTracking(command.User.Id, Encounter);
-                    await command.RespondAsync($"I will remind you when {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(LastWishRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    return;
-                }
-                else if (notifyType.Equals("lost-sector"))
-                {
-                    if (LostSectorRotation.GetUserTracking(command.User.Id, out var LS, out var LSD, out var EAT) != null)
-                    {
-                        if (LS == null && LSD == null && EAT == null)
-                            await command.RespondAsync($"An error has occurred.", ephemeral: true);
-                        else if (LS != null && LSD == null && EAT == null)
-                            await command.RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)}.", ephemeral: true);
-                        else if (LS != null && LSD != null && EAT == null)
-                            await command.RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}).", ephemeral: true);
-                        else if (LS == null && LSD == null && EAT != null)
-                            await command.RespondAsync($"You already have tracking for Lost Sectors. I am watching for {EAT} armor drop.", ephemeral: true);
-                        else if (LS == null && LSD != null && EAT != null)
-                            await command.RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LSD} {EAT} armor drop.", ephemeral: true);
-                        else if (LS != null && LSD != null && EAT != null)
-                            await command.RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) dropping {EAT}.", ephemeral: true);
-
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                    {
-                        if (option.Name.Equals("lost-sector"))
-                            LS = (LostSector)Convert.ToInt32(option.Value);
-                        else if (option.Name.Equals("difficulty"))
-                            LSD = (LostSectorDifficulty)Convert.ToInt32(option.Value);
-                        else if (option.Name.Equals("armor-drop"))
-                            EAT = (ExoticArmorType)Convert.ToInt32(option.Value);
-                    }
-
-                    if (LS == null && LSD != null && EAT == null)
-                    {
-                        await command.RespondAsync($"I cannot track a difficulty, they are always active.", ephemeral: true);
-                        return;
-                    }
-
-                    LostSectorRotation.AddUserTracking(command.User.Id, LS, LSD, EAT);
-                    if (LS == null && LSD == null && EAT == null)
-                        await command.RespondAsync($"An error has occurred.", ephemeral: true);
-                    else if (LS != null && LSD == null && EAT == null)
-                        await command.RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    else if (LS != null && LSD != null && EAT == null)
-                        await command.RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    else if (LS == null && LSD == null && EAT != null)
-                        await command.RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    else if (LS == null && LSD != null && EAT != null)
-                        await command.RespondAsync($"I will remind you when {LSD} Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    else if (LS != null && LSD != null && EAT != null)
-                        await command.RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-
-                    return;
-                }
-                else if (notifyType.Equals("nightfall"))
-                {
-                    if (NightfallRotation.GetUserTracking(command.User.Id, out var NF, out var Weapon) != null)
-                    {
-                        if (NF == null && Weapon == null)
-                            await command.RespondAsync($"An error has occurred.", ephemeral: true);
-                        else if (NF != null && Weapon == null)
-                            await command.RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.GetStrikeNameString((Nightfall)NF)}.", ephemeral: true);
-                        else if (NF == null && Weapon != null)
-                            await command.RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} weapon drops.", ephemeral: true);
-                        else if (NF != null && Weapon != null)
-                            await command.RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.GetStrikeNameString((Nightfall)NF)} with {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} weapon drops.", ephemeral: true);
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                    {
-                        if (option.Name.Equals("nightfall"))
-                            NF = (Nightfall)Convert.ToInt32(option.Value);
-                        else if (option.Name.Equals("weapon"))
-                            Weapon = (NightfallWeapon)Convert.ToInt32(option.Value);
-                    }
-
-                    NightfallRotation.AddUserTracking(command.User.Id, NF, Weapon);
-                    if (NF == null && Weapon == null)
-                        await command.RespondAsync($"An error has occurred.", ephemeral: true);
-                    else if (NF != null && Weapon == null)
-                        await command.RespondAsync($"[{NightfallRotation.ActivityPrediction(NightfallRotation.DatePrediction(NF, Weapon), out NightfallWeapon[] WeaponDrops)} | Drops: {WeaponDrops[0]} {WeaponDrops[1]}]:I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    else if (NF == null && Weapon != null)
-                        await command.RespondAsync($"I will remind you when {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    else if (NF != null && Weapon != null)
-                        await command.RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    return;
-                }
-                else if (notifyType.Equals("nightmare-hunt"))
-                {
-                    if (NightmareHuntRotation.GetUserTracking(command.User.Id, out var Hunt) != null)
-                    {
-                        await command.RespondAsync($"You already have tracking for Nightmare Hunts. I am watching for {NightmareHuntRotation.GetHuntNameString(Hunt)} ({NightmareHuntRotation.GetHuntBossString(Hunt)}).", ephemeral: true);
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("nightmare-hunt"))
-                            Hunt = (NightmareHunt)Convert.ToInt32(option.Value);
-
-                    NightmareHuntRotation.AddUserTracking(command.User.Id, Hunt);
-                    await command.RespondAsync($"I will remind you when {NightmareHuntRotation.GetHuntNameString(Hunt)} ({NightmareHuntRotation.GetHuntBossString(Hunt)}) is in rotation, which will be on {TimestampTag.FromDateTime(NightmareHuntRotation.DatePrediction(Hunt), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    return;
-                }
-                else if (notifyType.Equals("vault-of-glass"))
-                {
-                    if (VaultOfGlassRotation.GetUserTracking(command.User.Id, out var Encounter) != null)
-                    {
-                        await command.RespondAsync($"You already have tracking for Vault of Glass challenges. I am watching for {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}).", ephemeral: true);
-                        return;
-                    }
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("challenge"))
-                            Encounter = (VaultOfGlassEncounter)Convert.ToInt32(option.Value);
-
-                    VaultOfGlassRotation.AddUserTracking(command.User.Id, Encounter);
-                    await command.RespondAsync($"I will remind you when {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(VaultOfGlassRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                    return;
-                }
-                else if (notifyType.Equals("remove"))
-                {
-                    // Build a selection menu with a list of all of the active trackings a user has.
-                    var menuBuilder = new SelectMenuBuilder()
-                        .WithPlaceholder("Select one of your active trackers")
-                        .WithCustomId("notifyRemovalMenu")
-                        .WithMinValues(1)
-                        .WithMaxValues(1);
-
-                    if (AltarsOfSorrowRotation.GetUserTracking(command.User.Id, out var Weapon) != null)
-                        menuBuilder.AddOption("Altars of Sorrow", "altars-of-sorrow", $"{AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon})");
-
-                    if (AscendantChallengeRotation.GetUserTracking(command.User.Id, out var Challenge) != null)
-                        menuBuilder.AddOption("Ascendant Challenge", "ascendant-challenge", $"{AscendantChallengeRotation.GetChallengeNameString(Challenge)} ({AscendantChallengeRotation.GetChallengeLocationString(Challenge)})");
-
-                    if (CurseWeekRotation.GetUserTracking(command.User.Id, out var Strength) != null)
-                        menuBuilder.AddOption("Curse Week", "curse-week", $"{Strength} Strength");
-
-                    if (DeepStoneCryptRotation.GetUserTracking(command.User.Id, out var DSCEncounter) != null)
-                        menuBuilder.AddOption("Deep Stone Crypt Challenge", "dsc-challenge", $"{DeepStoneCryptRotation.GetEncounterString(DSCEncounter)} ({DeepStoneCryptRotation.GetChallengeString(DSCEncounter)})");
-
-                    if (EmpireHuntRotation.GetUserTracking(command.User.Id, out var EmpireHunt) != null)
-                        menuBuilder.AddOption("Empire Hunt", "empire-hunt", $"{EmpireHuntRotation.GetHuntBossString(EmpireHunt)}");
-
-                    if (GardenOfSalvationRotation.GetUserTracking(command.User.Id, out var GoSEncounter) != null)
-                        menuBuilder.AddOption("Garden of Salvation Challenge", "gos-challenge", $"{GardenOfSalvationRotation.GetEncounterString(GoSEncounter)} ({GardenOfSalvationRotation.GetChallengeString(GoSEncounter)})");
-
-                    if (LastWishRotation.GetUserTracking(command.User.Id, out var LWEncounter) != null)
-                        menuBuilder.AddOption("Last Wish Challenge", "lw-challenge", $"{LastWishRotation.GetEncounterString(LWEncounter)} ({LastWishRotation.GetChallengeString(LWEncounter)})");
-
-                    if (LostSectorRotation.GetUserTracking(command.User.Id, out var LS, out var LSD, out var EAT) != null)
-                    {
-                        if (LS == null && LSD == null && EAT == null)
-                            menuBuilder.AddOption("Lost Sector", "remove-error", $"Nothing found");
-                        else if (LS != null && LSD == null && EAT == null)
-                            menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)}");
-                        else if (LS != null && LSD != null && EAT == null)
-                            menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD})");
-                        else if (LS == null && LSD == null && EAT != null)
-                            menuBuilder.AddOption("Lost Sector", "lost-sector", $"{EAT} Drop");
-                        else if (LS == null && LSD != null && EAT != null)
-                            menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LSD} {EAT} Drop");
-                        else if (LS != null && LSD != null && EAT != null)
-                            menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) dropping {EAT}");
-                    }
-
-                    if (NightfallRotation.GetUserTracking(command.User.Id, out var NF, out var NFWeapon) != null)
-                    {
-                        if (NF == null && NFWeapon == null)
-                            menuBuilder.AddOption("Nightfall", "remove-error", $"Nothing found");
-                        else if (NF != null && NFWeapon == null)
-                            menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.GetStrikeNameString((Nightfall)NF)}");
-                        else if (NF == null && NFWeapon != null)
-                            menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.GetWeaponString((NightfallWeapon)NFWeapon)} Drop");
-                        else if (NF != null && NFWeapon != null)
-                            menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.GetStrikeNameString((Nightfall)NF)} dropping {NightfallRotation.GetWeaponString((NightfallWeapon)NFWeapon)}");
-                    }
-
-                    if (NightmareHuntRotation.GetUserTracking(command.User.Id, out var NightmareHunt) != null)
-                        menuBuilder.AddOption("Nightmare Hunt", "nightmare-hunt", $"{NightmareHuntRotation.GetHuntNameString(NightmareHunt)} ({NightmareHuntRotation.GetHuntBossString(NightmareHunt)})");
-
-                    if (VaultOfGlassRotation.GetUserTracking(command.User.Id, out var VoGEncounter) != null)
-                        menuBuilder.AddOption("Vault of Glass Challenge", "vog-challenge", $"{VaultOfGlassRotation.GetEncounterString(VoGEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGEncounter)})");
-
-                    var builder = new ComponentBuilder()
-                        .WithSelectMenu(menuBuilder);
-
-                    try
-                    {
-                        await command.RespondAsync($"Which rotation tracker did you want me to remove? Please dismiss this message after you are done.", ephemeral: true, components: builder.Build());
-                    }
-                    catch
-                    {
-                        await command.RespondAsync($"You do not have any active trackers. Use '/notify' to activate your first one!", ephemeral: true);
-                    }
-                }
-            }
-            else if (command.Data.Name.Equals("next"))
-            {
-                var nextType = command.Data.Options.First().Name;
-
-                if (nextType.Equals("altars-of-sorrow"))
-                {
-                    AltarsOfSorrow? Weapon = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("weapon"))
-                            Weapon = (AltarsOfSorrow)Convert.ToInt32(option.Value);
-
-                    var predictedDate = AltarsOfSorrowRotation.DatePrediction((AltarsOfSorrow)Weapon);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Altars of Sorrow";
-                    embed.Description =
-                        $"Next occurrance of {AltarsOfSorrowRotation.GetWeaponNameString((AltarsOfSorrow)Weapon)} ({Weapon}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (nextType.Equals("ascendant-challenge"))
-                {
-                    AscendantChallenge? AscendantChallenge = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("ascendant-challenge"))
-                            AscendantChallenge = (AscendantChallenge)Convert.ToInt32(option.Value);
-
-                    var predictedDate = AscendantChallengeRotation.DatePrediction((AscendantChallenge)AscendantChallenge);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Ascendant Challenge";
-                    embed.Description =
-                        $"Next occurrance of {AscendantChallengeRotation.GetChallengeNameString((AscendantChallenge)AscendantChallenge)} " +
-                            $"({AscendantChallengeRotation.GetChallengeLocationString((AscendantChallenge)AscendantChallenge)}) is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (nextType.Equals("curse-week"))
-                {
-                    CurseWeek? CurseWeek = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("strength"))
-                            CurseWeek = (CurseWeek)Convert.ToInt32(option.Value);
-
-                    var predictedDate = CurseWeekRotation.DatePrediction((CurseWeek)CurseWeek);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Curse Week";
-                    embed.Description =
-                        $"Next occurrance of {CurseWeek} Curse Strength " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (nextType.Equals("deep-stone-crypt"))
-                {
-                    DeepStoneCryptEncounter? Encounter = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("challenge"))
-                            Encounter = (DeepStoneCryptEncounter)Convert.ToInt32(option.Value);
-
-                    var predictedDate = DeepStoneCryptRotation.DatePrediction((DeepStoneCryptEncounter)Encounter);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Deep Stone Crypt";
-                    embed.Description =
-                        $"Next occurrance of {DeepStoneCryptRotation.GetEncounterString((DeepStoneCryptEncounter)Encounter)} ({DeepStoneCryptRotation.GetChallengeString((DeepStoneCryptEncounter)Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (nextType.Equals("empire-hunt"))
-                {
-                    EmpireHunt? Hunt = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("empire-hunt"))
-                            Hunt = (EmpireHunt)Convert.ToInt32(option.Value);
-
-                    var predictedDate = EmpireHuntRotation.DatePrediction((EmpireHunt)Hunt);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Empire Hunt";
-                    embed.Description =
-                        $"Next occurrance of {EmpireHuntRotation.GetHuntNameString((EmpireHunt)Hunt)} " +
-                            $"({EmpireHuntRotation.GetHuntBossString((EmpireHunt)Hunt)}) is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (nextType.Equals("garden-of-salvation"))
-                {
-                    GardenOfSalvationEncounter? Encounter = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("challenge"))
-                            Encounter = (GardenOfSalvationEncounter)Convert.ToInt32(option.Value);
-
-                    var predictedDate = GardenOfSalvationRotation.DatePrediction((GardenOfSalvationEncounter)Encounter);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Garden of Salvation";
-                    embed.Description =
-                        $"Next occurrance of {GardenOfSalvationRotation.GetEncounterString((GardenOfSalvationEncounter)Encounter)} ({GardenOfSalvationRotation.GetChallengeString((GardenOfSalvationEncounter)Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (nextType.Equals("last-wish"))
-                {
-                    LastWishEncounter? Encounter = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("challenge"))
-                            Encounter = (LastWishEncounter)Convert.ToInt32(option.Value);
-
-                    var predictedDate = LastWishRotation.DatePrediction((LastWishEncounter)Encounter);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Last Wish";
-                    embed.Description =
-                        $"Next occurrance of {LastWishRotation.GetEncounterString((LastWishEncounter)Encounter)} ({LastWishRotation.GetChallengeString((LastWishEncounter)Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (nextType.Equals("lost-sector"))
-                {
-                    LostSector? LS = null;
-                    LostSectorDifficulty? LSD = null;
-                    ExoticArmorType? EAT = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                    {
-                        if (option.Name.Equals("lost-sector"))
-                            LS = (LostSector)Convert.ToInt32(option.Value);
-                        else if (option.Name.Equals("difficulty"))
-                            LSD = (LostSectorDifficulty)Convert.ToInt32(option.Value);
-                        else if (option.Name.Equals("armor-drop"))
-                            EAT = (ExoticArmorType)Convert.ToInt32(option.Value);
-                    }
-
-                    var predictedDate = LostSectorRotation.DatePrediction(LS, LSD, EAT);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Lost Sectors";
-                    embed.Description =
-                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} {(LSD != LostSectorDifficulty.Legend ? $" (Master)" : " (Legend)")}" +
-                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (nextType.Equals("nightfall"))
-                {
-                    Nightfall? NF = null;
-                    NightfallWeapon? Weapon = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                    {
-                        if (option.Name.Equals("nightfall"))
-                            NF = (Nightfall)Convert.ToInt32(option.Value);
-                        else if (option.Name.Equals("weapon"))
-                            Weapon = (NightfallWeapon)Convert.ToInt32(option.Value);
-                    }
-
-                    var predictedDate = NightfallRotation.DatePrediction(NF, Weapon);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Nightfall";
-                    embed.Description =
-                        $"Next occurrance of {NightfallRotation.GetStrikeNameString((Nightfall)NF)}" +
-                            $"{(Weapon != null ? $" dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (nextType.Equals("nightmare-hunt"))
-                {
-                    NightmareHunt? Hunt = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("nightmare-hunt"))
-                            Hunt = (NightmareHunt)Convert.ToInt32(option.Value);
-
-                    var predictedDate = NightmareHuntRotation.DatePrediction((NightmareHunt)Hunt);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Nightmare Hunt";
-                    embed.Description =
-                        $"Next occurrance of {NightmareHuntRotation.GetHuntNameString((NightmareHunt)Hunt)} " +
-                            $"({NightmareHuntRotation.GetHuntBossString((NightmareHunt)Hunt)}) is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-                else if (nextType.Equals("vault-of-glass"))
-                {
-                    VaultOfGlassEncounter? Encounter = null;
-                    foreach (var option in command.Data.Options.First().Options)
-                        if (option.Name.Equals("challenge"))
-                            Encounter = (VaultOfGlassEncounter)Convert.ToInt32(option.Value);
-
-                    var predictedDate = VaultOfGlassRotation.DatePrediction((VaultOfGlassEncounter)Encounter);
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    };
-                    embed.Title = "Vault of Glass";
-                    embed.Description =
-                        $"Next occurrance of {VaultOfGlassRotation.GetEncounterString((VaultOfGlassEncounter)Encounter)} ({VaultOfGlassRotation.GetChallengeString((VaultOfGlassEncounter)Encounter)}), " +
-                            $"which drops {VaultOfGlassRotation.GetChallengeRewardString((VaultOfGlassEncounter)Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                    await command.RespondAsync($"", embed: embed.Build());
-                    return;
-                }
-            }
-            else if (command.Data.Name.Equals("free-emblems"))
-            {
-                var auth = new EmbedAuthorBuilder()
-                {
-                    Name = $"Universal Emblem Codes",
-                    IconUrl = _client.GetApplicationInfoAsync().Result.IconUrl,
-                };
-                var foot = new EmbedFooterBuilder()
-                {
-                    Text = $"These codes are not limited to one account and can be used by anyone."
-                };
-                var embed = new EmbedBuilder()
-                {
-                    Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    Author = auth,
-                    Footer = foot,
-                };
-                embed.Title = "";
-                embed.Description =
-                    $"[The Visionary](https://www.bungie.net/common/destiny2_content/icons/65b4047b1b83aeeeb2e628305071fcea.jpg): **XFV-KHP-N97**\n" +
-                    $"[Cryonautics](https://www.bungie.net/common/destiny2_content/icons/6719dde48dca592addb4102cb747e097.jpg): **RA9-XPH-6KJ**\n" +
-                    $"[Galilean Excursion](https://bungie.net/common/destiny2_content/icons/3e99d575d00fb307c15fb5513dee13c6.jpg): **JYN-JAA-Y7D**\n" +
-                    $"[Future in Shadow](https://bungie.net/common/destiny2_content/icons/dd9af60ef15319ee986a1f6cc029fe71.jpg): **7LV-GTK-T7J**\n" +
-                    $"[Sequence Flourish](https://www.bungie.net/common/destiny2_content/icons/01e9b3863c14f9149ff4035b896ad5ed.jpg): **7D4-PKR-MD7**\n" +
-                    $"[A Classy Order](https://www.bungie.net/common/destiny2_content/icons/adaf0e2c15610cdfff750725701222ec.jpg): **YRC-C3D-YNC**\n" +
-                    $"[Be True](https://www.bungie.net/common/destiny2_content/icons/a6d9b66f124b25ac73969ebe4bc45b90.jpg): **ML3-FD4-ND9**\n" +
-                    $"[Heliotrope Warren](https://www.bungie.net/common/destiny2_content/icons/385c302dc22e6dafb8b50c253486d040.jpg): **L7T-CVV-3RD**\n" +
-                    $"[Shadow's Light](https://www.bungie.net//common/destiny2_content/icons/b296588f57aea1d15a04c3db6de98220.jpg): **F99-KPX-NCF**\n" +
-                    $"[Sneer of the Oni](https://www.bungie.net//common/destiny2_content/icons/bffe84c0efb9215dbdc8c4890c3e6234.jpg): **6LJ-GH7-TPA**\n" +
-                    $"[Countdown to Convergence](https://www.bungie.net//common/destiny2_content/icons/2560de3d4009044b291c6cfb69d11a7f.jpg): **PHV-6LF-9CP**\n" +
-                    $"[Liminal Nadir](https://www.bungie.net//common/destiny2_content/icons/4f9f612716a973ff03e5e17e9d7e7c91.jpg): **VA7-L7H-PNC**\n" +
-                    $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*";
-
-                await command.RespondAsync("", embed: embed.Build());
-            }
-            else if (command.Data.Name.Equals("raid"))
-            {
-                await command.RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-                return;
-            }
-            else if (command.Data.Name.Equals("patrol"))
-            {
-                await command.RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-                return;
-            }
-            else if (command.Data.Name.Equals("nightfall"))
-            {
-                await command.RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-                return;
-            }
-            else if (command.Data.Name.Equals("daily"))
-            {
-                await command.RespondAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
-                return;
-            }
-            else if (command.Data.Name.Equals("weekly"))
-            {
-                await command.RespondAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
-                return;
-            }
-            else if (command.Data.Name.Equals("guardians"))
-            {
-                var guardiansType = command.Data.Options.First().Name;
-
-                if (guardiansType.Equals("linked-user"))
-                {
-                    DataConfig.DiscordIDLink LinkedUser = new DataConfig.DiscordIDLink();
-                    Guardian.Class ClassType = 0;
-                    foreach (var option in command.Data.Options.First().Options)
-                    {
-                        if (option.Name.Equals("user"))
-                            LinkedUser = DataConfig.GetLinkedUser(((IUser)option.Value).Id);
-                        else if (option.Name.Equals("class"))
-                            ClassType = (Guardian.Class)Convert.ToInt32(option.Value);
-                    }
-
-                    await command.DeferAsync();
-
-                    if (LinkedUser == null || !DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
-                    {
-                        await command.ModifyOriginalResponseAsync(message => { message.Content = $"User is not linked; tell them to link using {BotConfig.DefaultCommandPrefix}link [THEIR BUNGIE TAG]."; });
-                        return;
-                    }
-
-                    using (var client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                        var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + LinkedUser.BungieMembershipType + "/Profile/" + LinkedUser.BungieMembershipID + "?components=100,200").Result;
-                        var content = response.Content.ReadAsStringAsync().Result;
-                        dynamic item = JsonConvert.DeserializeObject(content);
-
-                        if (DataConfig.IsBungieAPIDown(content))
-                        {
-                            await command.ModifyOriginalResponseAsync(message => { message.Content = $"Bungie API is temporary down, try again later."; });
-                            return;
-                        }
-
-                        if (item.ErrorCode != 1)
-                        {
-                            await command.ModifyOriginalResponseAsync(message => { message.Content = $"An error occured with that account. Is there a connected Destiny 2 account?"; });
-                            return;
-                        }
-
-                        Guardian userGuardian = null;
-                        for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
-                        {
-                            try
-                            {
-                                string charId = $"{item.Response.profile.data.characterIds[i]}";
-                                if ((Guardian.Class)item.Response.characters.data[$"{charId}"].classType == ClassType)
-                                    userGuardian = new Guardian(LinkedUser.UniqueBungieName, LinkedUser.BungieMembershipID, LinkedUser.BungieMembershipType, charId);
-                            }
-                            catch (Exception x)
-                            {
-                                Console.WriteLine($"{x}");
-                            }
-                        }
-
-                        if (userGuardian == null)
-                        {
-                            await command.ModifyOriginalResponseAsync(message => { message.Content = $"No guardian found."; });
-                            return;
-                        }
-
-                        await command.ModifyOriginalResponseAsync(message => { message.Embed = userGuardian.GetGuardianEmbed().Build(); });
-                        return;
-                    }
-                }
-                else if (guardiansType.Equals("bungie-tag"))
-                {
-                    string BungieTag = null;
-                    Guardian.Class ClassType = 0;
-                    foreach (var option in command.Data.Options.First().Options)
-                    {
-                        if (option.Name.Equals("player"))
-                            BungieTag = $"{option.Value}";
-                        else if (option.Name.Equals("class"))
-                            ClassType = (Guardian.Class)Convert.ToInt32(option.Value);
-                    }
-
-                    await command.DeferAsync();
-
-                    string MembershipType = null;
-                    string MembershipID = null;
-                    using (var client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                        var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/-1/" + Uri.EscapeDataString(BungieTag)).Result;
-                        var content = response.Content.ReadAsStringAsync().Result;
-                        dynamic item = JsonConvert.DeserializeObject(content);
-
-                        string memId = "";
-                        string memType = "";
-                        for (int i = 0; i < item.Response.Count; i++)
-                        {
-                            memId = item.Response[i].membershipId;
-                            memType = item.Response[i].membershipType;
-
-                            var memResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + memType + "/Profile/" + memId + "/?components=100").Result;
-                            var memContent = memResponse.Content.ReadAsStringAsync().Result;
-                            dynamic memItem = JsonConvert.DeserializeObject(memContent);
-
-                            if (memItem.ErrorCode == 1 && (int)memItem.Response.profile.data.userInfo.crossSaveOverride == (int)memItem.Response.profile.data.userInfo.membershipType)
-                            {
-                                MembershipType = memType;
-                                MembershipID =  memId;
-                                break;
-                            }
-                        }
-                    }
-
-                    using (var client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                        var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "?components=100,200").Result;
-                        var content = response.Content.ReadAsStringAsync().Result;
-                        dynamic item = JsonConvert.DeserializeObject(content);
-
-                        if (DataConfig.IsBungieAPIDown(content))
-                        {
-                            await command.ModifyOriginalResponseAsync(message => { message.Content = $"Bungie API is temporary down, try again later."; });
-                            return;
-                        }
-
-                        if (item.ErrorCode != 1)
-                        {
-                            await command.ModifyOriginalResponseAsync(message => { message.Content = $"An error occured with that account. Is there a connected Destiny 2 account?"; });
-                            return;
-                        }
-
-                        Guardian userGuardian = null;
-                        for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
-                        {
-                            try
-                            {
-                                string charId = $"{item.Response.profile.data.characterIds[i]}";
-                                if ((Guardian.Class)item.Response.characters.data[$"{charId}"].classType == ClassType)
-                                    userGuardian = new Guardian(BungieTag, MembershipID, MembershipType, charId);
-                            }
-                            catch (Exception x)
-                            {
-                                Console.WriteLine($"{x}");
-                            }
-                        }
-
-                        if (userGuardian == null)
-                        {
-                            await command.ModifyOriginalResponseAsync(message => { message.Content = "No guardian found."; });
-                            return;
-                        }
-
-                        await command.ModifyOriginalResponseAsync(message => { message.Embed = userGuardian.GetGuardianEmbed().Build(); });
-                        return;
-                    }
-                }
-            }
-            else if (command.Data.Name.Equals("link"))
-            {
-                string BungieTag = null;
-                foreach (var option in command.Data.Options)
-                {
-                    if (option.Name.Equals("bungie-tag"))
-                        BungieTag = $"{option.Value}";
-                }
-
-                if (DataConfig.IsExistingLinkedUser(command.User.Id))
-                {
-                    await command.RespondAsync($"You have an account linked already. Your linked account: {DataConfig.GetLinkedUser(command.User.Id).UniqueBungieName}", ephemeral: true);
-                    return;
-                }
-
-                string memId = DataConfig.GetValidDestinyMembership(BungieTag, out string memType);
-
-                if (memId == null && memType == null)
-                {
-                    await command.RespondAsync($"Something went wrong. Is your Bungie Tag correct?", ephemeral: true);
-                    return;
-                }
-
-                if (!DataConfig.IsPublicAccount(BungieTag))
-                {
-                    await command.RespondAsync($"Your account privacy is not set to public. I cannot access your information otherwise.", ephemeral: true);
-                    return;
-                }
-
-                DataConfig.AddUserToConfig(command.User.Id, memId, memType, BungieTag);
-                await command.RespondAsync($"Linked {command.User.Mention} to {BungieTag}.", ephemeral: true);
-            }
-            else if (command.Data.Name.Equals("unlink"))
-            {
-                if (!DataConfig.IsExistingLinkedUser(command.User.Id))
-                {
-                    await command.RespondAsync("You do not have a Bungie account linked. Use the command \"/link\" to link!", ephemeral: true);
-                    return;
-                }
-
-                var linkedUser = DataConfig.GetLinkedUser(command.User.Id);
-                DataConfig.DeleteUserFromConfig(command.User.Id);
-                await command.RespondAsync($"Your Bungie account: {linkedUser.UniqueBungieName} has been unlinked. Use the command \"/link\" if you want to re-link!", ephemeral: true);
-            }
-            else
-            {
-                await command.RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-                return;
-            }
+            return;
         }
 
         private async Task SelectMenuHandler(SocketMessageComponent interaction)
@@ -2138,179 +622,6 @@ namespace Levante
             }
         }
 
-        private async Task ButtonHandler(SocketMessageComponent interaction)
-        {
-            var customId = interaction.Data.CustomId;
-            var user = (SocketGuildUser)interaction.User;
-            var guild = user.Guild;
-            var channel = interaction.Channel;
-
-            if (customId.Equals("viewHelp"))
-            {
-                var app = await _client.GetApplicationInfoAsync();
-                var auth = new EmbedAuthorBuilder()
-                {
-                    Name = $"Thrallway Logger Help!",
-                    IconUrl = app.IconUrl,
-                };
-                var foot = new EmbedFooterBuilder()
-                {
-                    Text = $"Powered by @OatsFX"
-                };
-                var ruleEmbed = new EmbedBuilder()
-                {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    Author = auth,
-                    Footer = foot,
-                };
-                ruleEmbed.Description =
-                    $"__Steps:__\n" +
-                    $"1) Launch Shattered Throne with the your choice of \"Thrallway\" checkpoint.\n" +
-                    $"2) Get into your desired setup and start your AFK script.\n" +
-                    $"3) This is when you can subscribe to our logs using the \"Ready\" button.";
-
-                Embed[] embeds = new Embed[1];
-                embeds[0] = ruleEmbed.Build();
-
-                await interaction.RespondAsync($"", embeds, false, ephemeral: true);
-            }
-            else if (customId.Contains("force"))
-            {
-                DailyResetChanges();
-            }
-            else if (customId.Contains($"startAFK"))
-            {
-                if (ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumThrallwayUsers)
-                {
-                    await interaction.RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumThrallwayUsers}). Try again later.", ephemeral: true);
-                    return;
-                }
-
-                if (!DataConfig.IsExistingLinkedUser(user.Id))
-                {
-                    await interaction.RespondAsync($"You are not registered! Use \"{BotConfig.DefaultCommandPrefix}link [YOUR BUNGIE TAG]\" to register.", ephemeral: true);
-                    return;
-                }
-
-                if (ActiveConfig.IsExistingActiveUser(user.Id))
-                {
-                    await interaction.RespondAsync($"You are already actively using our logging feature.", ephemeral: true);
-                    return;
-                }
-
-                string memId = DataConfig.GetLinkedUser(user.Id).BungieMembershipID;
-                string memType = DataConfig.GetLinkedUser(user.Id).BungieMembershipType;
-
-                int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out bool isInShatteredThrone, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus);
-
-                if (!errorStatus.Equals("Success"))
-                {
-                    await interaction.RespondAsync($"Bungie API is temporarily down, therefore, I cannot enable our logging feature. Try again later. Reason: {errorStatus}", ephemeral: true);
-                    return;
-                }
-
-                if (!isInShatteredThrone)
-                {
-                    await interaction.RespondAsync($"You are not in Shattered Throne. Launch Shattered Throne, get set up, and then click \"Ready\".", ephemeral: true);
-                    return;
-                }
-
-                await interaction.RespondAsync($"Getting things ready...", ephemeral: true);
-                string uniqueName = DataConfig.GetLinkedUser(user.Id).UniqueBungieName;
-
-                ICategoryChannel cc = null;
-                foreach (var categoryChan in guild.CategoryChannels)
-                {
-                    if (categoryChan.Name.Equals($"Thrallway Logger"))
-                    {
-                        cc = categoryChan;
-                    }
-                }
-
-                if (cc == null)
-                {
-                    await interaction.RespondAsync($"No category by the name of \"Thrallway Logger\" was found, cancelling operation. Let a server admin know!", ephemeral: true);
-                    return;
-                }
-
-                var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName.Replace('#','-')}").Result;
-                ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
-                {
-                    DiscordID = user.Id,
-                    BungieMembershipID = memId,
-                    UniqueBungieName = uniqueName,
-                    DiscordChannelID = userLogChannel.Id,
-                    StartLevel = userLevel,
-                    LastLoggedLevel = userLevel,
-                    StartLevelProgress = lvlProg,
-                    LastLevelProgress = lvlProg,
-                    PrivacySetting = fireteamPrivacy
-                };
-
-                await userLogChannel.ModifyAsync(x =>
-                {
-                    x.CategoryId = cc.Id;
-                    x.Topic = $"{uniqueName} (Starting Level: {newUser.StartLevel} [{String.Format("{0:n0}", newUser.StartLevelProgress)}/100,000 XP]) - Time Started: {TimestampTag.FromDateTime(newUser.TimeStarted)}";
-                    x.PermissionOverwrites = new[]
-                    {
-                        new Overwrite(user.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
-                        new Overwrite(688535303148929027, PermissionTarget.Role, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
-                        new Overwrite(guild.Id, PermissionTarget.Role, new OverwritePermissions(viewChannel: PermValue.Deny)),
-                    };
-                });
-
-                string privacy = "";
-                switch (newUser.PrivacySetting)
-                {
-                    case PrivacySetting.Open: privacy = "Open"; break;
-                    case PrivacySetting.ClanAndFriendsOnly: privacy = "Clan and Friends Only"; break;
-                    case PrivacySetting.FriendsOnly: privacy = "Friends Only"; break;
-                    case PrivacySetting.InvitationOnly: privacy = "Invite Only"; break;
-                    case PrivacySetting.Closed: privacy = "Closed"; break;
-                    default: break;
-                }
-                var guardian = new Guardian(newUser.UniqueBungieName, newUser.BungieMembershipID, DataConfig.GetLinkedUser(user.Id).BungieMembershipType, CharacterId);
-                await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLoggedLevel} ({String.Format("{0:n0}", newUser.LastLevelProgress)}/100,000 XP).", guardian.GetGuardianEmbed());
-                string recommend = newUser.PrivacySetting == PrivacySetting.Open || newUser.PrivacySetting == PrivacySetting.ClanAndFriendsOnly || newUser.PrivacySetting == PrivacySetting.FriendsOnly ? $" It is recommended to change your privacy to prevent people from joining you. {user.Mention}" : "";
-                await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
-
-                ActiveConfig.AddActiveUserToConfig(newUser);
-                await UpdateBotActivity(0);
-
-                await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
-                LogHelper.ConsoleLog($"Started logging for {newUser.UniqueBungieName}.");
-            }
-            else if (customId.Contains($"stopAFK"))
-            {
-                if (!DataConfig.IsExistingLinkedUser(user.Id))
-                {
-                    await interaction.RespondAsync($"You are not registered! Use \"{BotConfig.DefaultCommandPrefix}link [YOUR BUNGIE TAG]\" to register.", ephemeral: true);
-                    return;
-                }
-
-                if (!ActiveConfig.IsExistingActiveUser(user.Id))
-                {
-                    await interaction.RespondAsync($"You are not actively using our logging feature.", ephemeral: true);
-                    return;
-                }
-
-                var aau = ActiveConfig.GetActiveAFKUser(user.Id);
-
-                await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: GenerateSessionSummary(aau).Result, CB: GenerateDeleteChannelButton());
-                await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(aau.TimeStarted)}.", GenerateSessionSummary(aau).Result);
-
-                await Task.Run(() => CheckLeaderboardData(aau));
-                ActiveConfig.DeleteActiveUserFromConfig(user.Id);
-                await UpdateBotActivity(0);
-                await interaction.RespondAsync($"Stopped AFK logging for {aau.UniqueBungieName}.", ephemeral: true);
-                LogHelper.ConsoleLog($"Stopped logging for {aau.UniqueBungieName} via user request.");
-            }
-            else if (customId.Contains("deleteChannel"))
-            {
-                await (channel as SocketGuildChannel).DeleteAsync();
-            }
-        }
-
         private async Task HandleMessageAsync(SocketMessage arg)
         {
             if (arg.Author.IsWebhook || arg.Author.IsBot) return; // Return if message is from a Webhook or Bot user
@@ -2362,21 +673,29 @@ namespace Levante
                 }
                 else if (error == CommandError.BadArgCount)
                 {
-                    string commandNew = msg.Content.Substring(argPos).ToLowerInvariant().Trim();
-                    string commandName;
-                    if (commandNew.Contains(" "))
-                    {
-                        int index = commandNew.IndexOf(" ");
-                        commandName = commandNew.Substring(0, index);
-                    }
-                    else
-                    {
-                        commandName = commandNew;
-                    }
                     await context.Channel.SendMessageAsync($"[{error}]: Command is missing some arguments.").ConfigureAwait(false);
                 }
             }
             return true;
+        }
+
+        private async Task HandleInteraction(SocketInteraction arg)
+        {
+            try
+            {
+                // Create an execution context that matches the generic type parameter of your InteractionModuleBase<T> modules
+                var ctx = new SocketInteractionContext(_client, arg);
+                await _interaction.ExecuteCommandAsync(ctx, _services);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+
+                // If a Slash Command execution fails it is most likely that the original interaction acknowledgement will persist. It is a good idea to delete the original
+                // response, or at least let the user know that something went wrong during the command execution.
+                if (arg.Type == InteractionType.ApplicationCommand)
+                    await arg.GetOriginalResponseAsync().ContinueWith(async (msg) => await msg.Result.DeleteAsync());
+            }
         }
     }
 }
