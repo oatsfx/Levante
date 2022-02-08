@@ -632,7 +632,7 @@ namespace Levante
             var msg = arg as SocketUserMessage;
             if (msg == null) return;
 
-            await UpdateBotActivity();
+            await UpdateBotActivity().ConfigureAwait(false);
 
             if (msg.HasStringPrefix(BotConfig.DefaultCommandPrefix, ref argPos))
             {

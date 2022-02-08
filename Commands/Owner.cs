@@ -207,7 +207,7 @@ namespace Levante.Commands
             }
         }
 
-        [Command("restart")]
+        [Command("restart", RunMode = RunMode.Async)]
         [Summary("Restarts the program/bot.")]
         [RequireBotStaff]
         public async Task Restart()
@@ -217,7 +217,7 @@ namespace Levante.Commands
             Environment.Exit(0);
         }
 
-        [Command("flushTracking")]
+        [Command("flushTracking", RunMode = RunMode.Async)]
         [Summary("If the resets break, use this command to send out the tracking reminders.")]
         [RequireOwner]
         public async Task FlushTracking()
