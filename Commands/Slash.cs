@@ -279,7 +279,9 @@ namespace Levante.Commands
         }
 
         [SlashCommand("link", "Link your Bungie tag to your Discord account.")]
-        public async Task Link([Summary("bungie-tag", "Your Bungie tag you wish to link with.")] string BungieTag)
+        public async Task Link([Summary("bungie-tag", "Your Bungie tag you wish to link with.")] string BungieTag,
+            [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
+                Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5)]int ArgPlatform = 0)
         {
             if (DataConfig.IsExistingLinkedUser(Context.User.Id))
             {
@@ -287,7 +289,7 @@ namespace Levante.Commands
                 return;
             }
 
-            string memId = DataConfig.GetValidDestinyMembership(BungieTag, out string memType);
+            string memId = DataConfig.GetValidDestinyMembership(BungieTag, (Guardian.Platform)ArgPlatform, out string memType);
 
             if (memId == null && memType == null)
             {

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Levante.Util;
 
 namespace Levante.Configs
 {
@@ -50,7 +51,7 @@ namespace Levante.Configs
             public ulong RoleID { get; set; } = 0;
         }
 
-        public static string GetValidDestinyMembership(string BungieTag, out string MembershipType)
+        public static string GetValidDestinyMembership(string BungieTag, Guardian.Platform Platform, out string MembershipType)
         {
             using (var client = new HttpClient())
             {
@@ -79,8 +80,12 @@ namespace Levante.Configs
 
                     if (memItem.ErrorCode == 1)
                     {
-                        MembershipType = memType;
-                        return memId;
+                        if (((int)memItem.Response.profile.data.userInfo.crossSaveOverride == (int)memItem.Response.profile.data.userInfo.membershipType) ||
+                                ((int)memItem.Response.profile.data.userInfo.crossSaveOverride == 0 && (int)memItem.Response.profile.data.userInfo.membershipType == ((int)Platform)))
+                        {
+                            MembershipType = memType;
+                            return memId;
+                        }
                     }
                 }
             }

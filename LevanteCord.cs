@@ -135,7 +135,7 @@ namespace Levante
         private async Task UpdateBotActivity(int SetRNG = -1)
         {
             int RNG = 0;
-            int RNGMax = 30;
+            int RNGMax = 10;
             if (SetRNG != -1 && SetRNG < RNGMax)
                 RNG = SetRNG;
             else
@@ -163,6 +163,7 @@ namespace Levante
                     await _client.SetActivityAsync(new Game($"{CurrentRotations.GetTotalLinks()} Rotation Trackers | v{BotConfig.Version}", ActivityType.Watching)); break;
                 default: break;
             }
+            return;
         }
 
         private void SetUpTimer(DateTime alertTime)
@@ -315,7 +316,7 @@ namespace Levante
                 LogHelper.ConsoleLog($"Pulling data for leaderboards...");
                 LevelData.LevelDataEntries.Clear();
                 PowerLevelData.PowerLevelDataEntries.Clear();
-                foreach (var link in DataConfig.DiscordIDLinks) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
+                foreach (var link in DataConfig.DiscordIDLinks.ToList()) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
                 {
                     int Level = 0;
                     int PowerLevel = -1;
@@ -632,8 +633,6 @@ namespace Levante
             var msg = arg as SocketUserMessage;
             if (msg == null) return;
 
-            await UpdateBotActivity().ConfigureAwait(false);
-
             if (msg.HasStringPrefix(BotConfig.DefaultCommandPrefix, ref argPos))
             {
                 if (arg.Channel.GetType() == typeof(SocketDMChannel) && !BotConfig.BotStaffDiscordIDs.Contains(arg.Author.Id)) // Send message if received via a DM
@@ -652,6 +651,8 @@ namespace Levante
             var context = new SocketCommandContext(_client, msg);
 
             var result = await _commands.ExecuteAsync(context, argPos, _services);
+
+            await UpdateBotActivity();
 
             if (result.Error.HasValue)
             {
