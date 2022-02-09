@@ -330,26 +330,34 @@ namespace Levante
 
                         //first 100 levels: 4095505052
                         //anything after: 1531004716
+                        try
+                        {
+                            for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                            {
+                                string charId = $"{item.Response.profile.data.characterIds[i]}";
+                                int powerLevelComp = (int)item.Response.characters.data[charId].light;
+                                if (PowerLevel <= powerLevelComp)
+                                    PowerLevel = powerLevelComp;
+                            }
 
-                        for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
-                        {
-                            string charId = $"{item.Response.profile.data.characterIds[i]}";
-                            int powerLevelComp = (int)item.Response.characters.data[charId].light;
-                            if (PowerLevel <= powerLevelComp)
-                                PowerLevel = powerLevelComp;
+                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level == 100)
+                            {
+                                int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].level;
+                                Level = 100 + extraLevel;
+                            }
+                            else
+                            {
+                                Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level;
+                            }
                         }
-
-                        if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level == 100)
+                        catch
                         {
-                            int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].level;
-                            Level = 100 + extraLevel;
-                        }
-                        else
-                        {
-                            Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level;
+                            // Continue with the rest of the linked users. Don't want to stop the populating for one problematic account.
+                            LogHelper.ConsoleLog($"Error while pulling data for user: {_client.GetUserAsync(link.DiscordID).Result.Username}#{_client.GetUserAsync(link.DiscordID).Result.Discriminator} linked with {link.UniqueBungieName}.");
+                            continue;
                         }
                     }
-                    // populate list
+                    // Populate List
                     LevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
                     {
                         LastLoggedLevel = Level,
@@ -449,7 +457,9 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
-                await _interaction.RegisterCommandsGloballyAsync(true);
+                var guild = _client.GetGuild(915020047154565220);
+                await guild.DeleteApplicationCommandsAsync();
+                //await _interaction.RegisterCommandsGloballyAsync(true);
             };
 
             _interaction.SlashCommandExecuted += SlashCommandExecuted;
