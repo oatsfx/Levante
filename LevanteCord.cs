@@ -135,7 +135,7 @@ namespace Levante
         private async Task UpdateBotActivity(int SetRNG = -1)
         {
             int RNG = 0;
-            int RNGMax = 10;
+            int RNGMax = 8;
             if (SetRNG != -1 && SetRNG < RNGMax)
                 RNG = SetRNG;
             else
@@ -293,7 +293,6 @@ namespace Levante
 
                 ActiveConfig.UpdateActiveAFKUsersConfig();
 
-                await UpdateBotActivity(0);
                 LogHelper.ConsoleLog($"Bungie API Refreshed!");
             }
             catch (Exception x)
@@ -419,6 +418,7 @@ namespace Levante
                     LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
 
                     await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
+                    await UpdateBotActivity(0);
                     return null;
                 }
                 else if (updatedProgression < aau.LastLevelProgress)
