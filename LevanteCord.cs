@@ -445,14 +445,11 @@ namespace Levante
             _client.MessageReceived += HandleMessageAsync;
             _client.InteractionCreated += HandleInteraction;
 
-            // This tells us how to build slash commands. If we are not in a DEBUG instance, build the slash commands for all guilds.
+            // This tells us how to build slash commands.
             _client.Ready += async () =>
             {
-                #if DEBUG
-                    await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
-                #else
-                    await _interaction.RegisterCommandsGloballyAsync(true);
-                #endif
+                //await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
+                await _interaction.RegisterCommandsGloballyAsync(true);
             };
 
             _interaction.SlashCommandExecuted += SlashCommandExecuted;

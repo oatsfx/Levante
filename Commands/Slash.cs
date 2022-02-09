@@ -40,7 +40,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("resets", "Set up announcements for Daily/Weekly Reset.")]
-            public async Task Resets([Summary("role", "Add a role to be pinged when a new Emblem Offer is posted."),
+            public async Task Resets([Summary("reset-type", "Choose between Daily or Weekly Reset."),
                 Choice("Daily", 0), Choice("Weekly", 1)] int ResetType) 
             {
                 bool IsDaily = ResetType == 0;
