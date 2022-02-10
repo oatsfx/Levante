@@ -918,7 +918,7 @@ namespace Levante.Commands
         [SlashCommand("rank", "Display a Destiny 2 leaderboard of choice.")]
         public async Task Rank([Summary("leaderboard", "Specific leaderboard to display."),
             Choice("Season Pass Level", 0), Choice("Longest Thrallway Session", 1), Choice("Most Thrallway XP Per Hour", 2),
-            Choice("Total Thrallway Time", 3), Choice("Equipped Power Level", 3)] int ArgLeaderboard)
+            Choice("Total Thrallway Time", 3), Choice("Equipped Power Level", 4)] int ArgLeaderboard)
         {
             Leaderboard LeaderboardType = (Leaderboard)ArgLeaderboard;
 

@@ -313,8 +313,8 @@ namespace Levante
             try
             {
                 LogHelper.ConsoleLog($"Pulling data for leaderboards...");
-                LevelData.LevelDataEntries.Clear();
-                PowerLevelData.PowerLevelDataEntries.Clear();
+                var tempPowerLevelData = new List<PowerLevelData.PowerLevelDataEntry>();
+                var tempLevelData = new List<LevelData.LevelDataEntry>();
                 foreach (var link in DataConfig.DiscordIDLinks.ToList()) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
                 {
                     int Level = 0;
@@ -357,18 +357,20 @@ namespace Levante
                         }
                     }
                     // Populate List
-                    LevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
+                    tempLevelData.Add(new LevelData.LevelDataEntry()
                     {
                         LastLoggedLevel = Level,
                         UniqueBungieName = link.UniqueBungieName,
                     });
-                    PowerLevelData.PowerLevelDataEntries.Add(new PowerLevelData.PowerLevelDataEntry()
+                    tempPowerLevelData.Add(new PowerLevelData.PowerLevelDataEntry()
                     {
                         PowerLevel = PowerLevel,
                         UniqueBungieName = link.UniqueBungieName,
                     });
                     await Task.Delay(250);
                 }
+                LevelData.LevelDataEntries = tempLevelData;
+                PowerLevelData.PowerLevelDataEntries = tempPowerLevelData;
                 LevelData.UpdateEntriesConfig();
                 LogHelper.ConsoleLog($"Data pulling complete!");
             }
@@ -457,9 +459,9 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
-                var guild = _client.GetGuild(915020047154565220);
-                await guild.DeleteApplicationCommandsAsync();
-                //await _interaction.RegisterCommandsGloballyAsync(true);
+                //var guild = _client.GetGuild(915020047154565220);
+                //await guild.DeleteApplicationCommandsAsync();
+                await _interaction.RegisterCommandsGloballyAsync(true);
             };
 
             _interaction.SlashCommandExecuted += SlashCommandExecuted;
