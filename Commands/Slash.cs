@@ -101,6 +101,7 @@ namespace Levante.Commands
                 $"[Sneer of the Oni](https://www.bungie.net//common/destiny2_content/icons/bffe84c0efb9215dbdc8c4890c3e6234.jpg): **6LJ-GH7-TPA**\n" +
                 $"[Countdown to Convergence](https://www.bungie.net//common/destiny2_content/icons/2560de3d4009044b291c6cfb69d11a7f.jpg): **PHV-6LF-9CP**\n" +
                 $"[Liminal Nadir](https://www.bungie.net//common/destiny2_content/icons/4f9f612716a973ff03e5e17e9d7e7c91.jpg): **VA7-L7H-PNC**\n" +
+                $"[Tangled Web](https://www.bungie.net/common/destiny2_content/icons/93a14eab2b1633d7affbf815d42af337.jpg): **PKH-JL6-L4R**\n" +
                 $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*";
 
             await RespondAsync(embed: embed.Build());
