@@ -1,36 +1,26 @@
 ﻿using Discord;
-using Discord.Commands;
 using Discord.WebSocket;
-using Newtonsoft.Json;
 using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Levante.Configs;
-using System.Drawing;
-using System.IO;
-using Levante.Util;
-using System.Net;
-using System.Collections.Generic;
-using Fergun.Interactive;
+using Discord.Interactions;
 
 namespace Levante.Commands
 {
-    public class Thrallway : ModuleBase<SocketCommandContext>
+    public class XPLogging : InteractionModuleBase<SocketInteractionContext>
     {
-        [Command("activeAFK", RunMode = RunMode.Async)]
-        [Alias("actives", "activeAFKers")]
-        [Summary("Gets a list of the users that are AFKing.")]
+        [SlashCommand("active-logging", "Gets a list of the users that are using my XP logging feature.")]
         public async Task ActiveAFK()
         {
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Active AFK Users",
+                Name = $"Active XP Logging Users",
                 IconUrl = app.IconUrl
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"{ActiveConfig.ActiveAFKUsers.Count} people are AFKing"
+                Text = $"{ActiveConfig.ActiveAFKUsers.Count} people are logging their XP."
             };
             var embed = new EmbedBuilder()
             {
@@ -41,44 +31,42 @@ namespace Levante.Commands
 
             if (ActiveConfig.ActiveAFKUsers.Count >= 1)
             {
-                embed.Description = $"__AFK List:__\n";
+                embed.Description = $"__XP Logging List:__\n";
                 foreach (var aau in ActiveConfig.ActiveAFKUsers)
                 {
                     embed.Description +=
-                        $"{aau.UniqueBungieName} (<@{aau.DiscordID}>): Level {aau.LastLoggedLevel}\n";
+                        $"{aau.UniqueBungieName}: Level {aau.LastLoggedLevel}\n";
                 }
             }
             else
             {
-                embed.Description = "No users are using my logging feature.";
+                embed.Description = "No users are using my XP logging feature.";
             }
 
-            await ReplyAsync($"", false, embed.Build());
+            await RespondAsync(embed: embed.Build());
         }
 
-        [Command("currentSession", RunMode = RunMode.Async)]
-        [Alias("session", "cs", "sessionStats")]
-        [Summary("Pulls stats of current Thrallway session.")]
-        public async Task SessionStats([Remainder] SocketGuildUser user = null)
+        [SlashCommand("current-session", "Pulls stats of a current XP session.")]
+        public async Task SessionStats([Summary("user", "User you want the current XP Session stats for. Leave empty for your own.")] IUser User = null)
         {
-            if (user == null)
-                user = Context.User as SocketGuildUser;
+            if (User == null)
+                User = Context.User as SocketGuildUser;
 
-            if (!ActiveConfig.IsExistingActiveUser(user.Id))
+            if (!ActiveConfig.IsExistingActiveUser(User.Id))
             {
-                if (Context.User.Id == user.Id)
+                if (Context.User.Id == User.Id)
                 {
-                    await ReplyAsync("You are not using my logging feature.");
+                    await RespondAsync("You are not using my logging feature.", ephemeral: true);
                     return;
                 }
                 else
                 {
-                    await ReplyAsync($"{user.Username} is not using my logging feature.");
+                    await RespondAsync($"{User.Username} is not using my logging feature.", ephemeral: true);
                     return;
                 }
             }
 
-            var aau = ActiveConfig.GetActiveAFKUser(user.Id);
+            var aau = ActiveConfig.GetActiveAFKUser(User.Id);
 
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
@@ -88,7 +76,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Thrallway Session Summary"
+                Text = $"XP Logging Session Summary"
             };
             var embed = new EmbedBuilder()
             {
@@ -112,7 +100,7 @@ namespace Levante.Commands
                 $"Time: {timeString}\n" +
                 $"XP Per Hour: {String.Format("{0:n0}", xpPerHour)}";
 
-            await ReplyAsync($"", embed: embed.Build());
+            await RespondAsync(embed: embed.Build());
         }
     }
 }

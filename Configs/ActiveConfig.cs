@@ -22,8 +22,11 @@ namespace Levante.Configs
         [JsonProperty("ActiveAFKUsers")]
         public static List<ActiveAFKUser> ActiveAFKUsers { get; set; } = new List<ActiveAFKUser>();
 
-        [JsonProperty("MaximumThrallwayUsers")]
-        public static int MaximumThrallwayUsers = 20;
+        [JsonProperty("MaximumLoggingUsers")]
+        public static int MaximumLoggingUsers = 20;
+
+        [JsonProperty("RefreshesBeforeKick")]
+        public static int RefreshesBeforeKick = 2;
 
         public partial class ActiveAFKUser
         {
@@ -56,6 +59,9 @@ namespace Levante.Configs
 
             [JsonProperty("PrivacySetting")]
             public PrivacySetting PrivacySetting { get; set; } = 0;
+
+            [JsonProperty("NoXPGainRefreshes")]
+            public int NoXPGainRefreshes { get; set; } = 0;
         }
 
         public static ActiveAFKUser GetActiveAFKUser(ulong DiscordID)

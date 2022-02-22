@@ -7,7 +7,7 @@ Developed by [@OatsFX](https://twitter.com/OatsFX).
 Click [this link to invite the bot](https://discord.com/api/oauth2/authorize?client_id=882303133643047005&permissions=8&scope=applications.commands%20bot)!
 
 ## Current Features:
-- Thrallway Logging and Wipe Detection
+- XP Logging and Wipe Detection
 - Most Activity Rotations Updates and Tracking
 - Leaderboards for things regarding the above
 - Guardian view commands
@@ -30,9 +30,9 @@ There are a few things you can do if there are any issues with the official bot 
 This project is built using the most recent version of Visual Studio Community 2019 using the C# (8.0) language on the .NET Core 3.1 framework.
 
 ## Basic Run Downs of Implementions:
-### Thrallway Logging
-- We make individual calls, per user, to the [Bungie API](https://github.com/Bungie-net/api) while they are in the Shattered Throne to log their XP gains.
-- If their are no XP gains after the base refresh as well as a specific refresh about 20 seconds later, we will assume a wipe has occurred and remove their active logging.
+### XP Logging
+- We make individual calls, per user, to the [Bungie API](https://github.com/Bungie-net/api) while they are playing Destiny 2 to log their XP gains.
+- If their are no XP gains after the base refresh three times in a row, we will assume the player is no longer playing Destiny 2.
 - After a user is taken out of active logging, we will save their stats into a JSON file which then will be used for leaderboard commands.
 
 ### Reset Tracking:

@@ -6,10 +6,11 @@ namespace Levante.Leaderboards
 {
     public class PowerLevelData
     {
-        public static readonly string FilePath = @"Data/powerLevelData.json";
+        public static readonly string FilePathS15 = @"Data/S15/powerLevelData.json";
+        public static readonly string FilePath = @"Data/S16/powerLevelData.json";
 
         [JsonProperty("PowerLevelDataEntries")]
-        public static List<PowerLevelDataEntry> PowerLevelDataEntries { get; set; } = new List<PowerLevelDataEntry>();
+        public List<PowerLevelDataEntry> PowerLevelDataEntries { get; set; } = new List<PowerLevelDataEntry>();
 
         public partial class PowerLevelDataEntry : LeaderboardEntry
         {
@@ -20,13 +21,13 @@ namespace Levante.Leaderboards
             public string UniqueBungieName { get; set; } = "Guardian#0000";
         }
 
-        public static List<PowerLevelDataEntry> GetSortedLevelData()
+        public List<PowerLevelDataEntry> GetSortedLevelData()
         {
             QuickSort(0, PowerLevelDataEntries.Count - 1);
             return PowerLevelDataEntries;
         }
 
-        private static void QuickSort(int Start, int End)
+        private void QuickSort(int Start, int End)
         {
             if (Start < End)
             {
@@ -37,7 +38,7 @@ namespace Levante.Leaderboards
             }
         }
 
-        private static int Partition(int Start, int End)
+        private int Partition(int Start, int End)
         {
             int Center = PowerLevelDataEntries[End].PowerLevel;
 
@@ -62,10 +63,9 @@ namespace Levante.Leaderboards
 
         #region JSONFileHandling
 
-        public static void UpdateEntriesConfig()
+        public void UpdateEntriesConfig()
         {
-            PowerLevelData pld = new PowerLevelData();
-            string output = JsonConvert.SerializeObject(pld, Formatting.Indented);
+            string output = JsonConvert.SerializeObject(this, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
@@ -77,11 +77,9 @@ namespace Levante.Leaderboards
                 UniqueBungieName = BungieName
             };
             string json = File.ReadAllText(FilePath);
-            PowerLevelDataEntries.Clear();
-            PowerLevelData jsonObj = JsonConvert.DeserializeObject<PowerLevelData>(json);
+            PowerLevelData pld = JsonConvert.DeserializeObject<PowerLevelData>(json);
 
-            PowerLevelDataEntries.Add(xphe);
-            PowerLevelData pld = new PowerLevelData();
+            pld.PowerLevelDataEntries.Add(xphe);
             string output = JsonConvert.SerializeObject(pld, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -89,11 +87,9 @@ namespace Levante.Leaderboards
         public static void AddEntryToConfig(PowerLevelDataEntry plde)
         {
             string json = File.ReadAllText(FilePath);
-            PowerLevelDataEntries.Clear();
-            PowerLevelData jsonObj = JsonConvert.DeserializeObject<PowerLevelData>(json);
+            PowerLevelData pld = JsonConvert.DeserializeObject<PowerLevelData>(json);
 
-            PowerLevelDataEntries.Add(plde);
-            PowerLevelData pld = new PowerLevelData();
+            pld.PowerLevelDataEntries.Add(plde);
             string output = JsonConvert.SerializeObject(pld, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -101,21 +97,19 @@ namespace Levante.Leaderboards
         public static void DeleteEntryFromConfig(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            PowerLevelDataEntries.Clear();
-            PowerLevelData xph = JsonConvert.DeserializeObject<PowerLevelData>(json);
-            for (int i = 0; i < PowerLevelDataEntries.Count; i++)
-                if (PowerLevelDataEntries[i].UniqueBungieName.Equals(BungieName))
-                    PowerLevelDataEntries.RemoveAt(i);
-            string output = JsonConvert.SerializeObject(xph, Formatting.Indented);
+            PowerLevelData pld = JsonConvert.DeserializeObject<PowerLevelData>(json);
+            for (int i = 0; i < pld.PowerLevelDataEntries.Count; i++)
+                if (pld.PowerLevelDataEntries[i].UniqueBungieName.Equals(BungieName))
+                    pld.PowerLevelDataEntries.RemoveAt(i);
+            string output = JsonConvert.SerializeObject(pld, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
         public static bool IsExistingLinkedEntry(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            PowerLevelDataEntries.Clear();
-            PowerLevelData jsonObj = JsonConvert.DeserializeObject<PowerLevelData>(json);
-            foreach (PowerLevelDataEntry plde in PowerLevelDataEntries)
+            PowerLevelData pld = JsonConvert.DeserializeObject<PowerLevelData>(json);
+            foreach (PowerLevelDataEntry plde in pld.PowerLevelDataEntries)
                 if (plde.UniqueBungieName.Equals(BungieName))
                     return true;
             return false;
@@ -124,9 +118,8 @@ namespace Levante.Leaderboards
         public static PowerLevelDataEntry GetExistingLinkedEntry(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            PowerLevelDataEntries.Clear();
-            PowerLevelData jsonObj = JsonConvert.DeserializeObject<PowerLevelData>(json);
-            foreach (PowerLevelDataEntry plde in PowerLevelDataEntries)
+            PowerLevelData pld = JsonConvert.DeserializeObject<PowerLevelData>(json);
+            foreach (PowerLevelDataEntry plde in pld.PowerLevelDataEntries)
                 if (plde.UniqueBungieName.Equals(BungieName))
                     return plde;
             return null;

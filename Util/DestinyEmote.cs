@@ -22,6 +22,7 @@
         public static readonly string FesteringRupture = "<:FesteringRupture:935355773960220752>";
         public static readonly string FirePit = "<:FirePit:900142069182521345>";
         public static readonly string GrandmasterModifiers = "<:GrandmasterModifiers:935312672856092703>";
+        public static readonly string GrasksBile = "<:GrasksBile:944671093296361552>";
         public static readonly string HotKnife = "<:HotKnife:900142076673540096>";
         public static readonly string IgnovunsChallenge = "<:IgnovunsChallenge:938570421534601277>";
         public static readonly string LimitedRevives = "<:LimitedRevives:900142086270115901>";

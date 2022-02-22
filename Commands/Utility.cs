@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
+﻿using System.IO;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
-using Discord.WebSocket;
 using Levante.Configs;
 using Levante.Helpers;
 using Levante.Leaderboards;
@@ -14,271 +11,8 @@ using Newtonsoft.Json;
 
 namespace Levante.Commands
 {
-    public class Slash : InteractionModuleBase<SocketInteractionContext>
+    public class Utility : InteractionModuleBase<SocketInteractionContext>
     {
-        [Group("alert", "Set up announcements for Daily/Weekly Reset and Emblem Offers.")]
-        [RequireUserPermission(GuildPermission.ManageChannels)]
-        public class Alert : InteractionModuleBase<SocketInteractionContext>
-        {
-            [SlashCommand("emblem-offers", "Set up announcements for Emblem Offers.")]
-            public async Task EmblemOffers([Summary("role", "Add a role to be pinged when a new Emblem Offer is posted.")]IRole RoleToPing = null)
-            {
-                if (DataConfig.IsExistingEmblemLinkedChannel(Context.Channel.Id))
-                {
-                    DataConfig.DeleteEmblemChannelFromRotationConfig(Context.Channel.Id);
-
-                    await RespondAsync($"This channel will no longer receive Emblem Offer reset posts. Run this command to re-subscribe to them!", ephemeral: true);
-                    return;
-                }
-                else
-                {
-                    DataConfig.AddEmblemChannel(Context.Channel.Id, RoleToPing);
-
-                    await RespondAsync($"This channel is now successfully subscribed to Emblem Offer posts. Run this command again to remove this type of alert!", ephemeral: true);
-                    return;
-                }
-            }
-
-            [SlashCommand("resets", "Set up announcements for Daily/Weekly Reset.")]
-            public async Task Resets([Summary("reset-type", "Choose between Daily or Weekly Reset."),
-                Choice("Daily", 0), Choice("Weekly", 1)] int ResetType) 
-            {
-                bool IsDaily = ResetType == 0;
-
-                if (DataConfig.IsExistingLinkedChannel(Context.Channel.Id, IsDaily))
-                {
-                    DataConfig.DeleteChannelFromRotationConfig(Context.Channel.Id, IsDaily);
-
-                    await RespondAsync($"This channel will no longer receive {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command to re-subscribe to them!", ephemeral: true);
-                    return;
-                }
-                else
-                {
-                    DataConfig.AddChannelToRotationConfig(Context.Channel.Id, IsDaily);
-
-                    await RespondAsync($"This channel is now successfully subscribed to {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command again to remove this type of alert!", ephemeral: true);
-                    return;
-                }
-            }
-        }
-
-        [SlashCommand("daily", "Display Daily reset information.")]
-        public async Task Daily()
-        {
-            await RespondAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
-            return;
-        }
-
-        [SlashCommand("free-emblems", "Display a list of universal emblem codes.")]
-        public async Task FreeEmblems()
-        {
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = $"Universal Emblem Codes",
-                IconUrl = Context.Client.GetApplicationInfoAsync().Result.IconUrl,
-            };
-            var foot = new EmbedFooterBuilder()
-            {
-                Text = $"These codes are not limited to one account and can be used by anyone."
-            };
-            var embed = new EmbedBuilder()
-            {
-                Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                Author = auth,
-                Footer = foot,
-            };
-            embed.Title = "";
-            embed.Description =
-                $"[The Visionary](https://www.bungie.net/common/destiny2_content/icons/65b4047b1b83aeeeb2e628305071fcea.jpg): **XFV-KHP-N97**\n" +
-                $"[Cryonautics](https://www.bungie.net/common/destiny2_content/icons/6719dde48dca592addb4102cb747e097.jpg): **RA9-XPH-6KJ**\n" +
-                $"[Galilean Excursion](https://bungie.net/common/destiny2_content/icons/3e99d575d00fb307c15fb5513dee13c6.jpg): **JYN-JAA-Y7D**\n" +
-                $"[Future in Shadow](https://bungie.net/common/destiny2_content/icons/dd9af60ef15319ee986a1f6cc029fe71.jpg): **7LV-GTK-T7J**\n" +
-                $"[Sequence Flourish](https://www.bungie.net/common/destiny2_content/icons/01e9b3863c14f9149ff4035b896ad5ed.jpg): **7D4-PKR-MD7**\n" +
-                $"[A Classy Order](https://www.bungie.net/common/destiny2_content/icons/adaf0e2c15610cdfff750725701222ec.jpg): **YRC-C3D-YNC**\n" +
-                $"[Be True](https://www.bungie.net/common/destiny2_content/icons/a6d9b66f124b25ac73969ebe4bc45b90.jpg): **ML3-FD4-ND9**\n" +
-                $"[Heliotrope Warren](https://www.bungie.net/common/destiny2_content/icons/385c302dc22e6dafb8b50c253486d040.jpg): **L7T-CVV-3RD**\n" +
-                $"[Shadow's Light](https://www.bungie.net//common/destiny2_content/icons/b296588f57aea1d15a04c3db6de98220.jpg): **F99-KPX-NCF**\n" +
-                $"[Sneer of the Oni](https://www.bungie.net//common/destiny2_content/icons/bffe84c0efb9215dbdc8c4890c3e6234.jpg): **6LJ-GH7-TPA**\n" +
-                $"[Countdown to Convergence](https://www.bungie.net//common/destiny2_content/icons/2560de3d4009044b291c6cfb69d11a7f.jpg): **PHV-6LF-9CP**\n" +
-                $"[Liminal Nadir](https://www.bungie.net//common/destiny2_content/icons/4f9f612716a973ff03e5e17e9d7e7c91.jpg): **VA7-L7H-PNC**\n" +
-                $"[Tangled Web](https://www.bungie.net/common/destiny2_content/icons/93a14eab2b1633d7affbf815d42af337.jpg): **PKH-JL6-L4R**\n" +
-                $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*";
-
-            await RespondAsync(embed: embed.Build());
-            return;
-        }
-
-        [Group("guardians", "Display Guardian information.")]
-        public class Guardians : InteractionModuleBase<SocketInteractionContext>
-        {
-            [SlashCommand("linked-user", "Get Guardian information of a Linked User.")]
-            public async Task LinkedUser([Summary("user", "User to get Guardian information for.")] IUser User,
-                [Summary("class", "Guardian Class to get information for.")] Guardian.Class ClassType,
-                [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
-                Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5)]int ArgPlatform = 0)
-            {
-                DataConfig.DiscordIDLink LinkedUser = DataConfig.GetLinkedUser(User.Id);
-                Guardian.Platform Platform = (Guardian.Platform)ArgPlatform;
-
-                await DeferAsync();
-
-                if (LinkedUser == null || !DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
-                {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"User is not linked; tell them to link using {BotConfig.DefaultCommandPrefix}link [THEIR BUNGIE TAG]."; });
-                    return;
-                }
-
-                using (var client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + LinkedUser.BungieMembershipType + "/Profile/" + LinkedUser.BungieMembershipID + "?components=100,200").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
-
-                    if (DataConfig.IsBungieAPIDown(content))
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Bungie API is temporary down, try again later."; });
-                        return;
-                    }
-
-                    if (item.ErrorCode != 1)
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"An error occured with that account. Is there a connected Destiny 2 account?"; });
-                        return;
-                    }
-
-                    List<Guardian> userGuardians = new List<Guardian>();
-                    for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
-                    {
-                        try
-                        {
-                            string charId = $"{item.Response.profile.data.characterIds[i]}";
-                            if ((Guardian.Class)item.Response.characters.data[$"{charId}"].classType == ClassType)
-                                userGuardians.Add(new Guardian(LinkedUser.UniqueBungieName, LinkedUser.BungieMembershipID, LinkedUser.BungieMembershipType, charId));
-                        }
-                        catch (Exception x)
-                        {
-                            Console.WriteLine($"{x}");
-                        }
-                    }
-
-                    if (userGuardians.Count == 0)
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No guardian found."; });
-                        return;
-                    }
-
-                    List<Embed> embeds = new List<Embed>();
-                    foreach (var guardian in userGuardians)
-                        embeds.Add(guardian.GetGuardianEmbed().Build());
-
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embeds = embeds.ToArray(); });
-                    return;
-                }
-            }
-
-            [SlashCommand("bungie-tag", "Get Guardian information of any player.")]
-            public async Task BungieTag([Summary("player", "Player's Bungie tag to get Guardian information for.")] string BungieTag,
-                [Summary("class", "Guardian Class to get information for.")] Guardian.Class ClassType,
-                [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
-                Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5)]int ArgPlatform = 0)
-            {
-                Guardian.Platform Platform = (Guardian.Platform)ArgPlatform;
-
-                await DeferAsync();
-
-                string MembershipType = null;
-                string MembershipID = null;
-                using (var client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/-1/" + Uri.EscapeDataString(BungieTag)).Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
-
-                    string memId = "";
-                    string memType = "";
-                    for (int i = 0; i < item.Response.Count; i++)
-                    {
-                        memId = item.Response[i].membershipId;
-                        memType = item.Response[i].membershipType;
-
-                        var memResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + memType + "/Profile/" + memId + "/?components=100").Result;
-                        var memContent = memResponse.Content.ReadAsStringAsync().Result;
-                        dynamic memItem = JsonConvert.DeserializeObject(memContent);
-
-                        if (memItem.ErrorCode == 1)
-                        {
-                            if (((int)memItem.Response.profile.data.userInfo.crossSaveOverride == (int)memItem.Response.profile.data.userInfo.membershipType) ||
-                                ((int)memItem.Response.profile.data.userInfo.crossSaveOverride == 0 && (int)memItem.Response.profile.data.userInfo.membershipType == ((int)Platform)))
-                            {
-                                MembershipType = memType;
-                                MembershipID = memId;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (MembershipType == null || MembershipID == null)
-                {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"An error occurred when retrieving that player's Guardians. Run the command again and specify their platform."; });
-                    return;
-                }
-
-                using (var client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "?components=100,200").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
-
-                    if (DataConfig.IsBungieAPIDown(content))
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Bungie API is temporary down, try again later."; });
-                        return;
-                    }
-
-                    if (item.ErrorCode != 1)
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"An error occured with that account. Is there a connected Destiny 2 account?"; });
-                        return;
-                    }
-
-                    List<Guardian> userGuardians = new List<Guardian>();
-                    for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
-                    {
-                        try
-                        {
-                            string charId = $"{item.Response.profile.data.characterIds[i]}";
-                            if ((Guardian.Class)item.Response.characters.data[$"{charId}"].classType == ClassType)
-                                userGuardians.Add(new Guardian(BungieTag, MembershipID, MembershipType, charId));
-                        }
-                        catch (Exception x)
-                        {
-                            Console.WriteLine($"{x}");
-                        }
-                    }
-
-                    if (userGuardians.Count == 0)
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "No guardian found."; });
-                        return;
-                    }
-
-                    List<Embed> embeds = new List<Embed>();
-                    foreach (var guardian in userGuardians)
-                        embeds.Add(guardian.GetGuardianEmbed().Build());
-
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embeds = embeds.ToArray(); });
-                    return;
-                }
-            }
-        }
-
         [SlashCommand("link", "Link your Bungie tag to your Discord account.")]
         public async Task Link([Summary("bungie-tag", "Your Bungie tag you wish to link with.")] string BungieTag,
             [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
@@ -308,20 +42,6 @@ namespace Levante.Commands
             await RespondAsync($"Linked {Context.User.Mention} to {BungieTag}.", ephemeral: true);
         }
 
-        [SlashCommand("lost-sector", "Get info on a Lost Sector based on Difficulty.")]
-        public async Task LostSector([Summary("lost-sector", "Lost Sector name."),
-                Choice("Bay of Drowned Wishes", 0), Choice("Chamber of Starlight", 1), Choice("Aphelion's Rest", 2),
-                Choice("The Empty Tank", 3), Choice("K1 Logistics", 4), Choice("K1 Communion", 5),
-                Choice("K1 Crew Quarters", 6), Choice("K1 Revelation", 7), Choice("Concealed Void", 8),
-                Choice("Bunker E15", 9), Choice("Perdition", 10)] int ArgLS,
-                [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty ArgLSD)
-        {
-            LostSector LS = (LostSector)ArgLS;
-            LostSectorDifficulty LSD = ArgLSD;
-
-            await RespondAsync($"", embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
-            return;
-        }
 
         [Group("notify", "Be notified when a specific rotation is active.")]
         public class Notify : InteractionModuleBase<SocketInteractionContext>
@@ -802,7 +522,7 @@ namespace Levante.Commands
                 [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty? ArgLSD = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
             {
-                LostSector? LS = (LostSector)ArgLS;
+                LostSector? LS = (LostSector?)ArgLS;
                 LostSectorDifficulty? LSD = ArgLSD;
                 ExoticArmorType? EAT = ArgEAT;
 
@@ -812,9 +532,27 @@ namespace Levante.Commands
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
                 embed.Title = "Lost Sectors";
-                embed.Description =
-                    $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} {(LSD != LostSectorDifficulty.Legend ? $" (Master)" : " (Legend)")}" +
-                        $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                if (LS == null && LSD == null && EAT == null)
+                    await RespondAsync($"An error has occurred. No parameters.", ephemeral: true);
+                else if (LS != null && LSD == null && EAT == null)
+                    embed.Description =
+                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else if (LS != null && LSD != null && EAT == null)
+                    embed.Description =
+                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} {(LSD != LostSectorDifficulty.Legend ? $" (Master)" : " (Legend)")}" +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else if (LS == null && LSD == null && EAT != null)
+                    embed.Description =
+                        $"Next occurrance of Lost Sectors" +
+                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else if (LS == null && LSD != null && EAT != null)
+                    embed.Description =
+                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} {(LSD != LostSectorDifficulty.Legend ? $" (Master)" : " (Legend)")}" +
+                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else if (LS != null && LSD != null && EAT != null)
+                    embed.Description =
+                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} {(LSD != LostSectorDifficulty.Legend ? $" (Master)" : " (Legend)")}" +
+                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
@@ -823,14 +561,14 @@ namespace Levante.Commands
             [SlashCommand("nightfall", "Find out when a Nightfall and/or Weapon is active next.")]
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
                 Choice("The Hollowed Lair", 0), Choice("Lake of Shadows", 1), Choice("Exodus Crash", 2),
-                Choice("The Corrupted", 3), Choice("The Devils' Lair", 4), Choice("Proving Grounds", 5)] int ArgNF,
+                Choice("The Corrupted", 3), Choice("The Devils' Lair", 4), Choice("Proving Grounds", 5)] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike Weapon drop."),
                 Choice("The Palindrome", 0), Choice("THE S.W.A.R.M.", 1), Choice("The Comedian", 2),
                 Choice("Shadow Price", 3), Choice("Hung Jury SR4", 4), Choice("The Hothead", 5),
                 Choice("PLUG ONE.1", 6), Choice("Uzume RR4", 7)] int? ArgWeapon = null)
             {
-                Nightfall NF = (Nightfall)ArgNF;
-                NightfallWeapon? Weapon = (NightfallWeapon)ArgWeapon;
+                Nightfall? NF = (Nightfall?)ArgNF;
+                NightfallWeapon? Weapon = (NightfallWeapon?)ArgWeapon;
 
                 var predictedDate = NightfallRotation.DatePrediction(NF, Weapon);
                 var embed = new EmbedBuilder()
@@ -838,9 +576,19 @@ namespace Levante.Commands
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
                 embed.Title = "Nightfall";
-                embed.Description =
-                    $"Next occurrance of {NightfallRotation.GetStrikeNameString(NF)}" +
-                        $"{(Weapon != null ? $" dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                if (NF == null && Weapon == null)
+                    await RespondAsync($"An error has occurred. No parameters.", ephemeral: true);
+                else if (NF != null && Weapon == null)
+                    embed.Description =
+                        $"Next occurrance of {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else if (NF == null && Weapon != null)
+                    embed.Description =
+                        $"Next occurrance of Nightfalls" +
+                            $"{(Weapon != null ? $" dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else if (NF != null && Weapon != null)
+                    embed.Description =
+                        $"Next occurrance of {NightfallRotation.GetStrikeNameString((Nightfall)NF)}" +
+                            $"{(Weapon != null ? $" dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}."; 
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
@@ -891,46 +639,103 @@ namespace Levante.Commands
             }
         }
 
-        [SlashCommand("nightfall", "Display Nightfall information.")]
-        public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
-                Choice("The Hollowed Lair", 0), Choice("Lake of Shadows", 1), Choice("Exodus Crash", 2),
-                Choice("The Corrupted", 3), Choice("The Devils' Lair", 4), Choice("Proving Grounds", 5)] int ArgNF)
-        {
-            await RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-            return;
-        }
-
-        [SlashCommand("patrol", "Display Patrol information.")]
-        public async Task Patrol([Summary("location", "Patrol location."),
-                Choice("The Dreaming City", 0), Choice("The Moon", 1), Choice("Europa", 2)] int ArgLocation)
-        {
-            await RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-            return;
-        }
-
-        [SlashCommand("raid", "Display Raid information.")]
-        public async Task Raid([Summary("raid", "Raid name."),
-                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3)] int ArgRaid)
-        {
-            await RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-            return;
-        }
-
         [SlashCommand("rank", "Display a Destiny 2 leaderboard of choice.")]
         public async Task Rank([Summary("leaderboard", "Specific leaderboard to display."),
-            Choice("Season Pass Level", 0), Choice("Longest Thrallway Session", 1), Choice("Most Thrallway XP Per Hour", 2),
-            Choice("Total Thrallway Time", 3), Choice("Equipped Power Level", 4)] int ArgLeaderboard)
+            Choice("Season Pass Level", 0), Choice("Longest XP Logging Session", 1), Choice("Most Logged XP Per Hour", 2),
+            Choice("Total XP Logging Time", 3), Choice("Equipped Power Level", 4)] int ArgLeaderboard,
+            [Summary("season", "Season of the specific leaderboard. Defaults to the current season."),
+            Choice("Season of the Lost", 15), Choice("Season of the Risen", 16)] int Season = 16)
         {
             Leaderboard LeaderboardType = (Leaderboard)ArgLeaderboard;
 
             EmbedBuilder embed = new EmbedBuilder();
             switch (LeaderboardType)
             {
-                case Leaderboard.Level: embed = LeaderboardHelper.GetLeaderboardEmbed(LevelData.GetSortedLevelData(), Context.User); break;
-                case Leaderboard.LongestSession: embed = LeaderboardHelper.GetLeaderboardEmbed(LongestSessionData.GetSortedLevelData(), Context.User); break;
-                case Leaderboard.XPPerHour: embed = LeaderboardHelper.GetLeaderboardEmbed(XPPerHourData.GetSortedLevelData(), Context.User); break;
-                case Leaderboard.MostThrallwayTime: embed = LeaderboardHelper.GetLeaderboardEmbed(MostThrallwayTimeData.GetSortedLevelData(), Context.User); break;
-                case Leaderboard.PowerLevel: embed = LeaderboardHelper.GetLeaderboardEmbed(PowerLevelData.GetSortedLevelData(), Context.User); break;
+                case Leaderboard.Level:
+                    {
+                        string json = null;
+                        if (Season == 15)
+                            json = File.ReadAllText(LevelData.FilePathS15);
+                        else if (Season == 16)
+                            json = File.ReadAllText(LevelData.FilePath);
+                        else
+                        {
+                            await RespondAsync($"Issue with Season number argument.");
+                            return;
+                        }
+                        LevelData ld = JsonConvert.DeserializeObject<LevelData>(json);
+
+                        embed = LeaderboardHelper.GetLeaderboardEmbed(ld.GetSortedLevelData(), Context.User, Season);
+                        break;
+                    }
+                case Leaderboard.LongestSession:
+                    {
+                        string json = null;
+                        if (Season == 15)
+                            json = File.ReadAllText(LongestSessionData.FilePathS15);
+                        else if (Season == 16)
+                            json = File.ReadAllText(LongestSessionData.FilePath);
+                        else
+                        {
+                            await RespondAsync($"Issue with Season number argument.");
+                            return;
+                        }
+                        LongestSessionData lsd = JsonConvert.DeserializeObject<LongestSessionData>(json);
+
+                        embed = LeaderboardHelper.GetLeaderboardEmbed(lsd.GetSortedLevelData(), Context.User, Season);
+                        break;
+                    }
+                case Leaderboard.XPPerHour:
+                    {
+                        string json = null;
+                        if (Season == 15)
+                            json = File.ReadAllText(XPPerHourData.FilePathS15);
+                        else if (Season == 16)
+                            json = File.ReadAllText(XPPerHourData.FilePath);
+                        else
+                        {
+                            await RespondAsync($"Issue with Season number argument.");
+                            return;
+                        }
+                        XPPerHourData xph = JsonConvert.DeserializeObject<XPPerHourData>(json);
+
+                        embed = LeaderboardHelper.GetLeaderboardEmbed(xph.GetSortedLevelData(), Context.User, Season);
+                        break;
+                    }
+                case Leaderboard.MostXPLoggingTime:
+                    {
+                        string json = null;
+                        if (Season == 15)
+                            json = File.ReadAllText(MostXPLoggingTimeData.FilePathS15);
+                        else if (Season == 16)
+                            json = File.ReadAllText(MostXPLoggingTimeData.FilePath);
+                        else
+                        {
+                            await RespondAsync($"Issue with Season number argument.");
+                            return;
+                        }
+                        MostXPLoggingTimeData mttd = JsonConvert.DeserializeObject<MostXPLoggingTimeData>(json);
+
+                        embed = LeaderboardHelper.GetLeaderboardEmbed(mttd.GetSortedLevelData(), Context.User, Season);
+                        break;
+                    }
+                case Leaderboard.PowerLevel:
+                    {
+                        string json = null;
+                        if (Season == 15)
+                            json = File.ReadAllText(PowerLevelData.FilePathS15);
+                        else if (Season == 16)
+                            json = File.ReadAllText(PowerLevelData.FilePath);
+                        else
+                        {
+                            await RespondAsync($"Issue with Season number argument.");
+                            return;
+                        }
+                        PowerLevelData pld = JsonConvert.DeserializeObject<PowerLevelData>(json);
+
+                        embed = LeaderboardHelper.GetLeaderboardEmbed(pld.GetSortedLevelData(), Context.User, Season);
+                        break;
+                    }
             }
 
             await RespondAsync($"", embed: embed.Build());
@@ -950,11 +755,5 @@ namespace Levante.Commands
             await RespondAsync($"Your Bungie account: {linkedUser.UniqueBungieName} has been unlinked. Use the command \"/link\" if you want to re-link!", ephemeral: true);
         }
 
-        [SlashCommand("weekly", "Display Weekly reset information.")]
-        public async Task Weekly()
-        {
-            await RespondAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
-            return;
-        }
     }
 }

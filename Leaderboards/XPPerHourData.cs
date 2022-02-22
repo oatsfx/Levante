@@ -6,10 +6,11 @@ namespace Levante.Leaderboards
 {
     public class XPPerHourData
     {
-        public static readonly string FilePath = @"Data/xpPerHourData.json";
+        public static readonly string FilePathS15 = @"Data/S15/xpPerHourData.json";
+        public static readonly string FilePath = @"Data/S16/xpPerHourData.json";
 
         [JsonProperty("XPPerHourEntries")]
-        public static List<XPPerHourEntry> XPPerHourEntries { get; set; } = new List<XPPerHourEntry>();
+        public List<XPPerHourEntry> XPPerHourEntries { get; set; } = new List<XPPerHourEntry>();
 
         public partial class XPPerHourEntry : LeaderboardEntry
         {
@@ -20,13 +21,13 @@ namespace Levante.Leaderboards
             public string UniqueBungieName { get; set; } = "Guardian#0000";
         }
 
-        public static List<XPPerHourEntry> GetSortedLevelData()
+        public List<XPPerHourEntry> GetSortedLevelData()
         {
             QuickSort(0, XPPerHourEntries.Count - 1);
             return XPPerHourEntries;
         }
 
-        private static void QuickSort(int Start, int End)
+        private void QuickSort(int Start, int End)
         {
             if (Start < End)
             {
@@ -37,7 +38,7 @@ namespace Levante.Leaderboards
             }
         }
 
-        private static int Partition(int Start, int End)
+        private int Partition(int Start, int End)
         {
             int Center = XPPerHourEntries[End].XPPerHour;
 
@@ -75,25 +76,22 @@ namespace Levante.Leaderboards
             {
                 XPPerHour = XPPerHour,
                 UniqueBungieName = BungieName
+
             };
             string json = File.ReadAllText(FilePath);
-            XPPerHourEntries.Clear();
-            XPPerHourData jsonObj = JsonConvert.DeserializeObject<XPPerHourData>(json);
+            XPPerHourData xph = JsonConvert.DeserializeObject<XPPerHourData>(json);
 
-            XPPerHourEntries.Add(xphe);
-            XPPerHourData xph = new XPPerHourData();
+            xph.XPPerHourEntries.Add(xphe);
             string output = JsonConvert.SerializeObject(xph, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
-        public static void AddEntryToConfig(XPPerHourEntry lde)
+        public static void AddEntryToConfig(XPPerHourEntry xphe)
         {
             string json = File.ReadAllText(FilePath);
-            XPPerHourEntries.Clear();
-            XPPerHourData jsonObj = JsonConvert.DeserializeObject<XPPerHourData>(json);
+            XPPerHourData xph = JsonConvert.DeserializeObject<XPPerHourData>(json);
 
-            XPPerHourEntries.Add(lde);
-            XPPerHourData xph = new XPPerHourData();
+            xph.XPPerHourEntries.Add(xphe);
             string output = JsonConvert.SerializeObject(xph, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -101,11 +99,10 @@ namespace Levante.Leaderboards
         public static void DeleteEntryFromConfig(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            XPPerHourEntries.Clear();
             XPPerHourData xph = JsonConvert.DeserializeObject<XPPerHourData>(json);
-            for (int i = 0; i < XPPerHourEntries.Count; i++)
-                if (XPPerHourEntries[i].UniqueBungieName.Equals(BungieName))
-                    XPPerHourEntries.RemoveAt(i);
+            for (int i = 0; i < xph.XPPerHourEntries.Count; i++)
+                if (xph.XPPerHourEntries[i].UniqueBungieName.Equals(BungieName))
+                    xph.XPPerHourEntries.RemoveAt(i);
             string output = JsonConvert.SerializeObject(xph, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -113,9 +110,8 @@ namespace Levante.Leaderboards
         public static bool IsExistingLinkedEntry(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            XPPerHourEntries.Clear();
-            XPPerHourData jsonObj = JsonConvert.DeserializeObject<XPPerHourData>(json);
-            foreach (XPPerHourEntry xphe in XPPerHourEntries)
+            XPPerHourData xph = JsonConvert.DeserializeObject<XPPerHourData>(json);
+            foreach (XPPerHourEntry xphe in xph.XPPerHourEntries)
                 if (xphe.UniqueBungieName.Equals(BungieName))
                     return true;
             return false;
@@ -124,9 +120,8 @@ namespace Levante.Leaderboards
         public static XPPerHourEntry GetExistingLinkedEntry(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            XPPerHourEntries.Clear();
-            XPPerHourData jsonObj = JsonConvert.DeserializeObject<XPPerHourData>(json);
-            foreach (XPPerHourEntry xphe in XPPerHourEntries)
+            XPPerHourData xph = JsonConvert.DeserializeObject<XPPerHourData>(json);
+            foreach (XPPerHourEntry xphe in xph.XPPerHourEntries)
                 if (xphe.UniqueBungieName.Equals(BungieName))
                     return xphe;
             return null;

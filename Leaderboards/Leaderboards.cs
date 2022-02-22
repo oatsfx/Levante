@@ -10,7 +10,7 @@
         Level,
         LongestSession,
         XPPerHour,
-        MostThrallwayTime,
+        MostXPLoggingTime,
         PowerLevel,
     }
 }

@@ -31,24 +31,14 @@ namespace Levante.Rotations
             public ExoticArmorType? ArmorDrop { get; set; } = ExoticArmorType.Helmet;
         }
 
-        public static LostSector GetPredictedLegendLostSector(int Days)
+        public static LostSector GetPredictedLostSector(int Days)
         {
-            return (LostSector)((((int)CurrentRotations.LegendLostSector) + Days) % LostSectorCount);
+            return (LostSector)((((int)CurrentRotations.LostSector) + Days) % LostSectorCount);
         }
 
-        public static ExoticArmorType GetPredictedLegendLostSectorArmorDrop(int Days)
+        public static ExoticArmorType GetPredictedLostSectorArmorDrop(int Days)
         {
-            return (ExoticArmorType)((((int)CurrentRotations.LegendLostSectorArmorDrop) + Days) % 4);
-        }
-
-        public static LostSector GetPredictedMasterLostSector(int Days)
-        {
-            return (LostSector)((((int)CurrentRotations.MasterLostSector) + Days) % LostSectorCount);
-        }
-
-        public static ExoticArmorType GetPredictedMasterLostSectorArmorDrop(int Days)
-        {
-            return (ExoticArmorType)((((int)CurrentRotations.MasterLostSectorArmorDrop) + Days) % 4);
+            return (ExoticArmorType)((((int)CurrentRotations.LostSectorArmorDrop) + Days) % 4);
         }
 
         public static string GetLostSectorString(LostSector ls)
@@ -375,8 +365,8 @@ namespace Levante.Rotations
         // This predicts for Legend Difficulty, add a day for Master Difficulty.
         public static DateTime DatePrediction(LostSector? LS, LostSectorDifficulty? LSD, ExoticArmorType? ArmorType)
         {
-            ExoticArmorType iterationEAT = CurrentRotations.LegendLostSectorArmorDrop;
-            LostSector iterationLS = CurrentRotations.LegendLostSector;
+            ExoticArmorType iterationEAT = CurrentRotations.LostSectorArmorDrop;
+            LostSector iterationLS = CurrentRotations.LostSector;
             int DaysUntil = LSD == LostSectorDifficulty.Master ? 1 : 0;
 
             // Special case where if the user happens to get tomorrow's Master Lost Sector.
@@ -409,33 +399,6 @@ namespace Levante.Rotations
                 } while (iterationEAT != ArmorType && iterationLS != LS);
             }
             return CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil);
-        }
-
-        public static LostSector ActivityPrediction(DateTime Date, LostSectorDifficulty Difficulty, out ExoticArmorType ArmorDrop)
-        {
-            DateTime iterationDate = CurrentRotations.WeeklyResetTimestamp;
-            ExoticArmorType iterationEAT;
-            LostSector iterationLS;
-            if (Difficulty == LostSectorDifficulty.Legend)
-            {
-                iterationEAT = CurrentRotations.LegendLostSectorArmorDrop;
-                iterationLS = CurrentRotations.LegendLostSector;
-            }
-            else
-            {
-                iterationEAT = CurrentRotations.MasterLostSectorArmorDrop;
-                iterationLS = CurrentRotations.MasterLostSector;
-            }
-
-            do
-            {
-                iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
-                iterationLS = iterationLS == LostSector.Perdition ? LostSector.BayOfDrownedWishes : iterationLS + 1;
-                iterationDate.AddDays(1);
-            } while ((iterationDate - Date).Days >= 1);
-
-            ArmorDrop = iterationEAT;
-            return iterationLS;
         }
     }
 

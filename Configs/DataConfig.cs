@@ -300,7 +300,7 @@ namespace Levante.Configs
         }
 
         // This returns the level, then other parameters are XPProgress (int) and IsInShatteredThrone (bool). Reduces the amount of calls to the Bungie API.
-        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsInShatteredThrone, out PrivacySetting FireteamPrivacy, out string CharacterId, out string ErrorStatus)
+        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out PrivacySetting FireteamPrivacy, out string CharacterId, out string ErrorStatus)
         {
             try
             {
@@ -319,34 +319,32 @@ namespace Levante.Configs
                     if (!ErrorStatus.Equals("Success"))
                     {
                         XPProgress = -1;
-                        IsInShatteredThrone = false;
                         FireteamPrivacy = PrivacySetting.Open;
                         CharacterId = null;
                         return -1;
                     }
 
-                    IsInShatteredThrone = false;
+                    if (item.Response.profileTransitoryData.data == null)
+                    {
+                        ErrorStatus = $"PlayerNotOnline";
+                        XPProgress = -1;
+                        FireteamPrivacy = PrivacySetting.Open;
+                        CharacterId = null;
+                        return -1;
+                    }
 
                     CharacterId = "";
+                    DateTime mostRecentDate = new DateTime();
                     for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
                     {
                         string charId = item.Response.profile.data.characterIds[i];
-                        ulong activityHash = item.Response.characterActivities.data[$"{charId}"].currentActivityHash;
-                        if (activityHash == 2032534090) // shattered throne
+                        var activityTime = DateTime.Parse($"{item.Response.characterActivities.data[$"{charId}"].dateActivityStarted}");
+                        //ulong activityHash = item.Response.characterActivities.data[$"{charId}"].currentActivityHash;
+                        if (activityTime > mostRecentDate) // shattered throne
                         {
-                            IsInShatteredThrone = true;
+                            mostRecentDate = activityTime;
                             CharacterId = $"{charId}";
                         }
-                    }
-
-                    if (!IsInShatteredThrone)
-                    {
-                        ErrorStatus = $"PlayerNotInShatteredThrone";
-                        XPProgress = -1;
-                        IsInShatteredThrone = false;
-                        FireteamPrivacy = PrivacySetting.Open;
-                        CharacterId = null;
-                        return -1;
                     }
 
                     FireteamPrivacy = item.Response.profileTransitoryData.data.joinability.privacySetting;
@@ -373,14 +371,13 @@ namespace Levante.Configs
             {
                 ErrorStatus = $"ResponseError";
                 XPProgress = -1;
-                IsInShatteredThrone = false;
                 FireteamPrivacy = PrivacySetting.Open;
                 CharacterId = null;
                 return -1;
             }
         }
 
-        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsInShatteredThrone, out string ErrorStatus)
+        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsPlaying, out string ErrorStatus)
         {
             try
             {
@@ -396,16 +393,14 @@ namespace Levante.Configs
                     dynamic item = JsonConvert.DeserializeObject(content);
 
                     ErrorStatus = $"{item.ErrorStatus}";
-                    IsInShatteredThrone = false;
+                    IsPlaying = true;
 
-                    for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                    if (item.Response.profileTransitoryData.data == null)
                     {
-                        string charId = item.Response.profile.data.characterIds[i];
-                        ulong activityHash = item.Response.characterActivities.data[$"{charId}"].currentActivityHash;
-                        if (activityHash == 2032534090) // shattered throne
-                        {
-                            IsInShatteredThrone = true;
-                        }
+                        ErrorStatus = $"PlayerNotOnline";
+                        XPProgress = -1;
+                        IsPlaying = false;
+                        return -1;
                     }
 
                     //first 100 levels: 4095505052
@@ -430,7 +425,7 @@ namespace Levante.Configs
             {
                 ErrorStatus = $"ResponseError";
                 XPProgress = -1;
-                IsInShatteredThrone = false;
+                IsPlaying = false;
                 return -1;
             }
         }

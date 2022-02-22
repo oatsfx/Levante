@@ -22,7 +22,7 @@ namespace Levante.Configs
         public static double Version { get; set; } = 1.0;
 
         [JsonProperty("DefaultCommandPrefix")]
-        public static string DefaultCommandPrefix { get; set; } = "d!";
+        public static string DefaultCommandPrefix { get; set; } = "l!";
 
         [JsonProperty("Note")]
         public static string Note { get; set; } = "Hello World";
@@ -32,6 +32,9 @@ namespace Levante.Configs
 
         [JsonProperty("BotStaff")]
         public static List<ulong> BotStaffDiscordIDs { get; set; } = new List<ulong>();
+
+        [JsonProperty("BotSupporters")]
+        public static List<ulong> BotSupportersDiscordIDs { get; set; } = new List<ulong>();
 
         [JsonProperty("EmbedColor")]
         public static EmbedColorGroup EmbedColor { get; set; } = new EmbedColorGroup();

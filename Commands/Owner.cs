@@ -18,6 +18,7 @@ namespace Levante.Commands
 {
     public class Owner : ModuleBase<SocketCommandContext>
     {
+        // These commands will need to be ran through DMs when verified after April 2022.
         public InteractiveService Interactive { get; set; }
 
         [Command("force", RunMode = RunMode.Async)]
@@ -74,6 +75,29 @@ namespace Levante.Commands
             var react = Emote.Parse("<:complete:927315594951426048>");
 
             await Context.Message.AddReactionAsync(react);
+        }
+
+        [Command("addSupporter", RunMode = RunMode.Async)]
+        [Summary("Add a bot supporter.")]
+        [RequireOwner]
+        public async Task AddSupporter(ulong DiscordID = 0)
+        {
+            if (DiscordID <= 0)
+            {
+                await Context.Message.ReplyAsync($"No Discord User ID attached.");
+                return;
+            }
+
+            if (BotConfig.BotSupportersDiscordIDs.Contains(DiscordID))
+            {
+                await Context.Message.ReplyAsync($"{DiscordID} already exists!");
+                return;
+            }
+
+            BotConfig.BotSupportersDiscordIDs.Add(DiscordID);
+            var bConfig = new BotConfig();
+            File.WriteAllText(BotConfig.FilePath, JsonConvert.SerializeObject(bConfig, Formatting.Indented));
+            await Context.Message.ReplyAsync($"Added {DiscordID} to my list of Supporters!");
         }
 
         [Command("deleteBotMessage", RunMode = RunMode.Async)]
@@ -250,12 +274,12 @@ namespace Levante.Commands
                 return;
             }
 
-            ActiveConfig.MaximumThrallwayUsers = NewMaxUserCount;
+            ActiveConfig.MaximumLoggingUsers = NewMaxUserCount;
             ActiveConfig.UpdateActiveAFKUsersConfig();
 
-            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "" : "s";
-            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumThrallwayUsers} Thrallway Farmer{s}", ActivityType.Watching));
-            await ReplyAsync($"Changed maximum Thrallway users to {NewMaxUserCount}.");
+            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
+            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching));
+            await ReplyAsync($"Changed maximum XP Logging users to {NewMaxUserCount}.");
         }
 
         public async Task SendToAllAnnounceChannels(EmbedBuilder embed)
@@ -264,14 +288,22 @@ namespace Levante.Commands
             {
                 var channel = Context.Client.GetChannel(Link.ChannelID) as SocketTextChannel;
                 var guildChannel = Context.Client.GetChannel(Link.ChannelID) as SocketGuildChannel;
-                if (Link.RoleID != 0)
+                try
                 {
-                    var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
-                    await channel.SendMessageAsync($"{role.Mention}", false, embed.Build());
+                    
+                    if (Link.RoleID != 0)
+                    {
+                        var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
+                        await channel.SendMessageAsync($"{role.Mention}", false, embed.Build());
+                    }
+                    else
+                    {
+                        await channel.SendMessageAsync("", false, embed.Build());
+                    }
                 }
-                else
+                catch
                 {
-                    await channel.SendMessageAsync("", false, embed.Build());
+                    LogHelper.ConsoleLog($"Could not send to channel {guildChannel.Id} in guild {guildChannel.Guild.Id}.");
                 }
             }
             await ReplyAsync("Sent!");

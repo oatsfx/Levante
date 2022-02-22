@@ -6,14 +6,12 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Discord;
 using Newtonsoft.Json;
-using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using Levante.Configs;
 using System.Net.Http;
 using Levante.Helpers;
 using System.Threading;
-using Discord.Net;
 using Levante.Leaderboards;
 using Levante.Rotations;
 using Levante.Util;
@@ -73,8 +71,7 @@ namespace Levante
             Console.WriteLine($"Current Bot Version: v{BotConfig.Version}");
             Console.WriteLine($"Current Developer Note: {BotConfig.Note}");
 
-            Console.WriteLine($"Legend Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LegendLostSector)} ({CurrentRotations.LegendLostSectorArmorDrop})");
-            Console.WriteLine($"Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.MasterLostSector)} ({CurrentRotations.MasterLostSectorArmorDrop})");
+            Console.WriteLine($"Legend/Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LostSector)} ({CurrentRotations.LostSectorArmorDrop})");
             Console.WriteLine();
             Console.WriteLine($"Altar Weapon: {AltarsOfSorrowRotation.GetWeaponNameString(CurrentRotations.AltarWeapon)} ({CurrentRotations.AltarWeapon})");
             Console.WriteLine();
@@ -120,22 +117,13 @@ namespace Levante
             await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
             await _client.StartAsync();
 
-            await UpdateBotActivity(1);
-
             await Task.Delay(-1);
         }
 
-        // Set to 0 for Watching X/Y Thrallway Users
-        // Set to 1 for Playing {note} | v{version}
-        // Set to 2 for Watching for {prefix}help | v{version}
-        // Set to 3 for Watching X Servers | v{version}
-        // Set to 4 for Watching @Levante_Bot on Twitter
-        // Set to 5 for Watching X Linked Users | v{version}
-        // Set to 6 for Watching X Rotation Trackers | v{version}
         private async Task UpdateBotActivity(int SetRNG = -1)
         {
             int RNG = 0;
-            int RNGMax = 8;
+            int RNGMax = 10;
             if (SetRNG != -1 && SetRNG < RNGMax)
                 RNG = SetRNG;
             else
@@ -147,20 +135,24 @@ namespace Levante
             switch (RNG)
             {
                 case 0:
-                    string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "" : "s";
-                    await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumThrallwayUsers} Thrallway Farmer{s}", ActivityType.Watching)); break;
+                    string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
+                    await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching)); break;
                 case 1:
                     await _client.SetActivityAsync(new Game($"{BotConfig.Note} | v{BotConfig.Version}", ActivityType.Playing)); break;
                 case 2:
-                    await _client.SetActivityAsync(new Game($"for {BotConfig.DefaultCommandPrefix}help | v{BotConfig.Version}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"for /help | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 3:
-                    await _client.SetActivityAsync(new Game($"{_client.Rest.GetGuildsAsync().Result.Count} Servers | v{BotConfig.Version}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{_client.Guilds.Count} Servers | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 4:
-                    await _client.SetActivityAsync(new Game($"@Levante_Bot on Twitter", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{String.Format("{0:n0}", _client.Guilds.Sum(x => x.MemberCount))} Users | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 5:
                     await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count} Linked Users | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 6:
                     await _client.SetActivityAsync(new Game($"{CurrentRotations.GetTotalLinks()} Rotation Trackers | v{BotConfig.Version}", ActivityType.Watching)); break;
+                case 7:
+                    await _client.SetActivityAsync(new Game($"levante.dev | v{BotConfig.Version}", ActivityType.Watching)); break;
+                case 8:
+                    await _client.SetActivityAsync(new Game($"@Levante_Bot on Twitter", ActivityType.Watching)); break;
                 default: break;
             }
             return;
@@ -207,7 +199,7 @@ namespace Levante
 
         private async void TimerCallback(Object o) => await RefreshBungieAPI().ConfigureAwait(false);
 
-        #region ThrallwayLogging
+        #region XPLogging
         private async Task RefreshBungieAPI()
         {
             if (ActiveConfig.ActiveAFKUsers.Count <= 0)
@@ -219,15 +211,17 @@ namespace Levante
 
             LogHelper.ConsoleLog($"Refreshing Bungie API...");
             List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
-            try // thrallway
+            List<ActiveConfig.ActiveAFKUser> listOfNoGains = new List<ActiveConfig.ActiveAFKUser>();
+            List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
+            try // XP Logs
             {
-                LogHelper.ConsoleLog($"Refreshing Thrallway Users...");
+                LogHelper.ConsoleLog($"Refreshing XP Logging Users...");
                 foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers.ToList())
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
-                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isInShatteredThrone, out string errorStatus);
+                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isPlaying, out string errorStatus);
 
-                    if (!errorStatus.Equals("Success"))
+                    if (!errorStatus.Equals("Success") && !errorStatus.Equals("PlayerNotOnline"))
                     {
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
                         LogHelper.ConsoleLog($"Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
@@ -237,12 +231,12 @@ namespace Levante
 
                     LogHelper.ConsoleLog($"Checking {tempAau.UniqueBungieName}.");
 
-                    if (!isInShatteredThrone)
+                    if (!isPlaying)
                     {
                         string uniqueName = tempAau.UniqueBungieName;
 
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player is no longer in Shattered Throne.");
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", ThrallwayHelper.GenerateSessionSummary(tempAau), ThrallwayHelper.GenerateDeleteChannelButton());
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player is no longer playing Destiny 2.");
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateDeleteChannelButton());
 
                         IUser user;
                         if (_client.GetUser(tempAau.DiscordID) == null)
@@ -254,8 +248,8 @@ namespace Levante
                         {
                             user = _client.GetUser(tempAau.DiscordID);
                         }
-                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player is no longer in Shattered Throne. Logging will be terminated for {uniqueName}.");
-                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", ThrallwayHelper.GenerateSessionSummary(tempAau));
+                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player is no longer playing Destiny 2. Logging will be terminated for {uniqueName}.");
+                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
                         LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
                         listOfRemovals.Add(tempAau);
@@ -267,14 +261,43 @@ namespace Levante
 
                         tempAau.LastLoggedLevel = updatedLevel;
                         tempAau.LastLevelProgress = updatedProgression;
+                        tempAau.NoXPGainRefreshes = 0;
+                        newList.Add(tempAau);
 
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, 
                             $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {tempAau.LastLoggedLevel} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP)");
                     }
                     else if (updatedProgression <= tempAau.LastLevelProgress)
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"No XP change detected, attempting to refresh API again...");
-                        if (await RefreshSpecificUser(tempAau).ConfigureAwait(false) == null) listOfRemovals.Add(tempAau);
+                        if (tempAau.NoXPGainRefreshes >= ActiveConfig.RefreshesBeforeKick)
+                        {
+                            string uniqueName = tempAau.UniqueBungieName;
+
+                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player has been determined as inactive.");
+                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateDeleteChannelButton());
+
+                            IUser user;
+                            if (_client.GetUser(tempAau.DiscordID) == null)
+                            {
+                                var _rClient = _client.Rest;
+                                user = await _rClient.GetUserAsync(tempAau.DiscordID);
+                            }
+                            else
+                            {
+                                user = _client.GetUser(tempAau.DiscordID);
+                            }
+                            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
+                            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
+
+                            LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
+                            listOfRemovals.Add(tempAau);
+                            await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
+                        }
+                        else
+                        {
+                            ActiveConfig.GetActiveAFKUser(tempAau.DiscordID).NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
+                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"No XP change detected, waiting for next refresh... Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
+                        }
                     }
                     else
                     {
@@ -282,15 +305,13 @@ namespace Levante
 
                         tempAau.LastLoggedLevel = updatedLevel;
                         tempAau.LastLevelProgress = updatedProgression;
+                        tempAau.NoXPGainRefreshes = 0;
+                        newList.Add(tempAau);
                     }
-
                     await Task.Delay(3500); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
 
-                foreach (var user in listOfRemovals)
-                    if (ActiveConfig.GetActiveAFKUser(user.DiscordID) != null)
-                        ActiveConfig.DeleteActiveUserFromConfig(user.DiscordID);
-
+                ActiveConfig.ActiveAFKUsers = newList;
                 ActiveConfig.UpdateActiveAFKUsersConfig();
 
                 LogHelper.ConsoleLog($"Bungie API Refreshed!");
@@ -306,6 +327,7 @@ namespace Levante
             // data loading
             await Task.Delay(45000); // wait to prevent numerous API calls
             await LoadLeaderboards();
+            await UpdateBotActivity();
         }
 
         private async Task LoadLeaderboards()
@@ -313,8 +335,8 @@ namespace Levante
             try
             {
                 LogHelper.ConsoleLog($"Pulling data for leaderboards...");
-                var tempPowerLevelData = new List<PowerLevelData.PowerLevelDataEntry>();
-                var tempLevelData = new List<LevelData.LevelDataEntry>();
+                var tempPowerLevelData = new PowerLevelData();
+                var tempLevelData = new LevelData();
                 foreach (var link in DataConfig.DiscordIDLinks.ToList()) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
                 {
                     int Level = 0;
@@ -357,92 +379,25 @@ namespace Levante
                         }
                     }
                     // Populate List
-                    tempLevelData.Add(new LevelData.LevelDataEntry()
+                    tempLevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
                     {
                         LastLoggedLevel = Level,
                         UniqueBungieName = link.UniqueBungieName,
                     });
-                    tempPowerLevelData.Add(new PowerLevelData.PowerLevelDataEntry()
+                    tempPowerLevelData.PowerLevelDataEntries.Add(new PowerLevelData.PowerLevelDataEntry()
                     {
                         PowerLevel = PowerLevel,
                         UniqueBungieName = link.UniqueBungieName,
                     });
                     await Task.Delay(250);
                 }
-                LevelData.LevelDataEntries = tempLevelData;
-                PowerLevelData.PowerLevelDataEntries = tempPowerLevelData;
-                LevelData.UpdateEntriesConfig();
+                tempLevelData.UpdateEntriesConfig();
+                tempPowerLevelData.UpdateEntriesConfig();
                 LogHelper.ConsoleLog($"Data pulling complete!");
             }
             catch
             {
                 LogHelper.ConsoleLog($"Error while updating leaderboards, trying again at next refresh.");
-            }
-        }
-
-        private async Task<ActiveConfig.ActiveAFKUser> RefreshSpecificUser(ActiveConfig.ActiveAFKUser aau)
-        {
-            await Task.Delay(15000);
-            LogHelper.ConsoleLog($"Refreshing Bungie API specifically for {aau.UniqueBungieName}.");
-            ActiveConfig.ActiveAFKUser tempAau = aau;
-            try
-            {
-                int updatedLevel = DataConfig.GetUserSeasonPassLevel(tempAau.DiscordID, out int updatedProgression);
-
-                if (updatedLevel > aau.LastLoggedLevel)
-                {
-                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected: {tempAau.LastLoggedLevel} -> {updatedLevel}");
-
-                    tempAau.LastLoggedLevel = updatedLevel;
-                    tempAau.LastLevelProgress = updatedProgression;
-
-                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel,
-                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {tempAau.LastLoggedLevel} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP).");
-                }
-                else if (updatedProgression == aau.LastLevelProgress)
-                {
-                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Potential wipe detected.");
-                    await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", ThrallwayHelper.GenerateSessionSummary(tempAau), ThrallwayHelper.GenerateDeleteChannelButton());
-
-                    IUser user;
-                    if (_client.GetUser(tempAau.DiscordID) == null)
-                    {
-                        var _rClient = _client.Rest;
-                        user = await _rClient.GetUserAsync(tempAau.DiscordID);
-                    }
-                    else
-                    {
-                        user = _client.GetUser(tempAau.DiscordID);
-                    }
-                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Potential wipe detected. Logging will be terminated for {tempAau.UniqueBungieName}.");
-                    await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", ThrallwayHelper.GenerateSessionSummary(tempAau));
-
-                    LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
-
-                    await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
-                    await UpdateBotActivity(0);
-                    return null;
-                }
-                else if (updatedProgression < aau.LastLevelProgress)
-                {
-                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"XP Value was less than before, waiting for next refresh.");
-                }
-                else
-                {
-                    await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP");
-                    tempAau.LastLoggedLevel = updatedLevel;
-                    tempAau.LastLevelProgress = updatedProgression;
-                }
-
-                LogHelper.ConsoleLog($"API Refreshed for {tempAau.UniqueBungieName}!");
-
-                return tempAau;
-            }
-            catch (Exception x)
-            {
-                LogHelper.ConsoleLog($"Refresh for {tempAau.UniqueBungieName} failed!");
-                await LogHelper.Log(_client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"Exception found: {x}");
-                return null;
             }
         }
         #endregion
@@ -458,10 +413,12 @@ namespace Levante
             // This tells us how to build slash commands.
             _client.Ready += async () =>
             {
-                //await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
-                //var guild = _client.GetGuild(915020047154565220);
+                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
+                //var guild = _client.GetGuild(397846250797662208);
                 //await guild.DeleteApplicationCommandsAsync();
                 await _interaction.RegisterCommandsGloballyAsync(true);
+                //await _client.Rest.DeleteAllGlobalCommandsAsync();
+                await UpdateBotActivity(1);
             };
 
             _interaction.SlashCommandExecuted += SlashCommandExecuted;
@@ -469,7 +426,7 @@ namespace Levante
             _client.SelectMenuExecuted += SelectMenuHandler;
         }
 
-        private async Task SlashCommandExecuted(SlashCommandInfo info, Discord.IInteractionContext context, Discord.Interactions.IResult result)
+        private async Task SlashCommandExecuted(SlashCommandInfo info, IInteractionContext context, Discord.Interactions.IResult result)
         {
             if (!result.IsSuccess)
             {
@@ -482,7 +439,7 @@ namespace Levante
                         break;
                 }
             }
-
+            await UpdateBotActivity();
             return;
         }
 
@@ -650,8 +607,19 @@ namespace Levante
                     return;
                 }
 
-                var handled = await TryHandleCommandAsync(msg, argPos).ConfigureAwait(false);
-                if (handled) return;
+                if (BotConfig.BotStaffDiscordIDs.Contains(arg.Author.Id))
+                {
+                    var handled = await TryHandleCommandAsync(msg, argPos).ConfigureAwait(false);
+                    if (handled) return;
+                }
+                else
+                {
+                    var embed = new EmbedBuilder()
+                    .WithDescription($"All text-based commands, similar to this one, have been migrated to Slash Commands. This warning will be removed in April 2022.")
+                    .WithColor(new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
+                    await msg.ReplyAsync(embed: embed.Build());
+                    return;
+                }
             }
         }
 

@@ -1,13 +1,10 @@
 ﻿using Discord;
 using Levante.Configs;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Levante.Helpers
 {
-    public class ThrallwayHelper
+    public class XPLoggingHelper
     {
         public static ComponentBuilder GenerateDeleteChannelButton()
         {
@@ -19,15 +16,16 @@ namespace Levante.Helpers
             return buttonBuilder;
         }
 
-        public static EmbedBuilder GenerateSessionSummary(ActiveConfig.ActiveAFKUser aau)
+        public static EmbedBuilder GenerateSessionSummary(ActiveConfig.ActiveAFKUser aau, string AuthorAvatarURL)
         {
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Session Summary: {aau.UniqueBungieName}",
+                IconUrl = AuthorAvatarURL,
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Thrallway Session Summary"
+                Text = $"XP Logging Session Summary"
             };
             var embed = new EmbedBuilder()
             {

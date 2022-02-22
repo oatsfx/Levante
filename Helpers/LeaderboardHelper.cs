@@ -10,20 +10,20 @@ namespace Levante.Helpers
 {
     public class LeaderboardHelper
     {
-        public static string GetLeaderboardString(Leaderboard LB)
+        public static string GetLeaderboardString(Leaderboard LB, int Season /*This exists because XP logging was Thrallway in S15*/)
         {
             switch (LB)
             {
                 case Leaderboard.Level: return "Season Pass Level";
-                case Leaderboard.LongestSession: return "Longest Thrallway Session";
-                case Leaderboard.XPPerHour: return "Most Thrallway XP Per Hour";
-                case Leaderboard.MostThrallwayTime: return "Total Thrallway Time";
+                case Leaderboard.LongestSession: return Season == 15 ? "Longest Thrallway Session" : "Longest XP Logging Session";
+                case Leaderboard.XPPerHour: return Season == 15 ? "Most Thrallway XP Per Hour" : "Most Logged XP Per Hour";
+                case Leaderboard.MostXPLoggingTime: return Season == 15 ? "Total Thrallway Time" : "Total XP Logging Time";
                 case Leaderboard.PowerLevel: return "Equipped Power Level";
                 default: return "Leaderboard";
             }
         }
 
-        public static EmbedBuilder GetLeaderboardEmbed<T>(List<T> SortedList, IUser User) where T : LeaderboardEntry
+        public static EmbedBuilder GetLeaderboardEmbed<T>(List<T> SortedList, IUser User, int SeasonNumber) where T : LeaderboardEntry
         {
             bool isTop10 = false;
             string embedDesc = "";
@@ -68,11 +68,11 @@ namespace Levante.Helpers
 
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Top Linked Guardians by {GetLeaderboardString(GetLeaderboardEnumValue(typeof(T)))}",
+                Name = $"Top Linked Guardians by {GetLeaderboardString(GetLeaderboardEnumValue(typeof(T)), SeasonNumber)} in Season {SeasonNumber}",
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by Destiny Utility"
+                Text = $"Powered by Levante"
             };
             var embed = new EmbedBuilder()
             {
@@ -95,8 +95,8 @@ namespace Levante.Helpers
                     $"{(LE as LongestSessionData.LongestSessionEntry).Time.Seconds:00}s";
             else if (LE.GetType() == typeof(XPPerHourData.XPPerHourEntry))
                 return $"XP Per Hour: {String.Format("{0:n0}", (LE as XPPerHourData.XPPerHourEntry).XPPerHour)}";
-            else if (LE.GetType() == typeof(MostThrallwayTimeData.MostThrallwayTimeEntry))
-                return $"Hours: {Math.Floor((LE as MostThrallwayTimeData.MostThrallwayTimeEntry).Time.TotalHours)}";
+            else if (LE.GetType() == typeof(MostXPLoggingTimeData.MostXPLogTimeEntry))
+                return $"Hours: {Math.Floor((LE as MostXPLoggingTimeData.MostXPLogTimeEntry).Time.TotalHours)}";
             else if (LE.GetType() == typeof(PowerLevelData.PowerLevelDataEntry))
                 return $"Power: {(LE as PowerLevelData.PowerLevelDataEntry).PowerLevel}";
             else
@@ -111,8 +111,8 @@ namespace Levante.Helpers
                 return Leaderboard.LongestSession;
             else if (T == typeof(XPPerHourData.XPPerHourEntry))
                 return Leaderboard.XPPerHour;
-            else if (T == typeof(MostThrallwayTimeData.MostThrallwayTimeEntry))
-                return Leaderboard.MostThrallwayTime;
+            else if (T == typeof(MostXPLoggingTimeData.MostXPLogTimeEntry))
+                return Leaderboard.MostXPLoggingTime;
             else if (T == typeof(PowerLevelData.PowerLevelDataEntry))
                 return Leaderboard.PowerLevel;
             else
@@ -124,7 +124,7 @@ namespace Levante.Helpers
             LevelData ld;
             XPPerHourData xph;
             LongestSessionData ls;
-            MostThrallwayTimeData mtt;
+            MostXPLoggingTimeData mtt;
             PowerLevelData pld;
 
             bool closeProgram = false;
@@ -167,16 +167,16 @@ namespace Levante.Helpers
                 closeProgram = true;
             }
 
-            if (File.Exists(MostThrallwayTimeData.FilePath))
+            if (File.Exists(MostXPLoggingTimeData.FilePath))
             {
-                string json = File.ReadAllText(MostThrallwayTimeData.FilePath);
-                mtt = JsonConvert.DeserializeObject<MostThrallwayTimeData>(json);
+                string json = File.ReadAllText(MostXPLoggingTimeData.FilePath);
+                mtt = JsonConvert.DeserializeObject<MostXPLoggingTimeData>(json);
             }
             else
             {
-                mtt = new MostThrallwayTimeData();
-                File.WriteAllText(MostThrallwayTimeData.FilePath, JsonConvert.SerializeObject(mtt, Formatting.Indented));
-                Console.WriteLine($"No mostThrallwayTimeData.json file detected. A new one has been created and the program has stopped.");
+                mtt = new MostXPLoggingTimeData();
+                File.WriteAllText(MostXPLoggingTimeData.FilePath, JsonConvert.SerializeObject(mtt, Formatting.Indented));
+                Console.WriteLine($"No mostXPLoggingTimeData.json file detected. A new one has been created and the program has stopped.");
                 closeProgram = true;
             }
 
@@ -258,15 +258,15 @@ namespace Levante.Helpers
                 });
             }
 
-            if (MostThrallwayTimeData.IsExistingLinkedEntry(AAU.UniqueBungieName))
+            if (MostXPLoggingTimeData.IsExistingLinkedEntry(AAU.UniqueBungieName))
             {
-                var entry = MostThrallwayTimeData.GetExistingLinkedEntry(AAU.UniqueBungieName);
+                var entry = MostXPLoggingTimeData.GetExistingLinkedEntry(AAU.UniqueBungieName);
 
                 var newTotalTime = (DateTime.Now - AAU.TimeStarted) + entry.Time;
 
                 // Overwrite the existing entry with new data.
-                MostThrallwayTimeData.DeleteEntryFromConfig(AAU.UniqueBungieName);
-                MostThrallwayTimeData.AddEntryToConfig(new MostThrallwayTimeData.MostThrallwayTimeEntry()
+                MostXPLoggingTimeData.DeleteEntryFromConfig(AAU.UniqueBungieName);
+                MostXPLoggingTimeData.AddEntryToConfig(new MostXPLoggingTimeData.MostXPLogTimeEntry()
                 {
                     Time = newTotalTime,
                     UniqueBungieName = AAU.UniqueBungieName
@@ -274,7 +274,7 @@ namespace Levante.Helpers
             }
             else
             {
-                MostThrallwayTimeData.AddEntryToConfig(new MostThrallwayTimeData.MostThrallwayTimeEntry()
+                MostXPLoggingTimeData.AddEntryToConfig(new MostXPLoggingTimeData.MostXPLogTimeEntry()
                 {
                     Time = DateTime.Now - AAU.TimeStarted,
                     UniqueBungieName = AAU.UniqueBungieName

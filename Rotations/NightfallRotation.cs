@@ -117,11 +117,12 @@ namespace Levante.Rotations
                 case Nightfall.LakeOfShadows:
                     switch (Difficulty)
                     {
-                        case NightfallDifficulty.Adept: return $"";
-                        case NightfallDifficulty.Hero: return $"";
-                        case NightfallDifficulty.Legend: return $"";
-                        case NightfallDifficulty.Master: return $"";
-                        case NightfallDifficulty.Grandmaster: return $"";
+                        case NightfallDifficulty.Adept: return $"{DestinyEmote.Empath}";
+                        case NightfallDifficulty.Hero: return $"{DestinyEmote.Empath} {DestinyEmote.GrasksBile}";
+                        case NightfallDifficulty.Legend: return $"{DestinyEmote.Empath} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.GrasksBile}";
+                        case NightfallDifficulty.Master: return $"{DestinyEmote.Empath} {DestinyEmote.Famine} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.GrasksBile}";
+                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.Epitaph} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} {DestinyEmote.EquipmentLocked}" +
+                                $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.GrasksBile}";
                         default: return "None.";
                     }
                 case Nightfall.ExodusCrash:

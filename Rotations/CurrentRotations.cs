@@ -22,17 +22,11 @@ namespace Levante.Rotations
 
         // Dailies
 
-        [JsonProperty("LegendLostSector")]
-        public static LostSector LegendLostSector = LostSector.ChamberOfStarlight;
+        [JsonProperty("LostSector")]
+        public static LostSector LostSector = LostSector.ChamberOfStarlight;
 
-        [JsonProperty("LegendLostSectorArmorDrop")]
-        public static ExoticArmorType LegendLostSectorArmorDrop = ExoticArmorType.Legs;
-
-        [JsonProperty("MasterLostSector")]
-        public static LostSector MasterLostSector = LostSector.BayOfDrownedWishes;
-
-        [JsonProperty("MasterLostSectorArmorDrop")]
-        public static ExoticArmorType MasterLostSectorArmorDrop = ExoticArmorType.Helmet;
+        [JsonProperty("LostSectorArmorDrop")]
+        public static ExoticArmorType LostSectorArmorDrop = ExoticArmorType.Legs;
 
         [JsonProperty("AltarWeapon")]
         public static AltarsOfSorrow AltarWeapon = AltarsOfSorrow.Shotgun;
@@ -71,11 +65,8 @@ namespace Levante.Rotations
 
         public static void DailyRotation()
         {
-            LegendLostSector = LegendLostSector == LostSector.Perdition ? LostSector.BayOfDrownedWishes : LegendLostSector + 1;
-            LegendLostSectorArmorDrop = LegendLostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LegendLostSectorArmorDrop + 1;
-
-            MasterLostSector = MasterLostSector == LostSector.Perdition ? LostSector.BayOfDrownedWishes : MasterLostSector + 1;
-            MasterLostSectorArmorDrop = MasterLostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : MasterLostSectorArmorDrop + 1;
+            LostSector = LostSector == LostSector.Perdition ? LostSector.BayOfDrownedWishes : LostSector + 1;
+            LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
 
             AltarWeapon = AltarWeapon == AltarsOfSorrow.Rocket ? AltarsOfSorrow.Shotgun : AltarWeapon + 1;
 
@@ -176,14 +167,14 @@ namespace Levante.Rotations
             embed.Title = $"Daily Reset of {TimestampTag.FromDateTime(DailyResetTimestamp, TimestampTagStyles.ShortDate)}";
             embed.Description = "Below are some of the things that are available today.";
 
-            embed.AddField(x =>
+            embed/*.AddField(x =>
             {
                 x.Name = "Lost Sectors";
                 x.Value =
                     $"Legend: {LostSectorRotation.GetLostSectorString(LegendLostSector)} {LostSectorRotation.GetArmorEmote(LegendLostSectorArmorDrop)}\n" +
                     $"Master: {LostSectorRotation.GetLostSectorString(MasterLostSector)} {LostSectorRotation.GetArmorEmote(MasterLostSectorArmorDrop)}";
                 x.IsInline = true;
-            })
+            })*/
             .AddField(x =>
             {
                 x.Name = "Altars of Sorrow";
@@ -208,6 +199,7 @@ namespace Levante.Rotations
                 Footer = foot,
             };
             embed.Title = $"Weekly Reset of {TimestampTag.FromDateTime(WeeklyResetTimestamp, TimestampTagStyles.ShortDate)}";
+            embed.Description = "Below are some of the things that are available this week.";
 
             embed.AddField(x =>
             {
@@ -240,7 +232,7 @@ namespace Levante.Rotations
                     $"Weapon Drop: {VaultOfGlassRotation.GetChallengeRewardString(VoGChallengeEncounter)}";
                 x.IsInline = true;
             })
-            .AddField(x =>
+            /*.AddField(x =>
             {
                 x.Name = "> Nightfall: The Ordeal";
                 x.Value = $"*Use command /nightfall for more info!*";
@@ -258,7 +250,7 @@ namespace Levante.Rotations
                 x.Value = $"{NightfallRotation.GetWeaponEmote(NightfallWeaponDrops[0])} {NightfallRotation.GetWeaponString(NightfallWeaponDrops[0])}\n" +
                     $"{NightfallRotation.GetWeaponEmote(NightfallWeaponDrops[1])} {NightfallRotation.GetWeaponString(NightfallWeaponDrops[1])}";
                 x.IsInline = true;
-            })
+            })*/
             .AddField(x =>
             {
                 x.Name = "> Patrol";
@@ -308,7 +300,7 @@ namespace Levante.Rotations
             }
             AltarsOfSorrowRotation.AltarsOfSorrowLinks = altarTemp;
             AltarsOfSorrowRotation.UpdateJSON();
-
+            /*
             var lsTemp = new List<LostSectorRotation.LostSectorLink>();
             foreach (var Link in LostSectorRotation.LostSectorLinks)
             {
@@ -338,7 +330,7 @@ namespace Levante.Rotations
                 }
             }
             LostSectorRotation.LostSectorLinks = lsTemp;
-            LostSectorRotation.UpdateJSON();
+            LostSectorRotation.UpdateJSON();*/
         }
 
         public static async Task CheckUsersWeeklyTracking(DiscordSocketClient Client)
@@ -446,7 +438,7 @@ namespace Levante.Rotations
             LastWishRotation.LastWishLinks = lwTemp;
             LastWishRotation.UpdateJSON();
 
-            var nfTemp = new List<NightfallRotation.NightfallLink>();
+            /*var nfTemp = new List<NightfallRotation.NightfallLink>();
             foreach (var Link in NightfallRotation.NightfallLinks)
             {
                 IUser user;
@@ -461,7 +453,7 @@ namespace Levante.Rotations
                     nfTemp.Add(Link);
             }
             NightfallRotation.NightfallLinks = nfTemp;
-            NightfallRotation.UpdateJSON();
+            NightfallRotation.UpdateJSON();*/
 
             var nhuntTemp = new List<NightmareHuntRotation.NightmareHuntLink>();
             foreach (var Link in NightmareHuntRotation.NightmareHuntLinks)

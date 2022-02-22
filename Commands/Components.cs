@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Levante.Configs;
 using Levante.Helpers;
-using Levante.Leaderboards;
 using Levante.Rotations;
 using Levante.Util;
-using Newtonsoft.Json;
 
 
 namespace Levante.Commands
@@ -27,14 +23,14 @@ namespace Levante.Commands
         [ComponentInteraction("deleteChannel")]
         public async Task DeleteChannel() => await (Context.Channel as SocketGuildChannel).DeleteAsync();
 
-        [ComponentInteraction("startAFK")]
+        [ComponentInteraction("startXPAFK")]
         public async Task StartAFK()
         {
             var user = Context.User;
             var guild = Context.Guild;
-            if (ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumThrallwayUsers)
+            if (ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
-                await RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumThrallwayUsers}). Try again later.", ephemeral: true);
+                await RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumLoggingUsers}). Try again later.", ephemeral: true);
                 return;
             }
 
@@ -53,26 +49,22 @@ namespace Levante.Commands
             string memId = DataConfig.GetLinkedUser(user.Id).BungieMembershipID;
             string memType = DataConfig.GetLinkedUser(user.Id).BungieMembershipType;
 
-            int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out bool isInShatteredThrone, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus);
+            int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus);
 
             if (!errorStatus.Equals("Success"))
             {
-                await RespondAsync($"An error has occurred. Reason: {errorStatus}", ephemeral: true);
+                await RespondAsync($"A Bungie API error has occurred. Reason: {errorStatus}", ephemeral: true);
                 return;
             }
 
             ICategoryChannel cc = null;
             foreach (var categoryChan in guild.CategoryChannels)
-            {
-                if (categoryChan.Name.Contains($"Thrallway Logger"))
-                {
+                if (categoryChan.Name.Contains($"XP Logging"))
                     cc = categoryChan;
-                }
-            }
 
             if (cc == null)
             {
-                await RespondAsync($"No category by the name of \"Thrallway Logger\" was found, cancelling operation. Let a server admin know!", ephemeral: true);
+                await RespondAsync($"No category by the name of \"XP Logging\" was found, cancelling operation. Let a server admin know!", ephemeral: true);
                 return;
             }
 
@@ -121,14 +113,15 @@ namespace Levante.Commands
             await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
 
             ActiveConfig.AddActiveUserToConfig(newUser);
-            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "" : "s";
-            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumThrallwayUsers} Thrallway Farmer{s}", ActivityType.Watching));
+            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
+            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching));
 
             await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
-            LogHelper.ConsoleLog($"Started logging for {newUser.UniqueBungieName}.");
+            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Your logging channel has been successfully created! Access it here: {userLogChannel.Mention}!"; });
+            LogHelper.ConsoleLog($"Started XP logging for {newUser.UniqueBungieName}.");
         }
 
-        [ComponentInteraction("stopAFK")]
+        [ComponentInteraction("stopXPAFK")]
         public async Task StopAFK()
         {
             var user = Context.User;
@@ -146,24 +139,24 @@ namespace Levante.Commands
 
             var aau = ActiveConfig.GetActiveAFKUser(user.Id);
 
-            await LogHelper.Log(Context.Client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: ThrallwayHelper.GenerateSessionSummary(aau), CB: ThrallwayHelper.GenerateDeleteChannelButton());
-            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(aau.TimeStarted)}.", ThrallwayHelper.GenerateSessionSummary(aau));
+            await LogHelper.Log(Context.Client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: XPLoggingHelper.GenerateSessionSummary(aau, Context.Client.CurrentUser.GetAvatarUrl()), CB: XPLoggingHelper.GenerateDeleteChannelButton());
+            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(aau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(aau, Context.Client.CurrentUser.GetAvatarUrl()));
 
             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(aau));
             ActiveConfig.DeleteActiveUserFromConfig(user.Id);
-            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "" : "s";
-            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumThrallwayUsers} Thrallway Farmer{s}", ActivityType.Watching));
+            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
+            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching));
             await RespondAsync($"Stopped AFK logging for {aau.UniqueBungieName}.", ephemeral: true);
             LogHelper.ConsoleLog($"Stopped logging for {aau.UniqueBungieName} via user request.");
         }
 
-        [ComponentInteraction("viewHelp")]
+        [ComponentInteraction("viewXPHelp")]
         public async Task ViewHelp()
         {
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Thrallway Logger Help!",
+                Name = $"XP Logger Help!",
                 IconUrl = app.IconUrl,
             };
             var foot = new EmbedFooterBuilder()
@@ -178,11 +171,25 @@ namespace Levante.Commands
             };
             helpEmbed.Description =
                 $"__Steps:__\n" +
-                $"1) Launch Shattered Throne with the your choice of \"Thrallway\" checkpoint.\n" +
-                $"2) Get into your desired setup and start your AFK script.\n" +
-                $"3) This is when you can subscribe to our logs using the \"Ready\" button.";
+                $"1) Launch Destiny 2.\n" +
+                $"2) Hit the \"Ready\" button and start getting those XP gains in.\n" +
+                $"3) I will keep track of your gains in a personalized channel for you.";
 
             await RespondAsync($"", embed: helpEmbed.Build(), ephemeral: true);
+        }
+
+        // Old buttons.
+        [ComponentInteraction("startAFK")]
+        public async Task OldStartAFK() => await OldThrallwayButton();
+
+        [ComponentInteraction("stopAFK")]
+        public async Task OldStopAFK() => await OldThrallwayButton();
+
+        [ComponentInteraction("viewHelp")]
+        public async Task OldThrallwayButton()
+        {
+            await RespondAsync($"Hey! This button and hub are outdated and requires the new and improved XP hub! Ask a server admin to run the command '/create-hub' to get this sorted!\n" +
+                $"*This warning will be removed in April 2022.*", ephemeral: true);
         }
     }
 }

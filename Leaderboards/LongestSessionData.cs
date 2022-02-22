@@ -7,10 +7,11 @@ namespace Levante.Leaderboards
 {
     public class LongestSessionData
     {
-        public static readonly string FilePath = @"Data/longestSessionData.json";
+        public static readonly string FilePathS15 = @"Data/S15/longestSessionData.json";
+        public static readonly string FilePath = @"Data/S16/longestSessionData.json";
 
         [JsonProperty("LongestSessionEntries")]
-        public static List<LongestSessionEntry> LongestSessionEntries { get; set; } = new List<LongestSessionEntry>();
+        public List<LongestSessionEntry> LongestSessionEntries { get; set; } = new List<LongestSessionEntry>();
 
         public partial class LongestSessionEntry : LeaderboardEntry
         {
@@ -21,13 +22,13 @@ namespace Levante.Leaderboards
             public string UniqueBungieName { get; set; } = "Guardian#0000";
         }
 
-        public static List<LongestSessionEntry> GetSortedLevelData()
+        public List<LongestSessionEntry> GetSortedLevelData()
         {
             QuickSort(0, LongestSessionEntries.Count - 1);
             return LongestSessionEntries;
         }
 
-        private static void QuickSort(int Start, int End)
+        private void QuickSort(int Start, int End)
         {
             if (Start < End)
             {
@@ -38,7 +39,7 @@ namespace Levante.Leaderboards
             }
         }
 
-        private static int Partition(int Start, int End)
+        private int Partition(int Start, int End)
         {
             TimeSpan Center = LongestSessionEntries[End].Time;
 
@@ -63,7 +64,7 @@ namespace Levante.Leaderboards
 
         #region JSONFileHandling
 
-        public static void UpdateEntriesConfig()
+        public void UpdateEntriesConfig()
         {
             LongestSessionData mttd = new LongestSessionData();
             string output = JsonConvert.SerializeObject(mttd, Formatting.Indented);
@@ -78,11 +79,9 @@ namespace Levante.Leaderboards
                 UniqueBungieName = BungieName
             };
             string json = File.ReadAllText(FilePath);
-            LongestSessionEntries.Clear();
-            LongestSessionData jsonObj = JsonConvert.DeserializeObject<LongestSessionData>(json);
+            LongestSessionData lsd = JsonConvert.DeserializeObject<LongestSessionData>(json);
 
-            LongestSessionEntries.Add(mtt);
-            LongestSessionData lsd = new LongestSessionData();
+            lsd.LongestSessionEntries.Add(mtt);
             string output = JsonConvert.SerializeObject(lsd, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -90,11 +89,9 @@ namespace Levante.Leaderboards
         public static void AddEntryToConfig(LongestSessionEntry lde)
         {
             string json = File.ReadAllText(FilePath);
-            LongestSessionEntries.Clear();
-            LongestSessionData jsonObj = JsonConvert.DeserializeObject<LongestSessionData>(json);
+            LongestSessionData lsd = JsonConvert.DeserializeObject<LongestSessionData>(json);
 
-            LongestSessionEntries.Add(lde);
-            LongestSessionData lsd = new LongestSessionData();
+            lsd.LongestSessionEntries.Add(lde);
             string output = JsonConvert.SerializeObject(lsd, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -102,11 +99,10 @@ namespace Levante.Leaderboards
         public static void DeleteEntryFromConfig(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            LongestSessionEntries.Clear();
             LongestSessionData lsd = JsonConvert.DeserializeObject<LongestSessionData>(json);
-            for (int i = 0; i < LongestSessionEntries.Count; i++)
-                if (LongestSessionEntries[i].UniqueBungieName.Equals(BungieName))
-                    LongestSessionEntries.RemoveAt(i);
+            for (int i = 0; i < lsd.LongestSessionEntries.Count; i++)
+                if (lsd.LongestSessionEntries[i].UniqueBungieName.Equals(BungieName))
+                    lsd.LongestSessionEntries.RemoveAt(i);
             string output = JsonConvert.SerializeObject(lsd, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -114,10 +110,9 @@ namespace Levante.Leaderboards
         public static bool IsExistingLinkedEntry(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            LongestSessionEntries.Clear();
-            LongestSessionData jsonObj = JsonConvert.DeserializeObject<LongestSessionData>(json);
-            foreach (LongestSessionEntry mtt in LongestSessionEntries)
-                if (mtt.UniqueBungieName.Equals(BungieName))
+            LongestSessionData lsd = JsonConvert.DeserializeObject<LongestSessionData>(json);
+            foreach (LongestSessionEntry lse in lsd.LongestSessionEntries)
+                if (lse.UniqueBungieName.Equals(BungieName))
                     return true;
             return false;
         }
@@ -125,11 +120,10 @@ namespace Levante.Leaderboards
         public static LongestSessionEntry GetExistingLinkedEntry(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            LongestSessionEntries.Clear();
-            LongestSessionData jsonObj = JsonConvert.DeserializeObject<LongestSessionData>(json);
-            foreach (LongestSessionEntry mtt in LongestSessionEntries)
-                if (mtt.UniqueBungieName.Equals(BungieName))
-                    return mtt;
+            LongestSessionData lsd = JsonConvert.DeserializeObject<LongestSessionData>(json);
+            foreach (LongestSessionEntry lse in lsd.LongestSessionEntries)
+                if (lse.UniqueBungieName.Equals(BungieName))
+                    return lse;
             return null;
         }
 

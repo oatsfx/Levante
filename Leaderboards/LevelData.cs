@@ -6,10 +6,11 @@ namespace Levante.Leaderboards
 {
     public class LevelData
     {
-        public static readonly string FilePath = @"Data/levelData.json";
+        public static readonly string FilePathS15 = @"Data/S15/levelData.json";
+        public static readonly string FilePath = @"Data/S16/levelData.json";
 
         [JsonProperty("LevelDataEntries")]
-        public static List<LevelDataEntry> LevelDataEntries { get; set; } = new List<LevelDataEntry>();
+        public List<LevelDataEntry> LevelDataEntries { get; set; } = new List<LevelDataEntry>();
 
         public partial class LevelDataEntry : LeaderboardEntry
         {
@@ -20,13 +21,13 @@ namespace Levante.Leaderboards
             public string UniqueBungieName { get; set; } = "Guardian#0000";
         }
 
-        public static List<LevelDataEntry> GetSortedLevelData()
+        public List<LevelDataEntry> GetSortedLevelData()
         {
             QuickSort(0, LevelDataEntries.Count - 1);
             return LevelDataEntries;
         }
 
-        private static void QuickSort(int Start, int End)
+        private void QuickSort(int Start, int End)
         {
             if (Start < End)
             {
@@ -37,7 +38,7 @@ namespace Levante.Leaderboards
             }
         }
 
-        private static int Partition(int Start, int End)
+        private int Partition(int Start, int End)
         {
             int Center = LevelDataEntries[End].LastLoggedLevel;
 
@@ -62,10 +63,9 @@ namespace Levante.Leaderboards
 
         #region JSONFileHandling
 
-        public static void UpdateEntriesConfig()
+        public void UpdateEntriesConfig()
         {
-            LevelData ld = new LevelData();
-            string output = JsonConvert.SerializeObject(ld, Formatting.Indented);
+            string output = JsonConvert.SerializeObject(this, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
@@ -77,11 +77,9 @@ namespace Levante.Leaderboards
                 UniqueBungieName = BungieName
             };
             string json = File.ReadAllText(FilePath);
-            LevelDataEntries.Clear();
-            LevelData jsonObj = JsonConvert.DeserializeObject<LevelData>(json);
+            LevelData ld = JsonConvert.DeserializeObject<LevelData>(json);
 
-            LevelDataEntries.Add(lde);
-            LevelData ld = new LevelData();
+            ld.LevelDataEntries.Add(lde);
             string output = JsonConvert.SerializeObject(ld, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -89,11 +87,9 @@ namespace Levante.Leaderboards
         public static void AddEntryToConfig(LevelDataEntry lde)
         {
             string json = File.ReadAllText(FilePath);
-            LevelDataEntries.Clear();
-            LevelData jsonObj = JsonConvert.DeserializeObject<LevelData>(json);
+            LevelData ld = JsonConvert.DeserializeObject<LevelData>(json);
 
-            LevelDataEntries.Add(lde);
-            LevelData ld = new LevelData();
+            ld.LevelDataEntries.Add(lde);
             string output = JsonConvert.SerializeObject(ld, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -101,11 +97,10 @@ namespace Levante.Leaderboards
         public static void DeleteEntryFromConfig(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            LevelDataEntries.Clear();
             LevelData ld = JsonConvert.DeserializeObject<LevelData>(json);
-            for (int i = 0; i < LevelDataEntries.Count; i++)
-                if (LevelDataEntries[i].UniqueBungieName.Equals(BungieName))
-                    LevelDataEntries.RemoveAt(i);
+            for (int i = 0; i < ld.LevelDataEntries.Count; i++)
+                if (ld.LevelDataEntries[i].UniqueBungieName.Equals(BungieName))
+                    ld.LevelDataEntries.RemoveAt(i);
             string output = JsonConvert.SerializeObject(ld, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -113,10 +108,9 @@ namespace Levante.Leaderboards
         public static bool IsExistingLinkedEntry(string BungieName)
         {
             string json = File.ReadAllText(FilePath);
-            LevelDataEntries.Clear();
-            LevelData jsonObj = JsonConvert.DeserializeObject<LevelData>(json);
-            foreach (LevelDataEntry ld in LevelDataEntries)
-                if (ld.UniqueBungieName.Equals(BungieName))
+            LevelData ld = JsonConvert.DeserializeObject<LevelData>(json);
+            foreach (LevelDataEntry lde in ld.LevelDataEntries)
+                if (lde.UniqueBungieName.Equals(BungieName))
                     return true;
             return false;
         }
