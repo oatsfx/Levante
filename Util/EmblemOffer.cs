@@ -35,14 +35,14 @@ namespace Levante.Util
         public readonly string SpecialUrl;
 
         [JsonConstructor]
-        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime? endDate, string desc, string imageUrl, string specialUrl = null)
+        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime? endDate, string description, string imageUrl, string specialUrl = null)
         {
             EmblemHashCode = emblemHashCode;
             OfferedEmblem = new Emblem(EmblemHashCode);
             OfferType = offerType;
             StartDate = startDate;
             EndDate = endDate;
-            Description = desc;
+            Description = description;
             ImageUrl = imageUrl;
             SpecialUrl = specialUrl;
 
