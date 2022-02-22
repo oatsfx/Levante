@@ -32,7 +32,6 @@ namespace Levante.Commands
                 desc += $"/{cmd.Name}\n";
             }
             embed.Description = desc;
-            embed.Footer.Text = "This will soon link to our website at levante.dev with a list of our commands there.";
 
             await RespondAsync(embed: embed.Build());
         }

@@ -73,7 +73,7 @@ namespace Levante.Util
                 $"{Description} {(SpecialUrl != null ? $"\n[LINK]({SpecialUrl})" : "")}\n" +
                 $"Offer Type: {GetOfferTypeString(OfferType)}\n" +
                 $"Time Window: {GetDateRange()}\n" +
-                $"{(EndDate != null ? $"Ends {TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.ShortDate)}." : "There is no apparent end to this offer.")}";
+                $"{(EndDate != null ? $"Ends {TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.Relative)}." : "There is no apparent end to this offer.")}";
             embed.ThumbnailUrl = OfferedEmblem.GetIconUrl();
             embed.ImageUrl = ImageUrl;
             return embed;
