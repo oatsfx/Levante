@@ -19,13 +19,22 @@ namespace Levante.Commands
                 Name = "Command List"
             };
 
-            var builder = new EmbedBuilder()
+            var embed = new EmbedBuilder()
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = auth,
             };
 
-            await RespondAsync($"A list of my application commands and other features can be found [here]().");
+            embed.Title = "Command List";
+            string desc = "";
+            foreach (var cmd in Context.Client.GetGlobalApplicationCommandsAsync().Result)
+            {
+                desc += $"/{cmd.Name}\n";
+            }
+            embed.Description = desc;
+            embed.Footer.Text = "This will soon link to our website at levante.dev with a list of our commands there.";
+
+            await RespondAsync(embed: embed.Build());
         }
         
         [SlashCommand("info", "Get the info of Levante.")]
