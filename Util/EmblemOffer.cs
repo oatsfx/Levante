@@ -180,7 +180,7 @@ namespace Levante.Util
         {
             string emblemOfferPath = @"Configs/EmblemOffers/";
             CurrentOffers.Remove(offerToDelete);
-            File.Delete(emblemOfferPath + @"/" + offerToDelete.OfferedEmblem.GetItemHash() + @".txt");
+            File.Delete(emblemOfferPath + @"/" + offerToDelete.EmblemHashCode + @".json");
         }
 
         public static string GetOfferTypeString(EmblemOfferType OfferType)
