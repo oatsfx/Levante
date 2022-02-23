@@ -91,20 +91,20 @@ namespace Levante.Rotations
 
         public static void AddUserTracking(ulong DiscordID, VowOfTheDiscipleEncounter Encounter)
         {
-            VaultOfGlassLinks.Add(new VowOfTheDiscipleLink() { DiscordID = DiscordID, Encounter = Encounter });
+            VowOfTheDiscipleLinks.Add(new VowOfTheDiscipleLink() { DiscordID = DiscordID, Encounter = Encounter });
             UpdateJSON();
         }
 
         public static void RemoveUserTracking(ulong DiscordID)
         {
-            VaultOfGlassLinks.Remove(GetUserTracking(DiscordID, out _));
+            VowOfTheDiscipleLinks.Remove(GetUserTracking(DiscordID, out _));
             UpdateJSON();
         }
 
         // Returns null if no tracking is found.
         public static VowOfTheDiscipleLink GetUserTracking(ulong DiscordID, out VowOfTheDiscipleEncounter Encounter)
         {
-            foreach (var Link in VaultOfGlassLinks)
+            foreach (var Link in VowOfTheDiscipleLinks)
                 if (Link.DiscordID == DiscordID)
                 {
                     Encounter = Link.Encounter;
