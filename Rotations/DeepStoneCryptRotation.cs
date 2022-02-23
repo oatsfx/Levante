@@ -65,7 +65,7 @@ namespace Levante.Rotations
         {
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Raid Information",
+                Name = $"Raid Information: Deep Stone Crypt",
                 IconUrl = "https://www.bungie.net/img/destiny_content/pgcr/europa-raid-deep-stone-crypt.jpg",
             };
             var foot = new EmbedFooterBuilder()

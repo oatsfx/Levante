@@ -13,6 +13,9 @@ namespace Levante.Leaderboards
         [JsonProperty("MostXPLogTimeEntries")]
         public List<MostXPLogTimeEntry> MostXPLogTimeEntries { get; set; } = new List<MostXPLogTimeEntry>();
 
+        [JsonProperty("MostThrallwayTimeEntries")]
+        public List<MostXPLogTimeEntry> MostThrallwayTimeEntries { set { MostXPLogTimeEntries = value; } }
+
         public partial class MostXPLogTimeEntry : LeaderboardEntry
         {
             [JsonProperty("Time")]

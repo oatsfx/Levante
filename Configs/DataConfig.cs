@@ -8,6 +8,8 @@ using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Levante.Util;
+using Levante.Helpers;
+using System.Linq;
 
 namespace Levante.Configs
 {
@@ -114,13 +116,6 @@ namespace Levante.Configs
             dynamic item = JsonConvert.DeserializeObject(JSONContent);
             string status = item.ErrorStatus;
             return !status.Equals("Success");
-        }
-
-        public static void UpdateUsersList()
-        {
-            string json = File.ReadAllText(FilePath);
-            DiscordIDLinks.Clear();
-            DataConfig jsonObj = JsonConvert.DeserializeObject<DataConfig>(json);
         }
 
         public static DiscordIDLink GetLinkedUser(ulong DiscordID)
@@ -248,7 +243,7 @@ namespace Levante.Configs
             File.WriteAllText(FilePath, output);
         }
 
-        public static void DeleteEmblemChannelFromRotationConfig(ulong ChannelID)
+        public static void DeleteEmblemChannel(ulong ChannelID)
         {
             string json = File.ReadAllText(FilePath);
             DiscordIDLinks.Clear();
@@ -349,19 +344,19 @@ namespace Levante.Configs
 
                     FireteamPrivacy = item.Response.profileTransitoryData.data.joinability.privacySetting;
 
-                    //first 100 levels: 4095505052
-                    //anything after: 1531004716
+                    //first 100 levels: 4095505052 (S15); 2069932355 (S16)
+                    //anything after: 1531004716 (S15): 1787069365 (S16)
 
-                    if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level == 100)
+                    if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level == 100)
                     {
-                        int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].level;
+                        int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1787069365"].level;
                         Level = 100 + extraLevel;
-                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].progressToNextLevel;
+                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1787069365"].progressToNextLevel;
                     }
                     else
                     {
-                        Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level;
-                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].progressToNextLevel;
+                        Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level;
+                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].progressToNextLevel;
                     }
 
                     return Level;
@@ -403,19 +398,19 @@ namespace Levante.Configs
                         return -1;
                     }
 
-                    //first 100 levels: 4095505052
-                    //anything after: 1531004716
+                    //first 100 levels: 4095505052 (S15); 2069932355 (S16)
+                    //anything after: 1531004716 (S15): 1787069365 (S16)
 
-                    if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level == 100)
+                    if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level == 100)
                     {
-                        int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].level;
+                        int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1787069365"].level;
                         Level = 100 + extraLevel;
-                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].progressToNextLevel;
+                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1787069365"].progressToNextLevel;
                     }
                     else
                     {
-                        Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level;
-                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].progressToNextLevel;
+                        Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level;
+                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].progressToNextLevel;
                     }
 
                     return Level;
@@ -443,19 +438,19 @@ namespace Levante.Configs
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
-                //first 100 levels: 4095505052
-                //anything after: 1531004716
+                //first 100 levels: 4095505052 (S15); 2069932355 (S16)
+                //anything after: 1531004716 (S15): 1787069365 (S16)
 
-                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level == 100)
+                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level == 100)
                 {
-                    int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].level;
+                    int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1787069365"].level;
                     Level = 100 + extraLevel;
-                    XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].progressToNextLevel;
+                    XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1787069365"].progressToNextLevel;
                 }
                 else
                 {
-                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level;
-                    XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].progressToNextLevel;
+                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level;
+                    XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].progressToNextLevel;
                 }
 
                 return Level;
@@ -463,33 +458,83 @@ namespace Levante.Configs
         }
 
         public static async Task PostDailyResetUpdate(DiscordSocketClient Client)
-        {
-            foreach (ulong ChannelID in AnnounceDailyLinks)
+        { 
+            List<ulong> guildsWithKeptChannel = new List<ulong>();
+            List<ulong> keptChannels = new List<ulong>();
+            foreach (ulong ChannelID in AnnounceDailyLinks.ToList())
             {
                 try
                 {
                     var channel = Client.GetChannel(ChannelID) as SocketTextChannel;
+                    var guildChannel = Client.GetChannel(ChannelID) as SocketGuildChannel;
+                    if (channel == null)
+                    {
+                        LogHelper.ConsoleLog($"Could not find channel {ChannelID}. Removing this element.");
+                        DeleteChannelFromRotationConfig(ChannelID, true);
+                        continue;
+                    }
+
+                    if (!guildsWithKeptChannel.Contains(guildChannel.Guild.Id))
+                    {
+                        keptChannels.Add(ChannelID);
+                        guildsWithKeptChannel.Add(guildChannel.Guild.Id);
+                    }
+
+                    foreach (var chan in guildChannel.Guild.TextChannels)
+                    {
+                        if (IsExistingLinkedChannel(chan.Id, true) && ChannelID != chan.Id && guildsWithKeptChannel.Contains(chan.Guild.Id) && !keptChannels.Contains(chan.Id))
+                        {
+                            LogHelper.ConsoleLog($"Duplicate channel detected. Removing: {chan.Id}");
+                            DeleteChannelFromRotationConfig(chan.Id, true);
+                        }
+                    }
+
                     await channel.SendMessageAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
                 }
                 catch
                 {
-                    Console.WriteLine($"Missing Permissions in Channel ID: {ChannelID}");
+                    LogHelper.ConsoleLog($"Error on Channel ID: {ChannelID}");
                 }
             }
         }
 
         public static async Task PostWeeklyResetUpdate(DiscordSocketClient Client)
         {
-            foreach (ulong ChannelID in AnnounceWeeklyLinks)
+            List<ulong> guildsWithKeptChannel = new List<ulong>();
+            List<ulong> keptChannels = new List<ulong>();
+            foreach (ulong ChannelID in AnnounceWeeklyLinks.ToList())
             {
                 try
                 {
                     var channel = Client.GetChannel(ChannelID) as SocketTextChannel;
+                    var guildChannel = Client.GetChannel(ChannelID) as SocketGuildChannel;
+                    if (channel == null)
+                    {
+                        LogHelper.ConsoleLog($"Could not find channel {ChannelID}. Removing this element.");
+                        DeleteChannelFromRotationConfig(ChannelID, false);
+                        continue;
+                    }
+
+                    if (!guildsWithKeptChannel.Contains(guildChannel.Guild.Id))
+                    {
+                        keptChannels.Add(ChannelID);
+                        guildsWithKeptChannel.Add(guildChannel.Guild.Id);
+                    }
+
+                    foreach (var chan in guildChannel.Guild.TextChannels)
+                    {
+                        if (IsExistingLinkedChannel(chan.Id, false) && ChannelID != chan.Id && guildsWithKeptChannel.Contains(chan.Guild.Id) && !keptChannels.Contains(chan.Id))
+                        {
+                            LogHelper.ConsoleLog($"Duplicate channel detected. Removing: {chan.Id}");
+                            DeleteChannelFromRotationConfig(chan.Id, false);
+                        }
+                    }
+
                     await channel.SendMessageAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
                 }
                 catch
                 {
-                    Console.WriteLine($"Missing Permissions in Channel ID: {ChannelID}");
+                    LogHelper.ConsoleLog($"Error on Channel ID: {ChannelID}");
                 }
             }
         }

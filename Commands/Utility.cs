@@ -171,7 +171,7 @@ namespace Levante.Commands
                 [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty? ArgLSD = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
             {
-                if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var LSD, out var EAT) != null)
+                /*if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var LSD, out var EAT) != null)
                 {
                     if (LS == null && LSD == null && EAT == null)
                         await RespondAsync($"An error has occurred.", ephemeral: true);
@@ -211,7 +211,8 @@ namespace Levante.Commands
                     await RespondAsync($"I will remind you when {LSD} Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (LS != null && LSD != null && EAT != null)
                     await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-
+                */
+                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!");
                 return;
             }
 
@@ -224,7 +225,7 @@ namespace Levante.Commands
                 Choice("Shadow Price", 3), Choice("Hung Jury SR4", 4), Choice("The Hothead", 5),
                 Choice("PLUG ONE.1", 6), Choice("Uzume RR4", 7)] int? ArgWeapon = null)
             {
-                if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var Weapon) != null)
+                /*if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var Weapon) != null)
                 {
                     if (NF == null && Weapon == null)
                         await RespondAsync($"An error has occurred.", ephemeral: true);
@@ -248,6 +249,8 @@ namespace Levante.Commands
                     await RespondAsync($"I will remind you when {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (NF != null && Weapon != null)
                     await RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                */
+                await RespondAsync($"Gathering data on new Nightfalls. Check back later!");
                 return;
             }
 
@@ -522,7 +525,7 @@ namespace Levante.Commands
                 [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty? ArgLSD = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
             {
-                LostSector? LS = (LostSector?)ArgLS;
+                /*LostSector? LS = (LostSector?)ArgLS;
                 LostSectorDifficulty? LSD = ArgLSD;
                 ExoticArmorType? EAT = ArgEAT;
 
@@ -554,7 +557,8 @@ namespace Levante.Commands
                         $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} {(LSD != LostSectorDifficulty.Legend ? $" (Master)" : " (Legend)")}" +
                             $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
+                await RespondAsync($"", embed: embed.Build());*/
+                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!");
                 return;
             }
 
@@ -567,7 +571,7 @@ namespace Levante.Commands
                 Choice("Shadow Price", 3), Choice("Hung Jury SR4", 4), Choice("The Hothead", 5),
                 Choice("PLUG ONE.1", 6), Choice("Uzume RR4", 7)] int? ArgWeapon = null)
             {
-                Nightfall? NF = (Nightfall?)ArgNF;
+                /*Nightfall? NF = (Nightfall?)ArgNF;
                 NightfallWeapon? Weapon = (NightfallWeapon?)ArgWeapon;
 
                 var predictedDate = NightfallRotation.DatePrediction(NF, Weapon);
@@ -590,7 +594,8 @@ namespace Levante.Commands
                         $"Next occurrance of {NightfallRotation.GetStrikeNameString((Nightfall)NF)}" +
                             $"{(Weapon != null ? $" dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}."; 
 
-                await RespondAsync($"", embed: embed.Build());
+                await RespondAsync($"", embed: embed.Build());*/
+                await RespondAsync($"Gathering data on new Nightfalls. Check back later!");
                 return;
             }
 
@@ -752,6 +757,14 @@ namespace Levante.Commands
 
             var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
             DataConfig.DeleteUserFromConfig(Context.User.Id);
+
+            // Remove leaderboard data to respect user data.
+            LevelData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+            LongestSessionData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+            MostXPLoggingTimeData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+            PowerLevelData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+            XPPerHourData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+
             await RespondAsync($"Your Bungie account: {linkedUser.UniqueBungieName} has been unlinked. Use the command \"/link\" if you want to re-link!", ephemeral: true);
         }
 

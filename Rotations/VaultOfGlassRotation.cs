@@ -81,7 +81,7 @@ namespace Levante.Rotations
         {
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Raid Information",
+                Name = $"Raid Information: The Vow of the Disciple",
                 IconUrl = "https://www.bungie.net/img/destiny_content/pgcr/vault_of_glass.jpg",
             };
             var foot = new EmbedFooterBuilder()

@@ -13,12 +13,14 @@ namespace Levante.Commands
 {
     public class Components : InteractionModuleBase<SocketInteractionContext>
     {
-        [ComponentInteraction("force")]
+        /*[ComponentInteraction("force")]
         public async Task Force()
         {
             CurrentRotations.WeeklyRotation();
-            await RespondAsync(embed: CurrentRotations.WeeklyResetEmbed().Build());
-        }
+            await DataConfig.PostWeeklyResetUpdate(Context.Client);
+            await DataConfig.PostDailyResetUpdate(Context.Client);
+            await RespondAsync("Forced!");
+        }*/
 
         [ComponentInteraction("deleteChannel")]
         public async Task DeleteChannel() => await (Context.Channel as SocketGuildChannel).DeleteAsync();

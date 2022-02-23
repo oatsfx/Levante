@@ -346,6 +346,12 @@ namespace Levante.Rotations
 
     public enum Nightfall
     {
+        //TheScarletKeep,
+        //TheArmsDealer,
+        //TheLightblade,
+        //TheGlassway,
+        //FallenSABER,
+        //BirthplaceOfTheVile,
         TheHollowedLair,
         LakeOfShadows,
         ExodusCrash,

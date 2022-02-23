@@ -14,9 +14,18 @@ namespace Levante.Commands
             [SlashCommand("emblem-offers", "Set up announcements for Emblem Offers.")]
             public async Task EmblemOffers([Summary("role", "Add a role to be pinged when a new Emblem Offer is posted.")] IRole RoleToPing = null)
             {
+                foreach (var channel in Context.Guild.TextChannels)
+                {
+                    if (DataConfig.IsExistingEmblemLinkedChannel(channel.Id))
+                    {
+                        await RespondAsync($"This guild already has Emblem Offer posts set up in {channel.Mention}.", ephemeral: true);
+                        return;
+                    }
+                }
+
                 if (DataConfig.IsExistingEmblemLinkedChannel(Context.Channel.Id))
                 {
-                    DataConfig.DeleteEmblemChannelFromRotationConfig(Context.Channel.Id);
+                    DataConfig.DeleteEmblemChannel(Context.Channel.Id);
 
                     await RespondAsync($"This channel will no longer receive Emblem Offer reset posts. Run this command to re-subscribe to them!", ephemeral: true);
                     return;
@@ -35,6 +44,15 @@ namespace Levante.Commands
                 Choice("Daily", 0), Choice("Weekly", 1)] int ResetType)
             {
                 bool IsDaily = ResetType == 0;
+
+                foreach (var channel in Context.Guild.TextChannels)
+                {
+                    if (DataConfig.IsExistingLinkedChannel(channel.Id, IsDaily))
+                    {
+                        await RespondAsync($"This guild already has {(IsDaily ? "Daily" : "Weekly")} reset posts set up in {channel.Mention}.", ephemeral: true);
+                        return;
+                    }
+                }
 
                 if (DataConfig.IsExistingLinkedChannel(Context.Channel.Id, IsDaily))
                 {

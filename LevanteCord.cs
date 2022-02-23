@@ -295,7 +295,8 @@ namespace Levante
                         }
                         else
                         {
-                            ActiveConfig.GetActiveAFKUser(tempAau.DiscordID).NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
+                            tempAau.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
+                            newList.Add(tempAau);
                             await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"No XP change detected, waiting for next refresh... Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
                         }
                     }
@@ -349,8 +350,8 @@ namespace Levante
                         var content = response.Content.ReadAsStringAsync().Result;
                         dynamic item = JsonConvert.DeserializeObject(content);
 
-                        //first 100 levels: 4095505052
-                        //anything after: 1531004716
+                        //first 100 levels: 4095505052 (S15); 2069932355 (S16)
+                        //anything after: 1531004716 (S15): 1787069365 (S16)
                         try
                         {
                             for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
@@ -361,14 +362,14 @@ namespace Levante
                                     PowerLevel = powerLevelComp;
                             }
 
-                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level == 100)
+                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level == 100)
                             {
-                                int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1531004716"].level;
+                                int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1787069365"].level;
                                 Level = 100 + extraLevel;
                             }
                             else
                             {
-                                Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"4095505052"].level;
+                                Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level;
                             }
                         }
                         catch
@@ -414,8 +415,8 @@ namespace Levante
             // This tells us how to build slash commands.
             _client.Ready += async () =>
             {
-                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
-                //var guild = _client.GetGuild(397846250797662208);
+                //await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
+                //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
                 await _interaction.RegisterCommandsGloballyAsync(true);
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();

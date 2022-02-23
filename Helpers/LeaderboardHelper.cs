@@ -30,7 +30,7 @@ namespace Levante.Helpers
 
             if (SortedList.Count <= 0)
             {
-                embedDesc = "No data, try again later.";
+                embedDesc = "No data.";
             }
             else if (SortedList.Count >= 10)
             {

@@ -419,6 +419,10 @@ namespace Levante.Rotations
         ConcealedVoid,
         BunkerE15,
         Perdition,
+        // Season 16
+
+        //VelesLabyrinth
+        //ExodusGarden2A
     }
 
     public enum LostSectorDifficulty

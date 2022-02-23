@@ -45,9 +45,6 @@ namespace Levante.Util
             Description = description;
             ImageUrl = imageUrl;
             SpecialUrl = specialUrl;
-
-            CurrentOffers.Add(this);
-            CreateJSON(this);
         }
 
         public EmbedBuilder BuildEmbed()
@@ -130,9 +127,10 @@ namespace Levante.Util
                     CurrentOffers.Remove(Offer);
         }
 
-        public void CreateJSON(EmblemOffer offer)
+        public void CreateJSON()
         {
-            string emblemOfferPath = @"Configs/EmblemOffers/" + offer.OfferedEmblem.GetItemHash() + ".json";
+            string emblemOfferPath = @"Configs/EmblemOffers/" + OfferedEmblem.GetItemHash() + ".json";
+            CurrentOffers.Add(this);
 
             if (!File.Exists(emblemOfferPath))
                 File.Create(emblemOfferPath).Close();

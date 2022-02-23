@@ -13,6 +13,7 @@ using Discord.WebSocket;
 using System.IO;
 using Levante.Helpers;
 using Levante.Rotations;
+using System.Collections.Generic;
 
 namespace Levante.Commands
 {
@@ -21,7 +22,7 @@ namespace Levante.Commands
         // These commands will need to be ran through DMs when verified after April 2022.
         public InteractiveService Interactive { get; set; }
 
-        [Command("force", RunMode = RunMode.Async)]
+        /*[Command("force", RunMode = RunMode.Async)]
         [Summary("Sends a button to force a daily reset.")]
         [RequireOwner]
         public async Task Force()
@@ -32,7 +33,7 @@ namespace Levante.Commands
                 .WithButton("Force Reset", customId: $"force", ButtonStyle.Secondary, helpEmote, row: 0);
 
             await ReplyAsync($"This shouldn't really be used...", components: buttonBuilder.Build());
-        }
+        }*/
 
         [Command("giveConfig", RunMode = RunMode.Async)]
         [Alias("config", "getConfig")]
@@ -149,7 +150,9 @@ namespace Levante.Commands
                 if (sendResponse.Value.ToString().Equals("yes"))
                 {
                     await ReplyAsync("Sending...");
+                    newOffer.CreateJSON();
                     await SendToAllAnnounceChannels(newOffer.BuildEmbed());
+                    await ReplyAsync("Sent!");
                 }
                 else if (sendResponse.Value.ToString().Equals("skip"))
                 {
@@ -211,13 +214,14 @@ namespace Levante.Commands
             else
             {
                 EmblemOffer eo = EmblemOffer.GetSpecificOffer(EmblemHashCode);
-                await ReplyAsync("This is what the embed looks like. Ready to send to all channels? Reply \"yes\" to confirm. Reply \"no\" to cancel.", false, eo.BuildEmbed().Build());
-                var sendResponse = await Interactive.NextMessageAsync(x => x.Channel.Id == Context.Channel.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+                await ReplyAsync("This is what the embed looks like. Ready to send to all channels? Reply \"yes\" to confirm. Reply with anything else to cancel.", false, eo.BuildEmbed().Build());
+                var sendResponse = await Interactive.NextMessageAsync(x => x.Channel.Id == Context.Channel.Id && x.Author == Context.Message.Author, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
 
                 if (sendResponse.ToString().Equals("yes"))
                 {
                     await ReplyAsync("Sending...");
                     await SendToAllAnnounceChannels(eo.BuildEmbed());
+                    await ReplyAsync("Sent!");
                 }
                 if (sendResponse.ToString().Equals("no"))
                 {
@@ -284,13 +288,36 @@ namespace Levante.Commands
 
         public async Task SendToAllAnnounceChannels(EmbedBuilder embed)
         {
-            foreach (var Link in DataConfig.AnnounceEmblemLinks)
+            List<ulong> guildsWithKeptChannel = new List<ulong>();
+            List<ulong> keptChannels = new List<ulong>();
+            foreach (var Link in DataConfig.AnnounceEmblemLinks.ToList())
             {
                 var channel = Context.Client.GetChannel(Link.ChannelID) as SocketTextChannel;
                 var guildChannel = Context.Client.GetChannel(Link.ChannelID) as SocketGuildChannel;
                 try
                 {
-                    
+                    if (channel == null || guildChannel == null)
+                    {
+                        LogHelper.ConsoleLog($"Could not find channel {Link.ChannelID}. Removing this element.");
+                        DataConfig.DeleteEmblemChannel(Link.ChannelID);
+                        continue;
+                    }
+
+                    if (!guildsWithKeptChannel.Contains(guildChannel.Guild.Id))
+                    {
+                        keptChannels.Add(Link.ChannelID);
+                        guildsWithKeptChannel.Add(guildChannel.Guild.Id);
+                    }
+
+                    foreach (var chan in guildChannel.Guild.TextChannels)
+                    {
+                        if (DataConfig.IsExistingEmblemLinkedChannel(chan.Id) && Link.ChannelID != chan.Id && guildsWithKeptChannel.Contains(chan.Guild.Id) && !keptChannels.Contains(chan.Id))
+                        {
+                            LogHelper.ConsoleLog($"Duplicate channel detected. Removing: {chan.Id}");
+                            DataConfig.DeleteEmblemChannel(chan.Id);
+                        }
+                    }
+
                     if (Link.RoleID != 0)
                     {
                         var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
@@ -306,7 +333,6 @@ namespace Levante.Commands
                     LogHelper.ConsoleLog($"Could not send to channel {guildChannel.Id} in guild {guildChannel.Guild.Id}.");
                 }
             }
-            await ReplyAsync("Sent!");
         }
     }
 }

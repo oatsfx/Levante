@@ -68,7 +68,7 @@ namespace Levante.Rotations
         {
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Raid Information",
+                Name = $"Raid Information: Last Wish",
                 IconUrl = "https://www.bungie.net/img/destiny_content/pgcr/raid_beanstalk.jpg",
             };
             var foot = new EmbedFooterBuilder()
