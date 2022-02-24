@@ -65,7 +65,7 @@ namespace Levante.Rotations
         {
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Raid Information: Garden of Salvation",
+                Name = $"Raid Information",
                 IconUrl = "https://www.bungie.net/img/destiny_content/pgcr/raid_garden_of_salvation.jpg",
             };
             var foot = new EmbedFooterBuilder()

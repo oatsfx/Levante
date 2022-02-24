@@ -147,7 +147,8 @@ namespace Levante.Util
             foreach (string fileName in Directory.GetFiles(emblemOfferPath))
             {
                 string json = File.ReadAllText(fileName);
-                var _ = JsonConvert.DeserializeObject<EmblemOffer>(json);
+                var offer = JsonConvert.DeserializeObject<EmblemOffer>(json);
+                CurrentOffers.Add(offer);
             }
         }
 

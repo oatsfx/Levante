@@ -53,7 +53,7 @@ namespace Levante.Rotations
         {
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Raid Information: The Vow of the Disciple",
+                Name = $"Raid Information",
                 IconUrl = "API IMAGE URL",
             };
             var foot = new EmbedFooterBuilder()
@@ -80,8 +80,8 @@ namespace Levante.Rotations
                 y.IsInline = false;
             });
 
-            embed.Title = $"Vault of Glass";
-            embed.Description = $"Stop the Vex from spreading through all of time through destroying the source of their operation.";
+            embed.Title = $"The Vow of the Disciple";
+            embed.Description = $"RAID DESCRIPTION";
 
             embed.Url = "https://www.bungie.net/img/destiny_content/pgcr/vault_of_glass.jpg";
             embed.ThumbnailUrl = "https://www.bungie.net/common/destiny2_content/icons/6d091410227eef82138a162df73065b9.png";
