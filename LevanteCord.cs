@@ -17,6 +17,7 @@ using Levante.Rotations;
 using Levante.Util;
 using Fergun.Interactive;
 using Discord.Interactions;
+using System.IO;
 
 namespace Levante
 {
@@ -67,8 +68,6 @@ namespace Levante
 
             CurrentRotations.CreateJSONs();
             EmblemOffer.LoadCurrentOffers();
-            
-            Console.WriteLine($"Current Bot Version: v{BotConfig.Version}");
 
             Console.WriteLine($"Current Bot Version: v{String.Format("{0:0.00#}", BotConfig.Version)}");
             Console.WriteLine($"Current Developer Note: {BotConfig.Note}");
@@ -227,6 +226,7 @@ namespace Levante
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
                         LogHelper.ConsoleLog($"Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
                         // Move onto the next user so everyone gets the message.
+                        newList.Add(tempAau);
                         continue;
                     }
 
@@ -310,14 +310,17 @@ namespace Levante
                         tempAau.NoXPGainRefreshes = 0;
                         newList.Add(tempAau);
                     }
-                    await Task.Delay(3500); // we dont want to spam API if we have a ton of AFK subscriptions
+                    await Task.Delay(3250); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
 
-                ActiveConfig.ActiveAFKUsers = newList;
                 // Add in users that joined mid-refresh.
                 foreach (var User in ActiveConfig.ActiveAFKUsers)
-                    if (!listOfRemovals.Contains(User) && !newList.Contains(User)) // They weren't removed (prevents adding users that have been removed in this refresh), and they aren't in the newList.
+                {
+                    bool isBeingRemoved = listOfRemovals.FirstOrDefault(x => x.DiscordID == User.DiscordID) != null;
+                    bool isNotInNewList = newList.FirstOrDefault(x => x.DiscordID == User.DiscordID) == null;
+                    if (!isBeingRemoved && isNotInNewList) // They weren't removed (prevents adding users that have been removed in this refresh), and they aren't in the newList.
                         newList.Add(User);
+                }
 
                 ActiveConfig.ActiveAFKUsers = newList;
                 ActiveConfig.UpdateActiveAFKUsersConfig();
@@ -333,7 +336,7 @@ namespace Levante
             }
 
             // data loading
-            await Task.Delay(45000); // wait to prevent numerous API calls
+            await Task.Delay(40000); // wait to prevent numerous API calls
             await LoadLeaderboards();
             await UpdateBotActivity();
         }
