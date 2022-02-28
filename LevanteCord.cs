@@ -60,7 +60,7 @@ namespace Levante
             if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
 
-            await Task.Run(() => Console.Title = $"Levante v{BotConfig.Version}");
+            await Task.Run(() => Console.Title = $"Levante v{String.Format("{0:0.00#}", BotConfig.Version)}");
 
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
@@ -69,6 +69,8 @@ namespace Levante
             EmblemOffer.LoadCurrentOffers();
             
             Console.WriteLine($"Current Bot Version: v{BotConfig.Version}");
+
+            Console.WriteLine($"Current Bot Version: v{String.Format("{0:0.00#}", BotConfig.Version)}");
             Console.WriteLine($"Current Developer Note: {BotConfig.Note}");
 
             Console.WriteLine($"Legend/Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LostSector)} ({CurrentRotations.LostSectorArmorDrop})");
@@ -138,19 +140,19 @@ namespace Levante
                     string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
                     await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching)); break;
                 case 1:
-                    await _client.SetActivityAsync(new Game($"{BotConfig.Note} | v{BotConfig.Version}", ActivityType.Playing)); break;
+                    await _client.SetActivityAsync(new Game($"{BotConfig.Note} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing)); break;
                 case 2:
-                    await _client.SetActivityAsync(new Game($"for /help | v{BotConfig.Version}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"for /help | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 3:
-                    await _client.SetActivityAsync(new Game($"{_client.Guilds.Count} Servers | v{BotConfig.Version}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{_client.Guilds.Count} Servers | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 4:
-                    await _client.SetActivityAsync(new Game($"{String.Format("{0:n0}", _client.Guilds.Sum(x => x.MemberCount))} Users | v{BotConfig.Version}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{String.Format("{0:n0}", _client.Guilds.Sum(x => x.MemberCount))} Users | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 5:
-                    await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count} Linked Users | v{BotConfig.Version}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count} Linked Users | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 6:
-                    await _client.SetActivityAsync(new Game($"{CurrentRotations.GetTotalLinks()} Rotation Trackers | v{BotConfig.Version}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{CurrentRotations.GetTotalLinks()} Rotation Trackers | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 7:
-                    await _client.SetActivityAsync(new Game($"levante.dev | v{BotConfig.Version}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"levante.dev | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 8:
                     await _client.SetActivityAsync(new Game($"@Levante_Bot on Twitter", ActivityType.Watching)); break;
                 default: break;
@@ -211,7 +213,6 @@ namespace Levante
 
             LogHelper.ConsoleLog($"Refreshing Bungie API...");
             List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
-            List<ActiveConfig.ActiveAFKUser> listOfNoGains = new List<ActiveConfig.ActiveAFKUser>();
             List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
             try // XP Logs
             {
@@ -311,6 +312,12 @@ namespace Levante
                     }
                     await Task.Delay(3500); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
+
+                ActiveConfig.ActiveAFKUsers = newList;
+                // Add in users that joined mid-refresh.
+                foreach (var User in ActiveConfig.ActiveAFKUsers)
+                    if (!listOfRemovals.Contains(User) && !newList.Contains(User)) // They weren't removed (prevents adding users that have been removed in this refresh), and they aren't in the newList.
+                        newList.Add(User);
 
                 ActiveConfig.ActiveAFKUsers = newList;
                 ActiveConfig.UpdateActiveAFKUsersConfig();
