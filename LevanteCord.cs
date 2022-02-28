@@ -425,8 +425,8 @@ namespace Levante
             // This tells us how to build slash commands.
             _client.Ready += async () =>
             {
-                //await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
-                //var guild = _client.GetGuild(915020047154565220);
+                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
+                //var guild = _client.GetGuild(933971948965359626);
                 //await guild.DeleteApplicationCommandsAsync();
                 await _interaction.RegisterCommandsGloballyAsync(true);
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();

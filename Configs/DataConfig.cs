@@ -335,7 +335,7 @@ namespace Levante.Configs
                         string charId = item.Response.profile.data.characterIds[i];
                         var activityTime = DateTime.Parse($"{item.Response.characterActivities.data[$"{charId}"].dateActivityStarted}");
                         //ulong activityHash = item.Response.characterActivities.data[$"{charId}"].currentActivityHash;
-                        if (activityTime > mostRecentDate) // shattered throne
+                        if (activityTime > mostRecentDate)
                         {
                             mostRecentDate = activityTime;
                             CharacterId = $"{charId}";

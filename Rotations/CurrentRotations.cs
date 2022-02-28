@@ -31,6 +31,9 @@ namespace Levante.Rotations
         [JsonProperty("AltarWeapon")]
         public static AltarsOfSorrow AltarWeapon = AltarsOfSorrow.Shotgun;
 
+        [JsonProperty("Wellspring")]
+        public static Wellspring Wellspring = Wellspring.Golmag;
+
         // Weeklies
 
         [JsonProperty("LWChallengeEncounter")]
@@ -69,6 +72,7 @@ namespace Levante.Rotations
             LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
 
             AltarWeapon = AltarWeapon == AltarsOfSorrow.Rocket ? AltarsOfSorrow.Shotgun : AltarWeapon + 1;
+            Wellspring = Wellspring == Wellspring.Zeerik ? Wellspring.Golmag : Wellspring + 1;
 
             DailyResetTimestamp = DateTime.Now;
 
@@ -144,6 +148,7 @@ namespace Levante.Rotations
             NightfallRotation.CreateJSON();
             NightmareHuntRotation.CreateJSON();
             VaultOfGlassRotation.CreateJSON();
+            WellspringRotation.CreateJSON();
         }
 
         private static void UpdateRotationsJSON()
@@ -181,6 +186,14 @@ namespace Levante.Rotations
                 x.Value =
                     $"Weapon: {AltarsOfSorrowRotation.GetWeaponEmote(AltarWeapon)} {AltarWeapon}\n" +
                     $"{DestinyEmote.Luna} {AltarsOfSorrowRotation.GetAltarBossString(AltarWeapon)}";
+                x.IsInline = true;
+            })
+            .AddField(x =>
+            {
+                x.Name = $"The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)}";
+                x.Value =
+                    $"Weapon: {WellspringRotation.GetWeaponEmote(Wellspring)} {WellspringRotation.GetWeaponNameString(Wellspring)}\n" +
+                    $"{DestinyEmote.WellspringActivity} {WellspringRotation.GetWellspringBossString(Wellspring)}";
                 x.IsInline = true;
             });
 
@@ -331,6 +344,23 @@ namespace Levante.Rotations
             }
             LostSectorRotation.LostSectorLinks = lsTemp;
             LostSectorRotation.UpdateJSON();*/
+
+            var wellspringTemp = new List<WellspringRotation.WellspringLink>();
+            foreach (var Link in WellspringRotation.WellspringLinks)
+            {
+                IUser user;
+                if (Client.GetUser(Link.DiscordID) == null)
+                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                else
+                    user = Client.GetUser(Link.DiscordID);
+
+                if (Wellspring == Link.WellspringBoss)
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}) is dropping **{WellspringRotation.GetWeaponNameString(Wellspring)}** (**{WellspringRotation.GetWeaponTypeString(Wellspring)}**) today. I have removed your tracking, good luck!");
+                else
+                    wellspringTemp.Add(Link);
+            }
+            WellspringRotation.WellspringLinks = wellspringTemp;
+            WellspringRotation.UpdateJSON();
         }
 
         public static async Task CheckUsersWeeklyTracking(DiscordSocketClient Client)

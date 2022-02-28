@@ -217,13 +217,13 @@ namespace Levante.Commands
                 await ReplyAsync("This is what the embed looks like. Ready to send to all channels? Reply \"yes\" to confirm. Reply with anything else to cancel.", false, eo.BuildEmbed().Build());
                 var sendResponse = await Interactive.NextMessageAsync(x => x.Channel.Id == Context.Channel.Id && x.Author == Context.Message.Author, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
 
-                if (sendResponse.ToString().Equals("yes"))
+                if (sendResponse.Value.ToString().Equals("yes"))
                 {
                     await ReplyAsync("Sending...");
                     await SendToAllAnnounceChannels(eo.BuildEmbed());
                     await ReplyAsync("Sent!");
                 }
-                if (sendResponse.ToString().Equals("no"))
+                if (sendResponse.Value.ToString().Equals("no"))
                 {
                     await ReplyAsync("Cancelled operation.");
                 }

@@ -290,6 +290,25 @@ namespace Levante.Commands
                 return;
             }
 
+            [SlashCommand("wellspring", "Be notified when a Wellspring boss/weapon is active.")]
+            public async Task Wellspring([Summary("wellspring", "Wellspring weapon drop."),
+                Choice("Come to Pass (Auto)", 0), Choice("Tarnation (Grenade Launcher)", 1), Choice("Fel Taradiddle (Bow)", 2), Choice("Father's Sins (Sniper)", 3)] int ArgWellspring)
+            {
+                if (WellspringRotation.GetUserTracking(Context.User.Id, out var Wellspring) != null)
+                {
+                    await RespondAsync($"You already have tracking for The Wellspring. I am watching for The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}), " +
+                        $"which drops {WellspringRotation.GetWeaponNameString(Wellspring)} ({WellspringRotation.GetWeaponTypeString(Wellspring)}).", ephemeral: true);
+                    return;
+                }
+                Wellspring = (Wellspring)ArgWellspring;
+
+                WellspringRotation.AddUserTracking(Context.User.Id, Wellspring);
+                await RespondAsync($"I will remind you when The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}), " +
+                    $"which drops {WellspringRotation.GetWeaponNameString(Wellspring)} ({WellspringRotation.GetWeaponTypeString(Wellspring)}), is in rotation, " +
+                    $"which will be on {TimestampTag.FromDateTime(WellspringRotation.DatePrediction(Wellspring), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                return;
+            }
+
             [SlashCommand("remove", "Remove an active tracking notification.")]
             public async Task Remove()
             {
@@ -354,6 +373,9 @@ namespace Levante.Commands
 
                 if (VaultOfGlassRotation.GetUserTracking(Context.User.Id, out var VoGEncounter) != null)
                     menuBuilder.AddOption("Vault of Glass Challenge", "vog-challenge", $"{VaultOfGlassRotation.GetEncounterString(VoGEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGEncounter)})");
+
+                if (WellspringRotation.GetUserTracking(Context.User.Id, out var WellspringBoss) != null)
+                    menuBuilder.AddOption("The Wellspring", "the-wellspring", $"{WellspringRotation.GetWeaponNameString(WellspringBoss)} ({WellspringRotation.GetWeaponTypeString(WellspringBoss)})");
 
                 var builder = new ComponentBuilder()
                     .WithSelectMenu(menuBuilder);
@@ -638,6 +660,26 @@ namespace Levante.Commands
                 embed.Description =
                     $"Next occurrance of {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}), " +
                         $"which drops {VaultOfGlassRotation.GetChallengeRewardString(Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                await RespondAsync($"", embed: embed.Build());
+                return;
+            }
+
+            [SlashCommand("wellspring", "Find out when a Wellspring boss/weapon is active next.")]
+            public async Task Wellspring([Summary("wellspring", "Wellspring weapon drop."),
+                Choice("Come to Pass (Auto)", 0), Choice("Tarnation (Grenade Launcher)", 1), Choice("Fel Taradiddle (Bow)", 2), Choice("Father's Sins (Sniper)", 3)] int ArgWellspring)
+            {
+                Wellspring Wellspring = (Wellspring)ArgWellspring;
+
+                var predictedDate = WellspringRotation.DatePrediction(Wellspring);
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                };
+                embed.Title = "The Wellspring";
+                embed.Description =
+                    $"Next occurrance of The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}) which drops {WellspringRotation.GetWeaponNameString(Wellspring)} ({WellspringRotation.GetWeaponTypeString(Wellspring)}) " +
+                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
