@@ -9,25 +9,53 @@ namespace Levante.Helpers
         public async static Task Log(IMessageChannel Channel, string Message)
         {
             if (Channel == null) return;
-            await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}");
+            try
+            {
+                await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}");
+            }
+            catch
+            {
+                ConsoleLog("Unable to send message.");
+            }
         }
 
         public async static Task Log(IMessageChannel Channel, string Message, ComponentBuilder CB)
         {
             if (Channel == null) return;
-            await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", components: CB.Build());
+            try
+            {
+                await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", components: CB.Build());
+            }
+            catch
+            {
+                ConsoleLog("Unable to send message.");
+            }
         }
 
         public async static Task Log(IMessageChannel Channel, string Message, EmbedBuilder Embed)
         {
             if (Channel == null) return;
-            await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", embed: Embed.Build());
+            try
+            {
+                await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", embed: Embed.Build());
+            }
+            catch
+            {
+                ConsoleLog("Unable to send message.");
+            }
         }
 
         public async static Task Log(IMessageChannel Channel, string Message, EmbedBuilder Embed, ComponentBuilder CB)
         {
             if (Channel == null) return;
-            await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", embed: Embed.Build(), components: CB.Build());
+            try
+            {
+                await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", embed: Embed.Build(), components: CB.Build());
+            }
+            catch
+            {
+                ConsoleLog("Unable to send message.");
+            }
         }
 
         // This is here for the future when developer logs eventually make it to a specific Discord Channel.
