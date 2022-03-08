@@ -137,6 +137,9 @@ namespace Levante.Rotations
             }
 
             // Create/Check the tracking JSONs.
+            if (!Directory.Exists("Trackers"))
+                Directory.CreateDirectory("Trackers");
+
             AltarsOfSorrowRotation.CreateJSON();
             AscendantChallengeRotation.CreateJSON();
             CurseWeekRotation.CreateJSON();

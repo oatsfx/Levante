@@ -45,11 +45,12 @@ namespace Levante
         static void Main(string[] args)
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
-            string ASCIIName = @"
-   __                      __     
-  / /  ___ _  _____ ____  / /____ 
- / /__/ -_) |/ / _ `/ _ \/ __/ -_)
-/____/\__/|___/\_,_/_//_/\__/\__/   dev. by @OatsFX
+            string ASCIIName = @"    ______     ___      _ __       
+   / ____/__  / (_)____(_) /___  __
+  / /_  / _ \/ / / ___/ / __/ / / /
+ / __/ /  __/ / / /__/ / /_/ /_/ / 
+/_/    \___/_/_/\___/_/\__/\__, /  
+                          /____/  @axsLeaf
             ";
             Console.WriteLine(ASCIIName);
             
@@ -61,7 +62,7 @@ namespace Levante
             if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
 
-            await Task.Run(() => Console.Title = $"Levante v{String.Format("{0:0.00#}", BotConfig.Version)}");
+            await Task.Run(() => Console.Title = $"FelicityOne v{String.Format("{0:0.00#}", BotConfig.Version)}");
 
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
@@ -108,10 +109,10 @@ namespace Levante
 
             Timer timer = new Timer(TimerCallback, null, 25000, BotConfig.TimeBetweenRefresh * 60000);
 
-            if (DateTime.Now.Hour >= 10) // after daily reset
-                SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 0));
+            if (DateTime.Now.Hour >= 18) // after daily reset
+                SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 18, 0, 0));
             else
-                SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 0, 0));
+                SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 18, 0, 0));
 
             await InitializeListeners();
 
