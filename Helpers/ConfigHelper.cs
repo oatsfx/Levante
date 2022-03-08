@@ -14,6 +14,10 @@ namespace Levante.Helpers
             ActiveConfig aConfig;
 
             bool closeProgram = false;
+
+            if (!Directory.Exists("Configs")) 
+                Directory.CreateDirectory("Configs");
+
             if (File.Exists(BotConfig.FilePath))
             {
                 string json = File.ReadAllText(BotConfig.FilePath);

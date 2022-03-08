@@ -128,6 +128,13 @@ namespace Levante.Helpers
             PowerLevelData pld;
 
             bool closeProgram = false;
+
+            if (!Directory.Exists("Data"))
+            {
+                Directory.CreateDirectory("Data");
+                Directory.CreateDirectory("Data/S15");
+                Directory.CreateDirectory("Data/S16");
+            }
             if (File.Exists(LevelData.FilePath))
             {
                 string json = File.ReadAllText(LevelData.FilePath);
