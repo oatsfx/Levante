@@ -22,7 +22,7 @@ namespace Levante.Configs
         public static double Version { get; set; } = 1.0;
 
         [JsonProperty("DefaultCommandPrefix")]
-        public static string DefaultCommandPrefix { get; set; } = "l!";
+        public static string DefaultCommandPrefix { get; set; } = "f!";
 
         [JsonProperty("Note")]
         public static string Note { get; set; } = "Hello World";
