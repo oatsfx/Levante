@@ -68,6 +68,10 @@ namespace Levante
                 return;
 
             CurrentRotations.CreateJSONs();
+
+            if (!Directory.Exists("Configs/EmblemOffers"))
+                Directory.CreateDirectory("Configs/EmblemOffers");
+
             EmblemOffer.LoadCurrentOffers();
 
             Console.WriteLine($"Current Bot Version: v{String.Format("{0:0.00#}", BotConfig.Version)}");
