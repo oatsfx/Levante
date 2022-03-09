@@ -1,10 +1,13 @@
-﻿using Levante.Configs;
-using Levante.Util;
-using Discord;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using Discord;
+using Levante.Configs;
+using Levante.Util;
+using Newtonsoft.Json;
+
+// ReSharper disable UnusedMember.Global
 
 namespace Levante.Rotations
 {
@@ -17,217 +20,222 @@ namespace Levante.Rotations
         [JsonProperty("NightfallLinks")]
         public static List<NightfallLink> NightfallLinks { get; set; } = new List<NightfallLink>();
 
-        public class NightfallLink
-        {
-            [JsonProperty("DiscordID")]
-            public ulong DiscordID { get; set; } = 0;
-
-            [JsonProperty("NightfallStrike")]
-            public Nightfall? Nightfall { get; set; } = 0;
-
-            [JsonProperty("WeaponDrop")]
-            public NightfallWeapon? WeaponDrop { get; set; } = NightfallWeapon.ThePalindrome;
-        }
-
         public static string GetStrikeNameString(Nightfall Nightfall)
         {
-            switch (Nightfall)
+            return Nightfall switch
             {
-                case Nightfall.TheHollowedLair: return "The Hollowed Lair";
-                case Nightfall.LakeOfShadows: return "Lake of Shadows";
-                case Nightfall.ExodusCrash: return "Exodus Crash";
-                case Nightfall.TheCorrupted: return "The Corrupted";
-                case Nightfall.TheDevilsLair: return "The Devils' Lair";
-                case Nightfall.ProvingGrounds: return "Proving Grounds";
-                default: return "Nightfall: The Ordeal";
-            }
+                Nightfall.TheHollowedLair => "The Hollowed Lair",
+                Nightfall.LakeOfShadows => "Lake of Shadows",
+                Nightfall.ExodusCrash => "Exodus Crash",
+                Nightfall.TheCorrupted => "The Corrupted",
+                Nightfall.TheDevilsLair => "The Devils' Lair",
+                Nightfall.ProvingGrounds => "Proving Grounds",
+                _ => "Nightfall: The Ordeal"
+            };
         }
 
         public static string GetStrikeBossString(Nightfall Nightfall)
         {
-            switch (Nightfall)
+            return Nightfall switch
             {
-                case Nightfall.TheHollowedLair: return "Fikrul, the Fanatic";
-                case Nightfall.LakeOfShadows: return "Grask, the Consumed";
-                case Nightfall.ExodusCrash: return "Thaviks, the Depraved";
-                case Nightfall.TheCorrupted: return "Sedia, the Corrupted";
-                case Nightfall.TheDevilsLair: return "Sepiks Prime";
-                case Nightfall.ProvingGrounds: return "Ignovun, Chosen of Caiatl";
-                default: return "Nightfall: The Ordeal Boss";
-            }
+                Nightfall.TheHollowedLair => "Fikrul, the Fanatic",
+                Nightfall.LakeOfShadows => "Grask, the Consumed",
+                Nightfall.ExodusCrash => "Thaviks, the Depraved",
+                Nightfall.TheCorrupted => "Sedia, the Corrupted",
+                Nightfall.TheDevilsLair => "Sepiks Prime",
+                Nightfall.ProvingGrounds => "Ignovun, Chosen of Caiatl",
+                _ => "Nightfall: The Ordeal Boss"
+            };
         }
 
         public static string GetStrikeImageURL(Nightfall Nightfall)
         {
-            switch (Nightfall)
+            return Nightfall switch
             {
-                case Nightfall.TheHollowedLair: return "https://www.bungie.net/img/destiny_content/pgcr/strike_taurus.jpg";
-                case Nightfall.LakeOfShadows: return "https://www.bungie.net/img/destiny_content/pgcr/strike_lake_of_shadows.jpg";
-                case Nightfall.ExodusCrash: return "https://www.bungie.net/img/destiny_content/pgcr/strike_exodus_crash.jpg";
-                case Nightfall.TheCorrupted: return "https://www.bungie.net/img/destiny_content/pgcr/strike_gemini.jpg";
-                case Nightfall.TheDevilsLair: return "https://www.bungie.net/img/destiny_content/pgcr/cosmodrome_devils_lair.jpg";
-                case Nightfall.ProvingGrounds: return "https://www.bungie.net/img/destiny_content/pgcr/nessus_proving_grounds.jpg";
-                default: return "https://www.bungie.net/common/destiny2_content/icons/f2154b781b36b19760efcb23695c66fe.png";
-            }
+                Nightfall.TheHollowedLair => "https://www.bungie.net/img/destiny_content/pgcr/strike_taurus.jpg",
+                Nightfall.LakeOfShadows => "https://www.bungie.net/img/destiny_content/pgcr/strike_lake_of_shadows.jpg",
+                Nightfall.ExodusCrash => "https://www.bungie.net/img/destiny_content/pgcr/strike_exodus_crash.jpg",
+                Nightfall.TheCorrupted => "https://www.bungie.net/img/destiny_content/pgcr/strike_gemini.jpg",
+                Nightfall.TheDevilsLair => "https://www.bungie.net/img/destiny_content/pgcr/cosmodrome_devils_lair.jpg",
+                Nightfall.ProvingGrounds =>
+                    "https://www.bungie.net/img/destiny_content/pgcr/nessus_proving_grounds.jpg",
+                _ => "https://www.bungie.net/common/destiny2_content/icons/f2154b781b36b19760efcb23695c66fe.png"
+            };
         }
 
         public static string GetStrikeObjectiveString(Nightfall Nightfall)
         {
-            switch (Nightfall)
+            return Nightfall switch
             {
-                case Nightfall.TheHollowedLair: return "The Fanatic has returned. Take him down and finish the job you started.";
-                case Nightfall.LakeOfShadows: return "Stem the tide of Taken flowing into the European Dead Zone from beneath the waves.";
-                case Nightfall.ExodusCrash: return "Purge the Fallen infestation of the Exodus Black.";
-                case Nightfall.TheCorrupted: return "Hunt down one of Queen Mara's most trusted advisors and free her from Taken possession.";
-                case Nightfall.TheDevilsLair: return "Enter into the Devils' Lair and weaken the Fallen presence within the Cosmodrome.";
-                case Nightfall.ProvingGrounds: return "Defeat Caiatl's Chosen aboard the Land Tank, Halphas Electus, on Nessus.";
-                default: return "Clear the nightfall.";
-            }
+                Nightfall.TheHollowedLair => "The Fanatic has returned. Take him down and finish the job you started.",
+                Nightfall.LakeOfShadows =>
+                    "Stem the tide of Taken flowing into the European Dead Zone from beneath the waves.",
+                Nightfall.ExodusCrash => "Purge the Fallen infestation of the Exodus Black.",
+                Nightfall.TheCorrupted =>
+                    "Hunt down one of Queen Mara's most trusted advisors and free her from Taken possession.",
+                Nightfall.TheDevilsLair =>
+                    "Enter into the Devils' Lair and weaken the Fallen presence within the Cosmodrome.",
+                Nightfall.ProvingGrounds => "Defeat Caiatl's Chosen aboard the Land Tank, Halphas Electus, on Nessus.",
+                _ => "Clear the nightfall."
+            };
         }
 
         public static string GetStrikeLocationString(Nightfall Nightfall)
         {
-            switch (Nightfall)
+            return Nightfall switch
             {
-                case Nightfall.TheHollowedLair: return "The Tangled Shore, The Reef";
-                case Nightfall.LakeOfShadows: return "European Dead Zone, Earth";
-                case Nightfall.ExodusCrash: return "Arcadian Valley, Nessus";
-                case Nightfall.TheCorrupted: return "The Dreaming City, The Reef";
-                case Nightfall.TheDevilsLair: return "The Cosmodrome, Earth";
-                case Nightfall.ProvingGrounds: return "Halphas Electus, Nessus.";
-                default: return "The Sol System, Space";
-            }
+                Nightfall.TheHollowedLair => "The Tangled Shore, The Reef",
+                Nightfall.LakeOfShadows => "European Dead Zone, Earth",
+                Nightfall.ExodusCrash => "Arcadian Valley, Nessus",
+                Nightfall.TheCorrupted => "The Dreaming City, The Reef",
+                Nightfall.TheDevilsLair => "The Cosmodrome, Earth",
+                Nightfall.ProvingGrounds => "Halphas Electus, Nessus.",
+                _ => "The Sol System, Space"
+            };
         }
 
         public static string GetStrikeModifiers(Nightfall Nightfall, NightfallDifficulty Difficulty)
         {
-            switch (Nightfall)
+            return Nightfall switch
             {
-                case Nightfall.TheHollowedLair:
-                    switch (Difficulty)
-                    {
-                        case NightfallDifficulty.Adept: return $"{DestinyEmote.FesteringRupture}";
-                        case NightfallDifficulty.Hero: return $"{DestinyEmote.FesteringRupture} {DestinyEmote.FanaticsZeal}";
-                        case NightfallDifficulty.Legend: return $"{DestinyEmote.FesteringRupture} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.FanaticsZeal}";
-                        case NightfallDifficulty.Master: return $"{DestinyEmote.FesteringRupture} {DestinyEmote.Chaff} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.FanaticsZeal}";
-                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.FesteringRupture} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} {DestinyEmote.EquipmentLocked}" +
-                                $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.FanaticsZeal}";
-                        default: return "None.";
-                    }
-                case Nightfall.LakeOfShadows:
-                    switch (Difficulty)
-                    {
-                        case NightfallDifficulty.Adept: return $"{DestinyEmote.Empath}";
-                        case NightfallDifficulty.Hero: return $"{DestinyEmote.Empath} {DestinyEmote.GrasksBile}";
-                        case NightfallDifficulty.Legend: return $"{DestinyEmote.Empath} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.GrasksBile}";
-                        case NightfallDifficulty.Master: return $"{DestinyEmote.Empath} {DestinyEmote.Famine} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.GrasksBile}";
-                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.Epitaph} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} {DestinyEmote.EquipmentLocked}" +
-                                $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.GrasksBile}";
-                        default: return "None.";
-                    }
-                case Nightfall.ExodusCrash:
-                    switch (Difficulty)
-                    {
-                        case NightfallDifficulty.Adept: return $"{DestinyEmote.ScorchedEarth}";
-                        case NightfallDifficulty.Hero: return $"{DestinyEmote.ScorchedEarth} {DestinyEmote.ThaviksImplant}";
-                        case NightfallDifficulty.Legend: return $"{DestinyEmote.ScorchedEarth} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.ThaviksImplant}";
-                        case NightfallDifficulty.Master: return $"{DestinyEmote.ScorchedEarth} {DestinyEmote.Chaff} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.ThaviksImplant}";
-                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.ArachNO} {DestinyEmote.ScorchedEarth} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} " +
-                                $"{DestinyEmote.EquipmentLocked} {DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.ThaviksImplant}";
-                        default: return "None.";
-                    }
-                case Nightfall.TheCorrupted:
-                    switch (Difficulty)
-                    {
-                        case NightfallDifficulty.Adept: return $"{DestinyEmote.Epitaph}";
-                        case NightfallDifficulty.Hero: return $"{DestinyEmote.Epitaph} {DestinyEmote.SediasDurance}";
-                        case NightfallDifficulty.Legend: return $"{DestinyEmote.Epitaph} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SediasDurance}";
-                        case NightfallDifficulty.Master: return $"{DestinyEmote.Epitaph} {DestinyEmote.Famine} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SediasDurance}";
-                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.Epitaph} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} {DestinyEmote.EquipmentLocked} " +
-                                $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.SediasDurance}";
-                        default: return "None.";
-                    }
-                case Nightfall.TheDevilsLair:
-                    switch (Difficulty)
-                    {
-                        case NightfallDifficulty.Adept: return $"{DestinyEmote.HotKnife}";
-                        case NightfallDifficulty.Hero: return $"{DestinyEmote.HotKnife} {DestinyEmote.SepiksGaze}";
-                        case NightfallDifficulty.Legend: return $"{DestinyEmote.HotKnife} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SepiksGaze}";
-                        case NightfallDifficulty.Master: return $"{DestinyEmote.HotKnife} {DestinyEmote.Togetherness} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SepiksGaze}";
-                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.ArachNO} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} " +
-                                $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.SepiksGaze}";
-                        default: return "None.";
-                    }
-                case Nightfall.ProvingGrounds:
-                    switch (Difficulty)
-                    {
-                        case NightfallDifficulty.Adept: return $"{DestinyEmote.Empath}";
-                        case NightfallDifficulty.Hero: return $"{DestinyEmote.Empath} {DestinyEmote.IgnovunsChallenge}";
-                        case NightfallDifficulty.Legend: return $"{DestinyEmote.Empath} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.IgnovunsChallenge}";
-                        case NightfallDifficulty.Master: return $"{DestinyEmote.Empath} {DestinyEmote.Attrition} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.IgnovunsChallenge}";
-                        case NightfallDifficulty.Grandmaster: return $"{DestinyEmote.ScorchedEarth} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} " +
-                                $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.IgnovunsChallenge}";
-                        default: return "None.";
-                    }
-                default: return "None.";
-            }
+                Nightfall.TheHollowedLair => Difficulty switch
+                {
+                    NightfallDifficulty.Adept => $"{DestinyEmote.FesteringRupture}",
+                    NightfallDifficulty.Hero => $"{DestinyEmote.FesteringRupture} {DestinyEmote.FanaticsZeal}",
+                    NightfallDifficulty.Legend =>
+                        $"{DestinyEmote.FesteringRupture} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.FanaticsZeal}",
+                    NightfallDifficulty.Master =>
+                        $"{DestinyEmote.FesteringRupture} {DestinyEmote.Chaff} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.FanaticsZeal}",
+                    NightfallDifficulty.Grandmaster =>
+                        $"{DestinyEmote.FesteringRupture} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} {DestinyEmote.EquipmentLocked}" +
+                        $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.FanaticsZeal}",
+                    _ => "None."
+                },
+                Nightfall.LakeOfShadows => Difficulty switch
+                {
+                    NightfallDifficulty.Adept => $"{DestinyEmote.Empath}",
+                    NightfallDifficulty.Hero => $"{DestinyEmote.Empath} {DestinyEmote.GrasksBile}",
+                    NightfallDifficulty.Legend =>
+                        $"{DestinyEmote.Empath} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.GrasksBile}",
+                    NightfallDifficulty.Master =>
+                        $"{DestinyEmote.Empath} {DestinyEmote.Famine} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.GrasksBile}",
+                    NightfallDifficulty.Grandmaster =>
+                        $"{DestinyEmote.Epitaph} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} {DestinyEmote.EquipmentLocked}" +
+                        $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.GrasksBile}",
+                    _ => "None."
+                },
+                Nightfall.ExodusCrash => Difficulty switch
+                {
+                    NightfallDifficulty.Adept => $"{DestinyEmote.ScorchedEarth}",
+                    NightfallDifficulty.Hero => $"{DestinyEmote.ScorchedEarth} {DestinyEmote.ThaviksImplant}",
+                    NightfallDifficulty.Legend =>
+                        $"{DestinyEmote.ScorchedEarth} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.ThaviksImplant}",
+                    NightfallDifficulty.Master =>
+                        $"{DestinyEmote.ScorchedEarth} {DestinyEmote.Chaff} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.ThaviksImplant}",
+                    NightfallDifficulty.Grandmaster =>
+                        $"{DestinyEmote.ArachNO} {DestinyEmote.ScorchedEarth} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} " +
+                        $"{DestinyEmote.EquipmentLocked} {DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.ThaviksImplant}",
+                    _ => "None."
+                },
+                Nightfall.TheCorrupted => Difficulty switch
+                {
+                    NightfallDifficulty.Adept => $"{DestinyEmote.Epitaph}",
+                    NightfallDifficulty.Hero => $"{DestinyEmote.Epitaph} {DestinyEmote.SediasDurance}",
+                    NightfallDifficulty.Legend =>
+                        $"{DestinyEmote.Epitaph} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SediasDurance}",
+                    NightfallDifficulty.Master =>
+                        $"{DestinyEmote.Epitaph} {DestinyEmote.Famine} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SediasDurance}",
+                    NightfallDifficulty.Grandmaster =>
+                        $"{DestinyEmote.Epitaph} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.MatchGame} {DestinyEmote.EquipmentLocked} " +
+                        $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.SediasDurance}",
+                    _ => "None."
+                },
+                Nightfall.TheDevilsLair => Difficulty switch
+                {
+                    NightfallDifficulty.Adept => $"{DestinyEmote.HotKnife}",
+                    NightfallDifficulty.Hero => $"{DestinyEmote.HotKnife} {DestinyEmote.SepiksGaze}",
+                    NightfallDifficulty.Legend =>
+                        $"{DestinyEmote.HotKnife} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SepiksGaze}",
+                    NightfallDifficulty.Master =>
+                        $"{DestinyEmote.HotKnife} {DestinyEmote.Togetherness} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.SepiksGaze}",
+                    NightfallDifficulty.Grandmaster =>
+                        $"{DestinyEmote.ArachNO} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} " +
+                        $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.SepiksGaze}",
+                    _ => "None."
+                },
+                Nightfall.ProvingGrounds => Difficulty switch
+                {
+                    NightfallDifficulty.Adept => $"{DestinyEmote.Empath}",
+                    NightfallDifficulty.Hero => $"{DestinyEmote.Empath} {DestinyEmote.IgnovunsChallenge}",
+                    NightfallDifficulty.Legend =>
+                        $"{DestinyEmote.Empath} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.IgnovunsChallenge}",
+                    NightfallDifficulty.Master =>
+                        $"{DestinyEmote.Empath} {DestinyEmote.Attrition} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} {DestinyEmote.IgnovunsChallenge}",
+                    NightfallDifficulty.Grandmaster =>
+                        $"{DestinyEmote.ScorchedEarth} {DestinyEmote.Chaff} {DestinyEmote.GrandmasterModifiers} {DestinyEmote.EquipmentLocked} {DestinyEmote.MatchGame} " +
+                        $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.IgnovunsChallenge}",
+                    _ => "None."
+                },
+                _ => "None."
+            };
         }
 
         public static string GetWeaponString(NightfallWeapon Weapon)
         {
-            switch (Weapon)
+            return Weapon switch
             {
-                case NightfallWeapon.ThePalindrome: return "The Palindrome";
-                case NightfallWeapon.TheSWARM: return "THE S.W.A.R.M.";
-                case NightfallWeapon.TheComedian: return "The Comedian";
-                case NightfallWeapon.ShadowPrice: return "Shadow Price";
-                case NightfallWeapon.HungJurySR4: return "Hung Jury SR4";
-                case NightfallWeapon.TheHothead: return "The Hothead";
-                case NightfallWeapon.PlugOne1: return "PLUG ONE.1";
-                case NightfallWeapon.UzumeRR4: return "Uzume RR4";
-                default: return "Nightfall Weapon";
-            }
+                NightfallWeapon.ThePalindrome => "The Palindrome",
+                NightfallWeapon.TheSWARM => "THE S.W.A.R.M.",
+                NightfallWeapon.TheComedian => "The Comedian",
+                NightfallWeapon.ShadowPrice => "Shadow Price",
+                NightfallWeapon.HungJurySR4 => "Hung Jury SR4",
+                NightfallWeapon.TheHothead => "The Hothead",
+                NightfallWeapon.PlugOne1 => "PLUG ONE.1",
+                NightfallWeapon.UzumeRR4 => "Uzume RR4",
+                _ => "Nightfall Weapon"
+            };
         }
 
         public static string GetWeaponEmote(NightfallWeapon Weapon)
         {
-            switch (Weapon)
+            return Weapon switch
             {
-                case NightfallWeapon.ThePalindrome: return $"{DestinyEmote.HandCannon}";
-                case NightfallWeapon.TheSWARM: return $"{DestinyEmote.MachineGun}";
-                case NightfallWeapon.TheComedian: return $"{DestinyEmote.Shotgun}";
-                case NightfallWeapon.ShadowPrice: return $"{DestinyEmote.AutoRifle}";
-                case NightfallWeapon.HungJurySR4: return $"{DestinyEmote.ScoutRifle}";
-                case NightfallWeapon.TheHothead: return $"{DestinyEmote.RocketLauncher}";
-                case NightfallWeapon.PlugOne1: return $"{DestinyEmote.FusionRifle}";
-                case NightfallWeapon.UzumeRR4: return $"{DestinyEmote.SniperRifle}";
-                default: return "Nightfall Weapon Emote";
-            }
+                NightfallWeapon.ThePalindrome => $"{DestinyEmote.HandCannon}",
+                NightfallWeapon.TheSWARM => $"{DestinyEmote.MachineGun}",
+                NightfallWeapon.TheComedian => $"{DestinyEmote.Shotgun}",
+                NightfallWeapon.ShadowPrice => $"{DestinyEmote.AutoRifle}",
+                NightfallWeapon.HungJurySR4 => $"{DestinyEmote.ScoutRifle}",
+                NightfallWeapon.TheHothead => $"{DestinyEmote.RocketLauncher}",
+                NightfallWeapon.PlugOne1 => $"{DestinyEmote.FusionRifle}",
+                NightfallWeapon.UzumeRR4 => $"{DestinyEmote.SniperRifle}",
+                _ => "Nightfall Weapon Emote"
+            };
         }
 
         public static EmbedBuilder GetNightfallEmbed(Nightfall Nightfall)
         {
-            var auth = new EmbedAuthorBuilder()
+            var auth = new EmbedAuthorBuilder
             {
-                Name = $"Nightfall Information",
-                IconUrl = GetStrikeImageURL(Nightfall),
+                Name = "Nightfall Information",
+                IconUrl = GetStrikeImageURL(Nightfall)
             };
-            var foot = new EmbedFooterBuilder()
+            var foot = new EmbedFooterBuilder
             {
                 Text = $"{GetStrikeLocationString(Nightfall)}"
             };
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color =
+                    new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = auth,
-                Footer = foot,
+                Footer = foot
             };
             embed.AddField(y =>
             {
-                y.Name = $"Adept";
+                y.Name = "Adept";
                 y.Value = $"Recommended Power: {DestinyEmote.Light}1250\n" +
-                    $"Champions: None.\n" +
-                    $"Modifiers: ";
+                          "Champions: None.\n" +
+                          "Modifiers: ";
                 y.IsInline = false;
             });
 
@@ -235,14 +243,16 @@ namespace Levante.Rotations
             embed.Description = $"{GetStrikeObjectiveString(Nightfall)}";
 
             embed.Url = "https://www.bungie.net/img/destiny_content/pgcr/vault_of_glass.jpg";
-            embed.ThumbnailUrl = $"https://www.bungie.net/common/destiny2_content/icons/f2154b781b36b19760efcb23695c66fe.png";
+            embed.ThumbnailUrl =
+                "https://www.bungie.net/common/destiny2_content/icons/f2154b781b36b19760efcb23695c66fe.png";
 
             return embed;
         }
 
         public static void AddUserTracking(ulong DiscordID, Nightfall? Nightfall, NightfallWeapon? WeaponDrop)
         {
-            NightfallLinks.Add(new NightfallLink() { DiscordID = DiscordID, Nightfall = Nightfall, WeaponDrop = WeaponDrop });
+            NightfallLinks.Add(
+                new NightfallLink {DiscordID = DiscordID, Nightfall = Nightfall, WeaponDrop = WeaponDrop});
             UpdateJSON();
         }
 
@@ -253,15 +263,16 @@ namespace Levante.Rotations
         }
 
         // Returns null if no tracking is found.
-        public static NightfallLink GetUserTracking(ulong DiscordID, out Nightfall? Nightfall, out NightfallWeapon? WeaponDrop)
+        public static NightfallLink GetUserTracking(ulong DiscordID, out Nightfall? Nightfall,
+            out NightfallWeapon? WeaponDrop)
         {
-            foreach (var Link in NightfallLinks)
-                if (Link.DiscordID == DiscordID)
-                {
-                    Nightfall = Link.Nightfall;
-                    WeaponDrop = Link.WeaponDrop;
-                    return Link;
-                }
+            foreach (var Link in NightfallLinks.Where(Link => Link.DiscordID == DiscordID))
+            {
+                Nightfall = Link.Nightfall;
+                WeaponDrop = Link.WeaponDrop;
+                return Link;
+            }
+
             Nightfall = null;
             WeaponDrop = null;
             return null;
@@ -272,7 +283,7 @@ namespace Levante.Rotations
             NightfallRotation obj;
             if (File.Exists(FilePath))
             {
-                string json = File.ReadAllText(FilePath);
+                var json = File.ReadAllText(FilePath);
                 obj = JsonConvert.DeserializeObject<NightfallRotation>(json);
             }
             else
@@ -286,61 +297,86 @@ namespace Levante.Rotations
         public static void UpdateJSON()
         {
             var obj = new NightfallRotation();
-            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
+            var output = JsonConvert.SerializeObject(obj, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
         public static DateTime DatePrediction(Nightfall? NightfallStrike, NightfallWeapon? WeaponDrop)
         {
-            NightfallWeapon[] iterationWeapons = CurrentRotations.NightfallWeaponDrops;
-            Nightfall iterationStrike = CurrentRotations.Nightfall;
-            int WeeksUntil = 0;
+            var iterationWeapons = CurrentRotations.NightfallWeaponDrops;
+            var iterationStrike = CurrentRotations.Nightfall;
+            var WeeksUntil = 0;
             if (NightfallStrike == null && WeaponDrop != null)
-            {
                 do
                 {
-                    iterationWeapons[0] = iterationWeapons[0] >= NightfallWeapon.PlugOne1 ? NightfallWeapon.ThePalindrome : iterationWeapons[0] + 2;
-                    iterationWeapons[1] = iterationWeapons[1] >= NightfallWeapon.PlugOne1 ? NightfallWeapon.TheSWARM : iterationWeapons[1] + 2;
+                    iterationWeapons[0] = iterationWeapons[0] >= NightfallWeapon.PlugOne1
+                        ? NightfallWeapon.ThePalindrome
+                        : iterationWeapons[0] + 2;
+                    iterationWeapons[1] = iterationWeapons[1] >= NightfallWeapon.PlugOne1
+                        ? NightfallWeapon.TheSWARM
+                        : iterationWeapons[1] + 2;
                     WeeksUntil++;
                 } while (iterationWeapons[0] != WeaponDrop && iterationWeapons[1] != WeaponDrop);
-            }
             else if (WeaponDrop == null && NightfallStrike != null)
-            {
                 do
                 {
-                    iterationStrike = iterationStrike == Nightfall.ProvingGrounds ? Nightfall.TheHollowedLair : iterationStrike + 1;
+                    iterationStrike = iterationStrike == Nightfall.ProvingGrounds
+                        ? Nightfall.TheHollowedLair
+                        : iterationStrike + 1;
                     WeeksUntil++;
                 } while (iterationStrike != NightfallStrike);
-            }
-            else if (WeaponDrop != null && NightfallStrike != null)
-            {
+            else if (WeaponDrop != null)
                 do
                 {
-                    iterationWeapons[0] = iterationWeapons[0] >= NightfallWeapon.PlugOne1 ? NightfallWeapon.ThePalindrome : iterationWeapons[0] + 2;
-                    iterationWeapons[1] = iterationWeapons[1] >= NightfallWeapon.PlugOne1 ? NightfallWeapon.TheSWARM : iterationWeapons[1] + 2;
-                    iterationStrike = iterationStrike == Nightfall.ProvingGrounds ? Nightfall.TheHollowedLair : iterationStrike + 1;
+                    iterationWeapons[0] = iterationWeapons[0] >= NightfallWeapon.PlugOne1
+                        ? NightfallWeapon.ThePalindrome
+                        : iterationWeapons[0] + 2;
+                    iterationWeapons[1] = iterationWeapons[1] >= NightfallWeapon.PlugOne1
+                        ? NightfallWeapon.TheSWARM
+                        : iterationWeapons[1] + 2;
+                    iterationStrike = iterationStrike == Nightfall.ProvingGrounds
+                        ? Nightfall.TheHollowedLair
+                        : iterationStrike + 1;
                     WeeksUntil++;
-                } while (iterationStrike != NightfallStrike && (iterationWeapons[0] != WeaponDrop && iterationWeapons[1] != WeaponDrop));
-            }
+                } while (iterationStrike != NightfallStrike && iterationWeapons[0] != WeaponDrop &&
+                         iterationWeapons[1] != WeaponDrop);
+
             return CurrentRotations.WeeklyResetTimestamp.AddDays(WeeksUntil * 7); // Because there is no .AddWeeks().
         }
 
         public static Nightfall ActivityPrediction(DateTime Date, out NightfallWeapon[] WeaponDrops)
         {
-            DateTime iterationDate = CurrentRotations.WeeklyResetTimestamp;
-            NightfallWeapon[] iterationWeapons = CurrentRotations.NightfallWeaponDrops;
-            Nightfall iterationStrike = CurrentRotations.Nightfall;
+            var iterationDate = CurrentRotations.WeeklyResetTimestamp;
+            var iterationWeapons = CurrentRotations.NightfallWeaponDrops;
+            var iterationStrike = CurrentRotations.Nightfall;
 
             do
             {
-                iterationWeapons[0] = iterationWeapons[0] >= NightfallWeapon.PlugOne1 ? NightfallWeapon.ThePalindrome : iterationWeapons[0] + 2;
-                iterationWeapons[1] = iterationWeapons[1] >= NightfallWeapon.PlugOne1 ? NightfallWeapon.TheSWARM : iterationWeapons[1] + 2;
-                iterationStrike = iterationStrike == Nightfall.ProvingGrounds ? Nightfall.TheHollowedLair : iterationStrike + 1;
+                iterationWeapons[0] = iterationWeapons[0] >= NightfallWeapon.PlugOne1
+                    ? NightfallWeapon.ThePalindrome
+                    : iterationWeapons[0] + 2;
+                iterationWeapons[1] = iterationWeapons[1] >= NightfallWeapon.PlugOne1
+                    ? NightfallWeapon.TheSWARM
+                    : iterationWeapons[1] + 2;
+                iterationStrike = iterationStrike == Nightfall.ProvingGrounds
+                    ? Nightfall.TheHollowedLair
+                    : iterationStrike + 1;
+                // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
                 iterationDate.AddDays(7);
             } while ((iterationDate - Date).Days >= 7);
 
             WeaponDrops = iterationWeapons;
             return iterationStrike;
+        }
+
+        public class NightfallLink
+        {
+            [JsonProperty("DiscordID")] public ulong DiscordID { get; set; }
+
+            [JsonProperty("NightfallStrike")] public Nightfall? Nightfall { get; set; } = 0;
+
+            [JsonProperty("WeaponDrop")]
+            public NightfallWeapon? WeaponDrop { get; set; } = NightfallWeapon.ThePalindrome;
         }
     }
 
@@ -357,7 +393,7 @@ namespace Levante.Rotations
         ExodusCrash,
         TheCorrupted,
         TheDevilsLair,
-        ProvingGrounds,
+        ProvingGrounds
     }
 
     public enum NightfallWeapon
@@ -369,7 +405,10 @@ namespace Levante.Rotations
         HungJurySR4,
         TheHothead,
         PlugOne1,
-        UzumeRR4,
+
+        //DutyBound,
+        //SiliconNeuroma
+        UzumeRR4
     }
 
     public enum NightfallDifficulty
@@ -378,6 +417,6 @@ namespace Levante.Rotations
         Hero,
         Legend,
         Master,
-        Grandmaster,
+        Grandmaster
     }
 }

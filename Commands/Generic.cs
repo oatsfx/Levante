@@ -1,9 +1,11 @@
-﻿using Discord;
+﻿using System.Linq;
 using System.Threading.Tasks;
-using Levante.Configs;
-using Fergun.Interactive;
+using Discord;
 using Discord.Interactions;
-using System.Linq;
+using Fergun.Interactive;
+using Levante.Configs;
+
+// ReSharper disable UnusedMember.Global
 
 namespace Levante.Commands
 {
@@ -14,72 +16,64 @@ namespace Levante.Commands
         [SlashCommand("help", "Get the command list for Levante.")]
         public async Task Help()
         {
-            var auth = new EmbedAuthorBuilder()
+            var auth = new EmbedAuthorBuilder
             {
                 Name = "Command List"
             };
 
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color =
+                    new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = auth,
+                Title = "Command List"
             };
 
-            embed.Title = "Command List";
-            string desc = "";
-            foreach (var cmd in Context.Client.GetGlobalApplicationCommandsAsync().Result)
-            {
-                desc += $"/{cmd.Name}\n";
-            }
+            var desc = Context.Client.GetGlobalApplicationCommandsAsync().Result.Aggregate("", (current, cmd) => current + $"/{cmd.Name}\n");
             embed.Description = desc;
 
             await RespondAsync(embed: embed.Build());
         }
-        
-        [SlashCommand("info", "Get the info of Levante.")]
+
+        [SlashCommand("info", "Get the info of Felicity.")]
         public async Task InfoAsync()
         {
             var app = await Context.Client.GetApplicationInfoAsync();
             var embed = new EmbedBuilder();
-            embed.WithColor(new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
+            embed.WithColor(new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G,
+                BotConfig.EmbedColorGroup.B));
 
             embed.ThumbnailUrl = app.IconUrl;
 
             embed.Title = "Bot Information";
             embed.Description =
-                "Levante is an [open-source](https://github.com/oatsfx/Levante) Discord bot using Discord.Net-Labs (Discord.NET Wrapper Nightly) for various Destiny 2 Needs. " +
-                "This bot is actively developed by [@OatsFX](https://twitter.com/OatsFX). It pulls most of its information from the Bungie API.";
+                "Felicity is based on Levante, an [open-source](https://github.com/oatsfx/Levante) Discord bot using Discord.Net-Labs (Discord.NET Wrapper Nightly) for various Destiny 2 Needs. " +
+                "This bot is actively developed by [@axsLeaf](https://twitter.com/axsLeaf) & [@OatsFX](https://twitter.com/OatsFX). It pulls most of its information from the Bungie API.";
 
             embed.AddField(x =>
-            {
-                x.Name = "Guild Count";
-                x.Value = $"{Context.Client.Guilds.Count} Guilds";
-                x.IsInline = true;
-            })
-            .AddField(x =>
-            {
-                x.Name = "User Count";
-                x.Value = $"{Context.Client.Guilds.Sum(x => x.MemberCount)} Users";
-                x.IsInline = true;
-            })
-            .AddField(x =>
-            {
-                x.Name = "Bot Version";
-                x.Value = $"v{BotConfig.Version}";
-                x.IsInline = true;
-            })
-            .AddField(x =>
-            {
-                x.Name = "Website";
-                x.Value = $"https://levante.dev/";
-                x.IsInline = true;
-            })
-            .AddField(x =>
-            {
-                x.Name = "Support Server";
-                x.Value = $"https://discord.gg/Levante";
-                x.IsInline = true;
-            });
+                {
+                    x.Name = "Guild Count";
+                    x.Value = $"{Context.Client.Guilds.Count} Guilds";
+                    x.IsInline = true;
+                })
+                .AddField(x =>
+                {
+                    x.Name = "User Count";
+                    x.Value = $"{Context.Client.Guilds.Sum(guild => guild.MemberCount)} Users";
+                    x.IsInline = true;
+                })
+                .AddField(x =>
+                {
+                    x.Name = "Bot Version";
+                    x.Value = $"v{BotConfig.Version}";
+                    x.IsInline = true;
+                })
+                .AddField(x =>
+                {
+                    x.Name = "Support Server";
+                    x.Value = "https://discord.flowerpat.ch/";
+                    x.IsInline = true;
+                });
 
             await RespondAsync(embed: embed.Build());
         }
@@ -90,12 +84,12 @@ namespace Levante.Commands
             var app = await Context.Client.GetApplicationInfoAsync();
             var embed = new EmbedBuilder();
 
-            embed.WithColor(new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
+            embed.WithColor(new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G,
+                BotConfig.EmbedColorGroup.B));
             embed.ThumbnailUrl = app.IconUrl;
             embed.Title = "Invite Link";
             embed.Description =
-                "__**Invite me to your server!**__" +
-                "\n[Invite](https://discord.com/api/oauth2/authorize?client_id=882303133643047005&permissions=8&scope=applications.commands%20bot)";
+                $"[Invite](https://discord.com/api/oauth2/authorize?client_id={Context.Client.CurrentUser.Id}&permissions=8&scope=applications.commands%20bot)";
 
             await RespondAsync(embed: embed.Build(), ephemeral: true);
         }
@@ -103,8 +97,8 @@ namespace Levante.Commands
         [SlashCommand("ping", "Replies with latency in milliseconds.")]
         public async Task PingAsync()
         {
-            int[] colors = new int[3];
-            int latency = Context.Client.Latency;
+            var colors = new int[3];
+            var latency = Context.Client.Latency;
 
             if (latency >= 0 && latency < 120)
             {
@@ -125,12 +119,11 @@ namespace Levante.Commands
                 colors[2] = 69;
             }
 
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(colors[0], colors[1], colors[2]),
+                Color = new Color(colors[0], colors[1], colors[2]),
+                Description = $"Pong! ({latency} ms)"
             };
-            embed.Description =
-                $"Pong! ({latency} ms)";
 
             await RespondAsync(embed: embed.Build());
         }

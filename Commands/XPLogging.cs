@@ -1,9 +1,11 @@
-﻿using Discord;
-using Discord.WebSocket;
-using System;
+﻿using System;
 using System.Threading.Tasks;
-using Levante.Configs;
+using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
+using Levante.Configs;
+
+// ReSharper disable UnusedMember.Global
 
 namespace Levante.Commands
 {
@@ -13,30 +15,29 @@ namespace Levante.Commands
         public async Task ActiveAFK()
         {
             var app = await Context.Client.GetApplicationInfoAsync();
-            var auth = new EmbedAuthorBuilder()
+            var auth = new EmbedAuthorBuilder
             {
-                Name = $"Active XP Logging Users",
+                Name = "Active XP Logging Users",
                 IconUrl = app.IconUrl
             };
-            var foot = new EmbedFooterBuilder()
+            var foot = new EmbedFooterBuilder
             {
                 Text = $"{ActiveConfig.ActiveAFKUsers.Count} people are logging their XP."
             };
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color =
+                    new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = auth,
-                Footer = foot,
+                Footer = foot
             };
 
             if (ActiveConfig.ActiveAFKUsers.Count >= 1)
             {
-                embed.Description = $"__XP Logging List:__\n";
+                embed.Description = "__XP Logging List:__\n";
                 foreach (var aau in ActiveConfig.ActiveAFKUsers)
-                {
                     embed.Description +=
                         $"{aau.UniqueBungieName}: Level {aau.LastLoggedLevel}\n";
-                }
             }
             else
             {
@@ -47,10 +48,17 @@ namespace Levante.Commands
         }
 
         [SlashCommand("current-session", "Pulls stats of a current XP session.")]
-        public async Task SessionStats([Summary("user", "User you want the current XP Session stats for. Leave empty for your own.")] IUser User = null)
+        public async Task SessionStats(
+            [Summary("user", "User you want the current XP Session stats for. Leave empty for your own.")] IUser User =
+                null)
         {
+            User ??= Context.User as SocketGuildUser;
+
             if (User == null)
-                User = Context.User as SocketGuildUser;
+            {
+                await RespondAsync("Something went wrong...", ephemeral: true);
+                return;
+            }
 
             if (!ActiveConfig.IsExistingActiveUser(User.Id))
             {
@@ -59,46 +67,45 @@ namespace Levante.Commands
                     await RespondAsync("You are not using my logging feature.", ephemeral: true);
                     return;
                 }
-                else
-                {
-                    await RespondAsync($"{User.Username} is not using my logging feature.", ephemeral: true);
-                    return;
-                }
+
+                await RespondAsync($"{User.Username} is not using my logging feature.", ephemeral: true);
+                return;
             }
 
             var aau = ActiveConfig.GetActiveAFKUser(User.Id);
 
             var app = await Context.Client.GetApplicationInfoAsync();
-            var auth = new EmbedAuthorBuilder()
+            var auth = new EmbedAuthorBuilder
             {
                 Name = $"Current Session Stats for {aau.UniqueBungieName}",
-                IconUrl = app.IconUrl,
+                IconUrl = app.IconUrl
             };
-            var foot = new EmbedFooterBuilder()
+            var foot = new EmbedFooterBuilder
             {
-                Text = $"XP Logging Session Summary"
+                Text = "XP Logging Session Summary"
             };
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color =
+                    new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = auth,
-                Footer = foot,
+                Footer = foot
             };
-            int levelsGained = aau.LastLoggedLevel - aau.StartLevel;
-            long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
+            var levelsGained = aau.LastLoggedLevel - aau.StartLevel;
+            long xpGained = levelsGained * 100000 - aau.StartLevelProgress + aau.LastLevelProgress;
             var timeSpan = DateTime.Now - aau.TimeStarted;
-            string timeString = $"{(Math.Floor(timeSpan.TotalHours) > 0 ? $"{Math.Floor(timeSpan.TotalHours)}h " : "")}" +
-                    $"{(timeSpan.Minutes > 0 ? $"{timeSpan.Minutes:00}m " : "")}" +
-                    $"{timeSpan.Seconds:00}s";
-            int xpPerHour = 0;
+            var timeString = $"{(Math.Floor(timeSpan.TotalHours) > 0 ? $"{Math.Floor(timeSpan.TotalHours)}h " : "")}" +
+                             $"{(timeSpan.Minutes > 0 ? $"{timeSpan.Minutes:00}m " : "")}" +
+                             $"{timeSpan.Seconds:00}s";
+            var xpPerHour = 0;
             if ((DateTime.Now - aau.TimeStarted).TotalHours >= 1)
-                xpPerHour = (int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours);
+                xpPerHour = (int) Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours);
             embed.WithCurrentTimestamp();
             embed.Description =
                 $"Levels Gained: {levelsGained}\n" +
-                $"XP Gained: {String.Format("{0:n0}", xpGained)}\n" +
+                $"XP Gained: {xpGained:n0}\n" +
                 $"Time: {timeString}\n" +
-                $"XP Per Hour: {String.Format("{0:n0}", xpPerHour)}";
+                $"XP Per Hour: {xpPerHour:n0}";
 
             await RespondAsync(embed: embed.Build());
         }

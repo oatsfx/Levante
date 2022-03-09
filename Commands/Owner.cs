@@ -1,19 +1,22 @@
-﻿using Discord;
-using Discord.Commands;
-using System;
-using System.Threading.Tasks;
-using Levante.Configs;
-using Levante.Util;
-using System.Net.Http;
-using System.Linq;
-using System.Text;
-using Fergun.Interactive;
-using Newtonsoft.Json;
-using Discord.WebSocket;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+using Discord;
+using Discord.Commands;
+using Discord.WebSocket;
+using Fergun.Interactive;
+using Levante.Configs;
 using Levante.Helpers;
 using Levante.Rotations;
-using System.Collections.Generic;
+using Levante.Util;
+using Newtonsoft.Json;
+
+// ReSharper disable UnusedMember.Global
 
 namespace Levante.Commands
 {
@@ -38,7 +41,10 @@ namespace Levante.Commands
         [Command("giveConfig", RunMode = RunMode.Async)]
         [Alias("config", "getConfig")]
         [RequireOwner]
-        public async Task GiveConfigs() => await Context.User.SendFileAsync(BotConfig.FilePath);
+        public async Task GiveConfigs()
+        {
+            await Context.User.SendFileAsync(BotConfig.FilePath);
+        }
 
         [Command("replaceConfig", RunMode = RunMode.Async)]
         [RequireOwner]
@@ -54,15 +60,13 @@ namespace Levante.Commands
             using (var httpCilent = new HttpClient())
             {
                 var url = attachments.First().Url;
-                byte[] bytes = await httpCilent.GetByteArrayAsync(url);
-                using (var fs = new FileStream(BotConfig.FilePath, FileMode.Create))
-                {
-                    fs.Write(bytes, 0, bytes.Length);
-                }
+                var bytes = await httpCilent.GetByteArrayAsync(url);
+                await using var fs = new FileStream(BotConfig.FilePath, FileMode.Create);
+                fs.Write(bytes, 0, bytes.Length);
             }
 
             await Refresh();
-            await ReplyAsync($"Config replaced and bot is refreshed.");
+            await ReplyAsync("Config replaced and bot is refreshed.");
         }
 
         [Command("refresh", RunMode = RunMode.Async)]
@@ -71,7 +75,7 @@ namespace Levante.Commands
         public async Task Refresh()
         {
             ConfigHelper.CheckAndLoadConfigFiles();
-            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Note} | v{BotConfig.Version}", ActivityType.Playing));
+            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Note} | v{BotConfig.Version}"));
 
             var react = Emote.Parse("<:complete:927315594951426048>");
 
@@ -85,7 +89,7 @@ namespace Levante.Commands
         {
             if (DiscordID <= 0)
             {
-                await Context.Message.ReplyAsync($"No Discord User ID attached.");
+                await Context.Message.ReplyAsync("No Discord User ID attached.");
                 return;
             }
 
@@ -97,7 +101,7 @@ namespace Levante.Commands
 
             BotConfig.BotSupportersDiscordIDs.Add(DiscordID);
             var bConfig = new BotConfig();
-            File.WriteAllText(BotConfig.FilePath, JsonConvert.SerializeObject(bConfig, Formatting.Indented));
+            await File.WriteAllTextAsync(BotConfig.FilePath, JsonConvert.SerializeObject(bConfig, Formatting.Indented));
             await Context.Message.ReplyAsync($"Added {DiscordID} to my list of Supporters!");
         }
 
@@ -128,9 +132,10 @@ namespace Levante.Commands
                 using (var httpCilent = new HttpClient())
                 {
                     var url = attachments.First().Url;
-                    byte[] bytes = await httpCilent.GetByteArrayAsync(url);
+                    var bytes = await httpCilent.GetByteArrayAsync(url);
                     content = Encoding.UTF8.GetString(bytes);
                 }
+
                 EmblemOffer newOffer;
 
                 try
@@ -143,33 +148,46 @@ namespace Levante.Commands
                     return;
                 }
 
-                await ReplyAsync("This is what the embed looks like. Ready to send to all channels? Reply \"yes\" to confirm. Reply \"skip\" to skip this step.", false, newOffer.BuildEmbed().Build());
-
-                var sendResponse = await Interactive.NextMessageAsync(x => x.Channel.Id == Context.Channel.Id && x.Author == Context.Message.Author, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
-
-                if (sendResponse.Value.ToString().Equals("yes"))
+                if (newOffer == null)
                 {
-                    await ReplyAsync("Sending...");
-                    newOffer.CreateJSON();
-                    await SendToAllAnnounceChannels(newOffer.BuildEmbed());
-                    await ReplyAsync("Sent!");
+                    await ReplyAsync("Failed to generate new offer.");
+                    return;
                 }
-                else if (sendResponse.Value.ToString().Equals("skip"))
+
+                await ReplyAsync(
+                    "This is what the embed looks like. Ready to send to all channels? Reply \"yes\" to confirm. Reply \"skip\" to skip this step.",
+                    false, newOffer.BuildEmbed().Build());
+
+                var sendResponse = await Interactive.NextMessageAsync(
+                    x => x.Channel.Id == Context.Channel.Id && x.Author == Context.Message.Author,
+                    timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+                if (sendResponse.Value == null)
                 {
-                    await ReplyAsync("Skipped announcement!");
+                    await ReplyAsync("Error while generating response.");
+                    return;
                 }
-                else
+
+                switch (sendResponse.Value.ToString())
                 {
-                    await ReplyAsync("Cancelled operation.");
+                    case "yes":
+                        await ReplyAsync("Sending...");
+                        newOffer.CreateJSON();
+                        await SendToAllAnnounceChannels(newOffer.BuildEmbed());
+                        await ReplyAsync("Sent!");
+                        break;
+                    case "skip":
+                        await ReplyAsync("Skipped announcement!");
+                        break;
+                    default:
+                        await ReplyAsync("Cancelled operation.");
+                        break;
                 }
 
                 return;
             }
-            else
-            {
-                await ReplyAsync("No file detected.");
-                return;
-            }
+
+            await ReplyAsync("No file detected.");
         }
 
         [Command("removeEmblemOffer", RunMode = RunMode.Async)]
@@ -188,9 +206,9 @@ namespace Levante.Commands
 
             EmblemOffer.DeleteOffer(offerToDelete);
 
-            await ReplyAsync($"Removed offer.\n" +
-                $"Hash Code: {HashCode}\n" +
-                $"Emblem Name: {offerToDelete.OfferedEmblem.GetName()}");
+            await ReplyAsync("Removed offer.\n" +
+                             $"Hash Code: {HashCode}\n" +
+                             $"Emblem Name: {offerToDelete.OfferedEmblem.GetName()}");
         }
 
         [Command("sendOffer", RunMode = RunMode.Async)]
@@ -202,7 +220,7 @@ namespace Levante.Commands
 
             if (EmblemHashCode == -1)
             {
-                await ReplyAsync($"", false, EmblemOffer.GetOfferListEmbed().Build());
+                await ReplyAsync("", false, EmblemOffer.GetOfferListEmbed().Build());
                 return;
             }
 
@@ -211,28 +229,32 @@ namespace Levante.Commands
                 await ReplyAsync("Are you sure you entered the correct hash code?");
                 return;
             }
-            else
-            {
-                EmblemOffer eo = EmblemOffer.GetSpecificOffer(EmblemHashCode);
-                await ReplyAsync("This is what the embed looks like. Ready to send to all channels? Reply \"yes\" to confirm. Reply with anything else to cancel.", false, eo.BuildEmbed().Build());
-                var sendResponse = await Interactive.NextMessageAsync(x => x.Channel.Id == Context.Channel.Id && x.Author == Context.Message.Author, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
 
-                if (sendResponse.Value.ToString().Equals("yes"))
-                {
-                    await ReplyAsync("Sending...");
-                    await SendToAllAnnounceChannels(eo.BuildEmbed());
-                    await ReplyAsync("Sent!");
-                }
-                if (sendResponse.Value.ToString().Equals("no"))
-                {
-                    await ReplyAsync("Cancelled operation.");
-                }
-                else
-                {
-                    await ReplyAsync("Cancelled operation.");
-                }
+            var eo = EmblemOffer.GetSpecificOffer(EmblemHashCode);
+            await ReplyAsync(
+                "This is what the embed looks like. Ready to send to all channels? Reply \"yes\" to confirm. Reply with anything else to cancel.",
+                false, eo.BuildEmbed().Build());
+            var sendResponse = await Interactive.NextMessageAsync(
+                x => x.Channel.Id == Context.Channel.Id && x.Author == Context.Message.Author,
+                timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+            if (sendResponse.Value == null)
+            {
+                await ReplyAsync("Error while generating response.");
                 return;
             }
+
+            if (sendResponse.Value.ToString().Equals("yes"))
+            {
+                await ReplyAsync("Sending...");
+                await SendToAllAnnounceChannels(eo.BuildEmbed());
+                await ReplyAsync("Sent!");
+            }
+
+            if (sendResponse.Value.ToString().Equals("no"))
+                await ReplyAsync("Cancelled operation.");
+            else
+                await ReplyAsync("Cancelled operation.");
         }
 
         [Command("restart", RunMode = RunMode.Async)]
@@ -240,8 +262,8 @@ namespace Levante.Commands
         [RequireBotStaff]
         public async Task Restart()
         {
-            await ReplyAsync($"I'll see you shortly.");
-            System.Diagnostics.Process.Start(AppDomain.CurrentDomain.FriendlyName);
+            await ReplyAsync("I'll see you shortly.");
+            Process.Start(AppDomain.CurrentDomain.FriendlyName);
             Environment.Exit(0);
         }
 
@@ -269,31 +291,34 @@ namespace Levante.Commands
         {
             if (NewMaxUserCount > 50)
             {
-                await ReplyAsync($"That's too high.");
+                await ReplyAsync("That's too high.");
                 return;
             }
-            else if (NewMaxUserCount < 1)
+
+            if (NewMaxUserCount < 1)
             {
-                await ReplyAsync($"That's too low.");
+                await ReplyAsync("That's too low.");
                 return;
             }
 
             ActiveConfig.MaximumLoggingUsers = NewMaxUserCount;
             ActiveConfig.UpdateActiveAFKUsersConfig();
 
-            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching));
+            var s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
+            await Context.Client.SetActivityAsync(new Game(
+                $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP",
+                ActivityType.Watching));
             await ReplyAsync($"Changed maximum XP Logging users to {NewMaxUserCount}.");
         }
 
         public async Task SendToAllAnnounceChannels(EmbedBuilder embed)
         {
-            List<ulong> guildsWithKeptChannel = new List<ulong>();
-            List<ulong> keptChannels = new List<ulong>();
+            var guildsWithKeptChannel = new List<ulong>();
+            var keptChannels = new List<ulong>();
             foreach (var Link in DataConfig.AnnounceEmblemLinks.ToList())
             {
-                var channel = Context.Client.GetChannel(Link.ChannelID) as SocketTextChannel;
-                var guildChannel = Context.Client.GetChannel(Link.ChannelID) as SocketGuildChannel;
+                var channel = (SocketTextChannel) Context.Client.GetChannel(Link.ChannelID);
+                var guildChannel = (SocketGuildChannel) Context.Client.GetChannel(Link.ChannelID);
                 try
                 {
                     if (channel == null || guildChannel == null)
@@ -310,13 +335,12 @@ namespace Levante.Commands
                     }
 
                     foreach (var chan in guildChannel.Guild.TextChannels)
-                    {
-                        if (DataConfig.IsExistingEmblemLinkedChannel(chan.Id) && Link.ChannelID != chan.Id && guildsWithKeptChannel.Contains(chan.Guild.Id) && !keptChannels.Contains(chan.Id))
+                        if (DataConfig.IsExistingEmblemLinkedChannel(chan.Id) && Link.ChannelID != chan.Id &&
+                            guildsWithKeptChannel.Contains(chan.Guild.Id) && !keptChannels.Contains(chan.Id))
                         {
                             LogHelper.ConsoleLog($"Duplicate channel detected. Removing: {chan.Id}");
                             DataConfig.DeleteEmblemChannel(chan.Id);
                         }
-                    }
 
                     if (Link.RoleID != 0)
                     {
@@ -330,7 +354,9 @@ namespace Levante.Commands
                 }
                 catch
                 {
-                    LogHelper.ConsoleLog($"Could not send to channel {guildChannel.Id} in guild {guildChannel.Guild.Id}.");
+                    if (guildChannel != null)
+                        LogHelper.ConsoleLog(
+                            $"Could not send to channel {guildChannel.Id} in guild {guildChannel.Guild.Id}.");
                 }
             }
         }
