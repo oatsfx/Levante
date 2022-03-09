@@ -7,12 +7,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Xml.Xsl;
 
 namespace Levante.Rotations
 {
     public class CurrentRotations
     {
-        public static string FilePath { get; } = @"Configs/currentRotations.json";
+        public static string FilePath => @"Configs/currentRotations.json";
 
         [JsonProperty("DailyResetTimestamp")]
         public static DateTime DailyResetTimestamp = DateTime.Now;
@@ -126,14 +127,15 @@ namespace Levante.Rotations
             CurrentRotations cr;
             if (File.Exists(FilePath))
             {
-                string json = File.ReadAllText(FilePath);
+                var json = File.ReadAllText(FilePath);
+                // ReSharper disable once RedundantAssignment
                 cr = JsonConvert.DeserializeObject<CurrentRotations>(json);
             }
             else
             {
                 cr = new CurrentRotations();
                 File.WriteAllText(FilePath, JsonConvert.SerializeObject(cr, Formatting.Indented));
-                Console.WriteLine($"No currentRotations.json file detected. Restart the program and change the values accordingly.");
+                Console.WriteLine("No currentRotations.json file detected. Restart the program and change the values accordingly.");
             }
 
             // Create/Check the tracking JSONs.
@@ -163,17 +165,17 @@ namespace Levante.Rotations
 
         public static EmbedBuilder DailyResetEmbed()
         {
-            var foot = new EmbedFooterBuilder()
+            var foot = new EmbedFooterBuilder
             {
-                Text = $"Powered by Bungie API"
+                Text = "Powered by Bungie API"
             };
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Footer = foot,
+                Title = $"Daily Reset of {TimestampTag.FromDateTime(DailyResetTimestamp, TimestampTagStyles.ShortDate)}",
+                Description = "Below are some of the things that are available today."
             };
-            embed.Title = $"Daily Reset of {TimestampTag.FromDateTime(DailyResetTimestamp, TimestampTagStyles.ShortDate)}";
-            embed.Description = "Below are some of the things that are available today.";
 
             embed/*.AddField(x =>
             {
@@ -187,7 +189,7 @@ namespace Levante.Rotations
             {
                 x.Name = "Altars of Sorrow";
                 x.Value =
-                    $"Weapon: {AltarsOfSorrowRotation.GetWeaponEmote(AltarWeapon)} {AltarWeapon}\n" +
+                    $"{AltarsOfSorrowRotation.GetWeaponEmote(AltarWeapon)} {AltarsOfSorrowRotation.GetWeaponNameString(CurrentRotations.AltarWeapon)}\n" +
                     $"{DestinyEmote.Luna} {AltarsOfSorrowRotation.GetAltarBossString(AltarWeapon)}";
                 x.IsInline = true;
             })
@@ -195,7 +197,7 @@ namespace Levante.Rotations
             {
                 x.Name = $"The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)}";
                 x.Value =
-                    $"Weapon: {WellspringRotation.GetWeaponEmote(Wellspring)} {WellspringRotation.GetWeaponNameString(Wellspring)}\n" +
+                    $"{WellspringRotation.GetWeaponEmote(Wellspring)} {WellspringRotation.GetWeaponNameString(Wellspring)}\n" +
                     $"{DestinyEmote.WellspringActivity} {WellspringRotation.GetWellspringBossString(Wellspring)}";
                 x.IsInline = true;
             });
@@ -205,28 +207,28 @@ namespace Levante.Rotations
 
         public static EmbedBuilder WeeklyResetEmbed()
         {
-            var foot = new EmbedFooterBuilder()
+            var foot = new EmbedFooterBuilder
             {
-                Text = $"Powered by Bungie API"
+                Text = "Powered by Bungie API"
             };
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Footer = foot,
+                Title = $"Weekly Reset of {TimestampTag.FromDateTime(WeeklyResetTimestamp, TimestampTagStyles.ShortDate)}",
+                Description = "Below are some of the things that are available this week."
             };
-            embed.Title = $"Weekly Reset of {TimestampTag.FromDateTime(WeeklyResetTimestamp, TimestampTagStyles.ShortDate)}";
-            embed.Description = "Below are some of the things that are available this week.";
 
             embed.AddField(x =>
             {
                 x.Name = "> Raid Challenges";
-                x.Value = $"*Use command /raid for more info!*";
+                x.Value = "More info: /raid";
                 x.IsInline = false;
             })
             .AddField(x =>
             {
                 x.Name = "Last Wish";
-                x.Value = $"{DestinyEmote.RaidBounty} {LastWishRotation.GetEncounterString(LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(LWChallengeEncounter)})";
+                x.Value = $"{DestinyEmote.RaidChallenge} {LastWishRotation.GetEncounterString(LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(LWChallengeEncounter)})";
                 x.IsInline = true;
             })
             .AddField(x =>
@@ -245,13 +247,13 @@ namespace Levante.Rotations
             {
                 x.Name = "Vault of Glass";
                 x.Value = $"{DestinyEmote.RaidChallenge} {VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)})\n" +
-                    $"Weapon Drop: {VaultOfGlassRotation.GetChallengeRewardString(VoGChallengeEncounter)}";
+                    $"{VaultOfGlassRotation.GetChallengeRewardEmote(VoGChallengeEncounter)} {VaultOfGlassRotation.GetChallengeRewardString(VoGChallengeEncounter)}";
                 x.IsInline = true;
             })
             /*.AddField(x =>
             {
                 x.Name = "> Nightfall: The Ordeal";
-                x.Value = $"*Use command /nightfall for more info!*";
+                x.Value = $"More info: /nightfall";
                 x.IsInline = false;
             })
             .AddField(x =>
@@ -270,19 +272,19 @@ namespace Levante.Rotations
             .AddField(x =>
             {
                 x.Name = "> Patrol";
-                x.Value = $"*Use command /patrol for more info!*";
+                x.Value = "More info: /patrol";
                 x.IsInline = false;
             })
             .AddField(x =>
             {
-                x.Name = $"The Dreaming City";
+                x.Name = "The Dreaming City";
                 x.Value = $"{DestinyEmote.DreamingCity} {CurseWeek}\n" +
                     $"{DestinyEmote.AscendantChallengeBounty} {AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)})";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
-                x.Name = $"Nightmare Hunts";
+                x.Name = "Nightmare Hunts";
                 x.Value = $"{DestinyEmote.Luna} {NightmareHuntRotation.GetHuntNameString(NightmareHunts[0])} ({NightmareHuntRotation.GetHuntBossString(NightmareHunts[0])})\n" +
                     $"{DestinyEmote.Luna} {NightmareHuntRotation.GetHuntNameString(NightmareHunts[1])} ({NightmareHuntRotation.GetHuntBossString(NightmareHunts[1])})\n" +
                     $"{DestinyEmote.Luna} {NightmareHuntRotation.GetHuntNameString(NightmareHunts[2])} ({NightmareHuntRotation.GetHuntBossString(NightmareHunts[2])})";
@@ -290,8 +292,8 @@ namespace Levante.Rotations
             })
             .AddField(x =>
             {
-                x.Name = $"Empire Hunt";
-                x.Value = $"{DestinyEmote.Europa} {EmpireHuntRotation.GetHuntNameString(EmpireHunt)} ({EmpireHuntRotation.GetHuntBossString(EmpireHunt)})";
+                x.Name = "Empire Hunt";
+                x.Value = $"{DestinyEmote.Europa} {EmpireHuntRotation.GetHuntBossString(EmpireHunt)}";
                 x.IsInline = false;
             });
 
