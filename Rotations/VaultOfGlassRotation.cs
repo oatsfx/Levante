@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Levante.Commands;
 
 namespace Levante.Rotations
 {
@@ -27,54 +28,72 @@ namespace Levante.Rotations
 
         public static string GetEncounterString(VaultOfGlassEncounter Encounter)
         {
-            switch (Encounter)
+            return Encounter switch
             {
-                case VaultOfGlassEncounter.Confluxes: return "Confluxes";
-                case VaultOfGlassEncounter.Oracles: return "Oracles";
-                case VaultOfGlassEncounter.Templar: return "Templar";
-                case VaultOfGlassEncounter.Gatekeepers: return "Gatekeepers";
-                case VaultOfGlassEncounter.Atheon: return "Atheon";
-                default: return "Vault of Glass";
-            }
+                VaultOfGlassEncounter.Confluxes => "Confluxes",
+                VaultOfGlassEncounter.Oracles => "Oracles",
+                VaultOfGlassEncounter.Templar => "Templar",
+                VaultOfGlassEncounter.Gatekeepers => "Gatekeepers",
+                VaultOfGlassEncounter.Atheon => "Atheon",
+                _ => "Vault of Glass"
+            };
         }
 
         public static string GetChallengeString(VaultOfGlassEncounter Encounter)
         {
-            switch (Encounter)
+            return Encounter switch
             {
-                case VaultOfGlassEncounter.Confluxes: return "Wait for It...";
-                case VaultOfGlassEncounter.Oracles: return "The Only Oracle for You";
-                case VaultOfGlassEncounter.Templar: return "Out of Its Way";
-                case VaultOfGlassEncounter.Gatekeepers: return "Strangers in Time";
-                case VaultOfGlassEncounter.Atheon: return "Ensemble's Refrain";
-                default: return "Vault of Glass";
-            }
+                VaultOfGlassEncounter.Confluxes => "Wait for It...",
+                VaultOfGlassEncounter.Oracles => "The Only Oracle for You",
+                VaultOfGlassEncounter.Templar => "Out of Its Way",
+                VaultOfGlassEncounter.Gatekeepers => "Strangers in Time",
+                VaultOfGlassEncounter.Atheon => "Ensemble's Refrain",
+                _ => "Vault of Glass"
+            };
         }
 
         public static string GetChallengeRewardString(VaultOfGlassEncounter Encounter)
         {
-            switch (Encounter)
+            return Encounter switch
             {
-                case VaultOfGlassEncounter.Confluxes: return "Vision of Confluence (Timelost)";
-                case VaultOfGlassEncounter.Oracles: return "Praedyth's Revenge (Timelost)";
-                case VaultOfGlassEncounter.Templar: return "Fatebringer (Timelost)";
-                case VaultOfGlassEncounter.Gatekeepers: return "Hezen Vengeance (Timelost)";
-                case VaultOfGlassEncounter.Atheon: return "Corrective Measure (Timelost)";
-                default: return "Vault of Glass Weapon";
-            }
+                VaultOfGlassEncounter.Confluxes => "Vision of Confluence (Timelost)",
+                VaultOfGlassEncounter.Oracles => "Praedyth's Revenge (Timelost)",
+                VaultOfGlassEncounter.Templar => "Fatebringer (Timelost)",
+                VaultOfGlassEncounter.Gatekeepers => "Hezen Vengeance (Timelost)",
+                VaultOfGlassEncounter.Atheon => "Corrective Measure (Timelost)",
+                _ => "Vault of Glass Weapon"
+            };
+        }
+
+        public static string GetChallengeRewardEmote(VaultOfGlassEncounter Encounter)
+        {
+            return Encounter switch
+            {
+                VaultOfGlassEncounter.Confluxes => DestinyEmote.ScoutRifle,
+                VaultOfGlassEncounter.Oracles => DestinyEmote.SniperRifle,
+                VaultOfGlassEncounter.Templar => DestinyEmote.HandCannon,
+                VaultOfGlassEncounter.Gatekeepers => DestinyEmote.RocketLauncher,
+                VaultOfGlassEncounter.Atheon => DestinyEmote.MachineGun,
+                _ => "Weapon:"
+            };
         }
 
         public static string GetChallengeDescriptionString(VaultOfGlassEncounter Encounter)
         {
-            switch (Encounter)
+            return Encounter switch
             {
-                case VaultOfGlassEncounter.Confluxes: return "During the Confluxes encounter, players must defeat the Wyverns while they are sacrificing to a conflux.";
-                case VaultOfGlassEncounter.Oracles: return "During the Oracles encounter, players must not shoot the same oracle more than once.";
-                case VaultOfGlassEncounter.Templar: return "During the Templar fight, players must prevent the Templar from teleporting.";
-                case VaultOfGlassEncounter.Gatekeepers: return "During the Gatekeepers encounter, players must defeat the Praetorian and Wyvern at the same time.";
-                case VaultOfGlassEncounter.Atheon: return "During the Atheon fight, players that are teleported must shoot exactly one oracle per wave.";
-                default: return "Vault of Glass";
-            }
+                VaultOfGlassEncounter.Confluxes =>
+                    "During the Confluxes encounter, players must defeat the Wyverns while they are sacrificing to a conflux.",
+                VaultOfGlassEncounter.Oracles =>
+                    "During the Oracles encounter, players must not shoot the same oracle more than once.",
+                VaultOfGlassEncounter.Templar =>
+                    "During the Templar fight, players must prevent the Templar from teleporting.",
+                VaultOfGlassEncounter.Gatekeepers =>
+                    "During the Gatekeepers encounter, players must defeat the Praetorian and Wyvern at the same time.",
+                VaultOfGlassEncounter.Atheon =>
+                    "During the Atheon fight, players that are teleported must shoot exactly one oracle per wave.",
+                _ => "Vault of Glass"
+            };
         }
 
         public static EmbedBuilder GetRaidEmbed()
