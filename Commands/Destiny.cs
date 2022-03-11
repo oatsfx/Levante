@@ -545,6 +545,165 @@ namespace Levante.Commands
             return Image.FromStream(ms);
         }
 
+        [SlashCommand("xp-boost", "Get XP required to hit given power boost.")]
+        public async Task XPBoost([Summary("boost", "Requested artifact power boost.")] int reqLevel)
+        {
+            var LinkedUser = DataConfig.GetLinkedUser(Context.User.Id);
+            if (LinkedUser == null || !DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
+            {
+                await RespondAsync("No user linked.");
+                return;
+            }
+
+            await DeferAsync();
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+            var response = client.GetAsync("https://www.bungie.net/platform/Destiny2/" +
+                                           LinkedUser.BungieMembershipType + "/Profile/" +
+                                           LinkedUser.BungieMembershipID + "?components=104").Result;
+            var content = response.Content.ReadAsStringAsync().Result;
+            dynamic item = JsonConvert.DeserializeObject(content);
+
+            if (DataConfig.IsBungieAPIDown(content))
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                {
+                    message.Content = "Bungie API is temporarily down, try again later.";
+                });
+                return;
+            }
+
+            if (item == null || item.ErrorCode != 1)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                {
+                    message.Content =
+                        "An error occured with that account. Is there a connected Destiny 2 account?";
+                });
+                return;
+            }
+
+            try
+            {
+                int currentPowerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
+                int progressToNextLevel = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.progressToNextLevel;
+                var seasonRank = DataConfig.GetUserSeasonPassLevel(Context.User.Id, out var progressToNextSeasonRank);
+
+                if (reqLevel <= currentPowerBonus || reqLevel > 100)
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                        message.Content = "Requested level already acquired or out of range.");
+                    return;
+                }
+
+                var xpForBoost = GetXPForBoost(reqLevel);
+                var xpNeeded = xpForBoost - GetXPForBoost(currentPowerBonus) - progressToNextLevel;
+
+                var seasonRanksNeeded = xpNeeded / 100000;
+                var remainder = xpNeeded % 100000;
+                if (remainder + progressToNextSeasonRank > 100000) seasonRanksNeeded += 1;
+                var projectedSeasonRank = seasonRank + seasonRanksNeeded;
+
+                await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                    message.Content = $"**Projecting XP to power boost +{reqLevel}**:\n\nNeeded XP: {xpNeeded:n0}\nNeeded Season ranks: {seasonRanksNeeded:n0} (Required season rank: {projectedSeasonRank:n0})");
+            }
+            catch (Exception e)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                    message.Content = $"{e.GetType()}: {e.Message}");
+            }
+        }
+
+        private static uint GetXPForBoost(int boostLevel) =>
+            (uint) (55000 * (boostLevel - 1) * (boostLevel - 1));
+
+        [SlashCommand("current-xp", "Get current XP levels & next artifact boost requirement.")]
+        public async Task CurrentXP()
+        {
+            var LinkedUser = DataConfig.GetLinkedUser(Context.User.Id);
+            if (LinkedUser == null || !DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
+            {
+                await RespondAsync("No user linked.");
+                return;
+            }
+
+            await DeferAsync();
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+            var response = client.GetAsync("https://www.bungie.net/platform/Destiny2/" +
+                                           LinkedUser.BungieMembershipType + "/Profile/" +
+                                           LinkedUser.BungieMembershipID + "?components=104").Result;
+            var content = response.Content.ReadAsStringAsync().Result;
+            dynamic item = JsonConvert.DeserializeObject(content);
+
+            if (DataConfig.IsBungieAPIDown(content))
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                {
+                    message.Content = "Bungie API is temporarily down, try again later.";
+                });
+                return;
+            }
+
+            if (item == null || item.ErrorCode != 1)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                {
+                    message.Content =
+                        "An error occured with that account. Is there a connected Destiny 2 account?";
+                });
+                return;
+            }
+
+            try
+            {
+                // TODO: cast this to an object for use in other commands, this is just a test
+                int powerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
+                int totalXP = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.currentProgress;
+                int dailyProgress = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.dailyProgress;
+                int weeklyProgress = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.weeklyProgress;
+                int progressToNextLevel = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.progressToNextLevel;
+                int nextLevelAt = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.nextLevelAt;
+
+                var foot = new EmbedFooterBuilder
+                {
+                    Text = "Powered by Bungie API // Levante"
+                };
+                var embed = new EmbedBuilder
+                {
+                    Color = new Color(255, 105, 180),
+                    Footer = foot,
+                    Description = $"XP info for {Context.User.Username}:"
+                };
+
+                embed.AddField(x =>
+                {
+                    x.Name = "Earned XP";
+                    x.Value = $"Daily: {dailyProgress:n0}\nWeekly: {weeklyProgress:n0}\nSeasonal: {totalXP:n0}";
+                    x.IsInline = true;
+                }).AddField(x =>
+                {
+                    x.Name = $"Progress (+{powerBonus})";
+                    x.Value = $"Current: {progressToNextLevel:n0}\nNeeded: {nextLevelAt:n0}\nUntil +{powerBonus + 1}: {nextLevelAt - progressToNextLevel:n0}";
+                    x.IsInline = true;
+                });
+
+                await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                {
+                    message.Embed = embed.Build();
+                });
+            }
+            catch(Exception e)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                    message.Content = $"{e.GetType()}: {e.Message}");
+            }
+        }
+
         [Group("guardians", "Display Guardian information.")]
         public class Guardians : InteractionModuleBase<SocketInteractionContext>
         {

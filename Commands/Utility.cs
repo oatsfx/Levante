@@ -51,6 +51,8 @@ namespace Levante.Commands
             }
 
             DataConfig.AddUserToConfig(Context.User.Id, memId, memType, BungieTag);
+
+            // TODO: this saved but didn't fire?
             await RespondAsync($"Linked {Context.User.Mention} to {BungieTag}.", ephemeral: true);
         }
 
