@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -69,22 +69,26 @@ namespace Levante.Commands
                     new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = auth,
                 Footer = foot,
-                Title = "",
-                Description = "[The Visionary](https://www.bungie.net/common/destiny2_content/icons/65b4047b1b83aeeeb2e628305071fcea.jpg): **XFV-KHP-N97**\n" +
-                              "[Cryonautics](https://www.bungie.net/common/destiny2_content/icons/6719dde48dca592addb4102cb747e097.jpg): **RA9-XPH-6KJ**\n" +
-                              "[Galilean Excursion](https://bungie.net/common/destiny2_content/icons/3e99d575d00fb307c15fb5513dee13c6.jpg): **JYN-JAA-Y7D**\n" +
-                              "[Future in Shadow](https://bungie.net/common/destiny2_content/icons/dd9af60ef15319ee986a1f6cc029fe71.jpg): **7LV-GTK-T7J**\n" +
-                              "[Sequence Flourish](https://www.bungie.net/common/destiny2_content/icons/01e9b3863c14f9149ff4035b896ad5ed.jpg): **7D4-PKR-MD7**\n" +
-                              "[A Classy Order](https://www.bungie.net/common/destiny2_content/icons/adaf0e2c15610cdfff750725701222ec.jpg): **YRC-C3D-YNC**\n" +
-                              "[Be True](https://www.bungie.net/common/destiny2_content/icons/a6d9b66f124b25ac73969ebe4bc45b90.jpg): **ML3-FD4-ND9**\n" +
-                              "[Heliotrope Warren](https://www.bungie.net/common/destiny2_content/icons/385c302dc22e6dafb8b50c253486d040.jpg): **L7T-CVV-3RD**\n" +
-                              "[Shadow's Light](https://www.bungie.net//common/destiny2_content/icons/b296588f57aea1d15a04c3db6de98220.jpg): **F99-KPX-NCF**\n" +
-                              "[Sneer of the Oni](https://www.bungie.net//common/destiny2_content/icons/bffe84c0efb9215dbdc8c4890c3e6234.jpg): **6LJ-GH7-TPA**\n" +
-                              "[Countdown to Convergence](https://www.bungie.net//common/destiny2_content/icons/2560de3d4009044b291c6cfb69d11a7f.jpg): **PHV-6LF-9CP**\n" +
-                              "[Liminal Nadir](https://www.bungie.net//common/destiny2_content/icons/4f9f612716a973ff03e5e17e9d7e7c91.jpg): **VA7-L7H-PNC**\n" +
-                              "[Tangled Web](https://www.bungie.net/common/destiny2_content/icons/93a14eab2b1633d7affbf815d42af337.jpg): **PKH-JL6-L4R**\n" +
-                              "*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*"
+                Title = ""                
             };
+
+            embed.Title = "";
+            embed.Description =
+                $"[The Visionary](https://www.bungie.net/common/destiny2_content/icons/65b4047b1b83aeeeb2e628305071fcea.jpg): **XFV-KHP-N97**\n" +
+                $"[Cryonautics](https://www.bungie.net/common/destiny2_content/icons/6719dde48dca592addb4102cb747e097.jpg): **RA9-XPH-6KJ**\n" +
+                $"[Galilean Excursion](https://bungie.net/common/destiny2_content/icons/3e99d575d00fb307c15fb5513dee13c6.jpg): **JYN-JAA-Y7D**\n" +
+                $"[Future in Shadow](https://bungie.net/common/destiny2_content/icons/dd9af60ef15319ee986a1f6cc029fe71.jpg): **7LV-GTK-T7J**\n" +
+                $"[Sequence Flourish](https://www.bungie.net/common/destiny2_content/icons/01e9b3863c14f9149ff4035b896ad5ed.jpg): **7D4-PKR-MD7**\n" +
+                $"[A Classy Order](https://www.bungie.net/common/destiny2_content/icons/adaf0e2c15610cdfff750725701222ec.jpg): **YRC-C3D-YNC**\n" +
+                $"[Be True](https://www.bungie.net/common/destiny2_content/icons/a6d9b66f124b25ac73969ebe4bc45b90.jpg): **ML3-FD4-ND9**\n" +
+                $"[Heliotrope Warren](https://www.bungie.net/common/destiny2_content/icons/385c302dc22e6dafb8b50c253486d040.jpg): **L7T-CVV-3RD**\n" +
+                $"[Shadow's Light](https://www.bungie.net//common/destiny2_content/icons/b296588f57aea1d15a04c3db6de98220.jpg): **F99-KPX-NCF**\n" +
+                $"[Sneer of the Oni](https://www.bungie.net//common/destiny2_content/icons/bffe84c0efb9215dbdc8c4890c3e6234.jpg): **6LJ-GH7-TPA**\n" +
+                $"[Countdown to Convergence](https://www.bungie.net//common/destiny2_content/icons/2560de3d4009044b291c6cfb69d11a7f.jpg): **PHV-6LF-9CP**\n" +
+                $"[Liminal Nadir](https://www.bungie.net//common/destiny2_content/icons/4f9f612716a973ff03e5e17e9d7e7c91.jpg): **VA7-L7H-PNC**\n" +
+                $"[Tangled Web](https://www.bungie.net/common/destiny2_content/icons/93a14eab2b1633d7affbf815d42af337.jpg): **PKH-JL6-L4R**\n" +
+                $"[соняшник](https://bungie.net/common/destiny2_content/icons/4c113db5e1c0296027a1c7e1f84fb8b3.jpg) **JVG-VNT-GGG**" +
+                $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*";
 
             await RespondAsync(embed: embed.Build());
         }
@@ -103,7 +107,7 @@ namespace Levante.Commands
 
             if (!DataConfig.IsExistingLinkedUser(User.Id))
             {
-                await ReplyAsync("No account linked.");
+                await RespondAsync($"No account linked for {User.Mention}.", ephemeral: true);
                 return;
             }
 
@@ -132,11 +136,11 @@ namespace Levante.Commands
                                   $"Progress to Next Level: **{progress:n0}/100,000**"
                 };
 
-                await ReplyAsync("", false, embed.Build());
+                await RespondAsync(embed: embed.Build());
             }
-            catch (Exception x)
+            catch
             {
-                await ReplyAsync(x.ToString());
+                await RespondAsync($"An error occurred, please try again later.", ephemeral: true);
             }
         }
 
@@ -166,6 +170,40 @@ namespace Levante.Commands
                 ephemeral: true);
         }
 
+        [SlashCommand("materials", "Gets your Destiny 2 material count.")]
+        public async Task Materials([Summary("user", "User you want the Materials count for. Leave empty for your own.")] IUser User = null)
+        {
+            if (User == null)
+            {
+                User = Context.User as SocketGuildUser;
+            }
+
+            if (!DataConfig.IsExistingLinkedUser(User.Id))
+            {
+                await RespondAsync($"No account linked for {User.Mention}.", ephemeral: true);
+                return;
+            }
+
+            var dil = DataConfig.GetLinkedUser(User.Id);
+
+            int Glimmer, LegendaryShards, UpgradeModules, MasterworkCores, EnhancementPrisms, AscendantShards, SpoilsOfConquest, BrightDust,
+                Adroit, Energetic, Mutable, Ruinous, Neutral, ResonantAlloy, AscendantAlloy = -1;
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=102").Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                dynamic item = JsonConvert.DeserializeObject(content);
+
+                for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
+                {
+                    // 
+                }
+            }
+        }
+
         [SlashCommand("nightfall", "Display Nightfall information.")]
         public async Task Nightfall(
             [Summary("nightfall", "Nightfall Strike.")]
@@ -177,7 +215,8 @@ namespace Levante.Commands
             [Choice("Proving Grounds", 5)]
             int ArgNF)
         {
-            await RespondAsync("Gathering data on new Nightfalls. Check back later!", ephemeral: true);
+            await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
+            return;
         }
 
         [SlashCommand("patrol", "Display Patrol information.")]
@@ -280,8 +319,7 @@ namespace Levante.Commands
         }
 
         [SlashCommand("view", "Get details on an emblem via its Hash Code found via Bungie's API.")]
-        public async Task ViewEmblem(
-            [Summary("emblem-name", "Name of the emblem you want details for.")] string SearchQuery)
+        public async Task ViewEmblem([Summary("item-type", "Select a supported item type you want information for.")] int ItemType, [Summary("query", "Name of the item you want details for.")] string SearchQuery)
         {
             using var client = new HttpClient();
             client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
