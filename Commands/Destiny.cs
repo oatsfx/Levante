@@ -75,6 +75,7 @@ namespace Levante.Commands
                 $"[Countdown to Convergence](https://www.bungie.net//common/destiny2_content/icons/2560de3d4009044b291c6cfb69d11a7f.jpg): **PHV-6LF-9CP**\n" +
                 $"[Liminal Nadir](https://www.bungie.net//common/destiny2_content/icons/4f9f612716a973ff03e5e17e9d7e7c91.jpg): **VA7-L7H-PNC**\n" +
                 $"[Tangled Web](https://www.bungie.net/common/destiny2_content/icons/93a14eab2b1633d7affbf815d42af337.jpg): **PKH-JL6-L4R**\n" +
+                $"[соняшник](https://bungie.net/common/destiny2_content/icons/4c113db5e1c0296027a1c7e1f84fb8b3.jpg) **JVG-VNT-GGG**" +
                 $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*";
 
             await RespondAsync(embed: embed.Build());
@@ -262,7 +263,7 @@ namespace Levante.Commands
 
             if (!DataConfig.IsExistingLinkedUser(User.Id))
             {
-                await ReplyAsync("No account linked.");
+                await RespondAsync($"No account linked for {User.Mention}.", ephemeral: true);
                 return;
             }
             try
@@ -290,11 +291,11 @@ namespace Levante.Commands
                     $"Level: **{DataConfig.GetUserSeasonPassLevel(User.Id, out int progress)}**\n" +
                     $"Progress to Next Level: **{String.Format("{0:n0}", progress)}/100,000**";
 
-                await ReplyAsync($"", false, embed.Build());
+                await RespondAsync(embed: embed.Build());
             }
-            catch (Exception x)
+            catch
             {
-                await ReplyAsync($"{x}");
+                await RespondAsync($"An error occurred, please try again later.", ephemeral: true);
             }
         }
 
@@ -313,12 +314,46 @@ namespace Levante.Commands
             return;
         }
 
+        [SlashCommand("materials", "Gets your Destiny 2 material count.")]
+        public async Task Materials([Summary("user", "User you want the Materials count for. Leave empty for your own.")] IUser User = null)
+        {
+            if (User == null)
+            {
+                User = Context.User as SocketGuildUser;
+            }
+
+            if (!DataConfig.IsExistingLinkedUser(User.Id))
+            {
+                await RespondAsync($"No account linked for {User.Mention}.", ephemeral: true);
+                return;
+            }
+
+            var dil = DataConfig.GetLinkedUser(User.Id);
+
+            int Glimmer, LegendaryShards, UpgradeModules, MasterworkCores, EnhancementPrisms, AscendantShards, SpoilsOfConquest, BrightDust,
+                Adroit, Energetic, Mutable, Ruinous, Neutral, ResonantAlloy, AscendantAlloy = -1;
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=102").Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                dynamic item = JsonConvert.DeserializeObject(content);
+
+                for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
+                {
+                    // 
+                }
+            }
+        }
+
         [SlashCommand("nightfall", "Display Nightfall information.")]
         public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
                 Choice("The Hollowed Lair", 0), Choice("Lake of Shadows", 1), Choice("Exodus Crash", 2),
                 Choice("The Corrupted", 3), Choice("The Devils' Lair", 4), Choice("Proving Grounds", 5)] int ArgNF)
         {
-            await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
+            await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
             return;
         }
 
@@ -413,7 +448,7 @@ namespace Levante.Commands
         }
 
         [SlashCommand("view", "Get details on an emblem via its Hash Code found via Bungie's API.")]
-        public async Task ViewEmblem([Summary("emblem-name", "Name of the emblem you want details for.")] string SearchQuery)
+        public async Task ViewEmblem([Summary("item-type", "Select a supported item type you want information for.")] int ItemType, [Summary("query", "Name of the item you want details for.")] string SearchQuery)
         {
             using (var client = new HttpClient())
             {
@@ -553,37 +588,7 @@ namespace Levante.Commands
                     return;
                 }
 
-                var auth = new EmbedAuthorBuilder()
-                {
-                    Name = $"Emblem Details: {emblem.GetName()}",
-                    IconUrl = emblem.GetIconUrl(),
-                };
-                var foot = new EmbedFooterBuilder()
-                {
-                    Text = $"Powered by Bungie API"
-                };
-                int[] emblemRGB = emblem.GetRGBAsIntArray();
-                var embed = new EmbedBuilder()
-                {
-                    Color = new Discord.Color(emblemRGB[0], emblemRGB[1], emblemRGB[2]),
-                    Author = auth,
-                    Footer = foot
-                };
-                try
-                {
-                    embed.Description =
-                        (emblem.GetSourceString().Equals("") ? "No source data provided." : emblem.GetSourceString()) + "\n" +
-                        $"Hash Code: {emblem.GetItemHash()}\n";
-                    embed.ImageUrl = emblem.GetBackgroundUrl();
-                }
-                catch
-                {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"There seems to be an API issue with that emblem, sorry about that!"; message.Embed = new EmbedBuilder().Build(); message.Components = new ComponentBuilder().Build(); });
-                    return;
-                }
-
-                embed.ThumbnailUrl = emblem.GetIconUrl();
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
         }
 
