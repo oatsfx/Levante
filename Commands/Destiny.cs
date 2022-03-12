@@ -173,34 +173,31 @@ namespace Levante.Commands
         [SlashCommand("materials", "Gets your Destiny 2 material count.")]
         public async Task Materials([Summary("user", "User you want the Materials count for. Leave empty for your own.")] IUser User = null)
         {
-            if (User == null)
-            {
-                User = Context.User as SocketGuildUser;
-            }
+            User ??= Context.User as SocketGuildUser;
 
-            if (!DataConfig.IsExistingLinkedUser(User.Id))
+            if (User == null || !DataConfig.IsExistingLinkedUser(User.Id))
             {
-                await RespondAsync($"No account linked for {User.Mention}.", ephemeral: true);
+                await RespondAsync("No account linked.", ephemeral: true);
                 return;
             }
 
             var dil = DataConfig.GetLinkedUser(User.Id);
 
+#pragma warning disable CS0168
             int Glimmer, LegendaryShards, UpgradeModules, MasterworkCores, EnhancementPrisms, AscendantShards, SpoilsOfConquest, BrightDust,
                 Adroit, Energetic, Mutable, Ruinous, Neutral, ResonantAlloy, AscendantAlloy = -1;
+#pragma warning restore CS0168
 
-            using (var client = new HttpClient())
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+            var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=102").Result;
+            var content = response.Content.ReadAsStringAsync().Result;
+            dynamic item = JsonConvert.DeserializeObject(content);
+
+            for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=102").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
-                {
-                    // 
-                }
+                // 
             }
         }
 
