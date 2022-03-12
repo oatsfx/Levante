@@ -53,7 +53,7 @@ namespace Levante
    / ____/__  / (_)____(_) /___  __
   / /_  / _ \/ / / ___/ / __/ / / /
  / __/ /  __/ / / /__/ / /_/ /_/ / 
-/_/    \___/_/_/\___/_/\__/\__, /  
+/_/    \___/_/_/\___/_/\__/\__, /  @OatsFX
                           /____/  @axsLeaf
             ";
             Console.WriteLine(ASCIIName);
@@ -108,6 +108,8 @@ namespace Levante
             Console.WriteLine(
                 $"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
             Console.WriteLine();
+
+            ManifestHelper.PrepManifest();
 
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
@@ -533,7 +535,6 @@ namespace Levante
 
             var error = result.Error.Value;
 
-            // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
             switch (error)
             {
                 case CommandError.UnknownCommand:
@@ -544,6 +545,9 @@ namespace Levante
                 case CommandError.BadArgCount:
                     await context.Channel.SendMessageAsync($"[{error}]: Command is missing some arguments.")
                         .ConfigureAwait(false);
+                    break;
+                default:
+                    await context.Channel.SendMessageAsync($"[{error}]: {result.ErrorReason}").ConfigureAwait(false);
                     break;
             }
 

@@ -1,0 +1,9 @@
+﻿// ReSharper disable UnusedMember.Global
+namespace Levante.Manifest
+{
+    public class DestinyPlugSetDefinition
+    {
+        public int id { get; set; }
+        public byte[] json { get; set; }
+    }
+}
