@@ -1,4 +1,5 @@
 ﻿using Levante.Configs;
+﻿using Discord;
 using Newtonsoft.Json;
 using System.Net.Http;
 
