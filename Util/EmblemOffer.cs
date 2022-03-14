@@ -56,7 +56,7 @@ namespace Levante.Util
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by GoGo, Jaken, and OatsFX"
+                Text = $"Powered by Levante"
             };
             int[] emblemRGB = OfferedEmblem.GetRGBAsIntArray();
             var embed = new EmbedBuilder()

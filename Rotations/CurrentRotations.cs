@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Levante.Helpers;
 
 namespace Levante.Rotations
 {
@@ -48,6 +49,9 @@ namespace Levante.Rotations
         [JsonProperty("VoGChallengeEncounter")]
         public static VaultOfGlassEncounter VoGChallengeEncounter = VaultOfGlassEncounter.Confluxes;
 
+        [JsonProperty("VowChallengeEncounter")]
+        public static VowOfTheDiscipleEncounter VowChallengeEncounter = VowOfTheDiscipleEncounter.Acquisition;
+
         [JsonProperty("CurseWeek")]
         public static CurseWeek CurseWeek = CurseWeek.Weak;
 
@@ -85,6 +89,7 @@ namespace Levante.Rotations
             DSCChallengeEncounter = DSCChallengeEncounter == DeepStoneCryptEncounter.Taniks ? DeepStoneCryptEncounter.Security : DSCChallengeEncounter + 1;
             GoSChallengeEncounter = GoSChallengeEncounter == GardenOfSalvationEncounter.SanctifiedMind ? GardenOfSalvationEncounter.Evade : GoSChallengeEncounter + 1;
             VoGChallengeEncounter = VoGChallengeEncounter == VaultOfGlassEncounter.Atheon ? VaultOfGlassEncounter.Confluxes : VoGChallengeEncounter + 1;
+            VowChallengeEncounter = VowChallengeEncounter == VowOfTheDiscipleEncounter.Rhulk ? VowOfTheDiscipleEncounter.Acquisition : VowChallengeEncounter + 1;
             CurseWeek = CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : CurseWeek + 1;
             AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? AscendantChallenge.AgonarchAbyss : AscendantChallenge + 1;
             Nightfall = Nightfall == Nightfall.ProvingGrounds ? Nightfall.TheHollowedLair : Nightfall + 1;
@@ -300,16 +305,24 @@ namespace Levante.Rotations
             var altarTemp = new List<AltarsOfSorrowRotation.AltarsOfSorrowLink>();
             foreach (var Link in AltarsOfSorrowRotation.AltarsOfSorrowLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
 
-                if (AltarWeapon == Link.WeaponDrop)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! Altars of Sorrow is dropping **{AltarsOfSorrowRotation.GetWeaponNameString(AltarWeapon)}** (**{AltarWeapon}**) today. I have removed your tracking, good luck!");
-                else
-                    altarTemp.Add(Link);
+                    if (AltarWeapon == Link.WeaponDrop)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! Altars of Sorrow is dropping **{AltarsOfSorrowRotation.GetWeaponNameString(AltarWeapon)}** (**{AltarWeapon}**) today. I have removed your tracking, good luck!");
+                    else
+                        altarTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             AltarsOfSorrowRotation.AltarsOfSorrowLinks = altarTemp;
             AltarsOfSorrowRotation.UpdateJSON();
@@ -348,16 +361,24 @@ namespace Levante.Rotations
             var wellspringTemp = new List<WellspringRotation.WellspringLink>();
             foreach (var Link in WellspringRotation.WellspringLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
 
-                if (Wellspring == Link.WellspringBoss)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}) is dropping **{WellspringRotation.GetWeaponNameString(Wellspring)}** (**{WellspringRotation.GetWeaponTypeString(Wellspring)}**) today. I have removed your tracking, good luck!");
-                else
-                    wellspringTemp.Add(Link);
+                    if (Wellspring == Link.WellspringBoss)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}) is dropping **{WellspringRotation.GetWeaponNameString(Wellspring)}** (**{WellspringRotation.GetWeaponTypeString(Wellspring)}**) today. I have removed your tracking, good luck!");
+                    else
+                        wellspringTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             WellspringRotation.WellspringLinks = wellspringTemp;
             WellspringRotation.UpdateJSON();
@@ -368,16 +389,24 @@ namespace Levante.Rotations
             var chalTemp = new List<AscendantChallengeRotation.AscendantChallengeLink>();
             foreach (var Link in AscendantChallengeRotation.AscendantChallengeLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
 
-                if (AscendantChallenge == Link.AscendantChallenge)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Ascendant Challenge is **{AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)}** (**{AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}**) this week. I have removed your tracking, good luck!");
-                else
-                    chalTemp.Add(Link);
+                    if (AscendantChallenge == Link.AscendantChallenge)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Ascendant Challenge is **{AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)}** (**{AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}**) this week. I have removed your tracking, good luck!");
+                    else
+                        chalTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             AscendantChallengeRotation.AscendantChallengeLinks = chalTemp;
             AscendantChallengeRotation.UpdateJSON();
@@ -385,16 +414,24 @@ namespace Levante.Rotations
             var curseTemp = new List<CurseWeekRotation.CurseWeekLink>();
             foreach (var Link in CurseWeekRotation.CurseWeekLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
 
-                if (CurseWeek == Link.Strength)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Curse Strength is **{CurseWeek}** this week. I have removed your tracking, good luck!");
-                else
-                    curseTemp.Add(Link);
+                    if (CurseWeek == Link.Strength)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Curse Strength is **{CurseWeek}** this week. I have removed your tracking, good luck!");
+                    else
+                        curseTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             CurseWeekRotation.CurseWeekLinks = curseTemp;
             CurseWeekRotation.UpdateJSON();
@@ -402,16 +439,24 @@ namespace Levante.Rotations
             var dscTemp = new List<DeepStoneCryptRotation.DeepStoneCryptLink>();
             foreach (var Link in DeepStoneCryptRotation.DeepStoneCryptLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
 
-                if (DSCChallengeEncounter == Link.Encounter)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Deep Stone Crypt challenge is **{DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)}** (**{DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
-                else
-                    dscTemp.Add(Link);
+                    if (DSCChallengeEncounter == Link.Encounter)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Deep Stone Crypt challenge is **{DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)}** (**{DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
+                    else
+                        dscTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             DeepStoneCryptRotation.DeepStoneCryptLinks = dscTemp;
             DeepStoneCryptRotation.UpdateJSON();
@@ -419,16 +464,24 @@ namespace Levante.Rotations
             var ehuntTemp = new List<EmpireHuntRotation.EmpireHuntLink>();
             foreach (var Link in EmpireHuntRotation.EmpireHuntLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
 
-                if (EmpireHunt == Link.EmpireHunt)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Empire Hunt is **{EmpireHuntRotation.GetHuntBossString(EmpireHunt)}** this week. I have removed your tracking, good luck!");
-                else
-                    ehuntTemp.Add(Link);
+                    if (EmpireHunt == Link.EmpireHunt)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Empire Hunt is **{EmpireHuntRotation.GetHuntBossString(EmpireHunt)}** this week. I have removed your tracking, good luck!");
+                    else
+                        ehuntTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             EmpireHuntRotation.EmpireHuntLinks = ehuntTemp;
             EmpireHuntRotation.UpdateJSON();
@@ -436,17 +489,24 @@ namespace Levante.Rotations
             var gosTemp = new List<GardenOfSalvationRotation.GardenOfSalvationLink>();
             foreach (var Link in GardenOfSalvationRotation.GardenOfSalvationLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
 
-                if (GoSChallengeEncounter == Link.Encounter)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Garden of Salvation challenge is **{GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)}** (**{GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
-                else
-                    gosTemp.Add(Link);
-
+                    if (GoSChallengeEncounter == Link.Encounter)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Garden of Salvation challenge is **{GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)}** (**{GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
+                    else
+                        gosTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             GardenOfSalvationRotation.GardenOfSalvationLinks = gosTemp;
             GardenOfSalvationRotation.UpdateJSON();
@@ -454,16 +514,24 @@ namespace Levante.Rotations
             var lwTemp = new List<LastWishRotation.LastWishLink>();
             foreach (var Link in LastWishRotation.LastWishLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
 
-                if (LWChallengeEncounter == Link.Encounter)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Last Wish challenge is **{LastWishRotation.GetChallengeString(LWChallengeEncounter)}** (**{LastWishRotation.GetEncounterString(LWChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
-                else
-                    lwTemp.Add(Link);
+                    if (LWChallengeEncounter == Link.Encounter)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Last Wish challenge is **{LastWishRotation.GetChallengeString(LWChallengeEncounter)}** (**{LastWishRotation.GetEncounterString(LWChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
+                    else
+                        lwTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             LastWishRotation.LastWishLinks = lwTemp;
             LastWishRotation.UpdateJSON();
@@ -488,20 +556,28 @@ namespace Levante.Rotations
             var nhuntTemp = new List<NightmareHuntRotation.NightmareHuntLink>();
             foreach (var Link in NightmareHuntRotation.NightmareHuntLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
 
-                if (NightmareHunts[0] == Link.NightmareHunt)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[0])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[0])}**) this week. I have removed your tracking, good luck!");
-                else if (NightmareHunts[1] == Link.NightmareHunt)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[1])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[1])}**) this week. I have removed your tracking, good luck!");
-                else if (NightmareHunts[2] == Link.NightmareHunt)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[2])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[2])}**) this week. I have removed your tracking, good luck!");
-                else
-                    nhuntTemp.Add(Link);
+                    if (NightmareHunts[0] == Link.NightmareHunt)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[0])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[0])}**) this week. I have removed your tracking, good luck!");
+                    else if (NightmareHunts[1] == Link.NightmareHunt)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[1])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[1])}**) this week. I have removed your tracking, good luck!");
+                    else if (NightmareHunts[2] == Link.NightmareHunt)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[2])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[2])}**) this week. I have removed your tracking, good luck!");
+                    else
+                        nhuntTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             NightmareHuntRotation.NightmareHuntLinks = nhuntTemp;
             NightmareHuntRotation.UpdateJSON();
@@ -509,16 +585,49 @@ namespace Levante.Rotations
             var vogTemp = new List<VaultOfGlassRotation.VaultOfGlassLink>();
             foreach (var Link in VaultOfGlassRotation.VaultOfGlassLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
 
-                if (VoGChallengeEncounter == Link.Encounter)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Vault of Glass challenge is **{VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)}** (**{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
-                else
-                    vogTemp.Add(Link);
+                    if (VoGChallengeEncounter == Link.Encounter)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Vault of Glass challenge is **{VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)}** (**{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
+                    else
+                        vogTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
+            }
+            VaultOfGlassRotation.VaultOfGlassLinks = vogTemp;
+            VaultOfGlassRotation.UpdateJSON();
+
+            var vowTemp = new List<VowOfTheDiscipleRotation.VowOfTheDiscipleLink>();
+            foreach (var Link in VowOfTheDiscipleRotation.VowOfTheDiscipleLinks)
+            {
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
+
+                    if (VowChallengeEncounter == Link.Encounter)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Vow of the Disciple challenge is **{VowOfTheDiscipleRotation.GetChallengeString(VowChallengeEncounter)}** (**{VowOfTheDiscipleRotation.GetEncounterString(VowChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
+                    else
+                        vowTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             VaultOfGlassRotation.VaultOfGlassLinks = vogTemp;
             VaultOfGlassRotation.UpdateJSON();

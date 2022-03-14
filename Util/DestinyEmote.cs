@@ -12,6 +12,7 @@ namespace Levante.Util
 
         // Activity Modifiers
         public static readonly string AcuteArcBurn = "<:AcuteArcBurn:947296733761765447>";
+        public static readonly string AcuteSolarBurn = "<:AcuteSolarBurn:950997186013970453>";
         public static readonly string ArachNO = "<:ArachNO:900142007840833576>";
         public static readonly string ArcBurn = "<:ArcBurn:900142018280456213>";
         public static readonly string Attrition = "<:Attrition:900142029487632395>";
@@ -29,6 +30,7 @@ namespace Levante.Util
         public static readonly string HotKnife = "<:HotKnife:900142076673540096>";
         public static readonly string IgnovunsChallenge = "<:IgnovunsChallenge:938570421534601277>";
         public static readonly string LimitedRevives = "<:LimitedRevives:900142086270115901>";
+        public static readonly string Martyr = "<:Martyr:951000502190112808>";
         public static readonly string MatchGame = "<:MatchGame:900142096013459516>";
         public static readonly string Poleharm = "<:Poleharm:947300080308879371>";
         public static readonly string RaiderShield = "<:RaiderShield:900142103697428562>";
@@ -37,6 +39,7 @@ namespace Levante.Util
         public static readonly string ScorchedEarth = "<:ScorchedEarth:935381186136641546>";
         public static readonly string Shocker = "<:Shocker:900142114426486844>";
         public static readonly string SolarBurn = "<:SolarBurn:900142136996020224>";
+        public static readonly string SubtleFoes = "<:SubtleFoes:951000792465285120>";
         public static readonly string ThaviksImplant = "<:ThaviksImplant:935381584159342642>";
         public static readonly string Togetherness = "<:Togetherness:937513440933740584>";
         public static readonly string VoidBurn = "<:VoidBurn:900142150338105404>";
@@ -146,6 +149,7 @@ namespace Levante.Util
         public static readonly string RaidChallenge = "<:RaidChallenge:933971625118924820>";
         public static readonly string VoGRaidChallenge = "<:VoGRaidChallenge:933963748295720960>";
         public static readonly string WellspringActivity = "<:WellspringActivity:947293754174365726>";
+        public static readonly string VowRaidChallenge = "<:VowRaidChallenge:951003008072831039>";
 
         // Needs to be char for char. Mainly used for Weapon Perks
         public static string MatchEmote(string Query)

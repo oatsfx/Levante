@@ -448,7 +448,7 @@ namespace Levante.Commands
         }
 
         [SlashCommand("view", "Get details on an emblem via its Hash Code found via Bungie's API.")]
-        public async Task ViewEmblem([Summary("item-type", "Select a supported item type you want information for.")] int ItemType, [Summary("query", "Name of the item you want details for.")] string SearchQuery)
+        public async Task ViewEmblem([Summary("name", "Name of the item you want details for.")] string SearchQuery)
         {
             using (var client = new HttpClient())
             {
