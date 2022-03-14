@@ -1,4 +1,5 @@
 ﻿using Levante.Configs;
+﻿using Discord;
 using Newtonsoft.Json;
 using System.Net.Http;
 
@@ -64,6 +65,39 @@ namespace Levante.Util
                 else
                     return true;
             }
+        }
+
+        public override EmbedBuilder GetEmbed()
+        {
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Emblem Details: {GetName()}",
+                IconUrl = GetIconUrl(),
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Powered by Bungie API"
+            };
+            int[] emblemRGB = GetRGBAsIntArray();
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(emblemRGB[0], emblemRGB[1], emblemRGB[2]),
+                Author = auth,
+                Footer = foot
+            };
+            try
+            {
+                embed.Description = (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) + "\n" +
+                        $"Hash Code: {GetItemHash()}\n";
+                embed.ImageUrl = GetBackgroundUrl();
+                embed.ThumbnailUrl = GetIconUrl();
+            }
+            catch
+            {
+                embed.Description = "This emblem is missing some API values, sorry about that!";
+            }
+            
+            return embed;
         }
     }
 

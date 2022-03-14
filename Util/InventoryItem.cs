@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+﻿using Discord;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -42,5 +43,7 @@ namespace Levante.Util
             dynamic item = JsonConvert.DeserializeObject(Content);
             return $"{item.Response.itemTypeAndTierDisplayName}";
         }
+
+        public abstract EmbedBuilder GetEmbed();
     }
 }

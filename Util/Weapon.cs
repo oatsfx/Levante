@@ -17,6 +17,9 @@ namespace Levante.Util
                 var response = client.GetAsync(APIUrl).Result;
                 Content = response.Content.ReadAsStringAsync().Result;
             }
+        public override EmbedBuilder GetEmbed()
+        {
+            throw new NotImplementedException();
         }
     }
 }
