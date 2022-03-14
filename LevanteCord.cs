@@ -129,10 +129,10 @@ namespace Levante
             // ReSharper disable once UnusedVariable
             var timer = new Timer(TimerCallback, null, 25000, BotConfig.TimeBetweenRefresh * 60000);
 
-            SetUpTimer(DateTime.Now.Hour >= 18
+            SetUpTimer(DateTime.Now.Hour >= 19
                 ? new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month,
-                    DateTime.Today.AddDays(1).Day, 18, 0, 0)
-                : new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 18, 0, 0));
+                    DateTime.Today.AddDays(1).Day, 19, 0, 0)
+                : new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 19, 0, 0));
 
             await InitializeListeners();
 
@@ -253,12 +253,12 @@ namespace Levante
             // This tells us how to build slash commands.
             _client.Ready += async () =>
             {
-                // var guild = _client.GetGuild(764586645684355092);
-                // await guild.DeleteApplicationCommandsAsync();
-                // await _interaction.RegisterCommandsToGuildAsync(764586645684355092);
+                var guild = _client.GetGuild(764586645684355092);
+                await guild.DeleteApplicationCommandsAsync();
+                await _interaction.RegisterCommandsToGuildAsync(764586645684355092);
 
-                await _interaction.RegisterCommandsGloballyAsync();
-                // await _client.Rest.DeleteAllGlobalCommandsAsync();
+                // await _interaction.RegisterCommandsGloballyAsync();
+                await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
             };
 

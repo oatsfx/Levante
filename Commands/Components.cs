@@ -55,6 +55,8 @@ namespace Levante.Commands
                 return;
             }
 
+            await DeferAsync();
+
             var memId = DataConfig.GetLinkedUser(user.Id).BungieMembershipID;
             // var memType = DataConfig.GetLinkedUser(user.Id).BungieMembershipType;
 
@@ -80,7 +82,7 @@ namespace Levante.Commands
                 return;
             }
 
-            await RespondAsync("Getting things ready...", ephemeral: true);
+            // await RespondAsync("Getting things ready...", ephemeral: true);
             var uniqueName = DataConfig.GetLinkedUser(user.Id).UniqueBungieName;
 
             var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName.Replace('#', '-')}").Result;
