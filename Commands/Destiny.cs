@@ -314,7 +314,7 @@ namespace Levante.Commands
             return;
         }
 
-        [SlashCommand("materials", "Gets your Destiny 2 material count.")]
+        /*[SlashCommand("materials", "Gets your Destiny 2 material count.")]
         public async Task Materials([Summary("user", "User you want the Materials count for. Leave empty for your own.")] IUser User = null)
         {
             if (User == null)
@@ -346,7 +346,7 @@ namespace Levante.Commands
                     // 
                 }
             }
-        }
+        }*/
 
         [SlashCommand("nightfall", "Display Nightfall information.")]
         public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
