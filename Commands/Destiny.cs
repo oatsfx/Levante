@@ -9,7 +9,13 @@ using System.Drawing;
 using System.IO;
 using Levante.Util;
 using System.Net;
-using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
+using APIHelper;
+using APIHelper.Structs;
+using Discord;
+using Discord.Interactions;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using Discord.Interactions;
 using Levante.Rotations;
@@ -625,11 +631,106 @@ namespace Levante.Commands
         {
             using (WebResponse wrFileResponse = WebRequest.Create(strUrl).GetResponse())
             {
-                using (Stream objWebStream = wrFileResponse.GetResponseStream())
+                var Platform = (BungieMembershipType) ArgPlatform;
+
+                await DeferAsync();
+
+                string MembershipType = null;
+                string MembershipID = null;
+                using (var client = new HttpClient())
                 {
-                    MemoryStream ms = new MemoryStream();
-                    objWebStream.CopyTo(ms, 8192);
-                    return System.Drawing.Image.FromStream(ms);
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                    var response = client.GetAsync("https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/-1/" +
+                                                   Uri.EscapeDataString(BungieTag)).Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+
+                    if (item != null)
+                        for (var i = 0; i < item.Response.Count; i++)
+                        {
+                            string memId = item.Response[i].membershipId;
+                            string memType = item.Response[i].membershipType;
+
+                            var memItem = API.GetProfile(long.Parse(memId), (BungieMembershipType) int.Parse(memType),
+                                new[] {APIHelper.Structs.Components.QueryComponents.Profiles});
+
+                            if (!(memItem is {ErrorCode: 1})) continue;
+                            if (memItem.Response.profile.data.userInfo.crossSaveOverride !=
+                                memItem.Response.profile.data.userInfo.membershipType &&
+                                (memItem.Response.profile.data.userInfo.crossSaveOverride != 0 ||
+                                 memItem.Response.profile.data.userInfo.membershipType != Platform))
+                                continue;
+                            MembershipType = memType;
+                            MembershipID = memId;
+                            break;
+                        }
+                }
+
+                if (MembershipType == null)
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                    {
+                        message.Content =
+                            "An error occurred when retrieving that player's Guardians. Run the command again and specify their platform.";
+                    });
+                    return;
+                }
+
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                    var response = client.GetAsync("https://www.bungie.net/platform/Destiny2/" + MembershipType +
+                                                   "/Profile/" + MembershipID + "?components=100,200").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+
+                    if (DataConfig.IsBungieAPIDown(content))
+                    {
+                        await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                        {
+                            message.Content = "Bungie API is temporary down, try again later.";
+                        });
+                        return;
+                    }
+
+                    if (item == null || item.ErrorCode != 1)
+                    {
+                        await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                        {
+                            message.Content =
+                                "An error occured with that account. Is there a connected Destiny 2 account?";
+                        });
+                        return;
+                    }
+
+                    var userGuardians = new List<Guardian>();
+                    for (var i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                        try
+                        {
+                            var charId = $"{item.Response.profile.data.characterIds[i]}";
+                            if ((Guardian.Class) item.Response.characters.data[$"{charId}"].classType == ClassType)
+                                userGuardians.Add(new Guardian(BungieTag, MembershipID, MembershipType, charId));
+                        }
+                        catch (Exception x)
+                        {
+                            Console.WriteLine($"{x}");
+                        }
+
+                    if (userGuardians.Count == 0)
+                    {
+                        await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                        {
+                            message.Content = "No guardian found.";
+                        });
+                        return;
+                    }
+
+                    await Context.Interaction.ModifyOriginalResponseAsync(message =>
+                    {
+                        message.Embeds = userGuardians.Select(guardian => guardian.GetGuardianEmbed().Build()).ToArray();
+                    });
                 }
             }
         }
