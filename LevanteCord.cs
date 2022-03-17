@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
+using APIHelper;
 using Discord;
 using Newtonsoft.Json;
 using System.Linq;
@@ -90,6 +91,12 @@ namespace Levante
             Console.WriteLine();
             Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
             Console.WriteLine();
+
+            if (!API.FetchManifest(BotConfig.BungieApiKey))
+            {
+                // TODO: set up a task at a later date to refetch manifest
+                // maybe make a boolean that disables manifest requiring commands if it's false
+            }
 
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
