@@ -45,15 +45,6 @@ namespace Levante.Commands
             {
                 bool IsDaily = ResetType == 0;
 
-                foreach (var channel in Context.Guild.TextChannels)
-                {
-                    if (DataConfig.IsExistingLinkedChannel(channel.Id, IsDaily))
-                    {
-                        await RespondAsync($"This guild already has {(IsDaily ? "Daily" : "Weekly")} reset posts set up in {channel.Mention}.", ephemeral: true);
-                        return;
-                    }
-                }
-
                 if (DataConfig.IsExistingLinkedChannel(Context.Channel.Id, IsDaily))
                 {
                     DataConfig.DeleteChannelFromRotationConfig(Context.Channel.Id, IsDaily);
@@ -63,6 +54,15 @@ namespace Levante.Commands
                 }
                 else
                 {
+                    foreach (var channel in Context.Guild.TextChannels)
+                    {
+                        if (DataConfig.IsExistingLinkedChannel(channel.Id, IsDaily))
+                        {
+                            await RespondAsync($"This guild already has {(IsDaily ? "Daily" : "Weekly")} reset posts set up in {channel.Mention}.", ephemeral: true);
+                            return;
+                        }
+                    }
+
                     DataConfig.AddChannelToRotationConfig(Context.Channel.Id, IsDaily);
 
                     await RespondAsync($"This channel is now successfully subscribed to {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command again to remove this type of alert!", ephemeral: true);
