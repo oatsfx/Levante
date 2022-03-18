@@ -14,15 +14,6 @@ namespace Levante.Commands
             [SlashCommand("emblem-offers", "Set up announcements for Emblem Offers.")]
             public async Task EmblemOffers([Summary("role", "Add a role to be pinged when a new Emblem Offer is posted.")] IRole RoleToPing = null)
             {
-                foreach (var channel in Context.Guild.TextChannels)
-                {
-                    if (DataConfig.IsExistingEmblemLinkedChannel(channel.Id))
-                    {
-                        await RespondAsync($"This guild already has Emblem Offer posts set up in {channel.Mention}.", ephemeral: true);
-                        return;
-                    }
-                }
-
                 if (DataConfig.IsExistingEmblemLinkedChannel(Context.Channel.Id))
                 {
                     DataConfig.DeleteEmblemChannel(Context.Channel.Id);
@@ -32,6 +23,15 @@ namespace Levante.Commands
                 }
                 else
                 {
+                    foreach (var channel in Context.Guild.TextChannels)
+                    {
+                        if (DataConfig.IsExistingEmblemLinkedChannel(channel.Id))
+                        {
+                            await RespondAsync($"This guild already has Emblem Offer posts set up in {channel.Mention}.", ephemeral: true);
+                            return;
+                        }
+                    }
+
                     DataConfig.AddEmblemChannel(Context.Channel.Id, RoleToPing);
 
                     await RespondAsync($"This channel is now successfully subscribed to Emblem Offer posts. Run this command again to remove this type of alert!", ephemeral: true);
