@@ -425,7 +425,7 @@ namespace Levante.Configs
             }
         }
 
-        public static int GetUserSeasonPassLevel(ulong DiscordID, out int XPProgress)
+        public static int GetUserSeasonPassLevel(ulong DiscordID, out int XPProgress, out dynamic item)
         {
             using (var client = new HttpClient())
             {
@@ -434,9 +434,9 @@ namespace Levante.Configs
 
                 var dil = GetLinkedUser(DiscordID);
 
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,202").Result;
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
+                item = JsonConvert.DeserializeObject(content);
 
                 //first 100 levels: 4095505052 (S15); 2069932355 (S16)
                 //anything after: 1531004716 (S15): 1787069365 (S16)
