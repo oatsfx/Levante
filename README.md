@@ -1,4 +1,7 @@
 # Levante
+[![](https://img.shields.io/discord/915020047154565220?color=success&logo=Discord&logoColor=white)](https://discord.gg/XCyngRkqAa)
+[![license](https://img.shields.io/badge/license-AGPLv3-teal.svg)](https://choosealicense.com/licenses/agpl-3.0/)
+
 An open-source Discord bot using [Discord.Net-Labs](https://github.com/Discord-Net-Labs/Discord.Net-Labs) for various Destiny 2 Needs.
 
 Developed by [@OatsFX](https://twitter.com/OatsFX).
