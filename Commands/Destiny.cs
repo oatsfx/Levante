@@ -610,51 +610,7 @@ namespace Levante.Commands
                     return;
                 }
 
-                var auth = new EmbedAuthorBuilder
-                {
-                    Name = $"Emblem Details: {emblem.GetName()}",
-                    IconUrl = emblem.GetIconUrl()
-                };
-                var foot = new EmbedFooterBuilder
-                {
-                    Text = "Powered by Bungie API"
-                };
-                var emblemRGB = emblem.GetRGBAsIntArray();
-                var embed = new EmbedBuilder
-                {
-                    Color = new Discord.Color(emblemRGB[0], emblemRGB[1], emblemRGB[2]),
-                    Author = auth,
-                    Footer = foot
-                };
-                try
-                {
-                    var hash = emblem.GetItemHash();
-                    var unlock = emblem.GetEmblemUnlock(hash);
-                    var source = string.IsNullOrEmpty(unlock) ? "" : $"[Unlock (DEC)](https://destinyemblemcollector.com/emblem?id={hash}): {unlock}\n";
-                    embed.Description =
-                        (emblem.GetSourceString().Equals("") ? "No source data provided." : emblem.GetSourceString()) +
-                        "\n" +
-                        $"Hash Code: {hash}\n{source}";
-                    embed.ImageUrl = emblem.GetBackgroundUrl();
-                }
-                catch
-                {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message =>
-                    {
-                        message.Content = "There seems to be an API issue with that emblem, sorry about that!";
-                        message.Embed = new EmbedBuilder().Build();
-                        message.Components = new ComponentBuilder().Build();
-                    });
-                    return;
-                }
-
-                embed.ThumbnailUrl = emblem.GetIconUrl();
-                await Context.Interaction.ModifyOriginalResponseAsync(message =>
-                {
-                    message.Embed = embed.Build();
-                    message.Content = null;
-                    message.Components = new ComponentBuilder().Build();
-                });
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
         }
 

@@ -1,4 +1,6 @@
-﻿using Levante.Configs;
+﻿using Discord;
+using Levante.Configs;
+using System;
 using System.Net.Http;
 
 namespace Levante.Util
@@ -17,6 +19,8 @@ namespace Levante.Util
                 var response = client.GetAsync(APIUrl).Result;
                 Content = response.Content.ReadAsStringAsync().Result;
             }
+        }
+
         public override EmbedBuilder GetEmbed()
         {
             throw new NotImplementedException();
