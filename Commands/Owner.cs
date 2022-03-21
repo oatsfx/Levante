@@ -41,25 +41,6 @@ namespace Levante.Commands
             await ReplyAsync($"This shouldn't really be used...", components: buttonBuilder.Build());
         }*/
 
-        [Command("testAPI")]
-        [RequireOwner]
-        public async Task TestAPI()
-        {
-            const long memId = 4611686018471516071;
-            var memberships = API.GetLinkedProfiles(memId, BungieMembershipType.All, true);
-            var platforms = string.Join(", ", memberships.Response.profiles[0].applicableMembershipTypes);
-            var resp = $"{memberships.Response.bnetMembership.supplementalDisplayName} (Linked platforms: {platforms})";
-
-            var profile = API.GetProfile(memId, memberships.Response.profiles[0].membershipType, new[]
-            {
-                APIHelper.Structs.Components.QueryComponents.Profiles
-            });
-
-            resp += $"\n{profile.Response.profile.data.userInfo.displayName}:\n\tPrivacy: {profile.Response.profile.privacy}\n\tCharacter IDs: {string.Join(", ", profile.Response.profile.data.characterIds)}";
-
-            await ReplyAsync(resp);
-        }
-
         [Command("giveConfig", RunMode = RunMode.Async)]
         [Alias("config", "getConfig")]
         [RequireOwner]

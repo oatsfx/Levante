@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Levante.Configs;
 using System.Net.Http;
 using Discord;
