@@ -2,6 +2,8 @@
 ﻿using Discord;
 using Newtonsoft.Json;
 using System.Net.Http;
+using HtmlAgilityPack;
+using System.Net;
 
 namespace Levante.Util
 {
@@ -67,6 +69,23 @@ namespace Levante.Util
             }
         }
 
+        // Use DEC's information on how to unlock an emblem, if DEC has it in their data.
+        public string GetEmblemUnlock(long emblemId)
+        {
+            try
+            {
+                var doc = new HtmlDocument();
+                doc.LoadHtml(new WebClient().DownloadString($"https://destinyemblemcollector.com/emblem?id={emblemId}"));
+                var emblemUnlock = doc.DocumentNode.SelectNodes("//div[@class='gridemblem-emblemdetail']")[8].InnerHtml;
+                return emblemUnlock.Split("<li>")[1].Split("</li>")[0];
+            }
+            catch
+            {
+                // lazy catchall, but it just seems to hit internal server error if id isn't found
+                return "";
+            }
+        }
+
         public override EmbedBuilder GetEmbed()
         {
             var auth = new EmbedAuthorBuilder()
@@ -87,10 +106,13 @@ namespace Levante.Util
             };
             try
             {
-                embed.Description = (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) + "\n" +
-                        $"Hash Code: {GetItemHash()}\n";
+                var unlock = GetEmblemUnlock(GetItemHash());
+                var source = string.IsNullOrEmpty(unlock) ? "" : $"[Unlock (DEC)](https://destinyemblemcollector.com/emblem?id={GetItemHash()}): {unlock}\n";
+                embed.Description =
+                    (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) +
+                    "\n" +
+                    $"Hash Code: {GetItemHash()}\n{source}";
                 embed.ImageUrl = GetBackgroundUrl();
-                embed.ThumbnailUrl = GetIconUrl();
             }
             catch
             {

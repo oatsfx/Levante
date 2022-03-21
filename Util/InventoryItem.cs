@@ -1,8 +1,5 @@
 ﻿using Newtonsoft.Json;
 ﻿using Discord;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Levante.Util
 {
