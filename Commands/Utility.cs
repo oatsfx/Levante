@@ -24,24 +24,29 @@ namespace Levante.Commands
                 return;
             }
 
-            string memId = DataConfig.GetValidDestinyMembership(BungieTag, (Guardian.Platform)ArgPlatform, out string memType);
+            await DeferAsync(true);
+
+            var memId = DataConfig.GetValidDestinyMembership(BungieTag, (Guardian.Platform) ArgPlatform, out var memType);
 
             if (memId == null && memType == null)
             {
-                await RespondAsync($"Something went wrong. Is your Bungie Tag correct?", ephemeral: true);
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Something went wrong. Is your Bungie Tag correct?"; });
                 return;
             }
 
-            if (!DataConfig.IsPublicAccount(BungieTag))
+            if (!DataConfig.IsPublicAccount(BungieTag, int.Parse(memType)))
             {
-                await RespondAsync($"Your account privacy is not set to public. I cannot access your information otherwise.", ephemeral: true);
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Your account privacy is not set to public. I cannot access your information otherwise."; });
                 return;
             }
 
             DataConfig.AddUserToConfig(Context.User.Id, memId, memType, BungieTag);
-            await RespondAsync($"Linked {Context.User.Mention} to {BungieTag}.", ephemeral: true);
-        }
 
+            await Context.Interaction.ModifyOriginalResponseAsync(message =>
+            {
+                message.Content = $"Linked {Context.User.Mention} to {BungieTag} on Platform {(Guardian.Platform)int.Parse(memType)}.\nIf the platform is incorrect, please `/unlink` and then use `/link {BungieTag} <platform>`.";
+            });
+        }
 
         [Group("notify", "Be notified when a specific rotation is active.")]
         public class Notify : InteractionModuleBase<SocketInteractionContext>
