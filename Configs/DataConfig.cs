@@ -69,40 +69,55 @@ namespace Levante.Configs
                     return null;
                 }
 
-                string memId = "";
-                string memType = "";
-                for (int i = 0; i < item.Response.Count; i++)
-                {
-                    memId = item.Response[i].membershipId;
-                    memType = item.Response[i].membershipType;
-
-                    var memResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + memType + "/Profile/" + memId + "/?components=100").Result;
-                    var memContent = memResponse.Content.ReadAsStringAsync().Result;
-                    dynamic memItem = JsonConvert.DeserializeObject(memContent);
-
-                    if (memItem.ErrorCode == 1)
+                if (item != null)
+                    for (var i = 0; i < item.Response.Count; i++)
                     {
-                        if (((int)memItem.Response.profile.data.userInfo.crossSaveOverride == (int)memItem.Response.profile.data.userInfo.membershipType) ||
-                                ((int)memItem.Response.profile.data.userInfo.crossSaveOverride == 0 && (int)memItem.Response.profile.data.userInfo.membershipType == ((int)Platform)))
+                        string memId = item.Response[i].membershipId;
+
+                        var memResponse = client
+                            .GetAsync(
+                                $"https://www.bungie.net/Platform/Destiny2/-1/Profile/{memId}/LinkedProfiles/?getAllMemberships=true")
+                            .Result;
+                        var memContent = memResponse.Content.ReadAsStringAsync().Result;
+                        dynamic memItem = JsonConvert.DeserializeObject(memContent);
+
+                        var lastPlayed = new DateTime();
+                        var goodProfile = -1;
+
+                        if (memItem == null || memItem.ErrorCode != 1) continue;
+
+                        for (var j = 0; j < memItem.Response.profiles.Count; j++)
                         {
-                            MembershipType = memType;
-                            return memId;
+                            if (memItem.Response.profiles[j].isCrossSavePrimary == true)
+                            {
+                                MembershipType = memItem.Response.profiles[j].membershipType;
+                                return memId;
+                            }
+
+                            if (DateTime.Parse(memItem.Response.profiles[j].dateLastPlayed.ToString()) <= lastPlayed) continue;
+
+                            lastPlayed = DateTime.Parse(memItem.Response.profiles[j].dateLastPlayed.ToString());
+                            goodProfile = j;
                         }
+
+                        if (goodProfile == -1) continue;
+
+                        MembershipType = memItem.Response.profiles[goodProfile].membershipType;
+                        return memItem.Response.profiles[goodProfile].membershipId;
                     }
-                }
             }
             MembershipType = null;
             return null;
         }
 
-        public static bool IsPublicAccount(string BungieTag)
+        public static bool IsPublicAccount(string BungieTag, int memId)
         {
             bool isPublic = false;
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
-                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/3/" + Uri.EscapeDataString(BungieTag)).Result;
+                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/{memId}/" + Uri.EscapeDataString(BungieTag)).Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
