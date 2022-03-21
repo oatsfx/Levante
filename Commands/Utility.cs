@@ -26,26 +26,17 @@ namespace Levante.Commands
 
             await DeferAsync(true);
 
-            var memId = DataConfig.GetValidDestinyMembership(BungieTag, (Guardian.Platform) ArgPlatform,
-                out var memType);
+            var memId = DataConfig.GetValidDestinyMembership(BungieTag, (Guardian.Platform) ArgPlatform, out var memType);
 
             if (memId == null && memType == null)
             {
-                await Context.Interaction.ModifyOriginalResponseAsync(message =>
-                {
-                    message.Content =
-                        "Something went wrong. Is your Bungie Tag correct?";
-                });
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Something went wrong. Is your Bungie Tag correct?"; });
                 return;
             }
 
             if (!DataConfig.IsPublicAccount(BungieTag, int.Parse(memType)))
             {
-                await Context.Interaction.ModifyOriginalResponseAsync(message =>
-                {
-                    message.Content =
-                        "Your account privacy is not set to public. I cannot access your information otherwise.";
-                });
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Your account privacy is not set to public. I cannot access your information otherwise."; });
                 return;
             }
 
@@ -53,38 +44,9 @@ namespace Levante.Commands
 
             await Context.Interaction.ModifyOriginalResponseAsync(message =>
             {
-                message.Content = $"Linked {Context.User.Mention} to {BungieTag} on Platform {GetMembershipType(int.Parse(memType))}.\nIf the platform is incorrect, please `/unlink` and then use `/link {BungieTag} <platform>`.";
+                message.Content = $"Linked {Context.User.Mention} to {BungieTag} on Platform {(Guardian.Platform)int.Parse(memType)}.\nIf the platform is incorrect, please `/unlink` and then use `/link {BungieTag} <platform>`.";
             });
         }
-
-        private static string GetMembershipType(int MembershipType)
-        {
-            return MembershipType switch
-            {
-                1 => "Xbox",
-                2 => "PSN",
-                3 => "Steam",
-                4 => "Blizzard",
-                5 => "Stadia",
-                _ => "None"
-            };
-        }
-
-        [SlashCommand("rank", "Display a Destiny 2 leaderboard of choice.")]
-        public async Task Rank(
-            [Summary("leaderboard", "Specific leaderboard to display.")]
-            [Choice("Season Pass Level", 0)]
-            [Choice("Longest XP Logging Session", 1)]
-            [Choice("Most Logged XP Per Hour", 2)]
-            [Choice("Total XP Logging Time", 3)]
-            [Choice("Equipped Power Level", 4)]
-            int ArgLeaderboard,
-            [Summary("season", "Season of the specific leaderboard. Defaults to the current season.")]
-            [Choice("Season of the Lost", 15)]
-            [Choice("Season of the Risen", 16)]
-            int Season = 16)
-        {
-            var LeaderboardType = (Leaderboard) ArgLeaderboard;
 
         [Group("notify", "Be notified when a specific rotation is active.")]
         public class Notify : InteractionModuleBase<SocketInteractionContext>
