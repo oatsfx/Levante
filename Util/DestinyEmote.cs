@@ -13,6 +13,7 @@ namespace Levante.Util
         // Activity Modifiers
         public static readonly string AcuteArcBurn = "<:AcuteArcBurn:947296733761765447>";
         public static readonly string AcuteSolarBurn = "<:AcuteSolarBurn:950997186013970453>";
+        public static readonly string AcuteVoidBurn = "<:AcuteVoidBurn:954803928883675176>";
         public static readonly string ArachNO = "<:ArachNO:900142007840833576>";
         public static readonly string ArcBurn = "<:ArcBurn:900142018280456213>";
         public static readonly string Attrition = "<:Attrition:900142029487632395>";
@@ -46,7 +47,9 @@ namespace Levante.Util
 
         // Elements
         public static readonly string Arc = "<:Arc:900144187696099359>";
+        public static readonly string Kinetic = "<:Kinetic:955691794455232543>";
         public static readonly string Solar = "<:Solar:900144171267022888>";
+        public static readonly string Stasis = "<:Stasis:955698714738061362>";
         public static readonly string Void = "<:Void:900144180288958474>";
 
         // Weapon Types
@@ -66,62 +69,6 @@ namespace Levante.Util
         public static readonly string Sidearm = "<:Sidearm:933969813678743572>";
         public static readonly string SniperRifle = "<:Sniper:933969813322203198>";
         public static readonly string Sword = "<:Sword:933969814379196456>";
-
-        // Weapon Perks
-
-        // Barrels
-        public static readonly string ArrowheadBrake = "<:ArrowheadBrake:947664083006656533>";
-        public static readonly string ChamberedCompensator = "<:ChamberedCompensator:947664086542479380>";
-        public static readonly string CorkscrewRifling = "<:CorkscrewRifling:947664087041593355>";
-        public static readonly string ExtendedBarrel = "<:ExtendedBarrel:947664084260778004>";
-        public static readonly string FullBore = "<:FullBore:947664085175140362>";
-        public static readonly string HammerForgedRifling = "<:HammerForgedRifling:947665786766524446>";
-        public static readonly string PolygonalRifling = "<:PolygonalRifling:947664087255506974>";
-
-        public static readonly string EnduringBlade = "<:EnduringBlade:947727236306452520>";
-        public static readonly string HonedEdge = "<:HonedEdge:947727236637806592>";
-        public static readonly string HungryEdge = "<:HungryEdge:947727232695144478>";
-        public static readonly string JaggedEdge = "<:JaggedEdge:947727233940869120>";
-        public static readonly string TemperedEdge = "<:TemperedEdge:947727234788118588>";
-
-        // Mags/Rounds
-        public static readonly string AccurizedRounds = "<:AccurizedRounds:947664087788175380>";
-        public static readonly string AlloyMagazine = "<:AlloyMagazine:947664089742733313>";
-        public static readonly string AppendedMag = "<:AppendedMag:947664087821733939>";
-        public static readonly string ExtendedMag = "<:ExtendedMag:947664088874504285>";
-        public static readonly string FlaredMagwell = "<:FlaredMagwell:947664090124386344>";
-        public static readonly string FlutedBarrel = "<:FlutedBarrel:947664085070262303>";
-        public static readonly string SteadyRounds = "<:SteadyRounds:947664089436524554>";
-        public static readonly string TacticalMag = "<:TacticalMag:947664088257937409>";
-
-        // Guards
-        public static readonly string BalancedGuard = "<:BalancedGuard:947727237023674398>";
-        public static readonly string BurstGuard = "<:BurstGuard:947727236792999997>";
-        public static readonly string EnduringGuard = "<:EnduringGuard:947727237556351016>";
-        public static readonly string HeavyGuard = "<:HeavyGuard:947727238042910740>";
-        public static readonly string SwordmastersGuard = "<:SwordmastersGuard:947729449078648872>";
-
-        // Other
-        public static readonly string AdrenalineJunkie = "<:AdrenalineJunkie:947664095967076412>";
-        public static readonly string AutoLoadingHolster = "<:AutoLoadingHolster:947665708681138256>";
-        public static readonly string DuelistsTrance = "<:DuelistsTrance:947729672957988864>";
-        public static readonly string EagerEdge = "<:EagerEdge:947727239317950524>";
-        public static readonly string ElementalCapacitor = "<:ElementalCapacitor:947664096336162826>";
-        public static readonly string EnergyTransfer = "<:EnergyTransfer:947727239431221259>";
-        public static readonly string FocusedFury = "<:FocusedFury:947664095048507423>";
-        public static readonly string Frenzy = "<:Frenzy:947664095547637781>";
-        public static readonly string KillingWind = "<:KillingWind:947664091755986945>";
-        public static readonly string PerpetualMotion = "<:PerpetualMotion:947664090816446515>";
-        public static readonly string PulseMonitor = "<:PulseMonitor:947664093010067466>";
-        public static readonly string Rangefinder = "<:Rangefinder:947664096273256449>";
-        public static readonly string RelentlessStrikes = "<:RelentlessStrikes:947727240064553000>";
-        public static readonly string Smallbore = "<:Smallbore:947664086454390804>";
-        public static readonly string SteadyHands = "<:SteadyHands:947664092615802921>";
-        public static readonly string Subsistence = "<:Subsistence:947664091806322688>";
-        public static readonly string Surrounded = "<:Surrounded:947727241926815764>";
-        public static readonly string Thresh = "<:Thresh:947664094394212383>";
-        public static readonly string VorpalWeapon = "<:VorpalWeapon:947727242052665345>";
-        public static readonly string WhirlwindBlade = "<:WhirlwindBlade:947727241444491325>";
 
         // Armor Types
         public static readonly string Helmet = "<:Helmet:926269144406577173>";
@@ -144,6 +91,7 @@ namespace Levante.Util
         // Misc
         public static readonly string AscendantChallengeBounty = "<:ACBounty:934478080737693787>";
         public static readonly string Light = "<:LightLevel:844029708077367297>";
+        public static readonly string LostSector = "<:LostSector:955004180618174475>";
         public static readonly string Nightfall = "<:Nightfall:934476602006458409>";
         public static readonly string RaidBounty = "<:LWRaidBounty:933963726535655425>";
         public static readonly string RaidChallenge = "<:RaidChallenge:933971625118924820>";
@@ -151,7 +99,7 @@ namespace Levante.Util
         public static readonly string WellspringActivity = "<:WellspringActivity:947293754174365726>";
         public static readonly string VowRaidChallenge = "<:VowRaidChallenge:951003008072831039>";
 
-        // Needs to be char for char. Mainly used for Weapon Perks
+        // Needs to be char for char.
         public static string MatchEmote(string Query)
         {
             Query = Query.Replace(" ", "").Replace("-", "").Replace("'", "");

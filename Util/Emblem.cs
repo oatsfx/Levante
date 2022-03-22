@@ -1,5 +1,7 @@
-﻿using Levante.Configs;
-﻿using Discord;
+﻿using APIHelper;
+using Discord;
+using Levante.Configs;
+using Levante.Helpers;
 using Newtonsoft.Json;
 using System.Net.Http;
 using HtmlAgilityPack;
@@ -14,43 +16,39 @@ namespace Levante.Util
             HashCode = hashCode;
             APIUrl = $"https://www.bungie.net/platform/Destiny2/Manifest/DestinyInventoryItemDefinition/" + HashCode;
 
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync(APIUrl).Result;
-                Content = response.Content.ReadAsStringAsync().Result;
-            }
+            Content = ManifestConnection.GetInventoryItemById(unchecked((int)hashCode));
         }
 
         public int[] GetRGBAsIntArray()
         {
             int[] result = new int[3];
-            dynamic item = JsonConvert.DeserializeObject(Content);
-            result[0] = item.Response.backgroundColor.red;
-            result[1] = item.Response.backgroundColor.green;
-            result[2] = item.Response.backgroundColor.blue;
+            result[0] = (int)Content.BackgroundColor.Red;
+            result[1] = (int)Content.BackgroundColor.Green;
+            result[2] = (int)Content.BackgroundColor.Blue;
             return result;
         }
 
         public string GetSourceString()
         {
-            using (var client = new HttpClient())
+            try
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
-                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Manifest/DestinyCollectibleDefinition/" + GetCollectableHash()).Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-                return item.Response.sourceString;
+                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Manifest/DestinyCollectibleDefinition/" + GetCollectableHash()).Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+                    return item.Response.sourceString;
+                }
+            }
+            catch
+            {
+                return "";
             }
         }
 
-        public string GetBackgroundUrl()
-        {
-            dynamic item = JsonConvert.DeserializeObject(Content);
-            return "https://www.bungie.net" + item.Response.secondaryIcon;
-        }
+        public string GetBackgroundUrl() => "https://www.bungie.net" + Content.SecondaryIcon;
 
         public static bool HashIsAnEmblem(long HashCode)
         {
@@ -95,7 +93,7 @@ namespace Levante.Util
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by Bungie API"
+                Text = $"Powered by the Bungie API"
             };
             int[] emblemRGB = GetRGBAsIntArray();
             var embed = new EmbedBuilder()
@@ -112,6 +110,10 @@ namespace Levante.Util
                     (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) +
                     "\n" +
                     $"Hash Code: {GetItemHash()}\n{source}";
+
+                embed.Description = (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) + "\n" +
+                        $"Hash Code: {GetItemHash()}\n" +
+                        $"Collectible Hash: {GetCollectableHash()}\n";
                 embed.ImageUrl = GetBackgroundUrl();
             }
             catch

@@ -9,6 +9,9 @@ namespace Levante.Helpers
     {
         public static bool CheckAndLoadConfigFiles()
         {
+            if (!Directory.Exists("Configs"))
+                Directory.CreateDirectory("Configs");
+
             BotConfig bConfig;
             DataConfig dConfig;
             ActiveConfig aConfig;
@@ -51,6 +54,12 @@ namespace Levante.Helpers
                 File.WriteAllText(ActiveConfig.FilePath, JsonConvert.SerializeObject(aConfig, Formatting.Indented));
                 Console.WriteLine($"No activeConfig.json file detected. A new one has been created and the program has stopped. No action is needed.");
                 closeProgram = true;
+            }
+
+            if (!File.Exists(EmoteConfig.FilePath))
+            {
+                File.WriteAllText(EmoteConfig.FilePath, JsonConvert.SerializeObject(new EmoteConfig(), Formatting.Indented));
+                Console.WriteLine($"No emoteConfig.json file detected. A new one has been created.");
             }
 
             if (closeProgram == true) return false;

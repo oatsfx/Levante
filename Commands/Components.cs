@@ -19,6 +19,8 @@ namespace Levante.Commands
             CurrentRotations.WeeklyRotation();
             await DataConfig.PostWeeklyResetUpdate(Context.Client);
             await DataConfig.PostDailyResetUpdate(Context.Client);
+            await CurrentRotations.CheckUsersDailyTracking(Context.Client);
+            await CurrentRotations.CheckUsersWeeklyTracking(Context.Client);
             await RespondAsync("Forced!");
         }*/
 
@@ -30,6 +32,7 @@ namespace Levante.Commands
         {
             var user = Context.User;
             var guild = Context.Guild;
+
             if (ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
                 await RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumLoggingUsers}). Try again later.", ephemeral: true);
@@ -38,7 +41,7 @@ namespace Levante.Commands
 
             if (!DataConfig.IsExistingLinkedUser(user.Id))
             {
-                await RespondAsync($"You are not registered! Use \"{BotConfig.DefaultCommandPrefix}link [YOUR BUNGIE TAG]\" to register.", ephemeral: true);
+                await RespondAsync($"You are not registered! Use \"/link [YOUR BUNGIE TAG] <PLATFORM>\" to register.", ephemeral: true);
                 return;
             }
 
@@ -48,6 +51,8 @@ namespace Levante.Commands
                 return;
             }
 
+            await DeferAsync(ephemeral: true);
+
             string memId = DataConfig.GetLinkedUser(user.Id).BungieMembershipID;
             string memType = DataConfig.GetLinkedUser(user.Id).BungieMembershipType;
 
@@ -55,7 +60,7 @@ namespace Levante.Commands
 
             if (!errorStatus.Equals("Success"))
             {
-                await RespondAsync($"A Bungie API error has occurred. Reason: {errorStatus}", ephemeral: true);
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"A Bungie API error has occurred. Reason: {errorStatus}"; });
                 return;
             }
 
@@ -66,11 +71,11 @@ namespace Levante.Commands
 
             if (cc == null)
             {
-                await RespondAsync($"No category by the name of \"XP Logging\" was found, cancelling operation. Let a server admin know!", ephemeral: true);
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No category by the name of \"XP Logging\" was found, cancelling operation. Let a server admin know!"; });
                 return;
             }
 
-            await RespondAsync($"Getting things ready...", ephemeral: true);
+            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Getting things ready..."; });
             string uniqueName = DataConfig.GetLinkedUser(user.Id).UniqueBungieName;
 
             var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName.Replace('#', '-')}").Result;
@@ -84,7 +89,6 @@ namespace Levante.Commands
                 LastLoggedLevel = userLevel,
                 StartLevelProgress = lvlProg,
                 LastLevelProgress = lvlProg,
-                PrivacySetting = fireteamPrivacy
             };
 
             await userLogChannel.ModifyAsync(x =>
@@ -100,7 +104,7 @@ namespace Levante.Commands
             });
 
             string privacy = "";
-            switch (newUser.PrivacySetting)
+            switch (fireteamPrivacy)
             {
                 case PrivacySetting.Open: privacy = "Open"; break;
                 case PrivacySetting.ClanAndFriendsOnly: privacy = "Clan and Friends Only"; break;
@@ -111,7 +115,7 @@ namespace Levante.Commands
             }
             var guardian = new Guardian(newUser.UniqueBungieName, newUser.BungieMembershipID, DataConfig.GetLinkedUser(user.Id).BungieMembershipType, CharacterId);
             await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLoggedLevel} ({String.Format("{0:n0}", newUser.LastLevelProgress)}/100,000 XP).", guardian.GetGuardianEmbed());
-            string recommend = newUser.PrivacySetting == PrivacySetting.Open || newUser.PrivacySetting == PrivacySetting.ClanAndFriendsOnly || newUser.PrivacySetting == PrivacySetting.FriendsOnly ? $" It is recommended to change your privacy to prevent people from joining you. {user.Mention}" : "";
+            string recommend = fireteamPrivacy == PrivacySetting.Open || fireteamPrivacy == PrivacySetting.ClanAndFriendsOnly || fireteamPrivacy == PrivacySetting.FriendsOnly ? $" It is recommended to change your privacy to prevent people from joining you. {user.Mention}" : "";
             await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
 
             ActiveConfig.AddActiveUserToConfig(newUser);
@@ -129,7 +133,7 @@ namespace Levante.Commands
             var user = Context.User;
             if (!DataConfig.IsExistingLinkedUser(user.Id))
             {
-                await RespondAsync($"You are not registered! Use \"{BotConfig.DefaultCommandPrefix}link [YOUR BUNGIE TAG]\" to register.", ephemeral: true);
+                await RespondAsync($"You are not registered! Use \"/link [YOUR BUNGIE TAG] <PLATFORM>\" to register.", ephemeral: true);
                 return;
             }
 
@@ -163,7 +167,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by @OatsFX"
+                Text = $"Powered by {BotConfig.AppName}"
             };
             var helpEmbed = new EmbedBuilder()
             {

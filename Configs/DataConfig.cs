@@ -275,6 +275,13 @@ namespace Levante.Configs
             File.WriteAllText(FilePath, output);
         }
 
+        public static void UpdateConfig()
+        {
+            DataConfig obj = new DataConfig();
+            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
+            File.WriteAllText(FilePath, output);
+        }
+
         public static bool IsExistingLinkedUser(ulong DiscordID)
         {
             foreach (DiscordIDLink dil in DiscordIDLinks)

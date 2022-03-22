@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
-using APIHelper;
 using Discord;
 using Newtonsoft.Json;
 using System.Linq;
@@ -19,9 +18,17 @@ using Levante.Util;
 using Fergun.Interactive;
 using Discord.Interactions;
 using System.IO;
+using System.Web;
+using System.Net;
+using APIHelper;
 
 namespace Levante
 {
+    public static class LevanteCordInstance
+    {
+        public static DiscordSocketClient Client;
+    }
+
     public sealed class LevanteCord
     {
         private readonly DiscordSocketClient _client;
@@ -33,7 +40,12 @@ namespace Levante
 
         public LevanteCord()
         {
-            _client = new DiscordSocketClient();
+            var scktConfig = new DiscordSocketConfig
+            {
+                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMessages | GatewayIntents.GuildMembers,
+                //TotalShards = 2,
+            };
+            _client = new DiscordSocketClient(scktConfig);
             _commands = new CommandService();
             _interaction = new InteractionService(_client);
             _services = new ServiceCollection()
@@ -62,41 +74,42 @@ namespace Levante
             if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
 
-            await Task.Run(() => Console.Title = $"Levante v{String.Format("{0:0.00#}", BotConfig.Version)}");
+            await Task.Run(() => Console.Title = $"Levante v{BotConfig.Version:0.00}");
 
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
 
             CurrentRotations.CreateJSONs();
-            EmblemOffer.LoadCurrentOffers();
-
-            Console.WriteLine($"Current Bot Version: v{String.Format("{0:0.00#}", BotConfig.Version)}");
-            Console.WriteLine($"Current Developer Note: {BotConfig.Note}");
-
-            Console.WriteLine($"Legend/Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LostSector)} ({CurrentRotations.LostSectorArmorDrop})");
-            Console.WriteLine();
-            Console.WriteLine($"Altar Weapon: {AltarsOfSorrowRotation.GetWeaponNameString(CurrentRotations.AltarWeapon)} ({CurrentRotations.AltarWeapon})");
-            Console.WriteLine();
-            Console.WriteLine($"Last Wish Challenge: {LastWishRotation.GetEncounterString(CurrentRotations.LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(CurrentRotations.LWChallengeEncounter)})");
-            Console.WriteLine($"Garden of Salvation Challenge: {GardenOfSalvationRotation.GetEncounterString(CurrentRotations.GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(CurrentRotations.GoSChallengeEncounter)})");
-            Console.WriteLine($"Deep Stone Crypt Challenge: {DeepStoneCryptRotation.GetEncounterString(CurrentRotations.DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(CurrentRotations.DSCChallengeEncounter)})");
-            Console.WriteLine($"Vault of Glass Challenge: {VaultOfGlassRotation.GetEncounterString(CurrentRotations.VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(CurrentRotations.VoGChallengeEncounter)})");
-            Console.WriteLine();
-            Console.WriteLine($"Curse Week: {CurrentRotations.CurseWeek}");
-            Console.WriteLine($"Ascendant Challenge: {AscendantChallengeRotation.GetChallengeNameString(CurrentRotations.AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(CurrentRotations.AscendantChallenge)})");
-            Console.WriteLine();
-            Console.WriteLine($"Nightfall: {NightfallRotation.GetStrikeNameString(CurrentRotations.Nightfall)} ({NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrops[0])}/{NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrops[1])})");
-            Console.WriteLine();
-            Console.WriteLine($"Empire Hunt: {EmpireHuntRotation.GetHuntNameString(CurrentRotations.EmpireHunt)}");
-            Console.WriteLine();
-            Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
-            Console.WriteLine();
 
             if (!API.FetchManifest(BotConfig.BungieApiKey))
             {
                 // TODO: set up a task at a later date to refetch manifest
                 // maybe make a boolean that disables manifest requiring commands if it's false
             }
+
+            EmblemOffer.LoadCurrentOffers();
+
+            Console.WriteLine($"[Startup] Current Bot Version: v{BotConfig.Version:0.00}");
+            Console.WriteLine($"[Startup] Current Developer Note: {BotConfig.Note}");
+            Console.WriteLine();
+
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.WriteLine($"[Rotations]");
+            Console.WriteLine($"Legend/Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LostSector)} ({CurrentRotations.LostSectorArmorDrop})");
+            Console.WriteLine($"Altar Weapon: {AltarsOfSorrowRotation.GetWeaponNameString(CurrentRotations.AltarWeapon)} ({CurrentRotations.AltarWeapon})");
+            Console.WriteLine($"Wellspring ({WellspringRotation.GetWellspringTypeString(CurrentRotations.Wellspring)}): {WellspringRotation.GetWeaponNameString(CurrentRotations.Wellspring)} ({WellspringRotation.GetWellspringBossString(CurrentRotations.Wellspring)})");
+            Console.WriteLine($"Last Wish Challenge: {LastWishRotation.GetEncounterString(CurrentRotations.LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(CurrentRotations.LWChallengeEncounter)})");
+            Console.WriteLine($"Garden of Salvation Challenge: {GardenOfSalvationRotation.GetEncounterString(CurrentRotations.GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(CurrentRotations.GoSChallengeEncounter)})");
+            Console.WriteLine($"Deep Stone Crypt Challenge: {DeepStoneCryptRotation.GetEncounterString(CurrentRotations.DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(CurrentRotations.DSCChallengeEncounter)})");
+            Console.WriteLine($"Vault of Glass Challenge: {VaultOfGlassRotation.GetEncounterString(CurrentRotations.VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(CurrentRotations.VoGChallengeEncounter)})");
+            Console.WriteLine($"Vow of the Disiple Challenge: {VowOfTheDiscipleRotation.GetEncounterString(CurrentRotations.VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(CurrentRotations.VowChallengeEncounter)})");
+            Console.WriteLine($"Curse Week: {CurrentRotations.CurseWeek}");
+            Console.WriteLine($"Ascendant Challenge: {AscendantChallengeRotation.GetChallengeNameString(CurrentRotations.AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(CurrentRotations.AscendantChallenge)})");
+            Console.WriteLine($"Nightfall: {NightfallRotation.GetStrikeNameString(CurrentRotations.Nightfall)} (dropping {NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrop)})");
+            Console.WriteLine($"Empire Hunt: {EmpireHuntRotation.GetHuntNameString(CurrentRotations.EmpireHunt)}");
+            Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Cyan;
 
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
@@ -107,13 +120,8 @@ namespace Levante
                 return Task.CompletedTask;
             };
 
-            commands.Log += log =>
-            {
-                Console.WriteLine(log.ToString());
-                return Task.CompletedTask;
-            };
-
-            Timer timer = new Timer(TimerCallback, null, 25000, BotConfig.TimeBetweenRefresh * 60000);
+            Timer xpTimer = new Timer(XPTimerCallback, null, 20000, BotConfig.TimeBetweenRefresh * 60000);
+            Timer leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 600000);
 
             if (DateTime.Now.Hour >= 10) // after daily reset
                 SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 0));
@@ -152,7 +160,7 @@ namespace Levante
                 case 3:
                     await _client.SetActivityAsync(new Game($"{_client.Guilds.Count} Servers | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 4:
-                    await _client.SetActivityAsync(new Game($"{String.Format("{0:n0}", _client.Guilds.Sum(x => x.MemberCount))} Users | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{_client.Guilds.Sum(x => x.MemberCount):n0} Users | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 5:
                     await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count} Linked Users | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 6:
@@ -205,7 +213,9 @@ namespace Levante
             Console.ForegroundColor = ConsoleColor.Cyan;
         }
 
-        private async void TimerCallback(Object o) => await RefreshBungieAPI().ConfigureAwait(false);
+        private async void XPTimerCallback(Object o) => await RefreshBungieAPI().ConfigureAwait(false);
+
+        private async void LeaderboardTimerCallback(Object o) => await LoadLeaderboards().ConfigureAwait(false);
 
         #region XPLogging
         private async Task RefreshBungieAPI()
@@ -213,7 +223,6 @@ namespace Levante
             if (ActiveConfig.ActiveAFKUsers.Count <= 0)
             {
                 LogHelper.ConsoleLog($"Skipping refresh, no active AFK users...");
-                await LoadLeaderboards();
                 return;
             }
 
@@ -261,7 +270,8 @@ namespace Levante
 
                         LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
                         //listOfRemovals.Add(tempAau);
-                        ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
+                        //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
+                        ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID));
                         await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                     }
                     else if (updatedLevel > tempAau.LastLoggedLevel)
@@ -303,7 +313,9 @@ namespace Levante
 
                             LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
                             //listOfRemovals.Add(tempAau);
-                            ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
+                            // ***Change to remove it from list because file update is called at end of method.***
+                            //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
+                            ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID));
                             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                         }
                         else
@@ -350,10 +362,6 @@ namespace Levante
                 await RefreshBungieAPI().ConfigureAwait(false);
                 return;
             }
-
-            // data loading
-            await Task.Delay(40000); // wait to prevent numerous API calls
-            await LoadLeaderboards();
             await UpdateBotActivity();
         }
 
@@ -364,6 +372,7 @@ namespace Levante
                 LogHelper.ConsoleLog($"Pulling data for leaderboards...");
                 var tempPowerLevelData = new PowerLevelData();
                 var tempLevelData = new LevelData();
+                bool nameChange = false;
                 foreach (var link in DataConfig.DiscordIDLinks.ToList()) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
                 {
                     int Level = 0;
@@ -397,6 +406,16 @@ namespace Levante
                             {
                                 Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level;
                             }
+
+                            // System to update names in case players do change name.
+                            string name = $"{item.Response.profile.data.userInfo.bungieGlobalDisplayName}";
+                            string nameCode = int.Parse($"{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode}").ToString().PadLeft(4, '0');
+                            if (!link.UniqueBungieName.Equals($"{name}#{nameCode}"))
+                            {
+                                Console.WriteLine($"Name change detected: {link.UniqueBungieName} -> {name}#{nameCode}");
+                                DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == link.DiscordID).UniqueBungieName = $"{name}#{nameCode}";
+                                nameChange = true;
+                            }
                         }
                         catch
                         {
@@ -419,6 +438,9 @@ namespace Levante
                     });
                     await Task.Delay(250);
                 }
+                if (nameChange)
+                    DataConfig.UpdateConfig();
+
                 tempLevelData.UpdateEntriesConfig();
                 tempPowerLevelData.UpdateEntriesConfig();
                 LogHelper.ConsoleLog($"Data pulling complete!");
@@ -452,6 +474,7 @@ namespace Levante
             _interaction.SlashCommandExecuted += SlashCommandExecuted;
 
             _client.SelectMenuExecuted += SelectMenuHandler;
+            LevanteCordInstance.Client = _client;
         }
 
         private async Task SlashCommandExecuted(SlashCommandInfo info, IInteractionContext context, Discord.Interactions.IResult result)
@@ -554,24 +577,20 @@ namespace Levante
             }
             else if (trackerType.Equals("lost-sector"))
             {
-                if (LostSectorRotation.GetUserTracking(interaction.User.Id, out var LS, out var LSD, out var EAT) == null)
+                if (LostSectorRotation.GetUserTracking(interaction.User.Id, out var LS, out var EAT) == null)
                 {
                     await interaction.RespondAsync($"No Lost Sector tracking enabled.", ephemeral: true);
                     return;
                 }
                 LostSectorRotation.RemoveUserTracking(interaction.User.Id);
-                if (LS == null && LSD == null && EAT == null)
+                if (LS == null && EAT == null)
                     await interaction.RespondAsync($"An error has occurred.", ephemeral: true);
-                else if (LS != null && LSD == null && EAT == null)
+                else if (LS != null && EAT == null)
                     await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is available.", ephemeral: true);
-                else if (LS != null && LSD != null && EAT == null)
-                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is available.", ephemeral: true);
-                else if (LS == null && LSD == null && EAT != null)
+                else if (LS == null &&EAT != null)
                     await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when Lost Sectors are dropping {EAT}.", ephemeral: true);
-                else if (LS == null && LSD != null && EAT != null)
-                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LSD} Lost Sectors are dropping {EAT}.", ephemeral: true);
-                else if (LS != null && LSD != null && EAT != null)
-                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is dropping {EAT}.", ephemeral: true);
+                else if (LS != null && EAT != null)
+                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is dropping {EAT}.", ephemeral: true);
                 return;
             }
             else if (trackerType.Equals("nightfall"))
@@ -612,6 +631,28 @@ namespace Levante
                 }
                 VaultOfGlassRotation.RemoveUserTracking(interaction.User.Id);
                 await interaction.RespondAsync($"Removed your Vault of Glass challenges tracking, you will not be notified when {VaultOfGlassRotation.GetEncounterString(VoGEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGEncounter)}) is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("vow-challenge"))
+            {
+                if (VowOfTheDiscipleRotation.GetUserTracking(interaction.User.Id, out var VowEncounter) == null)
+                {
+                    await interaction.RespondAsync($"No Vow of the Disciple challenges tracking enabled.", ephemeral: true);
+                    return;
+                }
+                VowOfTheDiscipleRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Vow of the Disciple challenges tracking, you will not be notified when {VowOfTheDiscipleRotation.GetEncounterString(VowEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(VowEncounter)}) is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("wellspring"))
+            {
+                if (WellspringRotation.GetUserTracking(interaction.User.Id, out var Wellspring) == null)
+                {
+                    await interaction.RespondAsync($"No Wellspring tracking enabled.", ephemeral: true);
+                    return;
+                }
+                WellspringRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Wellspring tracking, you will not be notified when The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} is dropping {WellspringRotation.GetWeaponNameString(Wellspring)}.", ephemeral: true);
                 return;
             }
         }

@@ -24,7 +24,7 @@ namespace Levante.Rotations
         // Dailies
 
         [JsonProperty("LostSector")]
-        public static LostSector LostSector = LostSector.ChamberOfStarlight;
+        public static LostSector LostSector = LostSector.VelesLabyrinth;
 
         [JsonProperty("LostSectorArmorDrop")]
         public static ExoticArmorType LostSectorArmorDrop = ExoticArmorType.Legs;
@@ -59,10 +59,10 @@ namespace Levante.Rotations
         public static AscendantChallenge AscendantChallenge = AscendantChallenge.AgonarchAbyss;
 
         [JsonProperty("Nightfall")]
-        public static Nightfall Nightfall = Nightfall.TheHollowedLair;
+        public static Nightfall Nightfall = Nightfall.TheScarletKeep;
 
-        [JsonProperty("NightfallWeaponDrops")]
-        public static NightfallWeapon[] NightfallWeaponDrops = { NightfallWeapon.ThePalindrome, NightfallWeapon.TheSWARM };
+        [JsonProperty("NightfallWeaponDrop")]
+        public static NightfallWeapon NightfallWeaponDrop = NightfallWeapon.DutyBound;
 
         [JsonProperty("EmpireHunt")]
         public static EmpireHunt EmpireHunt = EmpireHunt.Warrior;
@@ -72,7 +72,7 @@ namespace Levante.Rotations
 
         public static void DailyRotation()
         {
-            LostSector = LostSector == LostSector.Perdition ? LostSector.BayOfDrownedWishes : LostSector + 1;
+            LostSector = LostSector == LostSector.Extraction ? LostSector.VelesLabyrinth : LostSector + 1;
             LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
 
             AltarWeapon = AltarWeapon == AltarsOfSorrow.Rocket ? AltarsOfSorrow.Shotgun : AltarWeapon + 1;
@@ -92,11 +92,9 @@ namespace Levante.Rotations
             VowChallengeEncounter = VowChallengeEncounter == VowOfTheDiscipleEncounter.Rhulk ? VowOfTheDiscipleEncounter.Acquisition : VowChallengeEncounter + 1;
             CurseWeek = CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : CurseWeek + 1;
             AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? AscendantChallenge.AgonarchAbyss : AscendantChallenge + 1;
-            Nightfall = Nightfall == Nightfall.ProvingGrounds ? Nightfall.TheHollowedLair : Nightfall + 1;
-            // This one rotates between the same 4, because there are an even amount of Nightfall weapons. This makes the first weapon always Palindrome.
-            NightfallWeaponDrops[0] = NightfallWeaponDrops[0] >= NightfallWeapon.PlugOne1 ? NightfallWeapon.ThePalindrome : NightfallWeaponDrops[0] + 2;
-            // This makes the second weapons always The SWARM.
-            NightfallWeaponDrops[1] = NightfallWeaponDrops[1] >= NightfallWeapon.PlugOne1 ? NightfallWeapon.TheSWARM : NightfallWeaponDrops[1] + 2;
+            Nightfall = Nightfall == Nightfall.BirthplaceOfTheVile ? Nightfall.TheScarletKeep : Nightfall + 1;
+            // Missing data.
+            NightfallWeaponDrop = NightfallWeaponDrop == NightfallWeapon.PlugOne1 ? NightfallWeapon.DutyBound : NightfallWeaponDrop + 1;
             EmpireHunt = EmpireHunt == EmpireHunt.DarkPriestess ? EmpireHunt.Warrior : EmpireHunt + 1;
 
             NightmareHunts[0] = NightmareHunts[0] >= NightmareHunt.Skolas ? NightmareHunts[0] - 5 : NightmareHunts[0] + 3;
@@ -128,6 +126,9 @@ namespace Levante.Rotations
 
         public static void CreateJSONs()
         {
+            if (!Directory.Exists("Trackers"))
+                Directory.CreateDirectory("Trackers");
+
             CurrentRotations cr;
             if (File.Exists(FilePath))
             {
@@ -153,6 +154,7 @@ namespace Levante.Rotations
             NightfallRotation.CreateJSON();
             NightmareHuntRotation.CreateJSON();
             VaultOfGlassRotation.CreateJSON();
+            VowOfTheDiscipleRotation.CreateJSON();
             WellspringRotation.CreateJSON();
         }
 
@@ -167,7 +169,7 @@ namespace Levante.Rotations
         {
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by Bungie API"
+                Text = $"Powered by {BotConfig.AppName}"
             };
             var embed = new EmbedBuilder()
             {
@@ -177,29 +179,29 @@ namespace Levante.Rotations
             embed.Title = $"Daily Reset of {TimestampTag.FromDateTime(DailyResetTimestamp, TimestampTagStyles.ShortDate)}";
             embed.Description = "Below are some of the things that are available today.";
 
-            embed/*.AddField(x =>
+            embed.AddField(x =>
             {
-                x.Name = "Lost Sectors";
+                x.Name = "Lost Sector";
                 x.Value =
-                    $"Legend: {LostSectorRotation.GetLostSectorString(LegendLostSector)} {LostSectorRotation.GetArmorEmote(LegendLostSectorArmorDrop)}\n" +
-                    $"Master: {LostSectorRotation.GetLostSectorString(MasterLostSector)} {LostSectorRotation.GetArmorEmote(MasterLostSectorArmorDrop)}";
-                x.IsInline = true;
-            })*/
-            .AddField(x =>
-            {
-                x.Name = "Altars of Sorrow";
-                x.Value =
-                    $"Weapon: {AltarsOfSorrowRotation.GetWeaponEmote(AltarWeapon)} {AltarWeapon}\n" +
-                    $"{DestinyEmote.Luna} {AltarsOfSorrowRotation.GetAltarBossString(AltarWeapon)}";
+                    $"{LostSectorRotation.GetArmorEmote(LostSectorArmorDrop)} {LostSectorArmorDrop}\n" +
+                    $"{DestinyEmote.LostSector} {LostSectorRotation.GetLostSectorString(LostSector)}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = $"The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)}";
                 x.Value =
-                    $"Weapon: {WellspringRotation.GetWeaponEmote(Wellspring)} {WellspringRotation.GetWeaponNameString(Wellspring)}\n" +
+                    $"{WellspringRotation.GetWeaponEmote(Wellspring)} {WellspringRotation.GetWeaponNameString(Wellspring)}\n" +
                     $"{DestinyEmote.WellspringActivity} {WellspringRotation.GetWellspringBossString(Wellspring)}";
                 x.IsInline = true;
+            })
+            .AddField(x =>
+            {
+                x.Name = "Altars of Sorrow";
+                x.Value =
+                    $"{AltarsOfSorrowRotation.GetWeaponEmote(AltarWeapon)} {AltarsOfSorrowRotation.GetWeaponNameString(AltarWeapon)}\n" +
+                    $"{DestinyEmote.Luna} {AltarsOfSorrowRotation.GetAltarBossString(AltarWeapon)}";
+                x.IsInline = false;
             });
 
             return embed;
@@ -209,7 +211,7 @@ namespace Levante.Rotations
         {
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by Bungie API"
+                Text = $"Powered by {BotConfig.AppName}"
             };
             var embed = new EmbedBuilder()
             {
@@ -248,6 +250,12 @@ namespace Levante.Rotations
                 x.Name = "Vault of Glass";
                 x.Value = $"{DestinyEmote.RaidChallenge} {VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)})\n" +
                     $"Weapon Drop: {VaultOfGlassRotation.GetChallengeRewardString(VoGChallengeEncounter)}";
+                x.IsInline = true;
+            })
+            .AddField(x =>
+            {
+                x.Name = "Vow of the Disciple";
+                x.Value = $"{DestinyEmote.VowRaidChallenge} {VowOfTheDiscipleRotation.GetEncounterString(VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(VowChallengeEncounter)})";
                 x.IsInline = true;
             })
             /*.AddField(x =>
@@ -326,7 +334,7 @@ namespace Levante.Rotations
             }
             AltarsOfSorrowRotation.AltarsOfSorrowLinks = altarTemp;
             AltarsOfSorrowRotation.UpdateJSON();
-            /*
+            
             var lsTemp = new List<LostSectorRotation.LostSectorLink>();
             foreach (var Link in LostSectorRotation.LostSectorLinks)
             {
@@ -336,27 +344,13 @@ namespace Levante.Rotations
                 else
                     user = Client.GetUser(Link.DiscordID);
 
-                if (Link.Difficulty != null)
-                {
-                    if (Link.Difficulty == LostSectorDifficulty.Legend && (LegendLostSector == Link.LostSector || LegendLostSectorArmorDrop == Link.ArmorDrop))
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Legend Lost Sector is **{LostSectorRotation.GetLostSectorString(LegendLostSector)}** and is dropping **{LegendLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
-                    else if (Link.Difficulty == LostSectorDifficulty.Master && (MasterLostSector == Link.LostSector || MasterLostSectorArmorDrop == Link.ArmorDrop))
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Master Lost Sector is **{LostSectorRotation.GetLostSectorString(MasterLostSector)}** and is dropping **{MasterLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
-                    else
-                        lsTemp.Add(Link);
-                }
+                if (LostSector == Link.LostSector || LostSectorArmorDrop == Link.ArmorDrop)
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.GetLostSectorString(LostSector)}** and is dropping **{LostSectorArmorDrop}** today. I have removed your tracking, good luck!");
                 else
-                {
-                    if (LegendLostSector == Link.LostSector || LegendLostSectorArmorDrop == Link.ArmorDrop)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Legend Lost Sector is **{LostSectorRotation.GetLostSectorString(LegendLostSector)}** and is dropping **{LegendLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
-                    else if (MasterLostSector == Link.LostSector || MasterLostSectorArmorDrop == Link.ArmorDrop)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Master Lost Sector is **{LostSectorRotation.GetLostSectorString(MasterLostSector)}** and is dropping **{MasterLostSectorArmorDrop}** today. I have removed your tracking, good luck!");
-                    else
-                        lsTemp.Add(Link);
-                }
+                    lsTemp.Add(Link);
             }
             LostSectorRotation.LostSectorLinks = lsTemp;
-            LostSectorRotation.UpdateJSON();*/
+            LostSectorRotation.UpdateJSON();
 
             var wellspringTemp = new List<WellspringRotation.WellspringLink>();
             foreach (var Link in WellspringRotation.WellspringLinks)
@@ -629,8 +623,8 @@ namespace Levante.Rotations
                     continue;
                 }
             }
-            VaultOfGlassRotation.VaultOfGlassLinks = vogTemp;
-            VaultOfGlassRotation.UpdateJSON();
+            VowOfTheDiscipleRotation.VowOfTheDiscipleLinks = vowTemp;
+            VowOfTheDiscipleRotation.UpdateJSON();
         }
     }
 }

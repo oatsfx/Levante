@@ -1,5 +1,11 @@
-﻿using Newtonsoft.Json;
-﻿using Discord;
+using Discord;
+using APIHelper.Structs;
+using Levante.Configs;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Text;
 
 namespace Levante.Util
 {
@@ -7,39 +13,19 @@ namespace Levante.Util
     {
         protected long HashCode { get; set; }
         protected string APIUrl { get; set; }
-        protected string Content { get; set; }
+        protected DestinyInventoryItemDefinition Content { get; set; }
 
-        public string GetName()
-        {
-            dynamic item = JsonConvert.DeserializeObject(Content);
-            return item.Response.displayProperties.name;
-        }
+        public string GetName() => Content.DisplayProperties.Name;
 
         public long GetItemHash() => HashCode;
 
-        public long GetCollectableHash()
-        {
-            dynamic item = JsonConvert.DeserializeObject(Content);
-            return item.Response.collectibleHash;
-        }
+        public long GetCollectableHash() => Content.CollectibleHash;
 
-        public string GetIconUrl()
-        {
-            dynamic item = JsonConvert.DeserializeObject(Content);
-            return "https://www.bungie.net" + item.Response.displayProperties.icon;
-        }
+        public string GetIconUrl() => "https://www.bungie.net" + Content.DisplayProperties.Icon;
 
-        public string GetItemType()
-        {
-            dynamic item = JsonConvert.DeserializeObject(Content);
-            return $"{item.Response.itemTypeDisplayName}";
-        }
+        public string GetItemType() => Content.ItemTypeDisplayName;
 
-        public string GetSpecificItemType()
-        {
-            dynamic item = JsonConvert.DeserializeObject(Content);
-            return $"{item.Response.itemTypeAndTierDisplayName}";
-        }
+        public string GetSpecificItemType() => Content.ItemTypeAndTierDisplayName;
 
         public abstract EmbedBuilder GetEmbed();
     }

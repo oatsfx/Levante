@@ -13,6 +13,8 @@ using System.Collections.Generic;
 using Fergun.Interactive;
 using Discord.Interactions;
 using Levante.Rotations;
+using APIHelper;
+using System.Linq;
 
 namespace Levante.Commands
 {
@@ -98,7 +100,7 @@ namespace Levante.Commands
 
                 if (LinkedUser == null || !DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
                 {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"User is not linked; tell them to link using {BotConfig.DefaultCommandPrefix}link [THEIR BUNGIE TAG]."; });
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"User is not linked; tell them to link using \"/link [THEIR BUNGIE TAG] <PLATFORM>\"."; });
                     return;
                 }
 
@@ -266,6 +268,7 @@ namespace Levante.Commands
                 await RespondAsync($"No account linked for {User.Mention}.", ephemeral: true);
                 return;
             }
+            await DeferAsync();
             try
             {
                 string season = GetCurrentDestiny2Season(out int seasonNum);
@@ -278,7 +281,7 @@ namespace Levante.Commands
                 };
                 var foot = new EmbedFooterBuilder()
                 {
-                    Text = $"Powered by Bungie API"
+                    Text = $"Powered by the Bungie API"
                 };
                 var embed = new EmbedBuilder()
                 {
@@ -313,26 +316,26 @@ namespace Levante.Commands
                     x.IsInline = true;
                 });
 
-                await RespondAsync(embed: embed.Build());
+                await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
             }
             catch
             {
-                await RespondAsync($"An error occurred, please try again later.", ephemeral: true);
+                await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "An error has occurred, please try again later."; });
             }
         }
 
         [SlashCommand("lost-sector", "Get info on a Lost Sector based on Difficulty.")]
         public async Task LostSector([Summary("lost-sector", "Lost Sector name."),
-                Choice("Bay of Drowned Wishes", 0), Choice("Chamber of Starlight", 1), Choice("Aphelion's Rest", 2),
-                Choice("The Empty Tank", 3), Choice("K1 Logistics", 4), Choice("K1 Communion", 5),
-                Choice("K1 Crew Quarters", 6), Choice("K1 Revelation", 7), Choice("Concealed Void", 8),
-                Choice("Bunker E15", 9), Choice("Perdition", 10)] int ArgLS,
+                Choice("Veles Labyrinth", 0), Choice("Exodus Garden 2A", 1), Choice("Aphelion's Rest", 2),
+                Choice("Bay of Drowned Wishes", 3), Choice("Chamber of Starlight", 4), Choice("K1 Revelation", 5),
+                Choice("K1 Crew Quarters", 6), Choice("K1 Logistics", 7), Choice("Metamorphosis", 8),
+                Choice("Sepulcher", 9), Choice("Extraction", 10)] int ArgLS,
                 [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty ArgLSD)
         {
-            /*LostSector LS = (LostSector)ArgLS;
-            LostSectorDifficulty LSD = ArgLSD;*/
+            LostSector LS = (LostSector)ArgLS;
+            LostSectorDifficulty LSD = ArgLSD;
 
-            await RespondAsync($"Gathering data on new Lost Sectors. Check back later!"/*, embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build()*/, ephemeral: true);
+            await RespondAsync(embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
             return;
         }
 
@@ -372,8 +375,8 @@ namespace Levante.Commands
 
         [SlashCommand("nightfall", "Display Nightfall information.")]
         public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
-                Choice("The Hollowed Lair", 0), Choice("Lake of Shadows", 1), Choice("Exodus Crash", 2),
-                Choice("The Corrupted", 3), Choice("The Devils' Lair", 4), Choice("Proving Grounds", 5)] int ArgNF)
+                Choice("The Scarlet Keep", 0), Choice("The Arms Dealer", 1), Choice("The Lightblade", 2),
+                Choice("The Glassway", 3), Choice("Fallen S.A.B.E.R.", 4), Choice("Birthplace of the Vile", 5)] int ArgNF)
         {
             await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
             return;
@@ -396,17 +399,14 @@ namespace Levante.Commands
         }
 
         [SlashCommand("try-on", "Try on any emblem in the Bungie API.")]
-        public async Task TryOut([Summary("emblem-hash", "Emblem hash code of the Emblem you want to try on.")] long HashCode,
-            [Summary("name", "Put any name on the emblem. Leave blank to use your linked account, or discord name if not linked.")] string name = null)
+        public async Task TryOut([Summary("emblem-hash", "Emblem hash code of the Emblem you want to try on.")] long HashCode)
         {
-            if (name == null)
-            {
-                var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
-                if (linkedUser != null)
-                    name = linkedUser.UniqueBungieName.Substring(0, linkedUser.UniqueBungieName.Length - 5);
-                else
-                    name = Context.User.Username;
-            }
+            string name = "";
+            var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
+            if (linkedUser != null)
+                name = linkedUser.UniqueBungieName.Substring(0, linkedUser.UniqueBungieName.Length - 5);
+            else
+                name = Context.User.Username;
 
             Emblem emblem;
             Bitmap bitmap;
@@ -469,90 +469,99 @@ namespace Levante.Commands
             await Context.Interaction.FollowupWithFileAsync(filePath: "temp.png", embed: embed.Build());
         }
 
-        [SlashCommand("view", "Get details on an emblem via its Hash Code found via Bungie's API.")]
-        public async Task ViewEmblem([Summary("name", "Name of the item you want details for.")] string SearchQuery)
+        [Group("view", "Get details on in-game items.")]
+        public class View : InteractionModuleBase<SocketInteractionContext>
         {
-            using (var client = new HttpClient())
+            public InteractiveService Interactive { get; set; }
+
+            [SlashCommand("emblem", "Get details on an emblem via its Hash Code found via Bungie's API.")]
+            public async Task ViewEmblem([Summary("name", "Name of the emblem you want details for.")] string SearchQuery)
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                if (DataConfig.IsBungieAPIDown(content))
+                using (var client = new HttpClient())
                 {
-                    await RespondAsync($"Bungie API is temporary down, try again later.", ephemeral: true);
-                    return;
-                }
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
-                if (item.Response.results.totalResults <= 0 || SearchQuery.Length < 4)
-                {
-                    await RespondAsync($"Unable to search using the term: {SearchQuery}", ephemeral: true);
-                    return;
-                }
+                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
 
-                bool hasMultipleResults = false;
-                List<EmblemSearch> emblemList = new List<EmblemSearch>();
-                int resultNum = int.Parse($"{item.Response.results.totalResults}");
-                int currentPage = -1;
-                if (resultNum > 1)
-                {
-                    await RespondAsync($"Searching through {resultNum} entries, *estimated {(resultNum > 20 ? Math.Ceiling(resultNum / (double)25) * 4 + 2 : Math.Ceiling(resultNum / (double)25) + 2)} seconds*... <a:loading:872886173075378197>");
-                    for (int i = 0; i < resultNum; i++)
+                    if (DataConfig.IsBungieAPIDown(content))
                     {
-                        if (i % 25 == 0)
+                        await RespondAsync($"Bungie API is temporary down, try again later.", ephemeral: true);
+                        return;
+                    }
+
+                    if (item.Response.results.totalResults <= 0 || SearchQuery.Length < 4)
+                    {
+                        await RespondAsync($"Unable to search using the term: {SearchQuery}", ephemeral: true);
+                        return;
+                    }
+
+                    bool hasMultipleResults = false;
+                    List<EmblemSearch> emblemList = new List<EmblemSearch>();
+                    int resultNum = int.Parse($"{item.Response.results.totalResults}");
+                    int currentPage = -1;
+                    if (resultNum > 1)
+                    {
+                        await RespondAsync($"Searching through {resultNum} entries, *estimated {(resultNum > 20 ? Math.Ceiling(resultNum / (double)25) * 4 + 2 : Math.Ceiling(resultNum / (double)25) + 2)} seconds*... <a:loading:872886173075378197>");
+                        for (int i = 0; i < resultNum; i++)
                         {
-                            currentPage++;
-                            await Task.Delay(400);
-                            response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/?page=" + currentPage).Result;
-                            content = response.Content.ReadAsStringAsync().Result;
-                            item = JsonConvert.DeserializeObject(content);
+                            if (i % 25 == 0)
+                            {
+                                currentPage++;
+                                await Task.Delay(400);
+                                response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/?page=" + currentPage).Result;
+                                content = response.Content.ReadAsStringAsync().Result;
+                                item = JsonConvert.DeserializeObject(content);
+                            }
+                            var hash = long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}");
+                            var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
+                            if (invItem.ItemTypeDisplayName.Equals("Emblem"))
+                            {
+                                emblemList.Add(new EmblemSearch(long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}"), $"{item.Response.results.results[i - (currentPage * 25)].displayProperties.name}"));
+                            }
                         }
-                        if (Emblem.HashIsAnEmblem(long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}")))
+                    }
+                    else if (resultNum == 1)
+                    {
+                        var hash = long.Parse($"{item.Response.results.results[0].hash}");
+                        var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
+                        if (invItem.ItemTypeDisplayName.Equals("Emblem"))
                         {
-                            emblemList.Add(new EmblemSearch(long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}"), $"{item.Response.results.results[i - (currentPage * 25)].displayProperties.name}"));
+                            emblemList.Add(new EmblemSearch(long.Parse($"{item.Response.results.results[0].hash}"), $"{item.Response.results.results[0].displayProperties.name}"));
                         }
+                        await DeferAsync();
                     }
-                }
-                else if (resultNum == 1)
-                {
-                    if (Emblem.HashIsAnEmblem(long.Parse($"{item.Response.results.results[0].hash}")))
-                    {
-                        emblemList.Add(new EmblemSearch(long.Parse($"{item.Response.results.results[0].hash}"), $"{item.Response.results.results[0].displayProperties.name}"));
-                    }
-                    await DeferAsync();
-                }
 
-                if (emblemList.Count > 1)
-                    hasMultipleResults = true;
+                    if (emblemList.Count > 1)
+                        hasMultipleResults = true;
 
-                int responseNum = 1;
-                if (hasMultipleResults)
-                {
-                    string result = "";
-                    for (int i = 0; i < emblemList.Count; i++)
+                    int responseNum = 1;
+                    if (hasMultipleResults)
                     {
-                        result += $"**{i + 1})** {emblemList[i].GetName()}\n";
-                    }
-                    var multAuth = new EmbedAuthorBuilder()
-                    {
-                        Name = $"Multiple Emblems Found for: {SearchQuery}"
-                    };
-                    var multFoot = new EmbedFooterBuilder()
-                    {
-                        Text = $"Don't see the emblem you are looking for? Try doing a more specific search."
-                    };
-                    var multEmbed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                        Author = multAuth,
-                        Footer = multFoot
-                    };
-                    multEmbed.Title = $"React with the number of the emblem you want to view.";
-                    multEmbed.Description = result;
-                    Emoji[] reactEmotes =
-                    {
+                        string result = "";
+                        for (int i = 0; i < emblemList.Count; i++)
+                        {
+                            result += $"**{i + 1})** {emblemList[i].GetName()}\n";
+                        }
+                        var multAuth = new EmbedAuthorBuilder()
+                        {
+                            Name = $"Multiple Emblems Found for: {SearchQuery}"
+                        };
+                        var multFoot = new EmbedFooterBuilder()
+                        {
+                            Text = $"Don't see the emblem you are looking for? Try doing a more specific search."
+                        };
+                        var multEmbed = new EmbedBuilder()
+                        {
+                            Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                            Author = multAuth,
+                            Footer = multFoot
+                        };
+                        multEmbed.Title = $"React with the number of the emblem you want to view.";
+                        multEmbed.Description = result;
+                        Emoji[] reactEmotes =
+                        {
                         "1️⃣",
                         "2️⃣",
                         "3️⃣",
@@ -564,54 +573,203 @@ namespace Levante.Commands
                         "9️⃣",
                         "🔟",
                     };
-                    ComponentBuilder buttons = new ComponentBuilder();
+                        ComponentBuilder buttons = new ComponentBuilder();
 
-                    for (int i = 0; i < emblemList.Count; i++)
-                        buttons.WithButton(customId: $"emblemSearch:{i}", emote: reactEmotes[i], style: ButtonStyle.Secondary, row: 0);
+                        for (int i = 0; i < emblemList.Count; i++)
+                            buttons.WithButton(customId: $"emblemSearch:{i}", emote: reactEmotes[i], style: ButtonStyle.Secondary, row: 0);
 
-                    var msg = await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = multEmbed.Build(); message.Content = null; message.Components = buttons.Build(); });
+                        var msg = await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = multEmbed.Build(); message.Content = null; message.Components = buttons.Build(); });
 
-                    var responseButton = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.Interaction.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+                        var responseButton = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.Interaction.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
 
-                    if (responseButton == null)
+                        if (responseButton == null)
+                        {
+                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Closed command, invaild reaction."; message.Embed = new EmbedBuilder().Build(); message.Components = null; });
+                            return;
+                        }
+
+                        for (int i = 0; i < emblemList.Count; i++)
+                            if (responseButton.Value.Data.CustomId.Contains($"{i}"))
+                                responseNum = i + 1;
+
+                        await responseButton.Value.DeferAsync();
+                    }
+
+                    if (emblemList.Count == 0)
                     {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Closed command, invaild reaction."; message.Embed = new EmbedBuilder().Build(); message.Components = null; });
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{SearchQuery} did not bring results of the Emblem type."; message.Embed = new EmbedBuilder().Build(); message.Components = null; });
                         return;
                     }
 
-                    for (int i = 0; i < emblemList.Count; i++)
-                        if (responseButton.Value.Data.CustomId.Contains($"{i}"))
-                            responseNum = i + 1;
+                    long HashCode = emblemList[responseNum - 1].GetEmblemHash();
+                    Emblem emblem;
+                    try
+                    {
+                        emblem = new Emblem(HashCode);
+                    }
+                    catch (Exception)
+                    {
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No emblem found for Hash Code: {HashCode}."; message.Embed = new EmbedBuilder().Build(); message.Components = new ComponentBuilder().Build(); });
+                        return;
+                    }
 
-                    await responseButton.Value.DeferAsync();
-                }
+                    if (!ManifestConnection.GetInventoryItemById(unchecked((int)long.Parse($"{item.Response.results.results[0].hash}"))).ItemTypeDisplayName.Equals("Emblem"))
+                    {
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{emblem.GetName()} ({emblem.GetHashCode()}) is not an Emblem type."; message.Embed = new EmbedBuilder().Build(); message.Components = new ComponentBuilder().Build(); });
+                        return;
+                    }
 
-                if (emblemList.Count == 0)
-                {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{SearchQuery} did not bring results of the Emblem type."; message.Embed = new EmbedBuilder().Build(); message.Components = null; });
-                    return;
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
                 }
-
-                long HashCode = emblemList[responseNum - 1].GetEmblemHash();
-                Emblem emblem;
-                try
-                {
-                    emblem = new Emblem(HashCode);
-                }
-                catch (Exception)
-                {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No emblem found for Hash Code: {HashCode}."; message.Embed = new EmbedBuilder().Build(); message.Components = new ComponentBuilder().Build(); });
-                    return;
-                }
-
-                if (!Emblem.HashIsAnEmblem(HashCode))
-                {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{emblem.GetName()} ({emblem.GetHashCode()}) is not an Emblem type."; message.Embed = new EmbedBuilder().Build(); message.Components = new ComponentBuilder().Build(); });
-                    return;
-                }
-
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
+
+            /*[SlashCommand("weapon", "Get details on a weapon via its Hash Code found via Bungie's API.")]
+            public async Task ViewWeapon([Summary("name", "Name of the weapon you want details for.")] string SearchQuery)
+            {
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+
+                    if (DataConfig.IsBungieAPIDown(content))
+                    {
+                        await RespondAsync($"Bungie API is temporary down, try again later.", ephemeral: true);
+                        return;
+                    }
+
+                    if (item.Response.results.totalResults <= 0 || SearchQuery.Length < 4)
+                    {
+                        await RespondAsync($"Unable to search using the term: {SearchQuery}", ephemeral: true);
+                        return;
+                    }
+
+                    bool hasMultipleResults = false;
+                    List<WeaponSearch> weaponList = new List<WeaponSearch>();
+                    int resultNum = int.Parse($"{item.Response.results.totalResults}");
+                    int currentPage = -1;
+                    if (resultNum > 1)
+                    {
+                        await RespondAsync($"Searching through {resultNum} entries, *estimated {(resultNum > 20 ? Math.Ceiling(resultNum / (double)25) * 4 + 2 : Math.Ceiling(resultNum / (double)25) + 2)} seconds*... <a:loading:872886173075378197>");
+                        for (int i = 0; i < resultNum; i++)
+                        {
+                            if (i % 25 == 0)
+                            {
+                                currentPage++;
+                                await Task.Delay(400);
+                                response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/?page=" + currentPage).Result;
+                                content = response.Content.ReadAsStringAsync().Result;
+                                item = JsonConvert.DeserializeObject(content);
+                            }
+                            var hash = long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}");
+                            var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
+                            if (invItem.TraitIds == null || invItem.Sockets == null)
+                                continue;
+                            if (invItem.TraitIds.Contains("item_type.weapon") && invItem.Sockets.SocketEntries.Count() > 8)
+                                weaponList.Add(new WeaponSearch(long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}"), $"{item.Response.results.results[i - (currentPage * 25)].displayProperties.name}"));
+                        }
+                    }
+                    else if (resultNum == 1)
+                    {
+                        var hash = long.Parse($"{item.Response.results.results[0].hash}");
+                        var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
+                        if (invItem.TraitIds.Contains("item_type.weapon") && invItem.Sockets.SocketEntries.Count() > 8)
+                        {
+                            weaponList.Add(new WeaponSearch(long.Parse($"{item.Response.results.results[0].hash}"), $"{item.Response.results.results[0].displayProperties.name}"));
+                        }
+                        await DeferAsync();
+                    }
+
+                    if (weaponList.Count > 1)
+                        hasMultipleResults = true;
+
+                    int responseNum = 1;
+                    if (hasMultipleResults)
+                    {
+                        string result = "";
+                        for (int i = 0; i < weaponList.Count; i++)
+                        {
+                            result += $"**{i + 1})** {weaponList[i].GetName()}\n";
+                        }
+                        var multAuth = new EmbedAuthorBuilder()
+                        {
+                            Name = $"Multiple Emblems Found for: {SearchQuery}"
+                        };
+                        var multFoot = new EmbedFooterBuilder()
+                        {
+                            Text = $"Don't see the emblem you are looking for? Try doing a more specific search."
+                        };
+                        var multEmbed = new EmbedBuilder()
+                        {
+                            Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                            Author = multAuth,
+                            Footer = multFoot
+                        };
+                        multEmbed.Title = $"React with the number of the emblem you want to view.";
+                        multEmbed.Description = result;
+                        Emoji[] reactEmotes =
+                        {
+                            "1️⃣",
+                            "2️⃣",
+                            "3️⃣",
+                            "4️⃣",
+                            "5️⃣",
+                            "6️⃣",
+                            "7️⃣",
+                            "8️⃣",
+                            "9️⃣",
+                           "🔟",
+                        };
+                        ComponentBuilder buttons = new ComponentBuilder();
+
+                        for (int i = 0; i < weaponList.Count; i++)
+                            buttons.WithButton(customId: $"weaponSearch:{i}", emote: reactEmotes[i], style: ButtonStyle.Secondary, row: 0);
+
+                        var msg = await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = multEmbed.Build(); message.Content = null; message.Components = buttons.Build(); });
+
+                        var responseButton = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.Interaction.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+                        if (responseButton == null)
+                        {
+                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Closed command, invaild reaction."; message.Embed = new EmbedBuilder().Build(); message.Components = new ComponentBuilder().Build(); });
+                            return;
+                        }
+
+                        for (int i = 0; i < weaponList.Count; i++)
+                            if (responseButton.Value.Data.CustomId.Contains($"{i}"))
+                                responseNum = i + 1;
+
+                        await responseButton.Value.DeferAsync();
+                    }
+
+                    if (weaponList.Count == 0)
+                    {
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{SearchQuery} did not bring results of the Weapon type."; message.Embed = new EmbedBuilder().Build(); message.Components = new ComponentBuilder().Build(); });
+                        return;
+                    }
+
+                    long HashCode = weaponList[responseNum - 1].GetWeaponHash();
+                    Weapon weapon;
+                    try
+                    {
+                        weapon = new Weapon(HashCode);
+                    }
+                    catch (Exception)
+                    {
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No weapon found for Hash Code: {HashCode}."; message.Embed = new EmbedBuilder().Build(); message.Components = new ComponentBuilder().Build(); });
+                        return;
+                    }
+                    if (!ManifestConnection.GetInventoryItemById(unchecked((int)weapon.GetItemHash())).TraitIds.Contains("item_type.weapon"))
+                    {
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{weapon.GetName()} ({weapon.GetHashCode()}) is not a Weapon type."; message.Embed = new EmbedBuilder().Build(); message.Components = new ComponentBuilder().Build(); });
+                        return;
+                    }
+
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = weapon.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
+                }
+            }*/
         }
 
         [SlashCommand("weekly", "Display Weekly reset information.")]

@@ -9,6 +9,9 @@ namespace Levante.Configs
     {
         public static string FilePath { get; } = @"Configs/botConfig.json";
 
+        [JsonProperty("AppName")]
+        public static string AppName { get; set; } = "Levante";
+
         [JsonProperty("DiscordToken")]
         public static string DiscordToken { get; set; } = "[YOUR TOKEN HERE]";
 
@@ -49,24 +52,6 @@ namespace Levante.Configs
 
             [JsonProperty("B")]
             public static int B { get; set; } = 0;
-        }
-
-        public bool CheckAndLoadConfig()
-        {
-            BotConfig config;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                config = JsonConvert.DeserializeObject<BotConfig>(json);
-                return false;
-            }
-            else
-            {
-                config = new BotConfig();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(config, Formatting.Indented));
-                Console.WriteLine($"No {FilePath} file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.");
-                return true;
-            }
         }
     }
 }

@@ -87,7 +87,7 @@ namespace Levante.Util
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by Bungie API"
+                Text = $"Powered by the Bungie API"
             };
             int[] emblemRGB = GetEmblem().GetRGBAsIntArray();
             var embed = new EmbedBuilder()

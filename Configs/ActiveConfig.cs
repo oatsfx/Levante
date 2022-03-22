@@ -57,9 +57,6 @@ namespace Levante.Configs
             [JsonProperty("LastLoggedLevelProgress")]
             public int LastLevelProgress { get; set; } = 0;
 
-            [JsonProperty("PrivacySetting")]
-            public PrivacySetting PrivacySetting { get; set; } = 0;
-
             [JsonProperty("NoXPGainRefreshes")]
             public int NoXPGainRefreshes { get; set; } = 0;
         }
@@ -73,32 +70,6 @@ namespace Levante.Configs
                 if (aau.DiscordID == DiscordID)
                     return aau;
             return null;
-        }
-
-        public static bool IsInShatteredThrone(string BungieMembershipID, string BungieMembershipType)
-        {
-            // 2032534090 shattered throne hash code
-            bool result = false;
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + BungieMembershipType + "/Profile/" + BungieMembershipID + "/?components=100,204").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
-                {
-                    string charId = item.Response.profile.data.characterIds[i];
-                    ulong activityHash = item.Response.characterActivities.data[$"{charId}"].currentActivityHash;
-                    if (activityHash == 2032534090) // shattered throne
-                    {
-                        result = true;
-                    }
-                }
-
-                return result;
-            }
         }
 
         public static bool IsPlayerOnline(string BungieMembershipID, string BungieMembershipType)

@@ -56,7 +56,7 @@ namespace Levante.Util
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by Levante"
+                Text = $"Powered by {BotConfig.AppName}"
             };
             int[] emblemRGB = OfferedEmblem.GetRGBAsIntArray();
             var embed = new EmbedBuilder()
@@ -110,7 +110,7 @@ namespace Levante.Util
             {
                 foreach (var Offer in CurrentOffers)
                     desc += $"> [{Offer.OfferedEmblem.GetName()}]({Offer.ImageUrl}) ({Offer.OfferedEmblem.GetItemHash()})\n";
-                desc += $"\n*Want specific details? Use the command '{BotConfig.DefaultCommandPrefix}offers [HASH CODE]'.*";
+                desc += $"\n*Want specific details? Use the command \"/current-offers [HASH CODE]\".*";
             }
             else
                 desc = "There are currently no limited time emblem offers; you are all caught up!";

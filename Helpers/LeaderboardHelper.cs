@@ -72,7 +72,7 @@ namespace Levante.Helpers
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by Levante"
+                Text = $"Powered by {BotConfig.AppName}"
             };
             var embed = new EmbedBuilder()
             {
@@ -121,6 +121,9 @@ namespace Levante.Helpers
 
         public static bool CheckAndLoadDataFiles()
         {
+            if (!Directory.Exists("Data"))
+                Directory.CreateDirectory("Data");
+
             LevelData ld;
             XPPerHourData xph;
             LongestSessionData ls;

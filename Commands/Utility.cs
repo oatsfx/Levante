@@ -169,62 +169,45 @@ namespace Levante.Commands
 
             [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
             public async Task LostSector([Summary("lost-sector", "Lost Sector name."),
-                Choice("Bay of Drowned Wishes", 0), Choice("Chamber of Starlight", 1), Choice("Aphelion's Rest", 2),
-                Choice("The Empty Tank", 3), Choice("K1 Logistics", 4), Choice("K1 Communion", 5),
-                Choice("K1 Crew Quarters", 6), Choice("K1 Revelation", 7), Choice("Concealed Void", 8),
-                Choice("Bunker E15", 9), Choice("Perdition", 10)] int? ArgLS = null,
-                [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty? ArgLSD = null,
+                Choice("Veles Labyrinth", 0), Choice("Exodus Garden 2A", 1), Choice("Aphelion's Rest", 2),
+                Choice("Bay of Drowned Wishes", 3), Choice("Chamber of Starlight", 4), Choice("K1 Revelation", 5),
+                Choice("K1 Crew Quarters", 6), Choice("K1 Logistics", 7), Choice("Metamorphosis", 8),
+                Choice("Sepulcher", 9), Choice("Extraction", 10)] int? ArgLS = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
             {
-                /*if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var LSD, out var EAT) != null)
+                if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
                 {
-                    if (LS == null && LSD == null && EAT == null)
+                    if (LS == null && EAT == null)
                         await RespondAsync($"An error has occurred.", ephemeral: true);
-                    else if (LS != null && LSD == null && EAT == null)
+                    else if (LS != null && EAT == null)
                         await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)}.", ephemeral: true);
-                    else if (LS != null && LSD != null && EAT == null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}).", ephemeral: true);
-                    else if (LS == null && LSD == null && EAT != null)
+                    else if (LS == null && EAT != null)
                         await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {EAT} armor drop.", ephemeral: true);
-                    else if (LS == null && LSD != null && EAT != null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LSD} {EAT} armor drop.", ephemeral: true);
-                    else if (LS != null && LSD != null && EAT != null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) dropping {EAT}.", ephemeral: true);
+                    else if (LS != null && EAT != null)
+                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} dropping {EAT}.", ephemeral: true);
 
                     return;
                 }
-                LS = (LostSector)ArgLS;
-                LSD = ArgLSD;
+                LS = (LostSector?)ArgLS;
                 EAT = ArgEAT;
 
-                if (LS == null && LSD != null && EAT == null)
-                {
-                    await RespondAsync($"I cannot track a difficulty, they are always active.", ephemeral: true);
-                    return;
-                }
-
-                LostSectorRotation.AddUserTracking(Context.User.Id, LS, LSD, EAT);
-                if (LS == null && LSD == null && EAT == null)
+                LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
+                if (LS == null && EAT == null)
                     await RespondAsync($"An error has occurred.", ephemeral: true);
-                else if (LS != null && LSD == null && EAT == null)
-                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (LS != null && LSD != null && EAT == null)
-                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (LS == null && LSD == null && EAT != null)
-                    await RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (LS == null && LSD != null && EAT != null)
-                    await RespondAsync($"I will remind you when {LSD} Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (LS != null && LSD != null && EAT != null)
-                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, LSD, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                */
-                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!");
+                else if (LS != null && EAT == null)
+                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                else if (LS == null && EAT != null)
+                    await RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                else if (LS != null && EAT != null)
+                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                
                 return;
             }
 
             [SlashCommand("nightfall", "Be notified when a Nightfall and/or Weapon is active.")]
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
-                Choice("The Hollowed Lair", 0), Choice("Lake of Shadows", 1), Choice("Exodus Crash", 2),
-                Choice("The Corrupted", 3), Choice("The Devils' Lair", 4), Choice("Proving Grounds", 5)] int? ArgNF = null,
+                Choice("The Scarlet Keep", 0), Choice("The Arms Dealer", 1), Choice("The Lightblade", 2),
+                Choice("The Glassway", 3), Choice("Fallen S.A.B.E.R.", 4), Choice("Birthplace of the Vile", 5)] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike Weapon drop."),
                 Choice("The Palindrome", 0), Choice("THE S.W.A.R.M.", 1), Choice("The Comedian", 2),
                 Choice("Shadow Price", 3), Choice("Hung Jury SR4", 4), Choice("The Hothead", 5),
@@ -242,7 +225,7 @@ namespace Levante.Commands
                         await RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.GetStrikeNameString((Nightfall)NF)} with {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} weapon drops.", ephemeral: true);
                     return;
                 }
-                NF = (Nightfall)ArgNF;
+                NF = (Nightfall?)ArgNF;
                 Weapon = (NightfallWeapon)ArgWeapon;
 
                 NightfallRotation.AddUserTracking(Context.User.Id, NF, Weapon);
@@ -292,6 +275,23 @@ namespace Levante.Commands
 
                 VaultOfGlassRotation.AddUserTracking(Context.User.Id, Encounter);
                 await RespondAsync($"I will remind you when {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(VaultOfGlassRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                return;
+            }
+
+            [SlashCommand("vow-of-the-disciple", "Be notified when a Vow of the Disciple challenge is active.")]
+            public async Task VowOfTheDisciple([Summary("challenge", "Vow of the Disciple challenge."),
+                Choice("Acquisition (Swift Destruction)", 0), Choice("Caretaker (Base Information)", 1),
+                Choice("Exhibition (Defenses Down)", 2), Choice("Rhulk (Looping Catalyst)", 3)] int ArgEncounter)
+            {
+                if (VowOfTheDiscipleRotation.GetUserTracking(Context.User.Id, out var Encounter) != null)
+                {
+                    await RespondAsync($"You already have tracking for Vow of the Disciple challenges. I am watching for {VowOfTheDiscipleRotation.GetEncounterString(Encounter)} ({VowOfTheDiscipleRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                    return;
+                }
+                Encounter = (VowOfTheDiscipleEncounter)ArgEncounter;
+
+                VowOfTheDiscipleRotation.AddUserTracking(Context.User.Id, Encounter);
+                await RespondAsync($"I will remind you when {VowOfTheDiscipleRotation.GetEncounterString(Encounter)} ({VowOfTheDiscipleRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(VowOfTheDiscipleRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 return;
             }
 
@@ -345,20 +345,16 @@ namespace Levante.Commands
                 if (LastWishRotation.GetUserTracking(Context.User.Id, out var LWEncounter) != null)
                     menuBuilder.AddOption("Last Wish Challenge", "lw-challenge", $"{LastWishRotation.GetEncounterString(LWEncounter)} ({LastWishRotation.GetChallengeString(LWEncounter)})");
 
-                if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var LSD, out var EAT) != null)
+                if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
                 {
-                    if (LS == null && LSD == null && EAT == null)
+                    if (LS == null && EAT == null)
                         menuBuilder.AddOption("Lost Sector", "remove-error", $"Nothing found");
-                    else if (LS != null && LSD == null && EAT == null)
+                    else if (LS != null && EAT == null)
                         menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)}");
-                    else if (LS != null && LSD != null && EAT == null)
-                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD})");
-                    else if (LS == null && LSD == null && EAT != null)
+                    else if (LS == null && EAT != null)
                         menuBuilder.AddOption("Lost Sector", "lost-sector", $"{EAT} Drop");
-                    else if (LS == null && LSD != null && EAT != null)
-                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LSD} {EAT} Drop");
-                    else if (LS != null && LSD != null && EAT != null)
-                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)} ({LSD}) dropping {EAT}");
+                    else if (LS != null && EAT != null)
+                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)} dropping {EAT}");
                 }
 
                 if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var NFWeapon) != null)
@@ -379,8 +375,11 @@ namespace Levante.Commands
                 if (VaultOfGlassRotation.GetUserTracking(Context.User.Id, out var VoGEncounter) != null)
                     menuBuilder.AddOption("Vault of Glass Challenge", "vog-challenge", $"{VaultOfGlassRotation.GetEncounterString(VoGEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGEncounter)})");
 
+                if (VowOfTheDiscipleRotation.GetUserTracking(Context.User.Id, out var VowEncounter) != null)
+                    menuBuilder.AddOption("Vow of the Disciple Challenge", "vow-challenge", $"{VowOfTheDiscipleRotation.GetEncounterString(VowEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(VowEncounter)})");
+
                 if (WellspringRotation.GetUserTracking(Context.User.Id, out var WellspringBoss) != null)
-                    menuBuilder.AddOption("The Wellspring", "the-wellspring", $"{WellspringRotation.GetWeaponNameString(WellspringBoss)} ({WellspringRotation.GetWeaponTypeString(WellspringBoss)})");
+                    menuBuilder.AddOption($"The Wellspring: {WellspringRotation.GetWellspringTypeString(WellspringBoss)}", "wellspring", $"{WellspringRotation.GetWeaponNameString(WellspringBoss)} ({WellspringRotation.GetWeaponTypeString(WellspringBoss)})");
 
                 var builder = new ComponentBuilder()
                     .WithSelectMenu(menuBuilder);
@@ -391,7 +390,7 @@ namespace Levante.Commands
                 }
                 catch
                 {
-                    await RespondAsync($"You do not have any active trackers. Use '/notify' to activate your first one!", ephemeral: true);
+                    await RespondAsync($"You do not have any active trackers. Use \"/notify\" to activate your first one!", ephemeral: true);
                 }
             }
         }
@@ -543,56 +542,45 @@ namespace Levante.Commands
                 return;
             }
 
-            [SlashCommand("lost-sector", "Find out when a Lost Sector and/or Armor Drop is active next.")]
+            [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
             public async Task LostSector([Summary("lost-sector", "Lost Sector name."),
-                Choice("Bay of Drowned Wishes", 0), Choice("Chamber of Starlight", 1), Choice("Aphelion's Rest", 2),
-                Choice("The Empty Tank", 3), Choice("K1 Logistics", 4), Choice("K1 Communion", 5),
-                Choice("K1 Crew Quarters", 6), Choice("K1 Revelation", 7), Choice("Concealed Void", 8),
-                Choice("Bunker E15", 9), Choice("Perdition", 10)] int? ArgLS = null,
-                [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty? ArgLSD = null,
+                Choice("Veles Labyrinth", 0), Choice("Exodus Garden 2A", 1), Choice("Aphelion's Rest", 2),
+                Choice("Bay of Drowned Wishes", 3), Choice("Chamber of Starlight", 4), Choice("K1 Revelation", 5),
+                Choice("K1 Crew Quarters", 6), Choice("K1 Logistics", 7), Choice("Metamorphosis", 8),
+                Choice("Sepulcher", 9), Choice("Extraction", 10)] int? ArgLS = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
             {
-                /*LostSector? LS = (LostSector?)ArgLS;
-                LostSectorDifficulty? LSD = ArgLSD;
+                LostSector? LS = (LostSector?)ArgLS;
                 ExoticArmorType? EAT = ArgEAT;
 
-                var predictedDate = LostSectorRotation.DatePrediction(LS, LSD, EAT);
+                var predictedDate = LostSectorRotation.DatePrediction(LS, EAT);
                 var embed = new EmbedBuilder()
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
                 embed.Title = "Lost Sectors";
-                if (LS == null && LSD == null && EAT == null)
+                if (LS == null && EAT == null)
                     await RespondAsync($"An error has occurred. No parameters.", ephemeral: true);
-                else if (LS != null && LSD == null && EAT == null)
+                else if (LS != null && EAT == null)
                     embed.Description =
                         $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (LS != null && LSD != null && EAT == null)
-                    embed.Description =
-                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} {(LSD != LostSectorDifficulty.Legend ? $" (Master)" : " (Legend)")}" +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (LS == null && LSD == null && EAT != null)
+                else if (LS == null && EAT != null)
                     embed.Description =
                         $"Next occurrance of Lost Sectors" +
                             $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (LS == null && LSD != null && EAT != null)
+                else if (LS != null &&  EAT != null)
                     embed.Description =
-                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} {(LSD != LostSectorDifficulty.Legend ? $" (Master)" : " (Legend)")}" +
-                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (LS != null && LSD != null && EAT != null)
-                    embed.Description =
-                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} {(LSD != LostSectorDifficulty.Legend ? $" (Master)" : " (Legend)")}" +
+                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)}" +
                             $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());*/
-                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!");
+                await RespondAsync($"", embed: embed.Build());
                 return;
             }
 
             [SlashCommand("nightfall", "Find out when a Nightfall and/or Weapon is active next.")]
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
-                Choice("The Hollowed Lair", 0), Choice("Lake of Shadows", 1), Choice("Exodus Crash", 2),
-                Choice("The Corrupted", 3), Choice("The Devils' Lair", 4), Choice("Proving Grounds", 5)] int? ArgNF = null,
+                Choice("The Scarlet Keep", 0), Choice("The Arms Dealer", 1), Choice("The Lightblade", 2),
+                Choice("The Glassway", 3), Choice("Fallen S.A.B.E.R.", 4), Choice("Birthplace of the Vile", 5)] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike Weapon drop."),
                 Choice("The Palindrome", 0), Choice("THE S.W.A.R.M.", 1), Choice("The Comedian", 2),
                 Choice("Shadow Price", 3), Choice("Hung Jury SR4", 4), Choice("The Hothead", 5),
@@ -665,6 +653,27 @@ namespace Levante.Commands
                 embed.Description =
                     $"Next occurrance of {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}), " +
                         $"which drops {VaultOfGlassRotation.GetChallengeRewardString(Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                await RespondAsync($"", embed: embed.Build());
+                return;
+            }
+
+            [SlashCommand("vow-of-the-disciple", "Be notified when a Vow of the Disciple challenge is active.")]
+            public async Task VowOfTheDisciple([Summary("challenge", "Vow of the Disciple challenge."),
+                Choice("Acquisition (Swift Destruction)", 0), Choice("Caretaker (Base Information)", 1),
+                Choice("Exhibition (Defenses Down)", 2), Choice("Rhulk (Looping Catalyst)", 3)] int ArgEncounter)
+            {
+                VowOfTheDiscipleEncounter Encounter = (VowOfTheDiscipleEncounter)ArgEncounter;
+
+                var predictedDate = VowOfTheDiscipleRotation.DatePrediction(Encounter);
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                };
+                embed.Title = "Vow of the Disciple";
+                embed.Description =
+                    $"Next occurrance of {VowOfTheDiscipleRotation.GetEncounterString(Encounter)} ({VowOfTheDiscipleRotation.GetChallengeString(Encounter)}) " +
+                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
