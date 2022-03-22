@@ -38,8 +38,6 @@ namespace Levante
 
         private Timer DailyResetTimer;
 
-        private HttpListener _listener;
-
         public LevanteCord()
         {
             var scktConfig = new DiscordSocketConfig
@@ -55,15 +53,6 @@ namespace Levante
                 .AddSingleton<InteractiveService>()
                 .AddSingleton<InteractionService>()
                 .BuildServiceProvider();
-
-            _listener = new HttpListener();
-            _listener.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
-            //_listener.Prefixes.Add("https://*:42069/");
-            _listener.Prefixes.Add("http://*:8080/");
-            _listener.Prefixes.Add("https://oauth.levante.dev/");
-            //_listener.Start();
-            //_listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
-            Console.WriteLine($"[OAUTH 2.0] Listening...");
         }
 
         static void Main(string[] args)
@@ -145,78 +134,6 @@ namespace Levante
             await _client.StartAsync();
 
             await Task.Delay(-1);
-        }
-
-        private async Task ListenLoop(HttpListener listener)
-        {
-            /*var context = await listener.GetContextAsync();
-            var query = context.Request.QueryString;
-            if (query != null && query.Count > 0)
-            {
-                if (!string.IsNullOrEmpty(query["code"]))
-                {
-                    Console.WriteLine($"{query["code"]}");
-                }
-                else if (!string.IsNullOrEmpty(query["error"]))
-                {
-                    Console.WriteLine(string.Format("{0}: {1}", query["error"], query["error_description"]));
-                }
-            }*/
-            
-        }
-
-        public async void GetToken(IAsyncResult ar)
-        {
-            //var url = HttpUtility.UrlEncode(@"http://localhost:60403");
-            //System.Diagnostics.Process.Start(url);
-            if (!HttpListener.IsSupported)
-            {
-                Console.WriteLine("Windows XP SP2 or Server 2003 is required to use the HttpListener class.");
-                return;
-            }
-            // Note: The GetContext method blocks while waiting for a request.
-            HttpListenerContext context = _listener.EndGetContext(ar);
-
-            var query = context.Request.QueryString;
-            if (query != null && query.Count > 0)
-            {
-                if (!string.IsNullOrEmpty(query["code"]))
-                {
-                    Console.WriteLine($"{query["code"]}");
-                }
-                else if (!string.IsNullOrEmpty(query["error"]))
-                {
-                    Console.WriteLine(string.Format("{0}: {1}", query["error"], query["error_description"]));
-                }
-            }
-
-            // Wait for next
-            _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
-            Console.WriteLine(DateTime.UtcNow.ToString("HH:mm:ss.fff") + " Handling request");
-
-            HttpListenerRequest request = context.Request;
-            // Obtain a response object.
-            HttpListenerResponse response = context.Response;
-            // Construct a response.
-            string responseString = @"
-   __                      __     
-  / /  ___ _  _____ ____  / /____ 
- / /__/ -_) |/ / _ `/ _ \/ __/ -_)
-/____/\__/|___/\_,_/_//_/\__/\__/   dev. by @OatsFX
-            ";
-            byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
-            // Get a response stream and write the response to it.
-            response.ContentLength64 = buffer.Length;
-            response.Redirect("https://www.levante.dev/");
-
-            // simulate work
-            Thread.Sleep(3000);
-
-            System.IO.Stream output = response.OutputStream;
-            output.Write(buffer, 0, buffer.Length);
-            // You must close the output stream.
-            output.Close();
-            Console.WriteLine(DateTime.UtcNow.ToString("HH:mm:ss.fff") + " completed");
         }
 
         private async Task UpdateBotActivity(int SetRNG = -1)

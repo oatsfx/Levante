@@ -7,11 +7,15 @@ using Levante.Util;
 using System.Net.Http;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using APIHelper;
 using APIHelper.Structs;
+using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using Newtonsoft.Json;
+using Discord.WebSocket;
 using System.IO;
 using Levante.Helpers;
 using Levante.Rotations;
@@ -24,7 +28,7 @@ namespace Levante.Commands
         // These commands will need to be ran through DMs when verified after April 2022.
         public InteractiveService Interactive { get; set; }
 
-        [Command("force", RunMode = RunMode.Async)]
+        /*[Command("force", RunMode = RunMode.Async)]
         [Summary("Sends a button to force a daily reset.")]
         [RequireOwner]
         public async Task Force()
@@ -35,7 +39,7 @@ namespace Levante.Commands
                 .WithButton("Force Reset", customId: $"force", ButtonStyle.Secondary, helpEmote, row: 0);
 
             await ReplyAsync($"This shouldn't really be used...", components: buttonBuilder.Build());
-        }
+        }*/
 
         [Command("giveConfig", RunMode = RunMode.Async)]
         [Alias("config", "getConfig")]
