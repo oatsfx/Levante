@@ -276,11 +276,18 @@ namespace Levante
                     }
                     else if (updatedLevel > tempAau.LastLoggedLevel)
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected: {tempAau.LastLoggedLevel} -> {updatedLevel}");
+                        var afkUser = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID);
+                        var newEngrams = XPLoggingHelper.GetBrightEngrams(afkUser);
+                        var newEngramString = "";
 
-                        ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).LastLoggedLevel = updatedLevel;
-                        ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).LastLevelProgress = updatedProgression;
-                        ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).NoXPGainRefreshes = 0;
+                        if (afkUser.BrightEngrams < newEngrams) newEngramString = " (+1 Bright Engram)";
+
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected: {tempAau.LastLoggedLevel} -> {updatedLevel}{newEngramString}");
+
+                        afkUser.LastLoggedLevel = updatedLevel;
+                        afkUser.LastLevelProgress = updatedProgression;
+                        afkUser.NoXPGainRefreshes = 0;
+                        afkUser.BrightEngrams = newEngrams;
                         //tempAau.LastLoggedLevel = updatedLevel;
                         //tempAau.LastLevelProgress = updatedProgression;
                         //tempAau.NoXPGainRefreshes = 0;
@@ -333,6 +340,7 @@ namespace Levante
                         ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).LastLoggedLevel = updatedLevel;
                         ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).LastLevelProgress = updatedProgression;
                         ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).NoXPGainRefreshes = 0;
+
                         //tempAau.LastLoggedLevel = updatedLevel;
                         //tempAau.LastLevelProgress = updatedProgression;
                         //tempAau.NoXPGainRefreshes = 0;

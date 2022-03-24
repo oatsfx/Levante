@@ -89,8 +89,10 @@ namespace Levante.Commands
                 StartLevel = userLevel,
                 LastLoggedLevel = userLevel,
                 StartLevelProgress = lvlProg,
-                LastLevelProgress = lvlProg,
+                LastLevelProgress = lvlProg
             };
+
+            newUser.BrightEngrams = XPLoggingHelper.GetBrightEngrams(newUser);
 
             await userLogChannel.ModifyAsync(x =>
             {

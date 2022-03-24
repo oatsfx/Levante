@@ -48,6 +48,9 @@ namespace Levante.Configs
             [JsonProperty("StartLevelProgress")]
             public int StartLevelProgress { get; set; } = 0;
 
+            [JsonProperty("BrightEngramsOnCharacter")]
+            public int BrightEngrams { get;set; } = 0;
+
             [JsonProperty("TimeStarted")]
             public DateTime TimeStarted { get; set; } = DateTime.Now;
 
