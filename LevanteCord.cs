@@ -40,12 +40,7 @@ namespace Levante
 
         public LevanteCord()
         {
-            var scktConfig = new DiscordSocketConfig
-            {
-                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.GuildMessages | GatewayIntents.GuildMembers,
-                //TotalShards = 2,
-            };
-            _client = new DiscordSocketClient(scktConfig);
+            _client = new DiscordSocketClient();
             _commands = new CommandService();
             _interaction = new InteractionService(_client);
             _services = new ServiceCollection()
