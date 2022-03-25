@@ -52,7 +52,7 @@ namespace Levante.Commands
                 return;
             }
 
-            await DeferAsync(ephemeral: true);
+            await RespondAsync($"Getting things ready...", ephemeral: true);
 
             string memId = DataConfig.GetLinkedUser(user.Id).BungieMembershipID;
             string memType = DataConfig.GetLinkedUser(user.Id).BungieMembershipType;
@@ -76,10 +76,10 @@ namespace Levante.Commands
                 return;
             }
 
-            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Getting things ready..."; });
             string uniqueName = DataConfig.GetLinkedUser(user.Id).UniqueBungieName;
 
             var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName.Replace('#', '-')}").Result;
+
             ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
             {
                 DiscordID = user.Id,
@@ -125,7 +125,7 @@ namespace Levante.Commands
 
             await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Your logging channel has been successfully created! Access it here: {userLogChannel.Mention}!"; });
-            LogHelper.ConsoleLog($"Started XP logging for {newUser.UniqueBungieName}.");
+            LogHelper.ConsoleLog($"[LOGGING] Started XP logging for {newUser.UniqueBungieName}.");
         }
 
         [ComponentInteraction("stopXPAFK")]
@@ -154,7 +154,7 @@ namespace Levante.Commands
             string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
             await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching));
             await RespondAsync($"Stopped AFK logging for {aau.UniqueBungieName}.", ephemeral: true);
-            LogHelper.ConsoleLog($"Stopped logging for {aau.UniqueBungieName} via user request.");
+            LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {aau.UniqueBungieName} via user request.");
         }
 
         [ComponentInteraction("viewXPHelp")]

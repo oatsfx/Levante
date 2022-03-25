@@ -68,12 +68,12 @@ namespace Levante.Util
         }
 
         // Use DEC's information on how to unlock an emblem, if DEC has it in their data.
-        public string GetEmblemUnlock(long emblemId)
+        public string GetEmblemUnlock()
         {
             try
             {
                 var doc = new HtmlDocument();
-                doc.LoadHtml(new WebClient().DownloadString($"https://destinyemblemcollector.com/emblem?id={emblemId}"));
+                doc.LoadHtml(new WebClient().DownloadString($"https://destinyemblemcollector.com/emblem?id={HashCode}"));
                 var emblemUnlock = doc.DocumentNode.SelectNodes("//div[@class='gridemblem-emblemdetail']")[8].InnerHtml;
                 return emblemUnlock.Split("<li>")[1].Split("</li>")[0];
             }
@@ -104,16 +104,13 @@ namespace Levante.Util
             };
             try
             {
-                var unlock = GetEmblemUnlock(GetItemHash());
+                var unlock = GetEmblemUnlock();
                 var source = string.IsNullOrEmpty(unlock) ? "" : $"[Unlock (DEC)](https://destinyemblemcollector.com/emblem?id={GetItemHash()}): {unlock}\n";
-                embed.Description =
-                    (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) +
-                    "\n" +
-                    $"Hash Code: {GetItemHash()}\n{source}";
 
                 embed.Description = (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) + "\n" +
                         $"Hash Code: {GetItemHash()}\n" +
-                        $"Collectible Hash: {GetCollectableHash()}\n";
+                        $"Collectible Hash: {GetCollectableHash()}\n" +
+                        $"{source}";
                 embed.ImageUrl = GetBackgroundUrl();
             }
             catch

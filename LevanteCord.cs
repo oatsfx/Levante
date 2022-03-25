@@ -223,16 +223,16 @@ namespace Levante
         {
             if (ActiveConfig.ActiveAFKUsers.Count <= 0)
             {
-                LogHelper.ConsoleLog($"Skipping refresh, no active AFK users...");
+                LogHelper.ConsoleLog($"[LOGGING] Skipping refresh, no active AFK users...");
                 return;
             }
 
-            LogHelper.ConsoleLog($"Refreshing Bungie API...");
+            LogHelper.ConsoleLog($"[LOGGING] Refreshing Bungie API...");
             List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
             //List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
             try // XP Logs
             {
-                LogHelper.ConsoleLog($"Refreshing XP Logging Users...");
+                LogHelper.ConsoleLog($"[LOGGING] Refreshing XP Logging Users...");
                 foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers.ToList())
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
@@ -247,7 +247,7 @@ namespace Levante
                         continue;
                     }
 
-                    LogHelper.ConsoleLog($"Checking {tempAau.UniqueBungieName}.");
+                    LogHelper.ConsoleLog($"[LOGGING] Checking {tempAau.UniqueBungieName}.");
 
                     if (!isPlaying)
                     {
@@ -269,7 +269,7 @@ namespace Levante
                         await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player is no longer playing Destiny 2. Logging will be terminated for {uniqueName}.");
                         await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
-                        LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
+                        LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {tempAau.UniqueBungieName} via automation.");
                         //listOfRemovals.Add(tempAau);
                         //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
                         ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID));
@@ -312,7 +312,7 @@ namespace Levante
                             await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
                             await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
-                            LogHelper.ConsoleLog($"Stopped logging for {tempAau.UniqueBungieName} via automation.");
+                            LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {tempAau.UniqueBungieName} via automation.");
                             //listOfRemovals.Add(tempAau);
                             // ***Change to remove it from list because file update is called at end of method.***
                             //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
@@ -331,9 +331,10 @@ namespace Levante
                     {
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP");
 
-                        ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).LastLoggedLevel = updatedLevel;
-                        ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).LastLevelProgress = updatedProgression;
-                        ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).NoXPGainRefreshes = 0;
+                        var user = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID);
+                        user.LastLoggedLevel = updatedLevel;
+                        user.LastLevelProgress = updatedProgression;
+                        user.NoXPGainRefreshes = 0;
                         //tempAau.LastLoggedLevel = updatedLevel;
                         //tempAau.LastLevelProgress = updatedProgression;
                         //tempAau.NoXPGainRefreshes = 0;
@@ -354,7 +355,7 @@ namespace Levante
                 //ActiveConfig.ActiveAFKUsers = newList;
                 ActiveConfig.UpdateActiveAFKUsersConfig();
 
-                LogHelper.ConsoleLog($"Bungie API Refreshed!");
+                LogHelper.ConsoleLog($"[LOGGING] Bungie API Refreshed!");
             }
             catch (Exception x)
             {
