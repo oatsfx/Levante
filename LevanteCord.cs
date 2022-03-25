@@ -37,6 +37,8 @@ namespace Levante
         private readonly IServiceProvider _services;
 
         private Timer DailyResetTimer;
+        private Timer _xpTimer;
+        private Timer _leaderboardTimer;
 
         public LevanteCord()
         {
@@ -97,7 +99,7 @@ namespace Levante
             Console.WriteLine($"Garden of Salvation Challenge: {GardenOfSalvationRotation.GetEncounterString(CurrentRotations.GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(CurrentRotations.GoSChallengeEncounter)})");
             Console.WriteLine($"Deep Stone Crypt Challenge: {DeepStoneCryptRotation.GetEncounterString(CurrentRotations.DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(CurrentRotations.DSCChallengeEncounter)})");
             Console.WriteLine($"Vault of Glass Challenge: {VaultOfGlassRotation.GetEncounterString(CurrentRotations.VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(CurrentRotations.VoGChallengeEncounter)})");
-            Console.WriteLine($"Vow of the Disiple Challenge: {VowOfTheDiscipleRotation.GetEncounterString(CurrentRotations.VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(CurrentRotations.VowChallengeEncounter)})");
+            Console.WriteLine($"Vow of the Disciple Challenge: {VowOfTheDiscipleRotation.GetEncounterString(CurrentRotations.VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(CurrentRotations.VowChallengeEncounter)})");
             Console.WriteLine($"Curse Week: {CurrentRotations.CurseWeek}");
             Console.WriteLine($"Ascendant Challenge: {AscendantChallengeRotation.GetChallengeNameString(CurrentRotations.AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(CurrentRotations.AscendantChallenge)})");
             Console.WriteLine($"Nightfall: {NightfallRotation.GetStrikeNameString(CurrentRotations.Nightfall)} (dropping {NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrop)})");
@@ -115,8 +117,8 @@ namespace Levante
                 return Task.CompletedTask;
             };
 
-            Timer xpTimer = new Timer(XPTimerCallback, null, 20000, BotConfig.TimeBetweenRefresh * 60000);
-            Timer leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 600000);
+            _xpTimer = new Timer(XPTimerCallback, null, 20000, BotConfig.TimeBetweenRefresh * 60000);
+            _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 600000);
 
             if (DateTime.Now.Hour >= 10) // after daily reset
                 SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 0));
@@ -129,6 +131,10 @@ namespace Levante
             await _client.StartAsync();
 
             await Task.Delay(-1);
+
+            await _xpTimer.DisposeAsync();
+            await _leaderboardTimer.DisposeAsync();
+            await DailyResetTimer.DisposeAsync();
         }
 
         private async Task UpdateBotActivity(int SetRNG = -1)
