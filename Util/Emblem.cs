@@ -112,6 +112,7 @@ namespace Levante.Util
                         $"Collectible Hash: {GetCollectableHash()}\n" +
                         $"{source}";
                 embed.ImageUrl = GetBackgroundUrl();
+                embed.ThumbnailUrl = GetIconUrl();
             }
             catch
             {
