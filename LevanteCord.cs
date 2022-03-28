@@ -117,7 +117,8 @@ namespace Levante
                 return Task.CompletedTask;
             };
 
-            _xpTimer = new Timer(XPTimerCallback, null, 20000, BotConfig.TimeBetweenRefresh * 60000);
+            int xpTimerIntMultiplier = (int)((int)Math.Ceiling((double)ActiveConfig.ActiveAFKUsers.Count / ActiveConfig.RefreshesPerMinute) <= 0 ? 1 : Math.Ceiling((double)ActiveConfig.ActiveAFKUsers.Count / 5));
+            _xpTimer = new Timer(XPTimerCallback, null, 20000, xpTimerIntMultiplier * 60000);
             _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 600000);
 
             if (DateTime.Now.Hour >= 10) // after daily reset
@@ -228,7 +229,7 @@ namespace Levante
             }
 
             LogHelper.ConsoleLog($"[LOGGING] Refreshing Bungie API...");
-            List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
+            //List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
             //List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
             try // XP Logs
             {
@@ -241,7 +242,7 @@ namespace Levante
                     if (!errorStatus.Equals("Success") && !errorStatus.Equals("PlayerNotOnline"))
                     {
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
-                        LogHelper.ConsoleLog($"Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
+                        LogHelper.ConsoleLog($"[LOGGING] Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
                         // Move onto the next user so everyone gets the message.
                         //newList.Add(tempAau);
                         continue;
@@ -355,11 +356,13 @@ namespace Levante
                 //ActiveConfig.ActiveAFKUsers = newList;
                 ActiveConfig.UpdateActiveAFKUsersConfig();
 
-                LogHelper.ConsoleLog($"[LOGGING] Bungie API Refreshed!");
+                int xpTimerIntMultiplier = (int)((int)Math.Ceiling((double)ActiveConfig.ActiveAFKUsers.Count / ActiveConfig.RefreshesPerMinute) <= 0 ? 1 : Math.Ceiling((double)ActiveConfig.ActiveAFKUsers.Count / ActiveConfig.RefreshesPerMinute));
+                _xpTimer.Change(xpTimerIntMultiplier * 60000, xpTimerIntMultiplier * 60000);
+                LogHelper.ConsoleLog($"[LOGGING] Bungie API Refreshed! Next refresh in: {xpTimerIntMultiplier} minute(s).");
             }
             catch (Exception x)
             {
-                LogHelper.ConsoleLog($"Refresh failed, trying again! Reason: {x.Message} ({x.StackTrace})");
+                LogHelper.ConsoleLog($"[LOGGING] Refresh failed, trying again! Reason: {x.Message} ({x.StackTrace})");
                 await Task.Delay(8000);
                 await RefreshBungieAPI().ConfigureAwait(false);
                 return;
@@ -371,7 +374,7 @@ namespace Levante
         {
             try
             {
-                LogHelper.ConsoleLog($"Pulling data for leaderboards...");
+                LogHelper.ConsoleLog($"[LEADERBOARDS] Pulling data for leaderboards...");
                 var tempPowerLevelData = new PowerLevelData();
                 var tempLevelData = new LevelData();
                 bool nameChange = false;
@@ -414,7 +417,7 @@ namespace Levante
                             string nameCode = int.Parse($"{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode}").ToString().PadLeft(4, '0');
                             if (!link.UniqueBungieName.Equals($"{name}#{nameCode}"))
                             {
-                                Console.WriteLine($"Name change detected: {link.UniqueBungieName} -> {name}#{nameCode}");
+                                Console.WriteLine($"[LEADERBOARDS] Name change detected: {link.UniqueBungieName} -> {name}#{nameCode}");
                                 DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == link.DiscordID).UniqueBungieName = $"{name}#{nameCode}";
                                 nameChange = true;
                             }
@@ -422,7 +425,7 @@ namespace Levante
                         catch
                         {
                             // Continue with the rest of the linked users. Don't want to stop the populating for one problematic account.
-                            LogHelper.ConsoleLog($"Error while pulling data for user: {_client.GetUserAsync(link.DiscordID).Result.Username}#{_client.GetUserAsync(link.DiscordID).Result.Discriminator} linked with {link.UniqueBungieName}.");
+                            LogHelper.ConsoleLog($"[LEADERBOARDS] Error while pulling data for user: {_client.GetUserAsync(link.DiscordID).Result.Username}#{_client.GetUserAsync(link.DiscordID).Result.Discriminator} linked with {link.UniqueBungieName}.");
                             await Task.Delay(250);
                             continue;
                         }
@@ -445,11 +448,11 @@ namespace Levante
 
                 tempLevelData.UpdateEntriesConfig();
                 tempPowerLevelData.UpdateEntriesConfig();
-                LogHelper.ConsoleLog($"Data pulling complete!");
+                LogHelper.ConsoleLog($"[LEADERBOARDS] Data pulling complete!");
             }
             catch
             {
-                LogHelper.ConsoleLog($"Error while updating leaderboards, trying again at next refresh.");
+                LogHelper.ConsoleLog($"[LEADERBOARDS] Error while updating leaderboards, trying again at next refresh.");
             }
         }
         #endregion

@@ -42,11 +42,23 @@ namespace Levante.Helpers
             int xpPerHour = 0;
             if ((DateTime.Now - aau.TimeStarted).TotalHours >= 1)
                 xpPerHour = (int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours);
-            embed.Description =
-                $"Levels Gained: {levelsGained}\n" +
-                $"XP Gained: {String.Format("{0:n0}", xpGained)}\n" +
-                $"Time: {timeString}\n" +
-                $"XP Per Hour: {String.Format("{0:n0}", xpPerHour)}";
+            embed.WithCurrentTimestamp();
+            embed.Description = $"Time Logged: {timeString}\n";
+
+            embed.AddField(x =>
+            {
+                x.Name = "Level Information";
+                x.Value = $"Start: {aau.StartLevel} ({aau.StartLevelProgress:n0}/100,000)\n" +
+                    $"End: {aau.LastLoggedLevel} ({aau.LastLevelProgress:n0}/100,000)\n" +
+                    $"Gained: {levelsGained}\n";
+                x.IsInline = true;
+            }).AddField(x =>
+            {
+                x.Name = "XP Information";
+                x.Value = $"Gained: {xpGained:n0}\n" +
+                    $"XP Per Hour: {xpPerHour:n0}";
+                x.IsInline = true;
+            });
 
             return embed;
         }

@@ -18,9 +18,6 @@ namespace Levante.Configs
         [JsonProperty("BungieApiKey")]
         public static string BungieApiKey { get; set; } = "[YOUR API KEY HERE]";
 
-        [JsonProperty("TimeBetweenRefresh")]
-        public static int TimeBetweenRefresh { get; set; } = 4;
-
         [JsonProperty("Version")]
         public static double Version { get; set; } = 1.0;
 

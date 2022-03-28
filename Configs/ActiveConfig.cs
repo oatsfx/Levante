@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 
 namespace Levante.Configs
@@ -27,6 +28,9 @@ namespace Levante.Configs
 
         [JsonProperty("RefreshesBeforeKick")]
         public static int RefreshesBeforeKick = 2;
+
+        [JsonProperty("RefreshesPerMinute")]
+        public static int RefreshesPerMinute = 8;
 
         public partial class ActiveAFKUser
         {
@@ -63,9 +67,6 @@ namespace Levante.Configs
 
         public static ActiveAFKUser GetActiveAFKUser(ulong DiscordID)
         {
-            string json = File.ReadAllText(FilePath);
-            ActiveAFKUsers.Clear();
-            ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
             foreach (ActiveAFKUser aau in ActiveAFKUsers)
                 if (aau.DiscordID == DiscordID)
                     return aau;
@@ -130,9 +131,9 @@ namespace Levante.Configs
 
         public static void AddActiveUserToConfig(ActiveAFKUser aau)
         {
-            string json = File.ReadAllText(FilePath);
-            ActiveAFKUsers.Clear();
-            ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
+            //string json = File.ReadAllText(FilePath);
+            //ActiveAFKUsers.Clear();
+            //ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
 
             ActiveAFKUsers.Add(aau);
             ActiveConfig ac = new ActiveConfig();
@@ -142,12 +143,8 @@ namespace Levante.Configs
 
         public static void DeleteActiveUserFromConfig(ulong DiscordID)
         {
-            string json = File.ReadAllText(FilePath);
-            ActiveAFKUsers.Clear();
-            ActiveConfig ac = JsonConvert.DeserializeObject<ActiveConfig>(json);
-            for (int i = 0; i < ActiveAFKUsers.Count; i++)
-                if (ActiveAFKUsers[i].DiscordID == DiscordID)
-                    ActiveAFKUsers.RemoveAt(i);
+            ActiveAFKUsers.Remove(ActiveAFKUsers.First(x => x.DiscordID == DiscordID));
+            ActiveConfig ac = new ActiveConfig();
             string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
