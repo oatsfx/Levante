@@ -29,8 +29,8 @@ namespace Levante.Configs
         [JsonProperty("RefreshesBeforeKick")]
         public static int RefreshesBeforeKick = 2;
 
-        [JsonProperty("RefreshesPerMinute")]
-        public static int RefreshesPerMinute = 8;
+        [JsonProperty("TimeBetweenRefresh")]
+        public static int TimeBetweenRefresh = 2;
 
         public partial class ActiveAFKUser
         {

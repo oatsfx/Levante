@@ -117,8 +117,7 @@ namespace Levante
                 return Task.CompletedTask;
             };
 
-            int xpTimerIntMultiplier = (int)((int)Math.Ceiling((double)ActiveConfig.ActiveAFKUsers.Count / ActiveConfig.RefreshesPerMinute) <= 0 ? 1 : Math.Ceiling((double)ActiveConfig.ActiveAFKUsers.Count / 5));
-            _xpTimer = new Timer(XPTimerCallback, null, 20000, xpTimerIntMultiplier * 60000);
+            _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
             _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 600000);
 
             if (DateTime.Now.Hour >= 10) // after daily reset
@@ -356,9 +355,8 @@ namespace Levante
                 //ActiveConfig.ActiveAFKUsers = newList;
                 ActiveConfig.UpdateActiveAFKUsersConfig();
 
-                int xpTimerIntMultiplier = (int)((int)Math.Ceiling((double)ActiveConfig.ActiveAFKUsers.Count / ActiveConfig.RefreshesPerMinute) <= 0 ? 1 : Math.Ceiling((double)ActiveConfig.ActiveAFKUsers.Count / ActiveConfig.RefreshesPerMinute));
-                _xpTimer.Change(xpTimerIntMultiplier * 60000, xpTimerIntMultiplier * 60000);
-                LogHelper.ConsoleLog($"[LOGGING] Bungie API Refreshed! Next refresh in: {xpTimerIntMultiplier} minute(s).");
+                _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, ActiveConfig.TimeBetweenRefresh * 60000);
+                LogHelper.ConsoleLog($"[LOGGING] Bungie API Refreshed! Next refresh in: {ActiveConfig.TimeBetweenRefresh} minute(s).");
             }
             catch (Exception x)
             {
