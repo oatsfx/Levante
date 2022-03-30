@@ -227,6 +227,8 @@ namespace Levante
                 return;
             }
 
+            // Stop Timer
+            _xpTimer.Change(Timeout.Infinite, Timeout.Infinite);
             LogHelper.ConsoleLog($"[LOGGING] Refreshing Bungie API...");
             //List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
             //List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
