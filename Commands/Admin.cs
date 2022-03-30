@@ -117,7 +117,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Make sure you have your AFK setup running before clicking one of the buttons."
+                Text = $"To get started, link using the command /link [BUNGIE TAG]."
             };
             var embed = new EmbedBuilder()
             {

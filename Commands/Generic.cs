@@ -16,7 +16,8 @@ namespace Levante.Commands
         {
             var auth = new EmbedAuthorBuilder()
             {
-                Name = "Command List"
+                Name = "Command List",
+                IconUrl = Context.Client.CurrentUser.GetAvatarUrl()
             };
 
             var embed = new EmbedBuilder()
@@ -25,12 +26,9 @@ namespace Levante.Commands
                 Author = auth,
             };
 
-            embed.Title = "Command List";
             string desc = "";
-            foreach (var cmd in Context.Client.GetGlobalApplicationCommandsAsync().Result)
-            {
+            foreach (var cmd in Context.Client.GetGlobalApplicationCommandsAsync().Result.OrderBy(cmd => cmd.Name))
                 desc += $"/{cmd.Name}\n";
-            }
             embed.Description = desc;
 
             await RespondAsync(embed: embed.Build());
