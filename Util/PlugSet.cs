@@ -3,6 +3,7 @@ using Levante.Configs;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -49,18 +50,23 @@ namespace Levante.Util
                 {
                     using (WebResponse wrFileResponse = WebRequest.Create(Perk.GetIconUrl()).GetResponse())
                     {
-                        using (var stream = new MemoryStream())
+                        using (Stream objWebStream = wrFileResponse.GetResponseStream())
                         {
-                            var bitmap = System.Drawing.Image.FromStream(wrFileResponse.GetResponseStream());
-                            bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
-                            byte[] bytes = stream.ToArray();
-                            using (var fs = new FileStream(@"tempEmote.png", FileMode.Create))
+                            MemoryStream ms = new MemoryStream();
+                            objWebStream.CopyTo(ms, 8192);
+                            Bitmap bitmap = (Bitmap)Image.FromStream(ms);
+                            using (var stream = new MemoryStream())
                             {
-                                fs.Write(bytes, 0, bytes.Length);
-                                fs.Close();
+                                bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                                byte[] bytes = stream.ToArray();
+                                using (var fs = new FileStream(@"tempEmote.png", FileMode.Create))
+                                {
+                                    fs.Write(bytes, 0, bytes.Length);
+                                    fs.Close();
+                                }
+                                Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(@"tempEmote.png")));
+                                emoteCfg.UpdateJSON();
                             }
-                            Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(@"tempEmote.png")));
-                            emoteCfg.UpdateJSON();
                         }
                     }
                 }
@@ -85,33 +91,30 @@ namespace Levante.Util
                 var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
                 if (!emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
                 {
-                    using (WebResponse wrFileResponse = WebRequest.Create(Perk.GetIconUrl()).GetResponse())
+                    using (WebClient client = new WebClient())
                     {
-                        using (Stream objWebStream = wrFileResponse.GetResponseStream())
-                        {
-                            using (var stream = new MemoryStream())
-                            {
-                                var img = System.Drawing.Image.FromStream(objWebStream);
-                                img.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
-                                byte[] bytes = stream.ToArray();
-                                using (var fs = new FileStream(@"tempEmote.png", FileMode.Create))
-                                {
-                                    fs.Write(bytes, 0, bytes.Length);
-                                    fs.Close();
-                                }
-                                var discImage = new Discord.Image(@"tempEmote.png");
-                                Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), discImage)).Wait();
-                                Task.Delay(25);
-                                discImage.Dispose();
-                                emoteCfg.UpdateJSON();
-                            }
-                        }
+                        client.DownloadFile(new Uri(Perk.GetIconUrl()), @"tempEmote.png");
+                        Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(@"tempEmote.png"))).Wait();
+                        emoteCfg.UpdateJSON();
                     }
                 }
                 result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}\n";
             }
 
             return result;
+        }
+
+        private System.Drawing.Image GetImageFromPicPath(string strUrl)
+        {
+            using (WebResponse wrFileResponse = WebRequest.Create(strUrl).GetResponse())
+            {
+                using (Stream objWebStream = wrFileResponse.GetResponseStream())
+                {
+                    MemoryStream ms = new MemoryStream();
+                    objWebStream.CopyTo(ms, 8192);
+                    return System.Drawing.Image.FromStream(ms);
+                }
+            }
         }
     }
 }
