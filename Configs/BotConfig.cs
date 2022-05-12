@@ -13,7 +13,7 @@ namespace Levante.Configs
         public static string AppName { get; set; } = "Levante";
 
         [JsonProperty("Website")]
-        public static string Website { get; set; } = "www.example.com";
+        public static string Website { get; set; } = "oatsfx.com";
 
         // Include the @ in this field as the string this is used in, does not include the @.         
         [JsonProperty("Twitter")]

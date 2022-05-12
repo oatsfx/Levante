@@ -241,7 +241,7 @@ namespace Levante
 
                     if (!errorStatus.Equals("Success") && !errorStatus.Equals("PlayerNotOnline"))
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}. Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
                         LogHelper.ConsoleLog($"[LOGGING] Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
                         // Move onto the next user so everyone gets the message.
                         //newList.Add(tempAau);

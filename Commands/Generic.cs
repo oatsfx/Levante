@@ -69,7 +69,7 @@ namespace Levante.Commands
             .AddField(x =>
             {
                 x.Name = "Website";
-                x.Value = $"{BotConfig.Website}";
+                x.Value = $"https://{BotConfig.Website}/";
                 x.IsInline = true;
             })
             .AddField(x =>

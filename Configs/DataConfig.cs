@@ -420,7 +420,7 @@ namespace Levante.Configs
                         return -1;
                     }
 
-                    if (item.Response.profileProgression.privacy == 2)
+                    if (item.Response.characterProgressions.data == null)
                     {
                         ErrorStatus = $"PlayerProgressionPrivate";
                         XPProgress = -1;
