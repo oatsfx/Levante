@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
+using BungieSharper.Entities.Destiny.Definitions;
 
 namespace Levante.Util
 {
@@ -17,9 +18,11 @@ namespace Levante.Util
 
         public string GetName() => Content.DisplayProperties.Name;
 
+        public string GetFlavorText() => Content.FlavorText;
+
         public long GetItemHash() => HashCode;
 
-        public long GetCollectableHash() => Content.CollectibleHash;
+        public uint? GetCollectableHash() => Content.CollectibleHash;
 
         public string GetIconUrl() => "https://www.bungie.net" + Content.DisplayProperties.Icon;
 

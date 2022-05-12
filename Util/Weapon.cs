@@ -6,6 +6,7 @@ using Levante.Configs;
 using Levante.Helpers;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 
@@ -36,16 +37,55 @@ namespace Levante.Util
 
         public string GetDamageType() => $"{DestinyEmote.MatchEmote($"{(DamageType)Content.DefaultDamageType}")} {(DamageType)Content.DefaultDamageType}";
 
-        public WeaponPerk GetFrame() => new WeaponPerk(Content.Sockets.SocketEntries[0].SingleInitialItemHash);
+        public WeaponPerk GetIntrinsic() => new WeaponPerk(Content.Sockets.SocketEntries.ElementAt(0).SingleInitialItemHash);
 
-        public PlugSet GetRandomPerks(int Column)
+        public PlugSet GetRandomPerks(int Column /*This parameter is the desired column for weapon perks.*/)
         {
             try
             {
-                if (Content.Sockets.SocketEntries[Column].RandomizedPlugSetHash == null)
-                    return new PlugSet((long)Content.Sockets.SocketEntries[Column].ReusablePlugSetHash);
+                List<int> perkIndexes = new List<int>();
+                for (int i = 0; i < Content.Sockets.SocketCategories.Count(); i++)
+                {
+                    if (Content.Sockets.SocketCategories.ElementAt(i).SocketCategoryHash == 4241085061)
+                        for (int j = 0; j < Content.Sockets.SocketCategories.ElementAt(i).SocketIndexes.Count(); j++)
+                            perkIndexes.Add(Convert.ToInt32(Content.Sockets.SocketCategories.ElementAt(i).SocketIndexes.ElementAt(j)));
+                }
+
+                if (Column > perkIndexes.Count)
+                    return null;
+
+                if (Content.Sockets.SocketEntries.ElementAt(perkIndexes[Column - 1]).PreventInitializationOnVendorPurchase)
+                    return null;
+
+                if (Content.Sockets.SocketEntries.ElementAt(perkIndexes[Column - 1]).RandomizedPlugSetHash == null)
+                    return new PlugSet((long)Content.Sockets.SocketEntries.ElementAt(perkIndexes[Column - 1]).ReusablePlugSetHash);
                 else
-                    return new PlugSet((long)Content.Sockets.SocketEntries[Column].RandomizedPlugSetHash);
+                    return new PlugSet((long)Content.Sockets.SocketEntries.ElementAt(perkIndexes[Column - 1]).RandomizedPlugSetHash);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public PlugSet GetFoundryPerks()
+        {
+            try
+            {
+                int foundryIndex = -1;
+                for (int i = 0; i < Content.Sockets.SocketEntries.Count(); i++)
+                {
+                    if (Content.Sockets.SocketEntries.ElementAt(i).SocketTypeHash == 3993098925)
+                        foundryIndex = i;
+                }
+
+                if (foundryIndex == -1)
+                    return null;
+
+                if (Content.Sockets.SocketEntries.ElementAt(foundryIndex).RandomizedPlugSetHash == null)
+                    return new PlugSet((long)Content.Sockets.SocketEntries.ElementAt(foundryIndex).ReusablePlugSetHash);
+                else
+                    return new PlugSet((long)Content.Sockets.SocketEntries.ElementAt(foundryIndex).RandomizedPlugSetHash);
             }
             catch
             {
@@ -86,49 +126,47 @@ namespace Levante.Util
             {
                 x.Name = $"> Information";
                 x.Value = $"{GetDamageType()} {GetSpecificItemType()}\n" +
-                    $"Intrinsic Trait: {GetFrame().GetName()}\n";
-                if (Content.TooltipNotifications.Count() > 0)
-                    x.Value += $"Craftable?: {(Content.TooltipNotifications.GetValue(0).ToString().Contains("This weapon's Pattern can be extracted.") ? "Yes" : "No")}";
-                else
-                    x.Value += "Craftable?: No";
+                    $"*{GetFlavorText()}*\n";
+                x.Value += $"Craftable?: {(Content.Inventory.RecipeItemHash != null ? "Yes" : "No")}";
                 x.IsInline = false;
             })
             .AddField(x =>
             {
                 x.Name = $"> Perks";
-                x.Value = $"*List of perks for this weapon, per column.*";
+                x.Value = $"*List of perks for this weapon, per column.*\n" +
+                    $"Intrinsic: {GetIntrinsic().GetName()}\n";
                 x.IsInline = false;
             })
             .AddField(x =>
             {
                 x.Name = $"Column 1";
-                x.Value = $"{GetRandomPerks(1).BuildStringList()}";
+                x.Value = $"{(GetRandomPerks(1) == null ? "No perks." : GetRandomPerks(1).BuildStringList())}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = $"Column 2";
-                x.Value = $"{GetRandomPerks(2).BuildStringList()}";
+                x.Value = $"{(GetRandomPerks(2) == null ? "No perks." : GetRandomPerks(2).BuildStringList())}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = $"Column 3";
-                x.Value = $"{GetRandomPerks(3).BuildStringList()}";
+                x.Value = $"{(GetRandomPerks(3) == null ? "No perks." : GetRandomPerks(3).BuildStringList())}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = $"Column 4";
-                x.Value = $"{GetRandomPerks(4).BuildStringList()}";
+                x.Value = $"{(GetRandomPerks(4) == null ? "No perks." : GetRandomPerks(4).BuildStringList())}";
                 x.IsInline = true;
             });
 
-            if (GetRandomPerks(8) != null && Content.Sockets.SocketEntries[8].SocketTypeHash == 3993098925 /*Weapon Perk Hash*/)
+            if (GetFoundryPerks() != null)
             {
                 embed.AddField(x => {
                     x.Name = $"Column 5 (Foundry/Origin)";
-                    x.Value = $"{GetRandomPerks(8).BuildStringList()}";
+                    x.Value = $"{GetFoundryPerks().BuildStringList()}";
                     x.IsInline = true;
                 });
             }

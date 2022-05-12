@@ -49,7 +49,7 @@ namespace Levante.Helpers
             {
                 x.Name = "Level Information";
                 x.Value = $"Start: {aau.StartLevel} ({aau.StartLevelProgress:n0}/100,000)\n" +
-                    $"End: {aau.LastLoggedLevel} ({aau.LastLevelProgress:n0}/100,000)\n" +
+                    $"Now: {aau.LastLoggedLevel} ({aau.LastLevelProgress:n0}/100,000)\n" +
                     $"Gained: {levelsGained}\n";
                 x.IsInline = true;
             }).AddField(x =>

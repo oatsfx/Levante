@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Levante.Configs;
 using Discord.Interactions;
+using System;
 
 namespace Levante.Commands
 {
@@ -11,7 +12,7 @@ namespace Levante.Commands
         [RequireUserPermission(GuildPermission.ManageChannels)]
         public class Alert : InteractionModuleBase<SocketInteractionContext>
         {
-            [SlashCommand("emblem-offers", "Set up announcements for Emblem Offers.")]
+            [SlashCommand("emblem-offers", "Set up announcements for Emblem Offers. Use this in the channel you want this set up in.")]
             public async Task EmblemOffers([Summary("role", "Add a role to be pinged when a new Emblem Offer is posted.")] IRole RoleToPing = null)
             {
                 if (DataConfig.IsExistingEmblemLinkedChannel(Context.Channel.Id))
@@ -39,7 +40,7 @@ namespace Levante.Commands
                 }
             }
 
-            [SlashCommand("resets", "Set up announcements for Daily/Weekly Reset.")]
+            [SlashCommand("resets", "Set up announcements for Daily/Weekly Reset. Use this in the channel you want this set up in.")]
             public async Task Resets([Summary("reset-type", "Choose between Daily or Weekly Reset."),
                 Choice("Daily", 0), Choice("Weekly", 1)] int ResetType)
             {
@@ -142,6 +143,69 @@ namespace Levante.Commands
             await hubChannel.SendMessageAsync($"", false, embed.Build(), components: buttonBuilder.Build());
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Hub created at {hubChannel.Mention}. Feel free to move that Category anywhere!"; });
+        }
+
+        [SlashCommand("server-info", "Gets general information about a server/guild along with Levante integrations.")]
+        [RequireUserPermission(GuildPermission.ManageChannels)]
+        public async Task ServerInfo()
+        {
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Server Information: {Context.Guild.Name}",
+                IconUrl = Context.Guild.IconUrl,
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Powered by {BotConfig.AppName}",
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = auth,
+                Footer = foot,
+            };
+            embed.Description =
+                $"\n";
+
+            ulong emblemAnnounceId = 0,
+                emblemAnnounceRoleId = 0,
+                dailyAnnounceId = 0,
+                weeklyAnnounceId = 0;
+
+            foreach (var Channel in Context.Guild.TextChannels)
+            {
+                if (emblemAnnounceId == 0 && DataConfig.AnnounceEmblemLinks.Exists(x => x.ChannelID == Channel.Id))
+                {
+                    emblemAnnounceId = Channel.Id;
+                    emblemAnnounceRoleId = DataConfig.AnnounceEmblemLinks.Find(x => x.ChannelID == Channel.Id).RoleID;
+                }
+
+                if (dailyAnnounceId == 0 && DataConfig.AnnounceDailyLinks.Contains(Channel.Id))
+                    dailyAnnounceId = Channel.Id;
+
+                if (weeklyAnnounceId == 0 && DataConfig.AnnounceWeeklyLinks.Contains(Channel.Id))
+                    weeklyAnnounceId = Channel.Id;
+
+            }
+
+            embed.AddField(x =>
+            {
+                x.Name = $"> General Info";
+                x.Value = $"Owner: {Context.Guild.Owner.Mention}{(Context.Guild.Owner.Id == Context.User.Id ? " (Hey! That's you!)" : "")}\n" +
+                    $"Member Count: {Context.Guild.MemberCount}\n";
+                x.IsInline = false;
+            })
+            .AddField(x =>
+            {
+                x.Name = $"> {BotConfig.AppName} Integrations";
+                x.Value = $"Bot Joined: {TimestampTag.FromDateTime(Context.Guild.GetUser(Context.Client.CurrentUser.Id).JoinedAt.Value.DateTime, TimestampTagStyles.ShortDateTime)}\n" +
+                    $"Emblem Announce Channel: {(emblemAnnounceId == 0 ? "None." : $"<#{emblemAnnounceId}>")}{(emblemAnnounceRoleId != 0 ? $" and tags role: <@&{emblemAnnounceRoleId}>" : "")}\n" +
+                    $"Daily Reset Channel: {(dailyAnnounceId == 0 ? "None." : $"<#{dailyAnnounceId}>")}\n" +
+                    $"Weekly Reset Channel: {(weeklyAnnounceId == 0 ? "None." : $"<#{weeklyAnnounceId}>")}\n";
+                x.IsInline = false;
+            });
+
+            await RespondAsync(embed: embed.Build(), ephemeral: true);
         }
     }
 }

@@ -136,17 +136,17 @@ namespace Levante.Configs
             //ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
 
             ActiveAFKUsers.Add(aau);
-            ActiveConfig ac = new ActiveConfig();
-            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
+            //ActiveConfig ac = new ActiveConfig();
+            //string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
+            //File.WriteAllText(FilePath, output);
         }
 
         public static void DeleteActiveUserFromConfig(ulong DiscordID)
         {
             ActiveAFKUsers.Remove(ActiveAFKUsers.First(x => x.DiscordID == DiscordID));
-            ActiveConfig ac = new ActiveConfig();
-            string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
+            //ActiveConfig ac = new ActiveConfig();
+            //string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
+            //File.WriteAllText(FilePath, output);
         }
 
         public static bool IsExistingActiveUser(ulong DiscordID)

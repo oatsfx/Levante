@@ -78,20 +78,16 @@ namespace Levante
 
             CurrentRotations.CreateJSONs();
 
-            if (!API.FetchManifest(BotConfig.BungieApiKey))
-            {
-                // TODO: set up a task at a later date to refetch manifest
-                // maybe make a boolean that disables manifest requiring commands if it's false
-            }
+            API.FetchManifest();
 
             EmblemOffer.LoadCurrentOffers();
 
-            Console.WriteLine($"[Startup] Current Bot Version: v{BotConfig.Version:0.00}");
-            Console.WriteLine($"[Startup] Current Developer Note: {BotConfig.Note}");
+            Console.WriteLine($"[STARTUP] Current Bot Version: v{BotConfig.Version:0.00}");
+            Console.WriteLine($"[STARTUP] Current Developer Note: {BotConfig.Note}");
             Console.WriteLine();
 
             Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine($"[Rotations]");
+            Console.WriteLine($"[ROTATIONS]");
             Console.WriteLine($"Legend/Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LostSector)} ({CurrentRotations.LostSectorArmorDrop})");
             Console.WriteLine($"Altar Weapon: {AltarsOfSorrowRotation.GetWeaponNameString(CurrentRotations.AltarWeapon)} ({CurrentRotations.AltarWeapon})");
             Console.WriteLine($"Wellspring ({WellspringRotation.GetWellspringTypeString(CurrentRotations.Wellspring)}): {WellspringRotation.GetWeaponNameString(CurrentRotations.Wellspring)} ({WellspringRotation.GetWellspringBossString(CurrentRotations.Wellspring)})");
@@ -167,9 +163,9 @@ namespace Levante
                 case 6:
                     await _client.SetActivityAsync(new Game($"{CurrentRotations.GetTotalLinks()} Rotation Trackers | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 7:
-                    await _client.SetActivityAsync(new Game($"levante.dev | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{BotConfig.Website} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 8:
-                    await _client.SetActivityAsync(new Game($"@Levante_Bot on Twitter", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{BotConfig.Twitter} on Twitter", ActivityType.Watching)); break;
                 default: break;
             }
             return;
@@ -240,16 +236,20 @@ namespace Levante
                     ActiveConfig.ActiveAFKUser tempAau = aau;
                     int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isPlaying, out string errorStatus);
 
+                    LogHelper.ConsoleLog($"[LOGGING] Checking {tempAau.UniqueBungieName}.");
+                    var actualUser = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
+
                     if (!errorStatus.Equals("Success") && !errorStatus.Equals("PlayerNotOnline"))
                     {
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
                         LogHelper.ConsoleLog($"[LOGGING] Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
                         // Move onto the next user so everyone gets the message.
                         //newList.Add(tempAau);
+
+                        // Add a warning.
+                        actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
                         continue;
                     }
-
-                    LogHelper.ConsoleLog($"[LOGGING] Checking {tempAau.UniqueBungieName}.");
 
                     if (!isPlaying)
                     {
@@ -281,9 +281,9 @@ namespace Levante
                     {
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected: {tempAau.LastLoggedLevel} -> {updatedLevel}");
 
-                        ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).LastLoggedLevel = updatedLevel;
-                        ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).LastLevelProgress = updatedProgression;
-                        ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).NoXPGainRefreshes = 0;
+                        actualUser.LastLoggedLevel = updatedLevel;
+                        actualUser.LastLevelProgress = updatedProgression;
+                        actualUser.NoXPGainRefreshes = 0;
                         //tempAau.LastLoggedLevel = updatedLevel;
                         //tempAau.LastLevelProgress = updatedProgression;
                         //tempAau.NoXPGainRefreshes = 0;
@@ -318,12 +318,12 @@ namespace Levante
                             //listOfRemovals.Add(tempAau);
                             // ***Change to remove it from list because file update is called at end of method.***
                             //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
-                            ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID));
+                            ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
                             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                         }
                         else
                         {
-                            ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID).NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
+                            actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
                             //tempAau.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
                             //newList.Add(tempAau);
                             await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"No XP change detected, waiting for next refresh... Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
@@ -333,16 +333,15 @@ namespace Levante
                     {
                         await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP");
 
-                        var user = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID);
-                        user.LastLoggedLevel = updatedLevel;
-                        user.LastLevelProgress = updatedProgression;
-                        user.NoXPGainRefreshes = 0;
+                        actualUser.LastLoggedLevel = updatedLevel;
+                        actualUser.LastLevelProgress = updatedProgression;
+                        actualUser.NoXPGainRefreshes = 0;
                         //tempAau.LastLoggedLevel = updatedLevel;
                         //tempAau.LastLevelProgress = updatedProgression;
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
                     }
-                    await Task.Delay(3250); // we dont want to spam API if we have a ton of AFK subscriptions
+                    await Task.Delay(4000); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
 
                 // Add in users that joined mid-refresh.
@@ -468,10 +467,11 @@ namespace Levante
             // This tells us how to build slash commands.
             _client.Ready += async () =>
             {
-                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
-                //var guild = _client.GetGuild(933971948965359626);
+                //397846250797662208
+                await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
+                //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                await _interaction.RegisterCommandsGloballyAsync(true);
+                //await _interaction.RegisterCommandsGloballyAsync(true);
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
             };

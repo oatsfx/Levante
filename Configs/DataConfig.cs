@@ -420,6 +420,14 @@ namespace Levante.Configs
                         return -1;
                     }
 
+                    if (item.Response.profileProgression.privacy == 2)
+                    {
+                        ErrorStatus = $"PlayerProgressionPrivate";
+                        XPProgress = -1;
+                        IsPlaying = true;
+                        return -1;
+                    }
+
                     //first 100 levels: 4095505052 (S15); 2069932355 (S16)
                     //anything after: 1531004716 (S15): 1787069365 (S16)
 

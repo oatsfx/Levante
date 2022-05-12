@@ -45,7 +45,7 @@ namespace Levante.Commands
 
             embed.Title = "Bot Information";
             embed.Description =
-                "Levante is an [open-source](https://github.com/oatsfx/Levante) Discord bot using Discord.Net-Labs (Discord.NET Wrapper Nightly) for various Destiny 2 Needs. " +
+                "Levante is an [open-source](https://github.com/oatsfx/Levante) Discord bot using Discord.Net for various Destiny 2 Needs. " +
                 "This bot is actively developed by [@OatsFX](https://twitter.com/OatsFX). It pulls most of its information from the Bungie API.";
 
             embed.AddField(x =>
@@ -69,13 +69,13 @@ namespace Levante.Commands
             .AddField(x =>
             {
                 x.Name = "Website";
-                x.Value = $"https://levante.dev/";
+                x.Value = $"{BotConfig.Website}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = "Support Server";
-                x.Value = $"https://discord.gg/Levante";
+                x.Value = $"https://discord.gg/{BotConfig.SupportServer}";
                 x.IsInline = true;
             });
 

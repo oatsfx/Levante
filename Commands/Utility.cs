@@ -823,6 +823,5 @@ namespace Levante.Commands
 
             await RespondAsync($"Your Bungie account: {linkedUser.UniqueBungieName} has been unlinked. Use the command \"/link\" if you want to re-link!", ephemeral: true);
         }
-
     }
 }

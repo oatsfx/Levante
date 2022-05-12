@@ -12,6 +12,17 @@ namespace Levante.Configs
         [JsonProperty("AppName")]
         public static string AppName { get; set; } = "Levante";
 
+        [JsonProperty("Website")]
+        public static string Website { get; set; } = "www.example.com";
+
+        // Include the @ in this field as the string this is used in, does not include the @.         
+        [JsonProperty("Twitter")]
+        public static string Twitter { get; set; } = "@OatsFX";
+
+        // Exclude the https://discord.gg/ and only include the ending.
+        [JsonProperty("SupportServer")]
+        public static string SupportServer { get; set; } = "Levante";
+
         [JsonProperty("DiscordToken")]
         public static string DiscordToken { get; set; } = "[YOUR TOKEN HERE]";
 
@@ -39,7 +50,10 @@ namespace Levante.Configs
         [JsonProperty("EmbedColor")]
         public static EmbedColorGroup EmbedColor { get; set; } = new EmbedColorGroup();
 
-        public partial class EmbedColorGroup
+        [JsonProperty("UniversalCodes")]
+        public static List<UniversalCode> UniversalCodes { get; set; } = new List<UniversalCode>();
+
+        public class EmbedColorGroup
         {
             [JsonProperty("R")]
             public static int R { get; set; } = 0;
@@ -49,6 +63,18 @@ namespace Levante.Configs
 
             [JsonProperty("B")]
             public static int B { get; set; } = 0;
+        }
+
+        public class UniversalCode
+        {
+            [JsonProperty("Name")]
+            public string Name { get; set; } = "[EMBLEM NAME]";
+
+            [JsonProperty("ImageUrl")]
+            public string ImageUrl { get; set; } = "[IMAGE URL]";
+
+            [JsonProperty("Code")]
+            public string Code { get; set; } = "[EMBLEM CODE]";
         }
     }
 }

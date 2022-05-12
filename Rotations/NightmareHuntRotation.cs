@@ -104,10 +104,16 @@ namespace Levante.Rotations
 
         public static DateTime DatePrediction(NightmareHunt NightmareHunt)
         {
-            NightmareHunt[] iterationHunts = CurrentRotations.NightmareHunts;
+            Console.WriteLine($"Looking for: {(int)NightmareHunt}");
+            NightmareHunt[] iterationHunts = new NightmareHunt[3];
+            iterationHunts[0] = CurrentRotations.NightmareHunts[0];
+            iterationHunts[1] = CurrentRotations.NightmareHunts[1];
+            iterationHunts[2] = CurrentRotations.NightmareHunts[2];
             int WeeksUntil = 0;
+            Console.WriteLine($"Starting {(int)CurrentRotations.NightmareHunts[0]} - {(int)CurrentRotations.NightmareHunts[1]} - {(int)CurrentRotations.NightmareHunts[2]}");
             do
             {
+                Console.WriteLine($"{(int)iterationHunts[0]} - {(int)iterationHunts[1]} - {(int)iterationHunts[2]}");
                 iterationHunts[0] = iterationHunts[0] >= NightmareHunt.Skolas ? iterationHunts[0] - 5 : iterationHunts[0] + 3;
                 iterationHunts[1] = iterationHunts[1] >= NightmareHunt.Skolas ? iterationHunts[1] - 5 : iterationHunts[1] + 3;
                 iterationHunts[2] = iterationHunts[2] >= NightmareHunt.Skolas ? iterationHunts[2] - 5 : iterationHunts[2] + 3;

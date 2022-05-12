@@ -68,7 +68,7 @@ namespace Levante.Rotations
         public static EmpireHunt EmpireHunt = EmpireHunt.Warrior;
 
         [JsonProperty("NightmareHunts")]
-        public static NightmareHunt[] NightmareHunts = { NightmareHunt.Crota , NightmareHunt.Phogoth, NightmareHunt.Ghaul };
+        public static NightmareHunt[] NightmareHunts = { NightmareHunt.Crota, NightmareHunt.Phogoth, NightmareHunt.Ghaul };
 
         public static void DailyRotation()
         {
@@ -121,7 +121,9 @@ namespace Levante.Rotations
                 LostSectorRotation.LostSectorLinks.Count +
                 NightfallRotation.NightfallLinks.Count +
                 NightmareHuntRotation.NightmareHuntLinks.Count +
-                VaultOfGlassRotation.VaultOfGlassLinks.Count;
+                VaultOfGlassRotation.VaultOfGlassLinks.Count +
+                VowOfTheDiscipleRotation.VowOfTheDiscipleLinks.Count +
+                WellspringRotation.WellspringLinks.Count;
         }
 
         public static void CreateJSONs()
