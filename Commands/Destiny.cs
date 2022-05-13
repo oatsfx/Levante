@@ -250,9 +250,7 @@ namespace Levante.Commands
         public async Task GetLevel([Summary("user", "User you want the Season Pass rank of. Leave empty for your own.")] IUser User = null)
         {
             if (User == null)
-            {
-                User = Context.User as SocketGuildUser;
-            }
+                User = Context.User;
 
             if (!DataConfig.IsExistingLinkedUser(User.Id))
             {
@@ -486,7 +484,16 @@ namespace Levante.Commands
 
                         var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/").Result;
                         var content = response.Content.ReadAsStringAsync().Result;
-                        dynamic item = JsonConvert.DeserializeObject(content);
+                        dynamic item;
+                        try
+                        {
+                            item = JsonConvert.DeserializeObject(content);
+                        }
+                        catch (Exception)
+                        {
+                            await RespondAsync($"Unknown error. Try using a simplier search query.", ephemeral: true);
+                            return;
+                        }
 
                         if (DataConfig.IsBungieAPIDown(content))
                         {
@@ -500,7 +507,6 @@ namespace Levante.Commands
                             return;
                         }
 
-                        bool hasMultipleResults = false;
                         List<EmblemSearch> emblemList = new List<EmblemSearch>();
                         int resultNum = int.Parse($"{item.Response.results.totalResults}");
                         int currentPage = -1;
@@ -513,7 +519,7 @@ namespace Levante.Commands
                                 {
                                     currentPage++;
                                     await Task.Delay(400);
-                                    response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/?page=" + currentPage).Result;
+                                    response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + Uri.EscapeDataString(SearchQuery) + "/?page=" + currentPage).Result;
                                     content = response.Content.ReadAsStringAsync().Result;
                                     item = JsonConvert.DeserializeObject(content);
                                 }
@@ -536,11 +542,14 @@ namespace Levante.Commands
                             await DeferAsync();
                         }
 
-                        if (emblemList.Count > 1)
-                            hasMultipleResults = true;
+                        if (emblemList.Count > 25)
+                        {
+                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Too many search results. Try being more specific."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                            return;
+                        }
 
                         int responseNum = 1;
-                        if (hasMultipleResults)
+                        if (emblemList.Count > 1)
                         {
                             var multAuth = new EmbedAuthorBuilder()
                             {
@@ -576,7 +585,13 @@ namespace Levante.Commands
 
                             if (responseMenu == null)
                             {
-                                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Closed command, invaild reaction."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                                return;
+                            }
+
+                            if (responseMenu.IsTimeout)
+                            {
+                                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Response timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
                                 return;
                             }
 
@@ -627,9 +642,18 @@ namespace Levante.Commands
                 {
                     client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
-                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/").Result;
+                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + Uri.EscapeDataString(SearchQuery) + "/").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
+                    dynamic item;
+                    try
+                    {
+                        item = JsonConvert.DeserializeObject(content);
+                    }
+                    catch (Exception)
+                    {
+                        await RespondAsync($"Unknown error. Try using a simplier search query.", ephemeral: true);
+                        return;
+                    }
 
                     if (DataConfig.IsBungieAPIDown(content))
                     {
@@ -643,7 +667,6 @@ namespace Levante.Commands
                         return;
                     }
 
-                    bool hasMultipleResults = false;
                     List<WeaponSearch> weaponList = new List<WeaponSearch>();
                     int resultNum = int.Parse($"{item.Response.results.totalResults}");
                     int currentPage = -1;
@@ -656,7 +679,7 @@ namespace Levante.Commands
                             {
                                 currentPage++;
                                 await Task.Delay(400);
-                                response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/?page=" + currentPage).Result;
+                                response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + Uri.EscapeDataString(SearchQuery) + "/?page=" + currentPage).Result;
                                 content = response.Content.ReadAsStringAsync().Result;
                                 item = JsonConvert.DeserializeObject(content);
                             }
@@ -679,11 +702,14 @@ namespace Levante.Commands
                         await DeferAsync();
                     }
 
-                    if (weaponList.Count > 1)
-                        hasMultipleResults = true;
+                    if (weaponList.Count > 25)
+                    {
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Too many search results. Try being more specific."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                        return;
+                    }
 
                     int responseNum = 1;
-                    if (hasMultipleResults)
+                    if (weaponList.Count > 1)
                     {
                         var multAuth = new EmbedAuthorBuilder()
                         {
@@ -719,7 +745,13 @@ namespace Levante.Commands
 
                         if (responseMenu == null)
                         {
-                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Closed command, invaild reaction."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                            return;
+                        }
+
+                        if (responseMenu.IsTimeout)
+                        {
+                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Response timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
                             return;
                         }
 
@@ -767,7 +799,6 @@ namespace Levante.Commands
 
         private string GetCurrentDestiny2Season(out int SeasonNumber)
         {
-            ulong seasonHash = 0;
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
@@ -776,7 +807,7 @@ namespace Levante.Commands
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
-                seasonHash = item.Response.profile.data.currentSeasonHash;
+                ulong seasonHash = item.Response.profile.data.currentSeasonHash;
 
                 var response1 = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/DestinySeasonDefinition/" + seasonHash + "/").Result;
                 var content1 = response1.Content.ReadAsStringAsync().Result;

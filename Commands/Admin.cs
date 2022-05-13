@@ -9,7 +9,7 @@ namespace Levante.Commands
     public class Admin : InteractionModuleBase<SocketInteractionContext>
     {
         [Group("alert", "Set up announcements for Daily/Weekly Reset and Emblem Offers.")]
-        [RequireUserPermission(GuildPermission.ManageChannels)]
+        [DefaultMemberPermissions(GuildPermission.ManageChannels)]
         public class Alert : InteractionModuleBase<SocketInteractionContext>
         {
             [SlashCommand("emblem-offers", "Set up announcements for Emblem Offers. Use this in the channel you want this set up in.")]
@@ -73,7 +73,7 @@ namespace Levante.Commands
         }
 
         [SlashCommand("create-hub", "Creates a post with buttons so people can start their XP logs.")]
-        [RequireUserPermission(GuildPermission.ManageChannels)]
+        [DefaultMemberPermissions(GuildPermission.ManageChannels)]
         public async Task CreateHub()
         {
             await DeferAsync(ephemeral: true);
@@ -146,7 +146,7 @@ namespace Levante.Commands
         }
 
         [SlashCommand("server-info", "Gets general information about a server/guild along with Levante integrations.")]
-        [RequireUserPermission(GuildPermission.ManageChannels)]
+        [DefaultMemberPermissions(GuildPermission.ManageChannels)]
         public async Task ServerInfo()
         {
             var auth = new EmbedAuthorBuilder()

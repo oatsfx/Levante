@@ -471,7 +471,7 @@ namespace Levante
                 //await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                await _interaction.RegisterCommandsGloballyAsync(true);
+                await _interaction.RegisterCommandsGloballyAsync();
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
             };
@@ -685,14 +685,6 @@ namespace Levante
                 {
                     var handled = await TryHandleCommandAsync(msg, argPos).ConfigureAwait(false);
                     if (handled) return;
-                }
-                else
-                {
-                    var embed = new EmbedBuilder()
-                    .WithDescription($"All text-based commands, similar to this one, have been migrated to Slash Commands. This warning will be removed in April 2022.")
-                    .WithColor(new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
-                    await msg.ReplyAsync(embed: embed.Build());
-                    return;
                 }
             }
         }
