@@ -175,33 +175,36 @@ namespace Levante.Commands
                 Choice("Sepulcher", 9), Choice("Extraction", 10)] int? ArgLS = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
             {
-                if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
-                {
-                    if (LS == null && EAT == null)
-                        await RespondAsync($"An error has occurred.", ephemeral: true);
-                    else if (LS != null && EAT == null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)}.", ephemeral: true);
-                    else if (LS == null && EAT != null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {EAT} armor drop.", ephemeral: true);
-                    else if (LS != null && EAT != null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} dropping {EAT}.", ephemeral: true);
-
-                    return;
-                }
-                LS = (LostSector?)ArgLS;
-                EAT = ArgEAT;
-
-                LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
-                if (LS == null && EAT == null)
-                    await RespondAsync($"An error has occurred.", ephemeral: true);
-                else if (LS != null && EAT == null)
-                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (LS == null && EAT != null)
-                    await RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (LS != null && EAT != null)
-                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                
+                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
                 return;
+
+                //if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
+                //{
+                //    if (LS == null && EAT == null)
+                //        await RespondAsync($"An error has occurred.", ephemeral: true);
+                //    else if (LS != null && EAT == null)
+                //        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)}.", ephemeral: true);
+                //    else if (LS == null && EAT != null)
+                //        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {EAT} armor drop.", ephemeral: true);
+                //    else if (LS != null && EAT != null)
+                //        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} dropping {EAT}.", ephemeral: true);
+
+                //    return;
+                //}
+                //LS = (LostSector?)ArgLS;
+                //EAT = ArgEAT;
+
+                //LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
+                //if (LS == null && EAT == null)
+                //    await RespondAsync($"An error has occurred.", ephemeral: true);
+                //else if (LS != null && EAT == null)
+                //    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                //else if (LS == null && EAT != null)
+                //    await RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                //else if (LS != null && EAT != null)
+                //    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                
+                //return;
             }
 
             [SlashCommand("nightfall", "Be notified when a Nightfall and/or Weapon is active.")]
@@ -550,31 +553,34 @@ namespace Levante.Commands
                 Choice("Sepulcher", 9), Choice("Extraction", 10)] int? ArgLS = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
             {
-                LostSector? LS = (LostSector?)ArgLS;
-                ExoticArmorType? EAT = ArgEAT;
-
-                var predictedDate = LostSectorRotation.DatePrediction(LS, EAT);
-                var embed = new EmbedBuilder()
-                {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                };
-                embed.Title = "Lost Sectors";
-                if (LS == null && EAT == null)
-                    await RespondAsync($"An error has occurred. No parameters.", ephemeral: true);
-                else if (LS != null && EAT == null)
-                    embed.Description =
-                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (LS == null && EAT != null)
-                    embed.Description =
-                        $"Next occurrance of Lost Sectors" +
-                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (LS != null &&  EAT != null)
-                    embed.Description =
-                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)}" +
-                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                await RespondAsync($"", embed: embed.Build());
+                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
                 return;
+
+                //LostSector? LS = (LostSector?)ArgLS;
+                //ExoticArmorType? EAT = ArgEAT;
+
+                //var predictedDate = LostSectorRotation.DatePrediction(LS, EAT);
+                //var embed = new EmbedBuilder()
+                //{
+                //    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                //};
+                //embed.Title = "Lost Sectors";
+                //if (LS == null && EAT == null)
+                //    await RespondAsync($"An error has occurred. No parameters.", ephemeral: true);
+                //else if (LS != null && EAT == null)
+                //    embed.Description =
+                //        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                //else if (LS == null && EAT != null)
+                //    embed.Description =
+                //        $"Next occurrance of Lost Sectors" +
+                //            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                //else if (LS != null &&  EAT != null)
+                //    embed.Description =
+                //        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)}" +
+                //            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                //await RespondAsync($"", embed: embed.Build());
+                //return;
             }
 
             [SlashCommand("nightfall", "Find out when a Nightfall and/or Weapon is active next.")]
@@ -705,7 +711,7 @@ namespace Levante.Commands
             Choice("Season Pass Level", 0), Choice("Longest XP Logging Session", 1), Choice("Most Logged XP Per Hour", 2),
             Choice("Total XP Logging Time", 3), Choice("Equipped Power Level", 4)] int ArgLeaderboard,
             [Summary("season", "Season of the specific leaderboard. Defaults to the current season."),
-            Choice("Season of the Lost", 15), Choice("Season of the Risen", 16)] int Season = 16)
+            Choice("Season of the Lost", 15), Choice("Season of the Risen", 16), Choice("Season of the Haunted", 17)] int Season = 17)
         {
             Leaderboard LeaderboardType = (Leaderboard)ArgLeaderboard;
 
@@ -718,6 +724,8 @@ namespace Levante.Commands
                         if (Season == 15)
                             json = File.ReadAllText(LevelData.FilePathS15);
                         else if (Season == 16)
+                            json = File.ReadAllText(LevelData.FilePathS16);
+                        else if (Season == 17)
                             json = File.ReadAllText(LevelData.FilePath);
                         else
                         {
@@ -735,6 +743,8 @@ namespace Levante.Commands
                         if (Season == 15)
                             json = File.ReadAllText(LongestSessionData.FilePathS15);
                         else if (Season == 16)
+                            json = File.ReadAllText(LongestSessionData.FilePathS16);
+                        else if (Season == 17)
                             json = File.ReadAllText(LongestSessionData.FilePath);
                         else
                         {
@@ -752,6 +762,8 @@ namespace Levante.Commands
                         if (Season == 15)
                             json = File.ReadAllText(XPPerHourData.FilePathS15);
                         else if (Season == 16)
+                            json = File.ReadAllText(XPPerHourData.FilePathS16);
+                        else if (Season == 17)
                             json = File.ReadAllText(XPPerHourData.FilePath);
                         else
                         {
@@ -769,6 +781,8 @@ namespace Levante.Commands
                         if (Season == 15)
                             json = File.ReadAllText(MostXPLoggingTimeData.FilePathS15);
                         else if (Season == 16)
+                            json = File.ReadAllText(MostXPLoggingTimeData.FilePathS16);
+                        else if (Season == 17)
                             json = File.ReadAllText(MostXPLoggingTimeData.FilePath);
                         else
                         {
@@ -786,6 +800,8 @@ namespace Levante.Commands
                         if (Season == 15)
                             json = File.ReadAllText(PowerLevelData.FilePathS15);
                         else if (Season == 16)
+                            json = File.ReadAllText(PowerLevelData.FilePathS16);
+                        else if (Season == 17)
                             json = File.ReadAllText(PowerLevelData.FilePath);
                         else
                         {

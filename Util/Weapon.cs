@@ -24,6 +24,9 @@ namespace Levante.Util
 
         public string GetSourceString()
         {
+            if (GetCollectableHash() == null)
+                return "No source data provided.";
+
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);

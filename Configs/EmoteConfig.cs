@@ -32,6 +32,7 @@ namespace Levante.Configs
                         var emote = await guild.CreateEmoteAsync(name, image);
                         Emotes.Add(name, $"<:{emote.Name}:{emote.Id}>");
                         success = true;
+                        Console.WriteLine($"Added emote for {name}.");
                         break;
                     }
                 }
@@ -44,6 +45,7 @@ namespace Levante.Configs
                     break;
                 }
             }
+            image.Dispose();
             return success;
         }
 

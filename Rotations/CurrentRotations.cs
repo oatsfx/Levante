@@ -52,6 +52,9 @@ namespace Levante.Rotations
         [JsonProperty("VowChallengeEncounter")]
         public static VowOfTheDiscipleEncounter VowChallengeEncounter = VowOfTheDiscipleEncounter.Acquisition;
 
+        [JsonProperty("FeaturedRaid")]
+        public static Raid FeaturedRaid = Raid.LastWish;
+
         [JsonProperty("CurseWeek")]
         public static CurseWeek CurseWeek = CurseWeek.Weak;
 
@@ -181,14 +184,15 @@ namespace Levante.Rotations
             embed.Title = $"Daily Reset of {TimestampTag.FromDateTime(DailyResetTimestamp, TimestampTagStyles.ShortDate)}";
             embed.Description = "Below are some of the things that are available today.";
 
-            embed.AddField(x =>
-            {
-                x.Name = "Lost Sector";
-                x.Value =
-                    $"{LostSectorRotation.GetArmorEmote(LostSectorArmorDrop)} {LostSectorArmorDrop}\n" +
-                    $"{DestinyEmote.LostSector} {LostSectorRotation.GetLostSectorString(LostSector)}";
-                x.IsInline = true;
-            })
+            //.AddField(x =>
+            // {
+            //     x.Name = "Lost Sector";
+            //     x.Value =
+            //         $"{LostSectorRotation.GetArmorEmote(LostSectorArmorDrop)} {LostSectorArmorDrop}\n" +
+            //         $"{DestinyEmote.LostSector} {LostSectorRotation.GetLostSectorString(LostSector)}";
+            //     x.IsInline = true;
+            // })
+            embed
             .AddField(x =>
             {
                 x.Name = $"The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)}";

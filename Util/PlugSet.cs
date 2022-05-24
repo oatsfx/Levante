@@ -50,22 +50,21 @@ namespace Levante.Util
             foreach (WeaponPerk perk in WeaponPerks.Where(perk => !perk.IsEnhanced()))
                 perkList.Add(perk);
 
+            string json = File.ReadAllText(EmoteConfig.FilePath);
+            var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
             foreach (var Perk in perkList)
             {
-                string json = File.ReadAllText(EmoteConfig.FilePath);
-                var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
                 if (!emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
                 {
                     using (WebClient client = new WebClient())
                     {
-                        client.DownloadFile(new Uri(Perk.GetIconUrl()), @"tempEmote.png");
+                        client.DownloadFile(Perk.GetIconUrl(), @"tempEmote.png");
                         Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(@"tempEmote.png"))).Wait();
-                        emoteCfg.UpdateJSON();
                     }
                 }
                 result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}\n";
             }
-
+            emoteCfg.UpdateJSON();
             return result;
         }
 

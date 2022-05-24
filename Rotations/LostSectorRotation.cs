@@ -489,6 +489,9 @@ namespace Levante.Rotations
         //ConcealedVoid,
         //BunkerE15,
         //Perdition,
+
+        // Season 17 (Season of the Haunted)
+        //K1CrewQuarters,
     }
 
     public enum LostSectorDifficulty

@@ -45,7 +45,7 @@ namespace Levante.Helpers
                         embedDesc += $"{i + 1}) {SortedList[i].UniqueBungieName} ({GetValueString(SortedList[i])})\n";
                 }
 
-                if (!isTop10 && DataConfig.IsExistingLinkedUser(User.Id))
+                if (!isTop10 && SortedList.Exists(x => x.UniqueBungieName == DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
                 {
                     embedDesc += "...\n";
                     for (int i = 10; i < SortedList.Count; i++)

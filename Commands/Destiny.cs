@@ -331,11 +331,13 @@ namespace Levante.Commands
                 Choice("Sepulcher", 9), Choice("Extraction", 10)] int ArgLS,
                 [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty ArgLSD)
         {
-            LostSector LS = (LostSector)ArgLS;
-            LostSectorDifficulty LSD = ArgLSD;
-
-            await RespondAsync(embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
+            await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
             return;
+            //LostSector LS = (LostSector)ArgLS;
+            //LostSectorDifficulty LSD = ArgLSD;
+
+            //await RespondAsync(embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
+            //return;
         }
 
         /*[SlashCommand("materials", "Gets your Destiny 2 material count.")]

@@ -120,6 +120,7 @@ namespace Levante.Commands
             await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
 
             ActiveConfig.AddActiveUserToConfig(newUser);
+            ActiveConfig.UpdateActiveAFKUsersConfig();
             string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
             await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching));
 

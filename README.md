@@ -2,7 +2,7 @@
 [![](https://img.shields.io/discord/915020047154565220?color=success&logo=Discord&logoColor=white)](https://discord.gg/XCyngRkqAa)
 [![license](https://img.shields.io/badge/license-AGPLv3-teal.svg)](https://choosealicense.com/licenses/agpl-3.0/)
 
-An open-source Discord bot using [Discord.Net-Labs](https://github.com/Discord-Net-Labs/Discord.Net-Labs) for various Destiny 2 Needs.
+An open-source Discord bot using [Discord.Net](https://github.com/discord-net/Discord.Net) for various Destiny 2 Needs.
 
 Developed by [@OatsFX](https://twitter.com/OatsFX).
 
@@ -14,12 +14,12 @@ Click [this link to invite the bot](https://discord.com/api/oauth2/authorize?cli
 - Most Activity Rotations Updates and Tracking
 - Leaderboards for things regarding the above
 - Guardian view commands
+- View emblems and weapons (along with their perks)
 - Emblem Offers
 - Try out an in-game emblem
 
 ## Known Issues:
-- Nothing to see here, yet.
-- We've got a list of Known Issues on the [support Discord server](https://discord.gg/XCyngRkqAa) for the smaller issues.
+- We've got a list of Known Issues on our [support Discord server](https://discord.gg/XCyngRkqAa).
 
 ## Having Issues?
 There are a few things you can do if there are any issues with the official bot user:
@@ -30,7 +30,7 @@ There are a few things you can do if there are any issues with the official bot 
 # Stuff for Nerds
 
 ## Building this Project:
-This project is built using the most recent version of Visual Studio Community 2019 using the C# (8.0) language on the .NET Core 3.1 framework.
+This project is built using the most recent version of Visual Studio Community 2019 using the C# (8.0) language on the .NET v6 framework.
 
 ## Basic Run Downs of Implementions:
 ### XP Logging

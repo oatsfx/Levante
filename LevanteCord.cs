@@ -389,8 +389,8 @@ namespace Levante
                         var content = response.Content.ReadAsStringAsync().Result;
                         dynamic item = JsonConvert.DeserializeObject(content);
 
-                        //first 100 levels: 4095505052 (S15); 2069932355 (S16)
-                        //anything after: 1531004716 (S15): 1787069365 (S16)
+                        //first 100 levels: 4095505052 (S15); 2069932355 (S16); 26079066 (S17)
+                        //anything after: 1531004716 (S15); 1787069365 (S16); 482365574 (S17)
                         try
                         {
                             for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
@@ -401,14 +401,14 @@ namespace Levante
                                     PowerLevel = powerLevelComp;
                             }
 
-                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level == 100)
+                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level == 100)
                             {
-                                int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1787069365"].level;
+                                int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].level;
                                 Level = 100 + extraLevel;
                             }
                             else
                             {
-                                Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level;
+                                Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level;
                             }
 
                             // System to update names in case players do change name.
