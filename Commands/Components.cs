@@ -152,6 +152,7 @@ namespace Levante.Commands
 
             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(aau));
             ActiveConfig.DeleteActiveUserFromConfig(user.Id);
+            ActiveConfig.UpdateActiveAFKUsersConfig();
             string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
             await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching));
             await RespondAsync($"Stopped AFK logging for {aau.UniqueBungieName}.", ephemeral: true);

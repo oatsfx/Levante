@@ -471,16 +471,16 @@ namespace Levante.Configs
                 //first 100 levels: 4095505052 (S15); 2069932355 (S16); 26079066 (S17)
                 //anything after: 1531004716 (S15); 1787069365 (S16); 482365574 (S17)
 
-                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level == 100)
+                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level == 100)
                 {
-                    int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1787069365"].level;
+                    int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].level;
                     Level = 100 + extraLevel;
-                    XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"1787069365"].progressToNextLevel;
+                    XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].progressToNextLevel;
                 }
                 else
                 {
-                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].level;
-                    XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"2069932355"].progressToNextLevel;
+                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level;
+                    XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].progressToNextLevel;
                 }
 
                 return Level;

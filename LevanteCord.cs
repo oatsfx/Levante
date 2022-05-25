@@ -354,7 +354,7 @@ namespace Levante
                 }*/
 
                 //ActiveConfig.ActiveAFKUsers = newList;
-                ActiveConfig.UpdateActiveAFKUsersConfig();
+                //ActiveConfig.UpdateActiveAFKUsersConfig();
 
                 _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, ActiveConfig.TimeBetweenRefresh * 60000);
                 LogHelper.ConsoleLog($"[LOGGING] Bungie API Refreshed! Next refresh in: {ActiveConfig.TimeBetweenRefresh} minute(s).");
