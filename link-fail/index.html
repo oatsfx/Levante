@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<!-- BEGIN WEBSITE -->
+<html>
+<head>
+	<title>Levante > Link Unsuccessful</title>
+	<link rel="stylesheet" href="../style.css">
+	<link rel="icon" href="../images/Levante-Logo.png">
+	<script src="../js/jquery-3.6.0.min.js"></script>
+	<script>
+		$(window).scroll(function () {
+			if ($(document).scrollTop() > 50) {
+				$('.navbar').addClass('filled');
+			} else {
+				$('.navbar').removeClass('filled');
+			}
+		});
+
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		const reason = urlParams.get('reason')
+		const detail = urlParams.get('detail')
+	</script>
+</head>
+
+<header>
+	<div class="navbar">
+		<a href="/">
+			<img src="../images/Levante-Logo.png" class="logo">
+		</a>
+		<nav>
+			<ul>
+				<li><a href="">Features</a></li>
+				<li><a href="https://discord.gg/Levante">Support Server</a></li>
+				<li><a href="/about-us/">About Us</a></li>
+			</ul>
+		</nav>
+	</div>
+</header>
+
+<body>
+	
+	<div class="container">
+		<!-- CONTENT -->
+		<div class="head-content">
+			<h2 class="beta-red" id="randomFunny">Link Unsuccessful</h2>
+			<p>There was an issue with the authentication flow; you will have to try again.</p>
+			<p>Reason: <b id="errReason" class="beta-red">Levante#3845</b></p>
+			<p id="detailError" class="beta-red"></p>
+			<br>
+			<br>
+			<br>
+			<p>Is the issue still persisting? Join our <a href="https://discord.gg/Levante">Support Server</a> and let us know what's happening.</p>
+			<p>Please notify us of the error reason when reporting this issue to us. Thank you!</p>
+		</div>
+	</div>
+</body>
+
+<footer>
+	<a href="/">
+		<img src="../images/Levante-Logo.png" class="footerLogo">
+	</a>
+	<div class="footer-bottom">
+		<div class="footer-column">
+			<ul>
+				<li>
+					<p>Follow Us</p>
+				</li>
+				<li>
+					<a href="https://twitter.com/Levante_Bot">Twitter</a>
+				</li>
+				<li>
+					<a href="https://discord.gg/Levante">Discord</a>
+				</li>
+			</ul>
+		</div>
+		<div class="footer-column">
+			<ul>
+				<li>
+					<p>Links</p>
+				</li>
+				<li>
+					<a href="/">Features</a>
+				</li>
+				<li>
+					<a href="/about-us/">About Us</a>
+				</li>
+				<li>
+					<a href="https://github.com/oatsfx/Levante">Source Code</a>
+				</li>
+				<li>
+					<a href="https://discord.gg/Levante">Support Server</a>
+				</li>
+				<li>
+					<a href="/terms-of-service/">Terms of Use</a>
+				</li>
+				<li>
+					<a href="/privacy-policy/">Privacy Policy</a>
+				</li>
+			</ul>
+		</div>
+		<div class="footer-column-colored">
+			<h2>Contact Us!</h2>
+			<a href="https://discord.gg/Levante">On Discord: discord.gg/Levante</a>
+			<p>Via Email: levantebot@gmail.com</p>
+		</div>
+	</div>
+</footer>
+<script>
+	if (reason === null){
+		document.getElementById("errReason").innerHTML = "Unknown"
+	}
+	else{
+		document.getElementById("errReason").innerHTML = reason
+	}
+    var listOfFunny = ["Link Unsuccessful",
+		"Status: CALAMITOUS.",
+		"You Threw Enough Grenades...",
+		"No Revives Left!",
+		"Guardian Down!",
+		"[dispirited snort]",
+		"Pardon Our Dust!",
+		"I do not know what the Nine want with you.",
+		"lufsseccusnU kniL",
+		"I can't do anything right.",
+		"@Levante oof"
+	];
+    document.getElementById("randomFunny").innerHTML = listOfFunny[Math.floor(Math.random() * listOfFunny.length)];
+
+	var errorReasons = ["", /**/
+		"Link Unsuccessful", /**/
+		"UnableToMessageUser", /*UnableToMessageUser*/
+		"Link Unsuccessful", /**/
+		"Link Unsuccessful", /**/
+	];
+
+	var detailedErrors = ["Link Unsuccessful", /**/
+		"Link Unsuccessful", /**/
+		"Link Unsuccessful", /*UnableToMessageUser*/
+		"Link Unsuccessful", /**/
+		"Link Unsuccessful", /**/
+	];
+
+	document.getElementById("detailError").innerHTML = detailedError[detail];
+</script>
+</html>

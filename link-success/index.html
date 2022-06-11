@@ -2,10 +2,10 @@
 <!-- BEGIN WEBSITE -->
 <html>
 <head>
-	<title>Levante</title>
-	<link rel="stylesheet" href="style.css">
-	<link rel="icon" href="images/Levante-Logo.png">
-	<script src="js/jquery-3.6.0.min.js"></script>
+	<title>Levante > Link Successful</title>
+	<link rel="stylesheet" href="../style.css">
+	<link rel="icon" href="../images/Levante-Logo.png">
+	<script src="../js/jquery-3.6.0.min.js"></script>
 	<script>
 		$(window).scroll(function () {
 			if ($(document).scrollTop() > 50) {
@@ -14,13 +14,17 @@
 				$('.navbar').removeClass('filled');
 			}
 		});
+
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		const discordUsername = urlParams.get('discDisp')
 	</script>
 </head>
 
 <header>
 	<div class="navbar">
 		<a href="/">
-			<img src="images/Levante-Logo.png" class="logo">
+			<img src="../images/Levante-Logo.png" class="logo">
 		</a>
 		<nav>
 			<ul>
@@ -37,17 +41,20 @@
 	<div class="container">
 		<!-- CONTENT -->
 		<div class="head-content">
-			<h1>Levante Discord Bot</h1>
-			<p>Under Construction.</p>
-			<a href="https://discord.com/oauth2/authorize?client_id=882303133643047005&permissions=8&scope=applications.commands%20bot" class="btn">Add to Server</a>
-			<a href="https://discord.gg/Levante" class="btn">Join the Support Server</a>
+			<h2 id="randomFunny">Link Successful</h2>
+			<p>You have been successfully linked with Levante.</p>
+			<p>I've sent a message to <b id="discordUsername">Levante#3845</b> on Discord as confirmation.</p>
+			<br>
+			<br>
+			<br>
+			<p>No message? Register again using the desired Discord account.</p>
 		</div>
 	</div>
 </body>
 
 <footer>
 	<a href="/">
-		<img src="images/Levante-Logo.png" class="footerLogo">
+		<img src="../images/Levante-Logo.png" class="footerLogo">
 	</a>
 	<div class="footer-bottom">
 		<div class="footer-column">
@@ -95,4 +102,25 @@
 		</div>
 	</div>
 </footer>
+<script>
+	if (discordUsername === null){
+		document.getElementById("discordUsername").innerHTML = "Levante#3845"
+	}
+	else{
+		document.getElementById("discordUsername").innerHTML = discordUsername
+	}
+    var listOfFunny = ["Link Successful",
+		"Indeed.",
+		"Does the Vanguard Know You're This Good?",
+		"You Now Face Godlike Judgment",
+		"Welcome! Children of Light",
+		"[celebratory whicker]",
+		"You Just Never Quit, Do You?",
+		"Checking. Checking. Checking.",
+		"lufsseccuS kniL",
+		"Don't Tell GoGo, You're My Favorite",
+		"@Levante ratio"
+	];
+    document.getElementById("randomFunny").innerHTML = listOfFunny[Math.floor(Math.random() * listOfFunny.length)];
+</script>
 </html>
