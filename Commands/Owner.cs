@@ -323,11 +323,12 @@ namespace Levante.Commands
                     if (Link.RoleID != 0)
                     {
                         var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
-                        await channel.SendMessageAsync($"{role.Mention}", false, embed.Build());
+                        await channel.SendMessageAsync($"{role.Mention}", false, embed.Build()).Result.CrosspostAsync();
                     }
                     else
                     {
-                        await channel.SendMessageAsync("", false, embed.Build());
+                        // Crosspost/Publish for news channels the bot posts into.
+                        await channel.SendMessageAsync("", false, embed.Build()).Result.CrosspostAsync();
                     }
                 }
                 catch

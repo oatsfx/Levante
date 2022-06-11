@@ -53,6 +53,9 @@ namespace Levante.Configs
         [JsonProperty("UniversalCodes")]
         public static List<UniversalCode> UniversalCodes { get; set; } = new List<UniversalCode>();
 
+        [JsonProperty("Hashes")]
+        public HashesList Hashes { get; set; } = new HashesList();
+
         public class EmbedColorGroup
         {
             [JsonProperty("R")]
@@ -75,6 +78,15 @@ namespace Levante.Configs
 
             [JsonProperty("Code")]
             public string Code { get; set; } = "[EMBLEM CODE]";
+        }
+
+        public class HashesList
+        {
+            [JsonProperty("First100Ranks")]
+            public string First100RanksHash { get; set; } = "[HASH]";
+
+            [JsonProperty("Above100Ranks")]
+            public string Above100RanksHash { get; set; } = "[HASH]";
         }
     }
 }

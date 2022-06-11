@@ -62,7 +62,6 @@ namespace Levante
 /____/\__/|___/\_,_/_//_/\__/\__/   dev. by @OatsFX
             ";
             Console.WriteLine(ASCIIName);
-            
             new LevanteCord().StartAsync().GetAwaiter().GetResult();
         }
 
@@ -149,7 +148,8 @@ namespace Levante
             {
                 case 0:
                     string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-                    await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching)); break;
+                    string p = ActiveConfig.PriorityActiveAFKUsers.Count != 1 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+                    await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching)); break;
                 case 1:
                     await _client.SetActivityAsync(new Game($"{BotConfig.Note} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing)); break;
                 case 2:
@@ -166,6 +166,8 @@ namespace Levante
                     await _client.SetActivityAsync(new Game($"{BotConfig.Website} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 8:
                     await _client.SetActivityAsync(new Game($"{BotConfig.Twitter} on Twitter", ActivityType.Watching)); break;
+                case 9:
+                    await _client.SetActivityAsync(new Game($"{EmblemOffer.CurrentOffers.Count} Available Emblems", ActivityType.Watching)); break;
                 default: break;
             }
             return;
@@ -226,6 +228,7 @@ namespace Levante
             // Stop Timer
             _xpTimer.Change(Timeout.Infinite, Timeout.Infinite);
             LogHelper.ConsoleLog($"[LOGGING] Refreshing Bungie API...");
+            ActiveConfig.IsRefreshing = true;
             //List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
             //List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
             try // XP Logs
@@ -341,7 +344,7 @@ namespace Levante
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
                     }
-                    await Task.Delay(4000); // we dont want to spam API if we have a ton of AFK subscriptions
+                    await Task.Delay(2000); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
 
                 // Add in users that joined mid-refresh.
@@ -468,10 +471,10 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //397846250797662208
-                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
+                await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                await _interaction.RegisterCommandsGloballyAsync();
+                //await _interaction.RegisterCommandsGloballyAsync();
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
             };

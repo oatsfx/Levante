@@ -20,6 +20,12 @@ namespace Levante.Configs
     {
         public static string FilePath { get; } = @"Configs/activeConfig.json";
 
+        public static bool IsRefreshing { get; set; } = false;
+
+        // Supporter AFK Users. Used in order to maintain without a limit.
+        [JsonProperty("PriorityActiveAFKUsers")]
+        public static List<ActiveAFKUser> PriorityActiveAFKUsers { get; set; } = new List<ActiveAFKUser>();
+
         [JsonProperty("ActiveAFKUsers")]
         public static List<ActiveAFKUser> ActiveAFKUsers { get; set; } = new List<ActiveAFKUser>();
 
@@ -151,9 +157,9 @@ namespace Levante.Configs
 
         public static bool IsExistingActiveUser(ulong DiscordID)
         {
-            string json = File.ReadAllText(FilePath);
-            ActiveAFKUsers.Clear();
-            ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
+            //string json = File.ReadAllText(FilePath);
+            //ActiveAFKUsers.Clear();
+            //ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
             foreach (ActiveAFKUser aau in ActiveAFKUsers)
                 if (aau.DiscordID == DiscordID)
                     return true;

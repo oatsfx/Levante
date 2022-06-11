@@ -24,7 +24,7 @@ namespace Levante.Rotations
         // Dailies
 
         [JsonProperty("LostSector")]
-        public static LostSector LostSector = LostSector.VelesLabyrinth;
+        public static LostSector LostSector = LostSector.K1CrewQuarters;
 
         [JsonProperty("LostSectorArmorDrop")]
         public static ExoticArmorType LostSectorArmorDrop = ExoticArmorType.Legs;
@@ -75,7 +75,7 @@ namespace Levante.Rotations
 
         public static void DailyRotation()
         {
-            LostSector = LostSector == LostSector.Extraction ? LostSector.VelesLabyrinth : LostSector + 1;
+            LostSector = LostSector == LostSector.K1CrewQuarters ? LostSector.TheQuarry : LostSector + 1;
             LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
 
             AltarWeapon = AltarWeapon == AltarsOfSorrow.Rocket ? AltarsOfSorrow.Shotgun : AltarWeapon + 1;

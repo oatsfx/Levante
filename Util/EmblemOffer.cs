@@ -34,8 +34,11 @@ namespace Levante.Util
         [JsonProperty("SpecialUrl")]
         public readonly string SpecialUrl;
 
+        [JsonProperty("IsActive")]
+        public readonly bool IsActive;
+
         [JsonConstructor]
-        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime? endDate, string description, string imageUrl, string specialUrl = null)
+        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime? endDate, string description, string imageUrl, string specialUrl = null, bool isActive = false)
         {
             EmblemHashCode = emblemHashCode;
             OfferedEmblem = new Emblem(EmblemHashCode);
@@ -45,13 +48,16 @@ namespace Levante.Util
             Description = description;
             ImageUrl = imageUrl;
             SpecialUrl = specialUrl;
+            IsActive = isActive;
         }
 
         public EmbedBuilder BuildEmbed()
         {
+            // Appends the word "Soon" to an offer that is not yet available.
+            string s = IsActive ? " Soon" : "";
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Emblem Available: {OfferedEmblem.GetName()}",
+                Name = $"Emblem Available{s}: {OfferedEmblem.GetName()}",
                 IconUrl = OfferedEmblem.GetIconUrl(),
             };
             var foot = new EmbedFooterBuilder()
@@ -65,12 +71,15 @@ namespace Levante.Util
                 Author = auth,
                 Footer = foot
             };
+            // Final line logic.
+            string end = EndDate != null ? $"Ends {TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.Relative)}." : "There is no apparent end to this offer.";
+            end = !IsActive ? $"Starts {TimestampTag.FromDateTime((DateTime)StartDate, TimestampTagStyles.Relative)}." : end;
             embed.Description =
                 $"__How to get this emblem:__\n" +
                 $"{Description} {(SpecialUrl != null ? $"\n[LINK]({SpecialUrl})" : "")}\n" +
                 $"Offer Type: {GetOfferTypeString(OfferType)}\n" +
                 $"Time Window: {GetDateRange()}\n" +
-                $"{(EndDate != null ? $"Ends {TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.Relative)}." : "There is no apparent end to this offer.")}";
+                $"{end}";
             embed.ThumbnailUrl = OfferedEmblem.GetIconUrl();
             embed.ImageUrl = ImageUrl;
             return embed;
