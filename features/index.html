@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<!-- BEGIN WEBSITE -->
+<html>
+<head>
+	<title>Levante > Features</title>
+	<link rel="stylesheet" href="../style.css">
+	<link rel="icon" href="../images/Levante-Logo.png">
+	<script src="../js/jquery-3.6.0.min.js"></script>
+	<script>
+		$(window).scroll(function () {
+			if ($(document).scrollTop() > 50) {
+				$('.navbar').addClass('filled');
+			} else {
+				$('.navbar').removeClass('filled');
+			}
+		});
+	</script>
+</head>
+
+<header>
+	<div class="navbar">
+		<a href="https://levante.dev/">
+			<img src="../images/Levante-Logo.png" class="logo">
+		</a>
+		<nav>
+			<ul>
+				<li><a href="/features/">Features</a></li>
+				<li><a href="https://discord.gg/Levante">Support Server</a></li>
+				<li><a href="/about-us/">About Us</a></li>
+			</ul>
+		</nav>
+	</div>
+</header>
+
+<body>
+	
+	<div class="container">
+		<!-- CONTENT -->
+		<div class="head-content">
+			<h1>Bot Features</h1>
+			<p>Here you can find a complication of select features and commands available to you through Levante.</p>
+		</div>
+		<div class="content">
+			<h2>Features</h2>
+			<p>Things that the bot will do for you.</p>
+			<ul>
+				<li><b>XP Logging</b>: Generally used for AFK XP farming using whatever method of your choice.
+					<ul><li style="list-style: none;">Server Administrators (specificially those with the Manage Channels permission) can use the command <b>/create-hub</b> to create a channel category where server members can start logging their XP.</li></ul></li>
+				<li><b>Emblem Offers</b>: An announcement feature where the bot will notify server members of any newly released, limited time emblems. 
+					<ul><li style="list-style: none;">Server Administrators can opt-in via the <b>/alert emblem-offers</b> command in the channel they want these alerts in.</li></ul></li>
+				<li><b>Rotation Alerts</b>: Using the command <b>/notify</b> will have the bot message you on Discord when your specified rotation is active.
+					<ul><li style="list-style: none;">Only supported rotations can be tracked. </li></ul></li>
+			</ul>
+			<p></p>
+		</div>
+		<div class="content">
+			<h2>Commands</h2>
+			<p>A list of all commands available with Levante.</p>
+			<button class="accordion">/alert emblem-offers <span style="opacity: 0.6;">[role]</span></button>
+			<div class="panel">
+				<p>Set up alerts for upcoming and released limited time emblems. NOTE: Use in the channel you want the alerts in.</p>
+				<p>Requires the Manage Channels permission.</p>
+			</div>
+			<button class="accordion">/alert resets <span style="opacity: 0.6;">[reset-type]</span></button>
+			<div class="panel">
+				<p>Set up alerts for daily and/or weekly resets. NOTE: Use in the channel you want the alerts in.</p>
+				<p>Requires the Manage Channels permission.</p>
+			</div>
+			<button class="accordion">/create-hub</button>
+			<div class="panel">
+				<p>Creates a hub where users can start XP sessions in your server.</p>
+				<p>Requires the Manage Channels permission.</p>
+			</div>
+			<button class="accordion">/current-session <span style="opacity: 0.6;">[user]</span></button>
+			<div class="panel">
+				<p>Pulls stats of your or another user's XP session.</p>
+			</div>
+			<button class="accordion">/daily</button>
+			<div class="panel">
+				<p>Replies with an embed of select Daily reset rotations.</p>
+			</div>
+			<button class="accordion">/free-emblems</button>
+			<div class="panel">
+				<p>Displays a list of universal emblem codes available to all players.</p>
+				<p>No, it does not give you a random free emblem code.</p>
+			</div>
+			<button class="accordion">/guardians linked-user <span style="opacity: 0.6;">[user] [class] [platform]</span></button>
+			<div class="panel">
+				<p>Get a player's Guardian information, like equipped weapons, armor, emblem, etc.</p>
+				<p>Requires the user to be linked.</p>
+			</div>
+			<button class="accordion">/guardians bungie-tag <span style="opacity: 0.6;">[player] [class] [platform]</span></button>
+			<div class="panel">
+				<p>Get a player's Guardian information, like equipped weapons, armor, emblem, etc.</p>
+				<p>Does not require the user to be linked as you are searching with their Bungie tag.</p>
+			</div>
+			<button class="accordion">/help</button>
+			<div class="panel">
+				<p>Links you to this page.</p>
+			</div>
+			<button class="accordion">/info</button>
+			<div class="panel">
+				<p>Provides you info on the Levante bot, such as server count and version.</p>
+			</div>
+			<button class="accordion">/invite</button>
+			<div class="panel">
+				<p>Provides you an invite link for the bot so you can add it to your own server!</p>
+			</div>
+			<button class="accordion">/level</button>
+			<div class="panel">
+				<p>Pulls your Destiny 2 Season Rank within the current season. Will also provide the level you need for the next artifact bonus.</p>
+			</div>
+			<button class="accordion">/link</button>
+			<div class="panel">
+				<p>Provides you a URL to begin the linking/registering process.</p>
+			</div>
+			<button class="accordion">/lost-sector <span style="opacity: 0.6;">[lost-sector] [difficulty]</span></button>
+			<div class="panel">
+				<p>Provides information of a Lost Sector in rotation based on requested difficulty.</p>
+				<p>Only provides the Lost Sectors that are available in the current season.</p>
+			</div>
+			<button class="accordion">/next <span style="opacity: 0.6;">[activity] [rotation]</span></button>
+			<div class="panel">
+				<p>Provides a prediction of when the next set rotation is available.</p>
+			</div>
+			<button class="accordion">/notify <span style="opacity: 0.6;">[activity] [rotation]</span></button>
+			<div class="panel">
+				<p>Set up to be notified when a specific rotation is active (i.e. when the Wellspring is dropping the bow).</p>
+			</div>
+			<button class="accordion">/notify remove</button>
+			<div class="panel">
+				<p>Remove any rotation notifications you have set up.</p>
+			</div>
+			<button class="accordion">/ping</button>
+			<div class="panel">
+				<p>Responds with the bot's latency to Discord in milliseconds.</p>
+			</div>
+			<button class="accordion">/rank <span style="opacity: 0.6;">[leaderboard]</span></button>
+			<div class="panel">
+				<p>Provides a global leaderboard (all linked users) of the specified leaderboard.</p>
+			</div>
+			<button class="accordion">/server-info </button>
+			<div class="panel">
+				<p>Pulls some information about the server this command is used in as well as any Levante integrations that are set up.</p>
+			</div>
+			<button class="accordion">/try-on <span style="opacity: 0.6;">[emblem-hash]</span></button>
+			<div class="panel">
+				<p>Provides an image of what it would look like if you had a specific emblem in Destiny 2.</p>
+				<p>The emblem hash is the unique identifier that the Bungie API gives emblems (i.e. Parallel Program's hash is 3936625542).</p>
+			</div>
+			<button class="accordion">/unlink</button>
+			<div class="panel">
+				<p>Unlink your Bungie account from your Discord account.</p>
+				<p>Please note that this will remove all leaderboard entries your account has with Levante.</p>
+			</div>
+			<button class="accordion">/view emblem <span style="opacity: 0.6;">[name]</span></button>
+			<div class="panel">
+				<p>Pulls information about an emblem from the Bungie API.</p>
+				<p><a href="https://twitter.com/emblemcollector">DEC</a> is amazing and lets us pull his information about emblems his has listed.</p>
+			</div>
+			<button class="accordion">/view weapon <span style="opacity: 0.6;">[name]</span></button>
+			<div class="panel">
+				<p>Pulls information about a weapon as well as its ability to be crafted and perk lists from the Bungie API.</p>
+			</div>
+			<button class="accordion">/weekly</button>
+			<div class="panel">
+				<p>Replies with an embed of select Weekly reset rotations.</p>
+			</div>
+		</div>
+	</div>
+</body>
+
+<footer>
+	<a href="https://levante.dev">
+		<img src="../images/Levante-Logo.png" class="footerLogo">
+	</a>
+	<div class="footer-bottom">
+		<div class="footer-column">
+			<ul>
+				<li>
+					<p>Follow Us</p>
+				</li>
+				<li>
+					<a href="https://twitter.com/Levante_Bot">Twitter</a>
+				</li>
+				<li>
+					<a href="https://discord.gg/Levante">Discord</a>
+				</li>
+			</ul>
+		</div>
+		<div class="footer-column">
+			<ul>
+				<li>
+					<p>Links</p>
+				</li>
+				<li>
+					<a href="/">Features</a>
+				</li>
+				<li>
+					<a href="https://levante.dev/about-us/">About Us</a>
+				</li>
+				<li>
+					<a href="https://github.com/oatsfx/Levante">Source Code</a>
+				</li>
+				<li>
+					<a href="https://discord.gg/Levante">Support Server</a>
+				</li>
+				<li>
+					<a href="https://levante.dev/terms-of-service/">Terms of Use</a>
+				</li>
+				<li>
+					<a href="https://levante.dev/privacy-policy/">Privacy Policy</a>
+				</li>
+			</ul>
+		</div>
+		<div class="footer-column-colored">
+			<h2>Contact Us!</h2>
+			<a href="https://discord.gg/Levante">On Discord: discord.gg/Levante</a>
+			<p>Via Email: levantebot@gmail.com</p>
+		</div>
+	</div>
+</footer>
+<script>
+	var acc = document.getElementsByClassName("accordion");
+
+	for (var i = 0; i < acc.length; i++) {
+		acc[i].addEventListener("click", function() {
+			this.classList.toggle("active");
+			var panel = this.nextElementSibling;
+			panel.classList.toggle("panel-active")
+		});
+	}
+</script>
+</html>

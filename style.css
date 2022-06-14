@@ -306,3 +306,57 @@ a:hover{
 .footer-column ul li{
 	list-style: none;
 }
+
+.accordion {
+	margin-left: 5%;
+	background-color: #242424;
+	color: #9df4e5;
+	cursor: pointer;
+	padding: 18px;
+	width: 85%;
+	border: 1px solid #80ccbf;
+	text-align: left;
+	font-size: 16px;
+	font-weight: 300;
+	font-family: Kanit;
+	transition: 0.4s;
+}
+
+.active, .accordion:hover {
+	background-color: #323232;
+	box-shadow: 0px 0px 5px rgba(157, 244, 229, 0.6);
+}
+
+.accordion:after {
+	content: '\002B';
+	color: #777;
+	font-weight: bold;
+	float: right;
+	margin-left: 5px;
+}
+
+.active:after {
+	content: "\2212";
+}
+
+.panel {
+	padding: 0px 18px;
+	background-color: #242424;
+	max-height: 0;
+	width: 82.3%;
+	margin-left: 5%;
+	margin-top: -1px;
+	margin-bottom: 8px;
+	overflow: hidden;
+	transition: 0.3s ease-out;
+	border-left: 1px solid #80ccbf;
+	border-right: 1px solid #80ccbf;
+	border-bottom: 1px solid #80ccbf;
+}
+
+.panel-active {
+	transition: 0.3s ease-out;
+	max-height: 90px;
+	padding-top: 24px;
+	padding-bottom: 16px;
+}

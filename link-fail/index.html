@@ -29,7 +29,7 @@
 		</a>
 		<nav>
 			<ul>
-				<li><a href="">Features</a></li>
+				<li><a href="/features/">Features</a></li>
 				<li><a href="https://discord.gg/Levante">Support Server</a></li>
 				<li><a href="/about-us/">About Us</a></li>
 			</ul>
@@ -114,7 +114,7 @@
 	}
     var listOfFunny = ["Link Unsuccessful",
 		"Status: CALAMITOUS.",
-		"You Threw Enough Grenades...",
+		"You didn't throw enough grenades...",
 		"No Revives Left!",
 		"Guardian Down!",
 		"[dispirited snort]",
@@ -126,18 +126,22 @@
 	];
     document.getElementById("randomFunny").innerHTML = listOfFunny[Math.floor(Math.random() * listOfFunny.length)];
 
-	var errorReasons = ["", /**/
-		"Link Unsuccessful", /**/
-		"UnableToMessageUser", /*UnableToMessageUser*/
-		"Link Unsuccessful", /**/
-		"Link Unsuccessful", /**/
+	var errorReasons = ["None", /**/
+		"MissingParameters", /**/
+		"OldCode", /*UnableToMessageUser*/
+		"NoProfileDataFound", /**/
+		"DiscordUserNotFound", /**/
+		"NoDiscordMessageSent",
+		"Unknown"
 	];
 
-	var detailedErrors = ["Link Unsuccessful", /**/
-		"Link Unsuccessful", /**/
-		"Link Unsuccessful", /*UnableToMessageUser*/
-		"Link Unsuccessful", /**/
-		"Link Unsuccessful", /**/
+	var errorReasons = ["None", /**/
+		"MissingParameters", /**/
+		"OldCode", /*UnableToMessageUser*/
+		"NoProfileDataFound", /**/
+		"DiscordUserNotFound", /**/
+		"NoDiscordMessageSent",
+		"Unknown"
 	];
 
 	document.getElementById("detailError").innerHTML = detailedError[detail];
