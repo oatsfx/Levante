@@ -329,10 +329,9 @@ a:hover{
 
 .accordion:after {
 	content: '\002B';
-	color: #777;
+	color: #80ccbf;
 	font-weight: bold;
 	float: right;
-	margin-left: 5px;
 }
 
 .active:after {
@@ -340,11 +339,10 @@ a:hover{
 }
 
 .panel {
-	padding: 0px 18px;
 	background-color: #242424;
-	max-height: 0;
-	width: 82.3%;
-	margin-left: 5%;
+	max-height: 0px;
+	width: 84%;
+	margin-left: 5.5%;
 	margin-top: -1px;
 	margin-bottom: 8px;
 	overflow: hidden;
@@ -352,6 +350,10 @@ a:hover{
 	border-left: 1px solid #80ccbf;
 	border-right: 1px solid #80ccbf;
 	border-bottom: 1px solid #80ccbf;
+}
+
+.panel p {
+	padding-left: 16px;
 }
 
 .panel-active {

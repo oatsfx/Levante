@@ -61,7 +61,7 @@
 				<p>Set up alerts for upcoming and released limited time emblems. NOTE: Use in the channel you want the alerts in.</p>
 				<p>Requires the Manage Channels permission.</p>
 			</div>
-			<button class="accordion">/alert resets <span style="opacity: 0.6;">[reset-type]</span></button>
+			<button class="accordion">/alert resets <span style="opacity: 0.6;">&lt;reset-type&gt;</span></button>
 			<div class="panel">
 				<p>Set up alerts for daily and/or weekly resets. NOTE: Use in the channel you want the alerts in.</p>
 				<p>Requires the Manage Channels permission.</p>
@@ -70,6 +70,11 @@
 			<div class="panel">
 				<p>Creates a hub where users can start XP sessions in your server.</p>
 				<p>Requires the Manage Channels permission.</p>
+			</div>
+			<button class="accordion">/current-offers <span style="opacity: 0.6;">[emblem-hash-code]</span></button>
+			<div class="panel">
+				<p>Provides a list of available emblems announced by the bot.</p>
+				<p>Provide any of the emblems' hash code and a more specific embed will be provided.</p>
 			</div>
 			<button class="accordion">/current-session <span style="opacity: 0.6;">[user]</span></button>
 			<div class="panel">
@@ -84,12 +89,12 @@
 				<p>Displays a list of universal emblem codes available to all players.</p>
 				<p>No, it does not give you a random free emblem code.</p>
 			</div>
-			<button class="accordion">/guardians linked-user <span style="opacity: 0.6;">[user] [class] [platform]</span></button>
+			<button class="accordion">/guardians linked-user <span style="opacity: 0.6;">&lt;user&gt; &lt;class&gt; [platform]</span></button>
 			<div class="panel">
 				<p>Get a player's Guardian information, like equipped weapons, armor, emblem, etc.</p>
 				<p>Requires the user to be linked.</p>
 			</div>
-			<button class="accordion">/guardians bungie-tag <span style="opacity: 0.6;">[player] [class] [platform]</span></button>
+			<button class="accordion">/guardians bungie-tag <span style="opacity: 0.6;">&lt;player&gt; &lt;class&gt; [platform]</span></button>
 			<div class="panel">
 				<p>Get a player's Guardian information, like equipped weapons, armor, emblem, etc.</p>
 				<p>Does not require the user to be linked as you are searching with their Bungie tag.</p>
@@ -114,16 +119,16 @@
 			<div class="panel">
 				<p>Provides you a URL to begin the linking/registering process.</p>
 			</div>
-			<button class="accordion">/lost-sector <span style="opacity: 0.6;">[lost-sector] [difficulty]</span></button>
+			<button class="accordion">/lost-sector <span style="opacity: 0.6;">&lt;lost-sector&gt; &lt;difficulty&gt;</span></button>
 			<div class="panel">
 				<p>Provides information of a Lost Sector in rotation based on requested difficulty.</p>
 				<p>Only provides the Lost Sectors that are available in the current season.</p>
 			</div>
-			<button class="accordion">/next <span style="opacity: 0.6;">[activity] [rotation]</span></button>
+			<button class="accordion">/next <span style="opacity: 0.6;">&lt;activity&gt; &lt;rotation&gt;</span></button>
 			<div class="panel">
 				<p>Provides a prediction of when the next set rotation is available.</p>
 			</div>
-			<button class="accordion">/notify <span style="opacity: 0.6;">[activity] [rotation]</span></button>
+			<button class="accordion">/notify <span style="opacity: 0.6;">&lt;activity&gt; &lt;rotation&gt;</span></button>
 			<div class="panel">
 				<p>Set up to be notified when a specific rotation is active (i.e. when the Wellspring is dropping the bow).</p>
 			</div>
@@ -135,7 +140,7 @@
 			<div class="panel">
 				<p>Responds with the bot's latency to Discord in milliseconds.</p>
 			</div>
-			<button class="accordion">/rank <span style="opacity: 0.6;">[leaderboard]</span></button>
+			<button class="accordion">/rank <span style="opacity: 0.6;">&lt;leaderboard&gt;</span></button>
 			<div class="panel">
 				<p>Provides a global leaderboard (all linked users) of the specified leaderboard.</p>
 			</div>
@@ -143,7 +148,7 @@
 			<div class="panel">
 				<p>Pulls some information about the server this command is used in as well as any Levante integrations that are set up.</p>
 			</div>
-			<button class="accordion">/try-on <span style="opacity: 0.6;">[emblem-hash]</span></button>
+			<button class="accordion">/try-on <span style="opacity: 0.6;">&lt;emblem-hash&gt;</span></button>
 			<div class="panel">
 				<p>Provides an image of what it would look like if you had a specific emblem in Destiny 2.</p>
 				<p>The emblem hash is the unique identifier that the Bungie API gives emblems (i.e. Parallel Program's hash is 3936625542).</p>
@@ -153,12 +158,12 @@
 				<p>Unlink your Bungie account from your Discord account.</p>
 				<p>Please note that this will remove all leaderboard entries your account has with Levante.</p>
 			</div>
-			<button class="accordion">/view emblem <span style="opacity: 0.6;">[name]</span></button>
+			<button class="accordion">/view emblem <span style="opacity: 0.6;">&lt;name&gt;</span></button>
 			<div class="panel">
 				<p>Pulls information about an emblem from the Bungie API.</p>
 				<p><a href="https://twitter.com/emblemcollector">DEC</a> is amazing and lets us pull his information about emblems his has listed.</p>
 			</div>
-			<button class="accordion">/view weapon <span style="opacity: 0.6;">[name]</span></button>
+			<button class="accordion">/view weapon <span style="opacity: 0.6;">&lt;name&gt;</span></button>
 			<div class="panel">
 				<p>Pulls information about a weapon as well as its ability to be crafted and perk lists from the Bungie API.</p>
 			</div>
