@@ -358,7 +358,7 @@ a:hover{
 
 .panel-active {
 	transition: 0.3s ease-out;
-	max-height: 90px;
 	padding-top: 24px;
 	padding-bottom: 16px;
+	max-height: 1000px;
 }
