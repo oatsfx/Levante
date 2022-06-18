@@ -76,6 +76,12 @@ namespace Levante.Commands
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
         public async Task CreateHub()
         {
+            if (Context.Channel.GetChannelType() == ChannelType.DM)
+            {
+                await RespondAsync($"Cannot make channels in Direct Messages!", ephemeral: true);
+                return;
+            }
+
             await DeferAsync(ephemeral: true);
             var app = await Context.Client.GetApplicationInfoAsync();
 
@@ -118,7 +124,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"To get started, link using the command /link [BUNGIE TAG]."
+                Text = $"To get started, link using the command '/link'."
             };
             var embed = new EmbedBuilder()
             {
@@ -149,6 +155,12 @@ namespace Levante.Commands
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
         public async Task ServerInfo()
         {
+            if (Context.Channel.GetChannelType() == ChannelType.DM)
+            {
+                await RespondAsync($"Cannot get server information in Direct Messages!", ephemeral: true);
+                return;
+            }
+
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Server Information: {Context.Guild.Name}",

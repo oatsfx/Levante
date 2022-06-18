@@ -98,7 +98,7 @@ namespace Levante.Commands
 
                 if (!DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
                 {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"User is not linked; tell them to link using \"/link [THEIR BUNGIE TAG] <PLATFORM>\"."; });
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"User is not linked; tell them to link using '/link'."; });
                     return;
                 }
 
@@ -398,7 +398,7 @@ namespace Levante.Commands
             var dil = DataConfig.GetLinkedUser(User.Id);
             if (dil == null)
             {
-                await RespondAsync($"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again.", ephemeral: true);
+                await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = $"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again."; });
                 return;
             }
 
