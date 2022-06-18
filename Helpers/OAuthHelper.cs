@@ -141,6 +141,12 @@ namespace Levante.Helpers
                     return result;
                 }
 
+                if (memType <= -2)
+                {
+                    result.Reason = ErrorReason.NoProfileDataFound;
+                    return result;
+                }
+
                 IUser user;
                 if (LevanteCordInstance.Client.GetUser(DiscordID) == null)
                     user = LevanteCordInstance.Client.Rest.GetUserAsync(DiscordID).Result;
@@ -205,15 +211,54 @@ namespace Levante.Helpers
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/-1/Profile/{BungieID}/LinkedProfiles/?getAllMemberships=true").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
+                string memId = "";
+                string memType = "";
 
-                LogHelper.ConsoleLog($"[OAUTH] Received tokens for {item.Response.bnetMembership.supplementalDisplayName} on platform {item.Response.profiles[0].membershipType}.");
+                var memResponse = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/-1/Profile/{BungieID}/LinkedProfiles/?getAllMemberships=true").Result;
+                var memContent = memResponse.Content.ReadAsStringAsync().Result;
+                dynamic memItem = JsonConvert.DeserializeObject(memContent);
 
-                MembershipID = $"{item.Response.profiles[0].membershipId}";
-                BungieTag = $"{item.Response.bnetMembership.supplementalDisplayName}";
-                return int.Parse($"{item.Response.profiles[0].membershipType}");
+                var lastPlayed = new DateTime();
+                var goodProfile = -1;
+
+                if (memItem == null || memItem.ErrorCode != 1)
+                {
+                    BungieTag = null;
+                    MembershipID = null;
+                    return -2;
+                }
+
+                for (var j = 0; j < memItem.Response.profiles.Count; j++)
+                {
+                    if (memItem.Response.profiles[j].isCrossSavePrimary == true)
+                    {
+                        memType = memItem.Response.profiles[j].membershipType;
+                        memId = memItem.Response.profiles[j].membershipId;
+                        goodProfile = j;
+                        break;
+                    }
+
+                    if (DateTime.Parse(memItem.Response.profiles[j].dateLastPlayed.ToString()) <= lastPlayed) continue;
+
+                    lastPlayed = DateTime.Parse(memItem.Response.profiles[j].dateLastPlayed.ToString());
+                    goodProfile = j;
+                }
+
+                if (goodProfile == -1)
+                {
+                    BungieTag = null;
+                    MembershipID = null;
+                    return -2;
+                }
+
+                memType = memItem.Response.profiles[goodProfile].membershipType;
+                memId = memItem.Response.profiles[goodProfile].membershipId;
+
+                LogHelper.ConsoleLog($"[OAUTH] Received tokens for {memItem.Response.bnetMembership.supplementalDisplayName} on platform {memType}.");
+
+                MembershipID = $"{memId}";
+                BungieTag = $"{memItem.Response.bnetMembership.supplementalDisplayName}";
+                return int.Parse($"{memType}");
             }
         }
 

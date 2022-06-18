@@ -68,7 +68,7 @@ namespace Levante.Configs
             public ulong RoleID { get; set; } = 0;
         }
 
-        public static string GetValidDestinyMembership(string BungieTag, Guardian.Platform Platform, out string MembershipType)
+        public static string GetValidDestinyMembership(string BungieTag, out string MembershipType)
         {
             using (var client = new HttpClient())
             {
@@ -179,7 +179,7 @@ namespace Levante.Configs
         public static DiscordIDLink GetLinkedUser(ulong DiscordID)
         {
             var dil = DiscordIDLinks.Find(x => x.DiscordID == DiscordID);
-            if (dil == null)
+            if (dil.AccessToken.Equals("[ACCESS TOKEN]"))
                 return null;
             if (dil.DiscordID == DiscordID)
             {

@@ -248,13 +248,43 @@ namespace Levante
 
                     if (!errorStatus.Equals("Success") && !errorStatus.Equals("PlayerNotOnline"))
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}. Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
-                        LogHelper.ConsoleLog($"[LOGGING] Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
-                        // Move onto the next user so everyone gets the message.
-                        //newList.Add(tempAau);
+                        if (tempAau.NoXPGainRefreshes >= ActiveConfig.RefreshesBeforeKick)
+                        {
+                            string uniqueName = tempAau.UniqueBungieName;
 
-                        // Add a warning.
-                        actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
+                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player has been determined as inactive.");
+                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateDeleteChannelButton());
+
+                            IUser user;
+                            if (_client.GetUser(tempAau.DiscordID) == null)
+                            {
+                                var _rClient = _client.Rest;
+                                user = await _rClient.GetUserAsync(tempAau.DiscordID);
+                            }
+                            else
+                            {
+                                user = _client.GetUser(tempAau.DiscordID);
+                            }
+                            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
+                            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
+
+                            LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {tempAau.UniqueBungieName} via automation.");
+                            //listOfRemovals.Add(tempAau);
+                            // ***Change to remove it from list because file update is called at end of method.***
+                            //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
+                            ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
+                            await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
+                        }
+                        else
+                        {
+                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}. Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
+                            LogHelper.ConsoleLog($"[LOGGING] Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
+                            // Move onto the next user so everyone gets the message.
+                            //newList.Add(tempAau);
+
+                            // Add a warning.
+                            actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
+                        }
                         continue;
                     }
 
