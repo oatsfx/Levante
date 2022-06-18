@@ -47,7 +47,7 @@ namespace Levante.Rotations
                 //case LostSector.AphelionsRest: return "Aphelion's Rest";
                 //case LostSector.TheEmptyTank: return "The Empty Tank";
                 case LostSector.K1Logistics: return "K1 Logistics";
-                //case LostSector.K1Communion: return "K1 Communion";
+                case LostSector.K1Communion: return "K1 Communion";
                 case LostSector.K1CrewQuarters: return "K1 Crew Quarters";
                 case LostSector.K1Revelation: return "K1 Revelation";
                 //case LostSector.ConcealedVoid: return "Concealed Void";
@@ -58,6 +58,10 @@ namespace Levante.Rotations
                 case LostSector.Metamorphosis: return "Metamorphosis";
                 case LostSector.Sepulcher: return "Sepulcher";
                 case LostSector.Extraction: return "Extraction";
+                case LostSector.TheConflux: return "The Conflux";
+                case LostSector.ExcavationSiteXII: return "Excavation Site XII";
+                case LostSector.SkydockIV: return "Skydock IV";
+                case LostSector.TheQuarry: return "The Quarry";
                 default: return "";
             }
         }
@@ -71,7 +75,7 @@ namespace Levante.Rotations
                 //case LostSector.AphelionsRest: return "The Strand, The Dreaming City";
                 //case LostSector.TheEmptyTank: return "Thieves' Landing, The Tangled Shore";
                 case LostSector.K1Logistics: return "Archer's Line, The Moon";
-                //case LostSector.K1Communion: return "Anchor of Light, The Moon";
+                case LostSector.K1Communion: return "Anchor of Light, The Moon";
                 case LostSector.K1CrewQuarters: return "Hellmouth, The Moon";
                 case LostSector.K1Revelation: return "Sorrow's Harbor, The Moon";
                 //case LostSector.ConcealedVoid: return "Asterion Abyss, Europa";
@@ -82,6 +86,10 @@ namespace Levante.Rotations
                 case LostSector.Metamorphosis: return "Miasma, Savathûn's Throne World";
                 case LostSector.Sepulcher: return "Florescent Canal, Savathûn's Throne World";
                 case LostSector.Extraction: return "Quagmire, Savathûn's Throne World";
+                case LostSector.TheConflux: return "The Cistern, Nessus";
+                case LostSector.ExcavationSiteXII: return "Firebase Hades, EDZ";
+                case LostSector.SkydockIV: return "Sunken Isles, EDZ";
+                case LostSector.TheQuarry: return "Sunken Isles, EDZ";
                 default: return "";
             }
         }
@@ -106,6 +114,10 @@ namespace Levante.Rotations
                 case LostSector.Metamorphosis: return "Dread Tatsrekka";
                 case LostSector.Sepulcher: return "Bar-Zel, Tutelary of Savathun";
                 case LostSector.Extraction: return "Hathrek, the Glasweard";
+                case LostSector.TheConflux: return "Shayotet Partisan";
+                case LostSector.ExcavationSiteXII: return "Dust-Choked Thrag";
+                case LostSector.SkydockIV: return "Colossus"; // Boss names are a joke. 
+                case LostSector.TheQuarry: return "Sunken Isles, EDZ";
                 default: return "";
             }
         }
@@ -130,6 +142,10 @@ namespace Levante.Rotations
                 case LostSector.Metamorphosis: return "https://bungie.net/img/destiny_content/pgcr/bayou_ls.jpg";
                 case LostSector.Sepulcher: return "https://bungie.net/img/destiny_content/pgcr/canal_ls.jpg";
                 case LostSector.Extraction: return "https://bungie.net/img/destiny_content/pgcr/gateway_ls.jpg";
+                case LostSector.TheConflux: return "https://bungie.net/img/destiny_content/pgcr/nessus_the_conflux.jpg";
+                case LostSector.ExcavationSiteXII: return "https://bungie.net/img/destiny_content/pgcr/edz_lost_sector_excavation_site_xii.jpg";
+                case LostSector.SkydockIV: return "https://bungie.net/img/theme/destiny/bgs/pgcrs/placeholder.jpg";
+                case LostSector.TheQuarry: return "https://bungie.net/img/destiny_content/pgcr/edz_lost_sector_the_quarry.jpg";
                 default: return "";
             }
         }
@@ -167,6 +183,10 @@ namespace Levante.Rotations
                     case LostSector.Metamorphosis: return $"3 {DestinyEmote.Overload} (Overload)\n2 {DestinyEmote.Unstoppable} (Upstoppable)";
                     case LostSector.Sepulcher: return $"1 {DestinyEmote.Unstoppable} (Upstoppable)\n3 {DestinyEmote.Barrier} (Barrier)";
                     case LostSector.Extraction: return $"1 {DestinyEmote.Overload} (Overload)\n2 {DestinyEmote.Unstoppable} (Upstoppable)";
+                    case LostSector.TheConflux: return $"2 {DestinyEmote.Barrier} (Barrier)\n2 {DestinyEmote.Unstoppable} (Upstoppable)";
+                    case LostSector.ExcavationSiteXII: return $"1 {DestinyEmote.Barrier} (Barrier)\n3 {DestinyEmote.Unstoppable} (Upstoppable)";
+                    case LostSector.SkydockIV: return $"1 {DestinyEmote.Barrier} (Barrier)\n3 {DestinyEmote.Unstoppable} (Upstoppable)";
+                    case LostSector.TheQuarry: return $"2 {DestinyEmote.Barrier} (Barrier)\n2 {DestinyEmote.Unstoppable} (Upstoppable)";
                     default: return "";
                 }
             else if (lsd == LostSectorDifficulty.Master)
@@ -188,6 +208,10 @@ namespace Levante.Rotations
                     case LostSector.Metamorphosis: return $"3 {DestinyEmote.Overload} (Overload)\n4 {DestinyEmote.Unstoppable} (Upstoppable)";
                     case LostSector.Sepulcher: return $"2 {DestinyEmote.Unstoppable} (Upstoppable)\n5 {DestinyEmote.Barrier} (Barrier)";
                     case LostSector.Extraction: return $"4 {DestinyEmote.Overload} (Overload)\n2 {DestinyEmote.Unstoppable} (Upstoppable)";
+                    case LostSector.TheConflux: return $"3 {DestinyEmote.Barrier} (Barrier)\n3 {DestinyEmote.Unstoppable} (Upstoppable)";
+                    case LostSector.ExcavationSiteXII: return $"2 {DestinyEmote.Barrier} (Barrier)\n5 {DestinyEmote.Unstoppable} (Upstoppable)";
+                    case LostSector.SkydockIV: return $"1 {DestinyEmote.Barrier} (Barrier)\n5 {DestinyEmote.Unstoppable} (Upstoppable)";
+                    case LostSector.TheQuarry: return $"4 {DestinyEmote.Barrier} (Barrier)\n4 {DestinyEmote.Unstoppable} (Upstoppable)";
                     default: return "";
                 }
             else
@@ -215,6 +239,10 @@ namespace Levante.Rotations
                     case LostSector.Metamorphosis: return $"1 {DestinyEmote.Solar}\n2 {DestinyEmote.Arc}";
                     case LostSector.Sepulcher: return $"1 {DestinyEmote.Solar}\n2 {DestinyEmote.Arc}";
                     case LostSector.Extraction: return $"5 {DestinyEmote.Void}\n7 {DestinyEmote.Arc}";
+                    case LostSector.TheConflux: return $"14 {DestinyEmote.Void}";
+                    case LostSector.ExcavationSiteXII: return $"1 {DestinyEmote.Arc}";
+                    case LostSector.SkydockIV: return $"5 {DestinyEmote.Void}";
+                    case LostSector.TheQuarry: return $"1 {DestinyEmote.Solar}\n1 {DestinyEmote.Void}";
                     default: return "";
                 }
             else if (lsd == LostSectorDifficulty.Master)
@@ -236,6 +264,10 @@ namespace Levante.Rotations
                     case LostSector.Metamorphosis: return $"1 {DestinyEmote.Solar}\n2 {DestinyEmote.Arc}";
                     case LostSector.Sepulcher: return $"1 {DestinyEmote.Arc}";
                     case LostSector.Extraction: return $"5 {DestinyEmote.Void}\n4 {DestinyEmote.Arc}";
+                    case LostSector.TheConflux: return $"7 {DestinyEmote.Void}";
+                    case LostSector.ExcavationSiteXII: return $"1 {DestinyEmote.Arc}";
+                    case LostSector.SkydockIV: return $"4 {DestinyEmote.Void}";
+                    case LostSector.TheQuarry: return $"1 {DestinyEmote.Solar}";
                     default: return "";
                 }
             else
@@ -263,6 +295,10 @@ namespace Levante.Rotations
                 case LostSector.Metamorphosis: result += $"{DestinyEmote.MatchGame} Match Game\n{DestinyEmote.LimitedRevives} Limited Revives\n{DestinyEmote.EquipmentLocked} Equipment Locked\n{DestinyEmote.ScorchedEarth} Scorched Earth"; break;
                 case LostSector.Sepulcher: result += $"{DestinyEmote.MatchGame} Match Game\n{DestinyEmote.LimitedRevives} Limited Revives\n{DestinyEmote.EquipmentLocked} Equipment Locked\n{DestinyEmote.FirePit} Fire Pit"; break;
                 case LostSector.Extraction: result += $"{DestinyEmote.MatchGame} Match Game\n{DestinyEmote.LimitedRevives} Limited Revives\n{DestinyEmote.EquipmentLocked} Equipment Locked\n{DestinyEmote.RaiderShield} Raider Shield"; break;
+                case LostSector.TheConflux: result += $"{DestinyEmote.MatchGame} Match Game\n{DestinyEmote.LimitedRevives} Limited Revives\n{DestinyEmote.EquipmentLocked} Equipment Locked\n{DestinyEmote.ScorchedEarth} Scorched Earth"; break;
+                case LostSector.ExcavationSiteXII: result += $"{DestinyEmote.MatchGame} Match Game\n{DestinyEmote.LimitedRevives} Limited Revives\n{DestinyEmote.EquipmentLocked} Equipment Locked\n{DestinyEmote.ScorchedEarth} Scorched Earth"; break;
+                case LostSector.SkydockIV: result += $"{DestinyEmote.MatchGame} Match Game\n{DestinyEmote.LimitedRevives} Limited Revives\n{DestinyEmote.EquipmentLocked} Equipment Locked\n{DestinyEmote.Pestilence} Pestilence"; break;
+                case LostSector.TheQuarry: result += $"{DestinyEmote.MatchGame} Match Game\n{DestinyEmote.LimitedRevives} Limited Revives\n{DestinyEmote.EquipmentLocked} Equipment Locked\n{DestinyEmote.ScorchedEarth} Scorched Earth"; break;
                 default: result += ""; break;
             }
 
@@ -286,6 +322,10 @@ namespace Levante.Rotations
                     case LostSector.Metamorphosis: result += $"\n{DestinyEmote.Attrition} Attrition"; break;
                     case LostSector.Sepulcher: result += $"\n{DestinyEmote.Chaff} Chaff"; break;
                     case LostSector.Extraction: result += $"\n{DestinyEmote.Chaff} Chaff"; break;
+                    case LostSector.TheConflux: result += $"\n{DestinyEmote.Chaff} Chaff"; break;
+                    case LostSector.ExcavationSiteXII: result += $"\n{DestinyEmote.Attrition} Attrition"; break;
+                    case LostSector.SkydockIV: result += $""; break;
+                    case LostSector.TheQuarry: result += $"\n{DestinyEmote.Chaff} Chaff"; break;
                     default: result += ""; break;
                 }
             }
@@ -313,6 +353,10 @@ namespace Levante.Rotations
                 case LostSector.Metamorphosis: return $"{DestinyEmote.Arc}";
                 case LostSector.Sepulcher: return $"{DestinyEmote.Solar}";
                 case LostSector.Extraction: return $"{DestinyEmote.Arc}";
+                case LostSector.TheConflux: return $"{DestinyEmote.Solar}";
+                case LostSector.ExcavationSiteXII: return $"{DestinyEmote.Solar}";
+                case LostSector.SkydockIV: return $"{DestinyEmote.Solar}";
+                case LostSector.TheQuarry: return $"{DestinyEmote.Void}";
                 default: return "";
             }
         }
@@ -361,7 +405,7 @@ namespace Levante.Rotations
             });
 
             embed.Title = $"{GetLostSectorString(LS)}";
-            embed.Description = $"Boss: {GetLostSectorBossString(LS)}";
+            //embed.Description = $"Boss: {GetLostSectorBossString(LS)}";
 
             embed.Url = GetLostSectorImageURL(LS);
             embed.ThumbnailUrl = "https://www.bungie.net/common/destiny2_content/icons/6a2761d2475623125d896d1a424a91f9.png";

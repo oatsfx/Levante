@@ -8,44 +8,42 @@ using Levante.Leaderboards;
 using Levante.Rotations;
 using Levante.Util;
 using Newtonsoft.Json;
+using System.Security.Cryptography;
+using System;
+using System.Text;
 
 namespace Levante.Commands
 {
     public class Utility : InteractionModuleBase<SocketInteractionContext>
     {
-        [SlashCommand("link", "Link your Bungie tag to your Discord account.")]
-        public async Task Link([Summary("bungie-tag", "Your Bungie tag you wish to link with.")] string BungieTag,
-            [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
-                Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5)]int ArgPlatform = 0)
+        [SlashCommand("link", "Link your Bungie account to your Discord account.")]
+        public async Task Link()
         {
-            if (DataConfig.IsExistingLinkedUser(Context.User.Id))
+            var foot = new EmbedFooterBuilder()
             {
-                await RespondAsync($"You have an account linked already. Your linked account: {DataConfig.GetLinkedUser(Context.User.Id).UniqueBungieName}", ephemeral: true);
-                return;
-            }
-
-            await DeferAsync(true);
-
-            var memId = DataConfig.GetValidDestinyMembership(BungieTag, (Guardian.Platform) ArgPlatform, out var memType);
-
-            if (memId == null && memType == null)
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+            };
+            var auth = new EmbedAuthorBuilder()
             {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Something went wrong. Is your Bungie Tag correct?"; });
-                return;
-            }
-
-            if (!DataConfig.IsPublicAccount(BungieTag, int.Parse(memType)))
+                IconUrl = Context.Client.CurrentUser.GetAvatarUrl(),
+                Name = "Account Linking"
+            };
+            var embed = new EmbedBuilder()
             {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Your account privacy is not set to public. I cannot access your information otherwise."; });
-                return;
-            }
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Footer = foot,
+                Author = auth
+            };
+            var plainTextBytes = Encoding.UTF8.GetBytes($"{Context.User.Id}");
+            string state = Convert.ToBase64String(plainTextBytes);
 
-            DataConfig.AddUserToConfig(Context.User.Id, memId, memType, BungieTag);
+            embed.Title = $"Click here to start the linking process.";
+            embed.Url = $"https://www.bungie.net/en/OAuth/Authorize?client_id={BotConfig.BungieClientID}&response_type=code&state={state}";
+            embed.Description = $"- Linking allows you to start XP Tracking, quick '/guardian' commands, and more.\n" +
+                $"- After linking is complete, you'll receive another DM from me to confirm.\n" +
+                $"- Experienced a name change? Relinking will update your name with our data.";
 
-            await Context.Interaction.ModifyOriginalResponseAsync(message =>
-            {
-                message.Content = $"Linked {Context.User.Mention} to {BungieTag} on Platform {(Guardian.Platform)int.Parse(memType)}.\nIf the platform is incorrect, please `/unlink` and then use `/link {BungieTag} <platform>`.";
-            });
+            await RespondAsync(embed: embed.Build(), ephemeral: true);
         }
 
         [Group("notify", "Be notified when a specific rotation is active.")]
@@ -169,42 +167,42 @@ namespace Levante.Commands
 
             [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
             public async Task LostSector([Summary("lost-sector", "Lost Sector name."),
-                Choice("Veles Labyrinth", 0), Choice("Exodus Garden 2A", 1), Choice("Aphelion's Rest", 2),
-                Choice("Bay of Drowned Wishes", 3), Choice("Chamber of Starlight", 4), Choice("K1 Revelation", 5),
-                Choice("K1 Crew Quarters", 6), Choice("K1 Logistics", 7), Choice("Metamorphosis", 8),
-                Choice("Sepulcher", 9), Choice("Extraction", 10)] int? ArgLS = null,
+                Choice("K1 Crew Quarters", 0), Choice("K1 Logistics", 1), Choice("K1 Revelation", 2),
+                Choice("K1 Communion", 3), Choice("The Conflux", 4), Choice("Metamorphosis", 5),
+                Choice("Sepulcher", 6), Choice("Extraction", 7), Choice("Excavation Site XII", 8),
+                Choice("Skydock IV", 9), Choice("The Quarry", 10)] int? ArgLS = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
             {
-                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-                return;
-
-                //if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
-                //{
-                //    if (LS == null && EAT == null)
-                //        await RespondAsync($"An error has occurred.", ephemeral: true);
-                //    else if (LS != null && EAT == null)
-                //        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)}.", ephemeral: true);
-                //    else if (LS == null && EAT != null)
-                //        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {EAT} armor drop.", ephemeral: true);
-                //    else if (LS != null && EAT != null)
-                //        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} dropping {EAT}.", ephemeral: true);
-
-                //    return;
-                //}
-                //LS = (LostSector?)ArgLS;
-                //EAT = ArgEAT;
-
-                //LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
-                //if (LS == null && EAT == null)
-                //    await RespondAsync($"An error has occurred.", ephemeral: true);
-                //else if (LS != null && EAT == null)
-                //    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                //else if (LS == null && EAT != null)
-                //    await RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                //else if (LS != null && EAT != null)
-                //    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                
+                //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
                 //return;
+
+                if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
+                {
+                    if (LS == null && EAT == null)
+                        await RespondAsync($"An error has occurred.", ephemeral: true);
+                    else if (LS != null && EAT == null)
+                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)}.", ephemeral: true);
+                    else if (LS == null && EAT != null)
+                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {EAT} armor drop.", ephemeral: true);
+                    else if (LS != null && EAT != null)
+                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} dropping {EAT}.", ephemeral: true);
+
+                    return;
+                }
+                LS = (LostSector?)ArgLS;
+                EAT = ArgEAT;
+
+                LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
+                if (LS == null && EAT == null)
+                    await RespondAsync($"An error has occurred.", ephemeral: true);
+                else if (LS != null && EAT == null)
+                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                else if (LS == null && EAT != null)
+                    await RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                else if (LS != null && EAT != null)
+                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+
+                return;
             }
 
             [SlashCommand("nightfall", "Be notified when a Nightfall and/or Weapon is active.")]
@@ -547,40 +545,40 @@ namespace Levante.Commands
 
             [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
             public async Task LostSector([Summary("lost-sector", "Lost Sector name."),
-                Choice("Veles Labyrinth", 0), Choice("Exodus Garden 2A", 1), Choice("Aphelion's Rest", 2),
-                Choice("Bay of Drowned Wishes", 3), Choice("Chamber of Starlight", 4), Choice("K1 Revelation", 5),
-                Choice("K1 Crew Quarters", 6), Choice("K1 Logistics", 7), Choice("Metamorphosis", 8),
-                Choice("Sepulcher", 9), Choice("Extraction", 10)] int? ArgLS = null,
+                Choice("K1 Crew Quarters", 0), Choice("K1 Logistics", 1), Choice("K1 Revelation", 2),
+                Choice("K1 Communion", 3), Choice("The Conflux", 4), Choice("Metamorphosis", 5),
+                Choice("Sepulcher", 6), Choice("Extraction", 7), Choice("Excavation Site XII", 8),
+                Choice("Skydock IV", 9), Choice("The Quarry", 10)] int? ArgLS = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
             {
-                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-                return;
-
-                //LostSector? LS = (LostSector?)ArgLS;
-                //ExoticArmorType? EAT = ArgEAT;
-
-                //var predictedDate = LostSectorRotation.DatePrediction(LS, EAT);
-                //var embed = new EmbedBuilder()
-                //{
-                //    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                //};
-                //embed.Title = "Lost Sectors";
-                //if (LS == null && EAT == null)
-                //    await RespondAsync($"An error has occurred. No parameters.", ephemeral: true);
-                //else if (LS != null && EAT == null)
-                //    embed.Description =
-                //        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                //else if (LS == null && EAT != null)
-                //    embed.Description =
-                //        $"Next occurrance of Lost Sectors" +
-                //            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                //else if (LS != null &&  EAT != null)
-                //    embed.Description =
-                //        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)}" +
-                //            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-                //await RespondAsync($"", embed: embed.Build());
+                //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
                 //return;
+
+                LostSector? LS = (LostSector?)ArgLS;
+                ExoticArmorType? EAT = ArgEAT;
+
+                var predictedDate = LostSectorRotation.DatePrediction(LS, EAT);
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                };
+                embed.Title = "Lost Sectors";
+                if (LS == null && EAT == null)
+                    await RespondAsync($"An error has occurred. No parameters.", ephemeral: true);
+                else if (LS != null && EAT == null)
+                    embed.Description =
+                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else if (LS == null && EAT != null)
+                    embed.Description =
+                        $"Next occurrance of Lost Sectors" +
+                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else if (LS != null && EAT != null)
+                    embed.Description =
+                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)}" +
+                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                await RespondAsync($"", embed: embed.Build());
+                return;
             }
 
             [SlashCommand("nightfall", "Find out when a Nightfall and/or Weapon is active next.")]
@@ -823,7 +821,7 @@ namespace Levante.Commands
         {
             if (!DataConfig.IsExistingLinkedUser(Context.User.Id))
             {
-                await RespondAsync("You do not have a Bungie account linked. Use the command \"/link\" to link!", ephemeral: true);
+                await RespondAsync("You do not have a Bungie account linked. Use the command \"/link\" to begin the linking process!", ephemeral: true);
                 return;
             }
 

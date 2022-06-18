@@ -29,6 +29,12 @@ namespace Levante.Configs
         [JsonProperty("BungieApiKey")]
         public static string BungieApiKey { get; set; } = "[YOUR API KEY HERE]";
 
+        [JsonProperty("BungieClientID")]
+        public static string BungieClientID { get; set; } = "[YOUR CLIENT ID HERE]";
+
+        [JsonProperty("BungieClientSecret")]
+        public static string BungieClientSecret { get; set; } = "[YOUR CLIENT SECRET HERE]";
+
         [JsonProperty("Version")]
         public static double Version { get; set; } = 1.0;
 
@@ -88,5 +94,7 @@ namespace Levante.Configs
             [JsonProperty("Above100Ranks")]
             public string Above100RanksHash { get; set; } = "[HASH]";
         }
+
+        public static bool IsSupporter(ulong DiscordID) => BotSupportersDiscordIDs.Contains(DiscordID);
     }
 }

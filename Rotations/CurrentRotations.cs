@@ -174,7 +174,7 @@ namespace Levante.Rotations
         {
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var embed = new EmbedBuilder()
             {
@@ -184,15 +184,14 @@ namespace Levante.Rotations
             embed.Title = $"Daily Reset of {TimestampTag.FromDateTime(DailyResetTimestamp, TimestampTagStyles.ShortDate)}";
             embed.Description = "Below are some of the things that are available today.";
 
-            //.AddField(x =>
-            // {
-            //     x.Name = "Lost Sector";
-            //     x.Value =
-            //         $"{LostSectorRotation.GetArmorEmote(LostSectorArmorDrop)} {LostSectorArmorDrop}\n" +
-            //         $"{DestinyEmote.LostSector} {LostSectorRotation.GetLostSectorString(LostSector)}";
-            //     x.IsInline = true;
-            // })
-            embed
+            embed.AddField(x =>
+             {
+                 x.Name = "Lost Sector";
+                 x.Value =
+                     $"{LostSectorRotation.GetArmorEmote(LostSectorArmorDrop)} {LostSectorArmorDrop}\n" +
+                     $"{DestinyEmote.LostSector} {LostSectorRotation.GetLostSectorString(LostSector)}";
+                 x.IsInline = true;
+             })
             .AddField(x =>
             {
                 x.Name = $"The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)}";
@@ -217,7 +216,7 @@ namespace Levante.Rotations
         {
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var embed = new EmbedBuilder()
             {

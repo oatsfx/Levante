@@ -76,6 +76,9 @@ namespace Levante.Configs
             foreach (ActiveAFKUser aau in ActiveAFKUsers)
                 if (aau.DiscordID == DiscordID)
                     return aau;
+            foreach (ActiveAFKUser aau in PriorityActiveAFKUsers)
+                if (aau.DiscordID == DiscordID)
+                    return aau;
             return null;
         }
 
@@ -135,13 +138,19 @@ namespace Levante.Configs
             File.WriteAllText(FilePath, output);
         }
 
-        public static void AddActiveUserToConfig(ActiveAFKUser aau)
+        public static void AddActiveUserToConfig(ActiveAFKUser aau, LoggingType Type)
         {
             //string json = File.ReadAllText(FilePath);
             //ActiveAFKUsers.Clear();
             //ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
 
-            ActiveAFKUsers.Add(aau);
+            switch (Type)
+            {
+                case LoggingType.Basic: ActiveAFKUsers.Add(aau); break;
+                case LoggingType.Priority: PriorityActiveAFKUsers.Add(aau); break;
+                default: ActiveAFKUsers.Add(aau); break;
+            }
+            
             //ActiveConfig ac = new ActiveConfig();
             //string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
             //File.WriteAllText(FilePath, output);
@@ -149,23 +158,23 @@ namespace Levante.Configs
 
         public static void DeleteActiveUserFromConfig(ulong DiscordID)
         {
-            ActiveAFKUsers.Remove(ActiveAFKUsers.First(x => x.DiscordID == DiscordID));
+            if (ActiveAFKUsers.Exists(x => x.DiscordID == DiscordID))
+                ActiveAFKUsers.Remove(ActiveAFKUsers.First(x => x.DiscordID == DiscordID));
+            else
+                PriorityActiveAFKUsers.Remove(PriorityActiveAFKUsers.First(x => x.DiscordID == DiscordID));
             //ActiveConfig ac = new ActiveConfig();
             //string output = JsonConvert.SerializeObject(ac, Formatting.Indented);
             //File.WriteAllText(FilePath, output);
         }
 
-        public static bool IsExistingActiveUser(ulong DiscordID)
-        {
-            //string json = File.ReadAllText(FilePath);
-            //ActiveAFKUsers.Clear();
-            //ActiveConfig jsonObj = JsonConvert.DeserializeObject<ActiveConfig>(json);
-            foreach (ActiveAFKUser aau in ActiveAFKUsers)
-                if (aau.DiscordID == DiscordID)
-                    return true;
-            return false;
-        }
+        public static bool IsExistingActiveUser(ulong DiscordID) => ActiveAFKUsers.Exists(x => x.DiscordID == DiscordID) || PriorityActiveAFKUsers.Exists(x => x.DiscordID == DiscordID);
 
         #endregion
+    }
+
+    public enum LoggingType
+    {
+        Basic,
+        Priority,
     }
 }

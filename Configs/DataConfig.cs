@@ -13,7 +13,7 @@ using System.Linq;
 
 namespace Levante.Configs
 {
-    public partial class DataConfig : IConfig
+    public class DataConfig : IConfig
     {
         public static string FilePath { get; } = @"Configs/dataConfig.json";
 
@@ -42,6 +42,21 @@ namespace Levante.Configs
 
             [JsonProperty("UniqueBungieName")]
             public string UniqueBungieName { get; set; } = "Guardian#0000";
+
+            [JsonProperty("AccessToken")]
+            public string AccessToken { get; set; } = "[ACCESS TOKEN]";
+
+            [JsonProperty("RefreshToken")]
+            public string RefreshToken { get; set; } = "[REFRESH TOKEN]";
+
+            [JsonProperty("AccessExpiration")]
+            public DateTime AccessExpiration { get; set; } = DateTime.Now;
+
+            [JsonProperty("RefreshExpiration")]
+            public DateTime RefreshExpiration { get; set; } = DateTime.Now;
+
+            [JsonProperty("IsPublic")]
+            public bool IsPublic { get; set; } = false;
         }
 
         public class EmblemAnnounceLink
@@ -133,113 +148,142 @@ namespace Levante.Configs
             return !status.Equals("Success");
         }
 
+        public static DiscordIDLink RefreshCode(DiscordIDLink DIL)
+        {
+            using (var client = new HttpClient())
+            {
+                var values = new Dictionary<string, string>
+                {
+                    { "client_id", $"{BotConfig.BungieClientID}" },
+                    { "client_secret", $"{BotConfig.BungieClientSecret}" },
+                    { "Content-Type", "application/x-www-form-urlencoded" },
+                    { "grant_type", "refresh_token" },
+                    { "refresh_token", $"{DIL.RefreshToken}" }
+                };
+                var postContent = new FormUrlEncodedContent(values);
+
+                var response = client.PostAsync("https://www.bungie.net/Platform/App/OAuth/Token/", postContent).Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                dynamic item = JsonConvert.DeserializeObject(content);
+
+                DIL.RefreshToken = item.refresh_token;
+                DIL.AccessToken = item.access_token;
+
+                DIL.AccessExpiration = DateTime.Now.Add(TimeSpan.FromSeconds(double.Parse($"{item.expires_in}")));
+                DIL.RefreshExpiration = DateTime.Now.Add(TimeSpan.FromSeconds(double.Parse($"{item.refresh_expires_in}")));
+
+                return DIL;
+            }
+        }
+
         public static DiscordIDLink GetLinkedUser(ulong DiscordID)
         {
-            foreach (DiscordIDLink dil in DiscordIDLinks)
-                if (dil.DiscordID == DiscordID)
-                    return dil;
+            var dil = DiscordIDLinks.Find(x => x.DiscordID == DiscordID);
+            if (dil == null)
+                return null;
+            if (dil.DiscordID == DiscordID)
+            {
+                if (dil.RefreshExpiration < DateTime.Now)
+                {
+                    return null;
+                }
+                else if (dil.AccessExpiration < DateTime.Now)
+                {
+                    dil = RefreshCode(dil);
+                }
+                return dil;
+            }
             return null;
         }
 
-        public static void AddUserToConfig(ulong DiscordID, string MembershipID, string MembershipType, string BungieName)
+        public static void AddUserToConfig(ulong DiscordID, string MembershipID, string MembershipType, string BungieName, OAuthHelper.CodeResult CodeResult)
         {
             DiscordIDLink dil = new DiscordIDLink()
             {
                 DiscordID = DiscordID,
                 BungieMembershipID = MembershipID,
                 BungieMembershipType = MembershipType,
-                UniqueBungieName = BungieName
+                UniqueBungieName = BungieName,
+                AccessToken = CodeResult.Access,
+                RefreshToken = CodeResult.Refresh,
+                AccessExpiration = DateTime.Now.Add(CodeResult.AccessExpiration),
+                RefreshExpiration = DateTime.Now.Add(CodeResult.RefreshExpiration)
             };
-            string json = File.ReadAllText(FilePath);
-            DiscordIDLinks.Clear();
-            AnnounceDailyLinks.Clear();
-            AnnounceWeeklyLinks.Clear();
-            AnnounceEmblemLinks.Clear();
-            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
+            //string json = File.ReadAllText(FilePath);
+            //DiscordIDLinks.Clear();
+            //AnnounceDailyLinks.Clear();
+            //AnnounceWeeklyLinks.Clear();
+            //AnnounceEmblemLinks.Clear();
+            //DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
 
             DiscordIDLinks.Add(dil);
-            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
-        }
-
-        public static void AddUserToConfig(DiscordIDLink dil)
-        {
-            string json = File.ReadAllText(FilePath);
-            DiscordIDLinks.Clear();
-            AnnounceDailyLinks.Clear();
-            AnnounceWeeklyLinks.Clear();
-            AnnounceEmblemLinks.Clear();
-            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
-
-            DiscordIDLinks.Add(dil);
-            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            string output = JsonConvert.SerializeObject(new DataConfig(), Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
         public static void AddChannelToRotationConfig(ulong ChannelID, bool IsDaily)
         {
-            string json = File.ReadAllText(FilePath);
-            DiscordIDLinks.Clear();
-            AnnounceDailyLinks.Clear();
-            AnnounceWeeklyLinks.Clear();
-            AnnounceEmblemLinks.Clear();
-            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
+            //string json = File.ReadAllText(FilePath);
+            //DiscordIDLinks.Clear();
+            //AnnounceDailyLinks.Clear();
+            //AnnounceWeeklyLinks.Clear();
+            //AnnounceEmblemLinks.Clear();
+            //DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
             
             if (IsDaily)
             {
                 AnnounceDailyLinks.Add(ChannelID);
-                string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+                string output = JsonConvert.SerializeObject(new DataConfig(), Formatting.Indented);
                 File.WriteAllText(FilePath, output);
             }
             else
             {
                 AnnounceWeeklyLinks.Add(ChannelID);
-                string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+                string output = JsonConvert.SerializeObject(new DataConfig(), Formatting.Indented);
                 File.WriteAllText(FilePath, output);
             }
         }
 
         public static void AddEmblemChannel(ulong ChannelID, IRole Role)
         {
-            string json = File.ReadAllText(FilePath);
-            DiscordIDLinks.Clear();
-            AnnounceDailyLinks.Clear();
-            AnnounceWeeklyLinks.Clear();
-            AnnounceEmblemLinks.Clear();
-            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
+            //string json = File.ReadAllText(FilePath);
+            //DiscordIDLinks.Clear();
+            //AnnounceDailyLinks.Clear();
+            //AnnounceWeeklyLinks.Clear();
+            //AnnounceEmblemLinks.Clear();
+            //DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
 
             if (Role != null)
                 AnnounceEmblemLinks.Add(new EmblemAnnounceLink() { ChannelID = ChannelID, RoleID = Role.Id });
             else
                 AnnounceEmblemLinks.Add(new EmblemAnnounceLink() { ChannelID = ChannelID, RoleID = 0 });
 
-            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            string output = JsonConvert.SerializeObject(new DataConfig(), Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
         public static void DeleteUserFromConfig(ulong DiscordID)
         {
-            string json = File.ReadAllText(FilePath);
-            DiscordIDLinks.Clear();
-            AnnounceDailyLinks.Clear();
-            AnnounceWeeklyLinks.Clear();
-            AnnounceEmblemLinks.Clear();
-            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
+            //string json = File.ReadAllText(FilePath);
+            //DiscordIDLinks.Clear();
+            //AnnounceDailyLinks.Clear();
+            //AnnounceWeeklyLinks.Clear();
+            //AnnounceEmblemLinks.Clear();
             for (int i = 0; i < DiscordIDLinks.Count; i++)
                 if (DiscordIDLinks[i].DiscordID == DiscordID)
                     DiscordIDLinks.RemoveAt(i);
-            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            string output = JsonConvert.SerializeObject(new DataConfig(), Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
         public static void DeleteChannelFromRotationConfig(ulong ChannelID, bool IsDaily)
         {
-            string json = File.ReadAllText(FilePath);
-            DiscordIDLinks.Clear();
-            AnnounceDailyLinks.Clear();
-            AnnounceWeeklyLinks.Clear();
-            AnnounceEmblemLinks.Clear();
-            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
+            //string json = File.ReadAllText(FilePath);
+            //DiscordIDLinks.Clear();
+            //AnnounceDailyLinks.Clear();
+            //AnnounceWeeklyLinks.Clear();
+            //AnnounceEmblemLinks.Clear();
+            //DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
 
             if (IsDaily)
             {
@@ -254,24 +298,24 @@ namespace Levante.Configs
                         AnnounceWeeklyLinks.RemoveAt(i);
             }
 
-            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            string output = JsonConvert.SerializeObject(new DataConfig(), Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
         public static void DeleteEmblemChannel(ulong ChannelID)
         {
-            string json = File.ReadAllText(FilePath);
-            DiscordIDLinks.Clear();
-            AnnounceDailyLinks.Clear();
-            AnnounceWeeklyLinks.Clear();
-            AnnounceEmblemLinks.Clear();
-            DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
+            //string json = File.ReadAllText(FilePath);
+            //DiscordIDLinks.Clear();
+            //AnnounceDailyLinks.Clear();
+            //AnnounceWeeklyLinks.Clear();
+            //AnnounceEmblemLinks.Clear();
+            //DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
 
             for (int i = 0; i < AnnounceEmblemLinks.Count; i++)
                 if (AnnounceEmblemLinks[i].ChannelID == ChannelID)
                     AnnounceEmblemLinks.RemoveAt(i);
 
-            string output = JsonConvert.SerializeObject(dc, Formatting.Indented);
+            string output = JsonConvert.SerializeObject(new DataConfig(), Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
@@ -282,13 +326,7 @@ namespace Levante.Configs
             File.WriteAllText(FilePath, output);
         }
 
-        public static bool IsExistingLinkedUser(ulong DiscordID)
-        {
-            foreach (DiscordIDLink dil in DiscordIDLinks)
-                if (dil.DiscordID == DiscordID)
-                    return true;
-            return false;
-        }
+        public static bool IsExistingLinkedUser(ulong DiscordID) => DiscordIDLinks.Exists(x => x.DiscordID == DiscordID);
 
         public static bool IsExistingLinkedChannel(ulong ChannelID, bool IsDaily)
         {
@@ -316,7 +354,6 @@ namespace Levante.Configs
             return false;
         }
 
-        // This returns the level, then other parameters are XPProgress (int) and IsInShatteredThrone (bool). Reduces the amount of calls to the Bungie API.
         public static int GetAFKValues(ulong DiscordID, out int XPProgress, out PrivacySetting FireteamPrivacy, out string CharacterId, out string ErrorStatus)
         {
             try
@@ -452,38 +489,6 @@ namespace Levante.Configs
                 XPProgress = -1;
                 IsPlaying = false;
                 return -1;
-            }
-        }
-
-        public static int GetUserSeasonPassLevel(ulong DiscordID, out int XPProgress, out dynamic item)
-        {
-            using (var client = new HttpClient())
-            {
-                int Level = 0;
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var dil = GetLinkedUser(DiscordID);
-
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                item = JsonConvert.DeserializeObject(content);
-
-                //first 100 levels: 4095505052 (S15); 2069932355 (S16); 26079066 (S17)
-                //anything after: 1531004716 (S15); 1787069365 (S16); 482365574 (S17)
-
-                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level == 100)
-                {
-                    int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].level;
-                    Level = 100 + extraLevel;
-                    XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].progressToNextLevel;
-                }
-                else
-                {
-                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level;
-                    XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].progressToNextLevel;
-                }
-
-                return Level;
             }
         }
 

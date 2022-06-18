@@ -26,7 +26,8 @@ namespace Levante.Commands
                 Author = auth,
             };
 
-            string desc = "";
+            string desc = "For in-depth explanations for all commands and features, visit [this page](https://www.levante.dev/features/).\n" +
+                "__Commands:__";
             foreach (var cmd in Context.Client.GetGlobalApplicationCommandsAsync().Result.OrderBy(cmd => cmd.Name))
                 desc += $"/{cmd.Name}\n";
             embed.Description = desc;
@@ -93,7 +94,7 @@ namespace Levante.Commands
             embed.Title = "Invite Link";
             embed.Description =
                 "__**Invite me to your server!**__" +
-                "\n[Invite](https://discord.com/api/oauth2/authorize?client_id=882303133643047005&permissions=8&scope=applications.commands%20bot)";
+                "\n[Invite](https://invite.levante.dev)";
 
             await RespondAsync(embed: embed.Build(), ephemeral: true);
         }

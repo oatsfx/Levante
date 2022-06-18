@@ -37,6 +37,45 @@ namespace Levante.Commands
             await ReplyAsync($"This shouldn't really be used...", components: buttonBuilder.Build());
         }
 
+        [Command("activeLogging")]
+        [Summary("Gets a list of the users that are using my XP logging feature.")]
+        [RequireBotStaff]
+        public async Task ActiveAFK()
+        {
+            var app = await Context.Client.GetApplicationInfoAsync();
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Active XP Logging Users",
+                IconUrl = app.IconUrl
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} people are logging their XP."
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = auth,
+                Footer = foot,
+            };
+
+            if (ActiveConfig.ActiveAFKUsers.Count >= 1)
+            {
+                embed.Description = $"__XP Logging List:__\n";
+                foreach (var aau in ActiveConfig.ActiveAFKUsers)
+                {
+                    embed.Description +=
+                        $"{aau.UniqueBungieName}: Level {aau.LastLoggedLevel}\n";
+                }
+            }
+            else
+            {
+                embed.Description = "No users are using my XP logging feature.";
+            }
+
+            await Context.Message.ReplyAsync(embed: embed.Build());
+        }
+
         [Command("giveConfig", RunMode = RunMode.Async)]
         [Alias("config", "getConfig")]
         [RequireOwner]

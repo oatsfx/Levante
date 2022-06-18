@@ -15,6 +15,7 @@ using Discord.Interactions;
 using Levante.Rotations;
 using APIHelper;
 using System.Linq;
+using Levante.Helpers;
 
 namespace Levante.Commands
 {
@@ -89,7 +90,13 @@ namespace Levante.Commands
 
                 await DeferAsync();
 
-                if (LinkedUser == null || !DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
+                if (LinkedUser == null)
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again."; });
+                    return;
+                }
+
+                if (!DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
                 {
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"User is not linked; tell them to link using \"/link [THEIR BUNGIE TAG] <PLATFORM>\"."; });
                     return;
@@ -262,6 +269,40 @@ namespace Levante.Commands
             {
                 string season = GetCurrentDestiny2Season(out int seasonNum);
 
+                var dil = DataConfig.GetLinkedUser(Context.User.Id);
+                int Level;
+                int XPProgress;
+                dynamic item;
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    item = JsonConvert.DeserializeObject(content);
+
+                    if (item.Response.profile.privacy == 2)
+                    {
+                        await RespondAsync($"{User.Mention} has their Destiny 2 stats on Private. Let's respect that.", ephemeral: true);
+                        return;
+                    }
+
+                    //first 100 levels: 4095505052 (S15); 2069932355 (S16); 26079066 (S17)
+                    //anything after: 1531004716 (S15); 1787069365 (S16); 482365574 (S17)
+
+                    if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level == 100)
+                    {
+                        int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].level;
+                        Level = 100 + extraLevel;
+                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].progressToNextLevel;
+                    }
+                    else
+                    {
+                        Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level;
+                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].progressToNextLevel;
+                    }
+                }
+
                 var app = await Context.Client.GetApplicationInfoAsync();
                 var auth = new EmbedAuthorBuilder()
                 {
@@ -278,11 +319,11 @@ namespace Levante.Commands
                     Author = auth,
                     Footer = foot,
                 };
-                int seasonRank = DataConfig.GetUserSeasonPassLevel(User.Id, out int progress, out dynamic item);
+
                 embed.Description =
-                    $"Player: **{DataConfig.GetLinkedUser(User.Id).UniqueBungieName}**\n" +
-                    $"Level: **{seasonRank}**\n" +
-                    $"Progress to Next Level: **{progress:n0}/100,000**";
+                    $"Player: **{dil.UniqueBungieName}**\n" +
+                    $"Level: **{Level}**\n" +
+                    $"Progress to Next Level: **{XPProgress:n0}/100,000**";
 
                 int powerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
                 int totalXP = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.currentProgress;
@@ -295,9 +336,9 @@ namespace Levante.Commands
                 int xpNeeded = xpForNextBoost - GetXPForBoost(powerBonus) - progressToNextLevel;
                 var seasonRanksNeeded = xpNeeded / 100000;
                 var remainder = xpNeeded % 100000;
-                if (remainder + progress > 100000)
+                if (remainder + XPProgress > 100000)
                     seasonRanksNeeded += 1;
-                int projectedSeasonRank = seasonRank + seasonRanksNeeded;
+                int projectedSeasonRank = Level + seasonRanksNeeded;
 
                 embed.AddField(x =>
                 {
@@ -321,32 +362,30 @@ namespace Levante.Commands
                 await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "An error has occurred, please try again later."; });
             }
         }
+
         private static int GetXPForBoost(int boostLevel) => 55000 * (boostLevel - 1) * (boostLevel - 1);
 
         [SlashCommand("lost-sector", "Get info on a Lost Sector based on Difficulty.")]
         public async Task LostSector([Summary("lost-sector", "Lost Sector name."),
-                Choice("Veles Labyrinth", 0), Choice("Exodus Garden 2A", 1), Choice("Aphelion's Rest", 2),
-                Choice("Bay of Drowned Wishes", 3), Choice("Chamber of Starlight", 4), Choice("K1 Revelation", 5),
-                Choice("K1 Crew Quarters", 6), Choice("K1 Logistics", 7), Choice("Metamorphosis", 8),
-                Choice("Sepulcher", 9), Choice("Extraction", 10)] int ArgLS,
+                Choice("K1 Crew Quarters", 0), Choice("K1 Logistics", 1), Choice("K1 Revelation", 2),
+                Choice("K1 Communion", 3), Choice("The Conflux", 4), Choice("Metamorphosis", 5),
+                Choice("Sepulcher", 6), Choice("Extraction", 7), Choice("Excavation Site XII", 8),
+                Choice("Skydock IV", 9), Choice("The Quarry", 10)] int ArgLS,
                 [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty ArgLSD)
         {
-            await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-            return;
-            //LostSector LS = (LostSector)ArgLS;
-            //LostSectorDifficulty LSD = ArgLSD;
-
-            //await RespondAsync(embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
+            //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
             //return;
+            LostSector LS = (LostSector)ArgLS;
+            LostSectorDifficulty LSD = ArgLSD;
+
+            await RespondAsync(embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
+            return;
         }
 
-        /*[SlashCommand("materials", "Gets your Destiny 2 material count.")]
-        public async Task Materials([Summary("user", "User you want the Materials count for. Leave empty for your own.")] IUser User = null)
+        [SlashCommand("materials", "Gets your Destiny 2 material/currency counts.")]
+        public async Task Materials()
         {
-            if (User == null)
-            {
-                User = Context.User as SocketGuildUser;
-            }
+            var User = Context.User as SocketGuildUser;
 
             if (!DataConfig.IsExistingLinkedUser(User.Id))
             {
@@ -354,25 +393,154 @@ namespace Levante.Commands
                 return;
             }
 
+            await DeferAsync();
             var dil = DataConfig.GetLinkedUser(User.Id);
+            if (dil == null)
+            {
+                await RespondAsync($"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again.", ephemeral: true);
+                return;
+            }
 
-            int Glimmer, LegendaryShards, UpgradeModules, MasterworkCores, EnhancementPrisms, AscendantShards, SpoilsOfConquest, BrightDust,
-                Adroit, Energetic, Mutable, Ruinous, Neutral, ResonantAlloy, AscendantAlloy = -1;
+            int Glimmer = 0, LegendaryShards = 0, UpgradeModules = 0, EnhancementCores = 0, EnhancementPrisms = 0, AscendantShards = 0,
+                SpoilsOfConquest = 0, BrightDust = 0, ResonantElement = 0, ResonantAlloy = 0, DrownedAlloy = 0, AscendantAlloy = 0;
 
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=102").Result;
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,102,103,201,1200").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
                 for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
                 {
-                    // 
+                    long hash = item.Response.profileInventory.data.items[i].itemHash;
+                    switch (hash)
+                    {
+                        // Upgrade Modules
+                        case 2979281381: UpgradeModules += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Enhancement Cores
+                        case 3853748946: EnhancementCores += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Enhancement Prisms
+                        case 4257549984: EnhancementPrisms += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Ascendant Shards
+                        case 4257549985: AscendantShards += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Spoils of Conquest
+                        case 3702027555: SpoilsOfConquest += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Resonant Alloy
+                        case 2497395625: ResonantAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Drowned Alloy
+                        case 2708128607: DrownedAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Ascendant Alloy
+                        case 353704689: AscendantAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        default: break;
+                    }
                 }
+
+                for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                {
+                    string charId = $"{item.Response.profile.data.characterIds[i]}";
+                    for (int j = 0; j < item.Response.characterInventories.data[$"{charId}"].items.Count; j++)
+                    {
+                        long hash = item.Response.characterInventories.data[$"{charId}"].items[j].itemHash;
+                        switch (hash)
+                        {
+                            // Upgrade Modules
+                            case 2979281381: UpgradeModules += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+
+                            // Enhancement Cores
+                            case 3853748946: EnhancementCores += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+
+                            // Enhancement Prisms
+                            case 4257549984: EnhancementPrisms += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+
+                            // Ascendant Shards
+                            case 4257549985: AscendantShards += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+
+                            // Spoils of Conquest
+                            case 3702027555: SpoilsOfConquest += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+
+                            // Resonant Alloy
+                            case 2497395625: ResonantAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+
+                            // Drowned Alloy
+                            case 2708128607: DrownedAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+
+                            // Ascendant Alloy
+                            case 353704689: AscendantAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+
+                            default: break;
+                        }
+                    }
+                }
+
+                Glimmer += int.Parse($"{item.Response.profileCurrencies.data.items[0].quantity}");
+                LegendaryShards += int.Parse($"{item.Response.profileCurrencies.data.items[1].quantity}");
+                BrightDust += int.Parse($"{item.Response.profileCurrencies.data.items[2].quantity}");
+
+                ResonantElement += int.Parse($"{item.Response.profileStringVariables.data.integerValuesByHash["2747150405"]}");
+
+                var app = await Context.Client.GetApplicationInfoAsync();
+                var auth = new EmbedAuthorBuilder()
+                {
+                    Name = $"{dil.UniqueBungieName} Material and Currency Count",
+                    IconUrl = User.GetAvatarUrl(),
+                };
+                var foot = new EmbedFooterBuilder()
+                {
+                    Text = $"Powered by the Bungie API"
+                };
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Author = auth,
+                    Footer = foot,
+                };
+                embed.Description = $"";
+
+                embed.AddField(x =>
+                {
+                    x.Name = "Currency";
+                    x.Value = $"{DestinyEmote.Glimmer} {Glimmer:n0}\n" +
+                        $"{DestinyEmote.LegendaryShards} {LegendaryShards:n0}\n" +
+                        $"{DestinyEmote.BrightDust} {BrightDust:n0}";
+                    x.IsInline = true;
+                }).AddField(x =>
+                {
+                    x.Name = "Masterwork";
+                    x.Value = $"{DestinyEmote.EnhancementCore} {EnhancementCores:n0}\n" +
+                        $"{DestinyEmote.EnhancementPrism} {EnhancementPrisms:n0}\n" +
+                        $"{DestinyEmote.AscendantShard} {AscendantShards:n0}";
+                    x.IsInline = true;
+                }).AddField(x =>
+                {
+                    x.Name = "Crafting";
+                    x.Value = $"{DestinyEmote.ResonantElement} {ResonantElement:n0}\n" +
+                        $"{DestinyEmote.ResonantAlloy} {ResonantAlloy:n0}\n" +
+                        $"{DestinyEmote.DrownedAlloy} {DrownedAlloy:n0}\n" +
+                        $"{DestinyEmote.AscendantAlloy} {AscendantAlloy:n0}";
+                    x.IsInline = true;
+                })
+                .AddField(x =>
+                {
+                    x.Name = "Miscellaneous";
+                    x.Value = $"{DestinyEmote.UpgradeModule} {UpgradeModules:n0}\n" +
+                        $"{DestinyEmote.SpoilsOfConquest} {SpoilsOfConquest:n0}";
+                    x.IsInline = true;
+                });
+
+                await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
             }
-        }*/
+        }
 
         [SlashCommand("nightfall", "Display Nightfall information.")]
         public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
@@ -433,7 +601,7 @@ namespace Levante.Commands
 
                 using (Font font = new Font("Neue Haas Grotesk Display Pro", 14))
                 {
-                    graphics.DrawString($"Levante Bot{(BotConfig.BotSupportersDiscordIDs.Contains(Context.User.Id) ? " Supporter" : "")} {(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", font, new SolidBrush(System.Drawing.Color.FromArgb(128, System.Drawing.Color.White)), new PointF(84f, 37f));
+                    graphics.DrawString($"Levante Bot{(BotConfig.IsSupporter(Context.User.Id) ? " Supporter" : "")} {(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", font, new SolidBrush(System.Drawing.Color.FromArgb(128, System.Drawing.Color.White)), new PointF(84f, 37f));
                 }
             }
 

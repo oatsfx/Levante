@@ -10,7 +10,7 @@ namespace Levante.Commands
 {
     public class XPLogging : InteractionModuleBase<SocketInteractionContext>
     {
-        [SlashCommand("active-logging", "Gets a list of the users that are using my XP logging feature.")]
+        [SlashCommand("active-logging", "Gets the amount of users logging their XP.")]
         public async Task ActiveAFK()
         {
             var app = await Context.Client.GetApplicationInfoAsync();
@@ -21,7 +21,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} people are logging their XP."
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var embed = new EmbedBuilder()
             {
@@ -32,12 +32,7 @@ namespace Levante.Commands
 
             if (ActiveConfig.ActiveAFKUsers.Count >= 1)
             {
-                embed.Description = $"__XP Logging List:__\n";
-                foreach (var aau in ActiveConfig.ActiveAFKUsers)
-                {
-                    embed.Description +=
-                        $"{aau.UniqueBungieName}: Level {aau.LastLoggedLevel}\n";
-                }
+                embed.Description = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} people are logging their XP.";
             }
             else
             {

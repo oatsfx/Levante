@@ -122,6 +122,8 @@ namespace Levante
 
             await InitializeListeners();
 
+            var oauthManager = new OAuthHelper();
+
             await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
             await _client.StartAsync();
 
@@ -135,7 +137,7 @@ namespace Levante
         private async Task UpdateBotActivity(int SetRNG = -1)
         {
             int RNG = 0;
-            int RNGMax = 10;
+            int RNGMax = 15;
             if (SetRNG != -1 && SetRNG < RNGMax)
                 RNG = SetRNG;
             else
@@ -168,6 +170,8 @@ namespace Levante
                     await _client.SetActivityAsync(new Game($"{BotConfig.Twitter} on Twitter", ActivityType.Watching)); break;
                 case 9:
                     await _client.SetActivityAsync(new Game($"{EmblemOffer.CurrentOffers.Count} Available Emblems", ActivityType.Watching)); break;
+                case 10:
+                    await _client.SetActivityAsync(new Game($"this ratio", ActivityType.Watching)); break;
                 default: break;
             }
             return;
@@ -357,7 +361,7 @@ namespace Levante
                 }*/
 
                 //ActiveConfig.ActiveAFKUsers = newList;
-                //ActiveConfig.UpdateActiveAFKUsersConfig();
+                ActiveConfig.UpdateActiveAFKUsersConfig();
 
                 _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, ActiveConfig.TimeBetweenRefresh * 60000);
                 LogHelper.ConsoleLog($"[LOGGING] Bungie API Refreshed! Next refresh in: {ActiveConfig.TimeBetweenRefresh} minute(s).");

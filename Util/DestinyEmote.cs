@@ -33,6 +33,7 @@ namespace Levante.Util
         public static readonly string LimitedRevives = "<:LimitedRevives:900142086270115901>";
         public static readonly string Martyr = "<:Martyr:951000502190112808>";
         public static readonly string MatchGame = "<:MatchGame:900142096013459516>";
+        public static readonly string Pestilence = "<:Pestilence:987504632433631292>";
         public static readonly string Poleharm = "<:Poleharm:947300080308879371>";
         public static readonly string RaiderShield = "<:RaiderShield:900142103697428562>";
         public static readonly string SediasDurance = "<:SediasDurance:935306050683404288>";
@@ -98,6 +99,20 @@ namespace Levante.Util
         public static readonly string VoGRaidChallenge = "<:VoGRaidChallenge:933963748295720960>";
         public static readonly string WellspringActivity = "<:WellspringActivity:947293754174365726>";
         public static readonly string VowRaidChallenge = "<:VowRaidChallenge:951003008072831039>";
+
+        // Materials/Currencies
+        public static readonly string AscendantAlloy = "<:AscendantAlloy:986514954620403752>";
+        public static readonly string AscendantShard = "<:AscendantShard:986514809635897394>";
+        public static readonly string BrightDust = "<:BrightDust:986514672532471818>";
+        public static readonly string DrownedAlloy = "<:DrownedAlloy:986514928401797150>";
+        public static readonly string EnhancementCore = "<:EnhancementCore:986514755458064414>";
+        public static readonly string EnhancementPrism = "<:EnhancementPrism:986514778451226744>";
+        public static readonly string Glimmer = "<:Glimmer:986514625531088906>";
+        public static readonly string LegendaryShards = "<:LegendaryShards:986514643449163776>";
+        public static readonly string ResonantAlloy = "<:ResonantAlloy:986514895946268742>";
+        public static readonly string ResonantElement = "<:ResonantElement:986676994731278417>";
+        public static readonly string SpoilsOfConquest = "<:SpoilsOfConquest:986514871850008616>";
+        public static readonly string UpgradeModule = "<:UpgradeModule:986514733609926656>";
 
         // Needs to be char for char.
         public static string MatchEmote(string Query)

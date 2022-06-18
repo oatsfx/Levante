@@ -72,7 +72,7 @@ namespace Levante.Helpers
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var embed = new EmbedBuilder()
             {

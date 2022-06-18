@@ -42,21 +42,27 @@ namespace Levante.Commands
 
             if (!DataConfig.IsExistingLinkedUser(user.Id))
             {
-                await RespondAsync($"You are not registered! Use \"/link [YOUR BUNGIE TAG] <PLATFORM>\" to register.", ephemeral: true);
+                await RespondAsync($"You are not linked! Use \"/link\" to begin the linking process.", ephemeral: true);
                 return;
             }
 
             if (ActiveConfig.IsExistingActiveUser(user.Id))
             {
-                await RespondAsync($"You are already actively using our logging feature.", ephemeral: true);
+                await RespondAsync($"You are already actively using my logging feature.", ephemeral: true);
                 return;
             }
 
             await RespondAsync($"Getting things ready...", ephemeral: true);
 
-            string memId = DataConfig.GetLinkedUser(user.Id).BungieMembershipID;
-            string memType = DataConfig.GetLinkedUser(user.Id).BungieMembershipType;
+            var dil = DataConfig.GetLinkedUser(user.Id);
+            if (dil == null)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Unable to pull user data. I may have lost access to your information, likely, you'll have to link again."; });
+                return;
+            }
 
+            string memId = dil.BungieMembershipID;
+            string memType = dil.BungieMembershipType;
             int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus);
 
             if (!errorStatus.Equals("Success"))
@@ -76,8 +82,7 @@ namespace Levante.Commands
                 return;
             }
 
-            string uniqueName = DataConfig.GetLinkedUser(user.Id).UniqueBungieName;
-
+            string uniqueName = dil.UniqueBungieName;
             var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName.Replace('#', '-')}").Result;
 
             ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
@@ -114,15 +119,21 @@ namespace Levante.Commands
                 case PrivacySetting.Closed: privacy = "Closed"; break;
                 default: break;
             }
-            var guardian = new Guardian(newUser.UniqueBungieName, newUser.BungieMembershipID, DataConfig.GetLinkedUser(user.Id).BungieMembershipType, CharacterId);
-            await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLoggedLevel} ({String.Format("{0:n0}", newUser.LastLevelProgress)}/100,000 XP).", guardian.GetGuardianEmbed());
+
+            LoggingType logType = LoggingType.Basic;
+            if (BotConfig.IsSupporter(user.Id))
+                logType = LoggingType.Priority;
+
+            var guardian = new Guardian(newUser.UniqueBungieName, newUser.BungieMembershipID, memType, CharacterId);
+            await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLoggedLevel} ({String.Format("{0:n0}", newUser.LastLevelProgress)}/100,000 XP).{(logType == LoggingType.Priority ? " *You are in the priority logging list; thank you for your generous support!*" : "")}", guardian.GetGuardianEmbed());
             string recommend = fireteamPrivacy == PrivacySetting.Open || fireteamPrivacy == PrivacySetting.ClanAndFriendsOnly || fireteamPrivacy == PrivacySetting.FriendsOnly ? $" It is recommended to change your privacy to prevent people from joining you. {user.Mention}" : "";
             await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
 
-            ActiveConfig.AddActiveUserToConfig(newUser);
+            ActiveConfig.AddActiveUserToConfig(newUser, logType);
             ActiveConfig.UpdateActiveAFKUsersConfig();
             string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching));
+            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 1 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
 
             await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Your logging channel has been successfully created! Access it here: {userLogChannel.Mention}!"; });
@@ -135,7 +146,7 @@ namespace Levante.Commands
             var user = Context.User;
             if (!DataConfig.IsExistingLinkedUser(user.Id))
             {
-                await RespondAsync($"You are not registered! Use \"/link [YOUR BUNGIE TAG] <PLATFORM>\" to register.", ephemeral: true);
+                await RespondAsync($"You are not linked! Use \"/link\" to begin the linking process.", ephemeral: true);
                 return;
             }
 
@@ -147,6 +158,15 @@ namespace Levante.Commands
 
             var aau = ActiveConfig.GetActiveAFKUser(user.Id);
 
+            var channel = Context.Client.GetChannelAsync(aau.DiscordChannelID);
+            if (channel.Result == null)
+            {
+                await RespondAsync($"I could not find your logging channel, did it get deleted? I have removed you from my logging feature.", ephemeral: true);
+                ActiveConfig.DeleteActiveUserFromConfig(user.Id);
+                ActiveConfig.UpdateActiveAFKUsersConfig();
+                return;
+            }
+
             await LogHelper.Log(Context.Client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: XPLoggingHelper.GenerateSessionSummary(aau, Context.Client.CurrentUser.GetAvatarUrl()), CB: XPLoggingHelper.GenerateDeleteChannelButton());
             await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(aau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(aau, Context.Client.CurrentUser.GetAvatarUrl()));
 
@@ -154,7 +174,8 @@ namespace Levante.Commands
             ActiveConfig.DeleteActiveUserFromConfig(user.Id);
             ActiveConfig.UpdateActiveAFKUsersConfig();
             string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching));
+            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 1 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
             await RespondAsync($"Stopped AFK logging for {aau.UniqueBungieName}.", ephemeral: true);
             LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {aau.UniqueBungieName} via user request.");
         }
@@ -170,7 +191,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var helpEmbed = new EmbedBuilder()
             {
@@ -185,20 +206,6 @@ namespace Levante.Commands
                 $"3) I will keep track of your gains in a personalized channel for you.";
 
             await RespondAsync($"", embed: helpEmbed.Build(), ephemeral: true);
-        }
-
-        // Old buttons.
-        [ComponentInteraction("startAFK")]
-        public async Task OldStartAFK() => await OldThrallwayButton();
-
-        [ComponentInteraction("stopAFK")]
-        public async Task OldStopAFK() => await OldThrallwayButton();
-
-        [ComponentInteraction("viewHelp")]
-        public async Task OldThrallwayButton()
-        {
-            await RespondAsync($"Hey! This button and hub are outdated and requires the new and improved XP hub! Ask a server admin to run the command '/create-hub' to get this sorted!\n" +
-                $"*This warning will be removed in April 2022.*", ephemeral: true);
         }
     }
 }
