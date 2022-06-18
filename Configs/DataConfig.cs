@@ -358,12 +358,13 @@ namespace Levante.Configs
         {
             try
             {
+                var dil = GetLinkedUser(DiscordID);
+
                 using (var client = new HttpClient())
                 {
                     int Level = 0;
                     client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                    var dil = GetLinkedUser(DiscordID);
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
                     var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,202,204,1000").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
@@ -435,12 +436,12 @@ namespace Levante.Configs
         {
             try
             {
+                var dil = GetLinkedUser(DiscordID);
                 using (var client = new HttpClient())
                 {
                     int Level = 0;
                     client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                    var dil = GetLinkedUser(DiscordID);
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
                     var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,202,204,1000").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
