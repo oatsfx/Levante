@@ -257,7 +257,8 @@ namespace Levante.Helpers
                 LogHelper.ConsoleLog($"[OAUTH] Received tokens for {memItem.Response.bnetMembership.supplementalDisplayName} on platform {memType}.");
 
                 MembershipID = $"{memId}";
-                BungieTag = $"{memItem.Response.bnetMembership.supplementalDisplayName}";
+                string bungieTagCode = $"{memItem.Response.bnetMembership.bungieGlobalDisplayNameCode}".PadLeft(4, '0');
+                BungieTag = $"{memItem.Response.bnetMembership.bungieGlobalDisplayName}#{bungieTagCode}";
                 return int.Parse($"{memType}");
             }
         }

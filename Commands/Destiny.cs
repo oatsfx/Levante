@@ -385,7 +385,7 @@ namespace Levante.Commands
         [SlashCommand("materials", "Gets your Destiny 2 material/currency counts.")]
         public async Task Materials()
         {
-            var User = Context.User as SocketGuildUser;
+            var User = Context.User;
 
             if (!DataConfig.IsExistingLinkedUser(User.Id))
             {
