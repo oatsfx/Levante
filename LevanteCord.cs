@@ -223,7 +223,7 @@ namespace Levante
         #region XPLogging
         private async Task RefreshBungieAPI()
         {
-            if (ActiveConfig.ActiveAFKUsers.Count <= 0)
+            if (ActiveConfig.ActiveAFKUsers.Count <= 0 && ActiveConfig.PriorityActiveAFKUsers.Count <= 0)
             {
                 LogHelper.ConsoleLog($"[LOGGING] Skipping refresh, no active AFK users...");
                 return;
@@ -246,6 +246,10 @@ namespace Levante
 
                     LogHelper.ConsoleLog($"[LOGGING] Checking {tempAau.UniqueBungieName}.");
                     var actualUser = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
+                    if (actualUser == null)
+                    {
+                        actualUser = ActiveConfig.PriorityActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
+                    }
 
                     if (!errorStatus.Equals("Success") && !errorStatus.Equals("PlayerNotOnline"))
                     {
