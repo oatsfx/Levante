@@ -238,7 +238,8 @@ namespace Levante
             try // XP Logs
             {
                 LogHelper.ConsoleLog($"[LOGGING] Refreshing XP Logging Users...");
-                foreach (ActiveConfig.ActiveAFKUser aau in ActiveConfig.ActiveAFKUsers.ToList())
+                var combinedAFKUsers = ActiveConfig.PriorityActiveAFKUsers.Concat(ActiveConfig.ActiveAFKUsers);
+                foreach (ActiveConfig.ActiveAFKUser aau in combinedAFKUsers)
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
                     int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isPlaying, out string errorStatus);
