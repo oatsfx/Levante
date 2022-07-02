@@ -492,7 +492,7 @@ namespace Levante.Rotations
             {
                 do
                 {
-                    iterationLS = iterationLS == LostSector.K1CrewQuarters ? LostSector.TheQuarry : iterationLS + 1;
+                    iterationLS = iterationLS == LostSector.TheQuarry ? LostSector.K1CrewQuarters : iterationLS + 1;
                     DaysUntil++;
                 } while (iterationLS != LS);
             }
@@ -501,7 +501,7 @@ namespace Levante.Rotations
                 do
                 {
                     iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
-                    iterationLS = iterationLS == LostSector.K1CrewQuarters ? LostSector.TheQuarry : iterationLS + 1;
+                    iterationLS = iterationLS == LostSector.TheQuarry ? LostSector.K1CrewQuarters : iterationLS + 1;
                     DaysUntil++;
                 } while (iterationEAT != ArmorType || iterationLS != LS);
             }

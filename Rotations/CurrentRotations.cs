@@ -75,7 +75,7 @@ namespace Levante.Rotations
 
         public static void DailyRotation()
         {
-            LostSector = LostSector == LostSector.K1CrewQuarters ? LostSector.TheQuarry : LostSector + 1;
+            LostSector = LostSector == LostSector.TheQuarry ? LostSector.K1CrewQuarters : LostSector + 1;
             LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
 
             AltarWeapon = AltarWeapon == AltarsOfSorrow.Rocket ? AltarsOfSorrow.Shotgun : AltarWeapon + 1;

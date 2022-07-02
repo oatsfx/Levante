@@ -17,8 +17,6 @@ namespace Levante.Helpers
     {
         private HttpListener _listener;
 
-        public List<ulong> ExpectingLink = new List<ulong>();
-
         public OAuthHelper()
         {
             _listener = new HttpListener();
@@ -125,8 +123,16 @@ namespace Levante.Helpers
 
                 result.Access = item.access_token;
                 result.Refresh = item.refresh_token;
-                result.AccessExpiration = TimeSpan.FromSeconds(double.Parse($"{item.expires_in}"));
-                result.RefreshExpiration = TimeSpan.FromSeconds(double.Parse($"{item.refresh_expires_in}"));
+                try
+                {
+                    result.AccessExpiration = TimeSpan.FromSeconds(double.Parse($"{item.expires_in}"));
+                    result.RefreshExpiration = TimeSpan.FromSeconds(double.Parse($"{item.refresh_expires_in}"));
+                }
+                catch
+                {
+                    result.Reason = ErrorReason.Unknown;
+                    return result;
+                }
 
                 string bungieTag = "";
                 string memId = "";
