@@ -89,10 +89,17 @@ namespace Levante.Helpers
             // simulate work
             //await Task.Delay(500);
 
-            System.IO.Stream output = response.OutputStream;
-            output.Write(buffer, 0, buffer.Length);
-            // You must close the output stream.
-            output.Close();
+            try
+            {
+                System.IO.Stream output = response.OutputStream;
+                output.Write(buffer, 0, buffer.Length);
+                // You must close the output stream.
+                output.Close();
+            }
+            catch (Exception x)
+            {
+                LogHelper.ConsoleLog("[OAUTH] Unable to send response write data.");
+            }
             LogHelper.ConsoleLog("[OAUTH] Flow completed. Listening...");
         }
 
