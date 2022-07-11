@@ -26,7 +26,7 @@ namespace Levante.Commands
         }
 
         [ComponentInteraction("deleteChannel")]
-        public async Task DeleteChannel() => await (Context.Channel as SocketGuildChannel).DeleteAsync();
+        public async Task DeleteChannel() => await (Context.Channel as SocketGuildChannel).DeleteAsync(options: new RequestOptions() { AuditLogReason = $"XP Logging Delete Channel (User: {Context.User.Username}#{Context.User.Discriminator})"});
 
         [ComponentInteraction("startXPAFK")]
         public async Task StartAFK()
@@ -63,7 +63,7 @@ namespace Levante.Commands
 
             string memId = dil.BungieMembershipID;
             string memType = dil.BungieMembershipType;
-            int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus);
+            int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out int powerBonus, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus);
 
             if (!errorStatus.Equals("Success"))
             {
@@ -83,31 +83,32 @@ namespace Levante.Commands
             }
 
             string uniqueName = dil.UniqueBungieName;
-            var userLogChannel = guild.CreateTextChannelAsync($"{uniqueName.Replace('#', '-')}").Result;
+            var userLogChannel = await guild.CreateTextChannelAsync($"{uniqueName.Replace('#', '-')}", options: new RequestOptions(){ AuditLogReason = "XP Logging Session Create" });
 
             ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
             {
                 DiscordID = user.Id,
-                BungieMembershipID = memId,
                 UniqueBungieName = uniqueName,
                 DiscordChannelID = userLogChannel.Id,
                 StartLevel = userLevel,
-                LastLoggedLevel = userLevel,
                 StartLevelProgress = lvlProg,
+                StartPowerBonus = powerBonus,
+                LastLevel = userLevel,
                 LastLevelProgress = lvlProg,
+                LastPowerBonus = powerBonus,
             };
 
             await userLogChannel.ModifyAsync(x =>
             {
                 x.CategoryId = cc.Id;
-                x.Topic = $"{uniqueName} (Starting Level: {newUser.StartLevel} [{String.Format("{0:n0}", newUser.StartLevelProgress)}/100,000 XP]) - Time Started: {TimestampTag.FromDateTime(newUser.TimeStarted)}";
+                x.Topic = $"{uniqueName} (Starting Level: {newUser.StartLevel} [{String.Format("{0:n0}", newUser.StartLevelProgress)}/100,000 XP] | Starting Power Bonus: +{newUser.StartPowerBonus}) - Time Started: {TimestampTag.FromDateTime(newUser.TimeStarted)}";
                 x.PermissionOverwrites = new[]
                 {
                         new Overwrite(user.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
-                        new Overwrite(688535303148929027, PermissionTarget.Role, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
+                        new Overwrite(Context.Client.CurrentUser.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
                         new Overwrite(guild.Id, PermissionTarget.Role, new OverwritePermissions(viewChannel: PermValue.Deny)),
-                    };
-            });
+                };
+            }, options: new RequestOptions() { AuditLogReason = "XP Logging Session Channel Edit" });
 
             string privacy = "";
             switch (fireteamPrivacy)
@@ -124,15 +125,15 @@ namespace Levante.Commands
             if (BotConfig.IsSupporter(user.Id))
                 logType = LoggingType.Priority;
 
-            var guardian = new Guardian(newUser.UniqueBungieName, newUser.BungieMembershipID, memType, CharacterId);
-            await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLoggedLevel} ({String.Format("{0:n0}", newUser.LastLevelProgress)}/100,000 XP).{(logType == LoggingType.Priority ? " *You are in the priority logging list; thank you for your generous support!*" : "")}", guardian.GetGuardianEmbed());
+            var guardian = new Guardian(newUser.UniqueBungieName, memId, memType, CharacterId);
+            await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLevel} ({String.Format("{0:n0}", newUser.LastLevelProgress)}/100,000 XP) and Power Bonus +{newUser.LastPowerBonus}.{(logType == LoggingType.Priority ? " *You are in the priority logging list; thank you for your generous support!*" : "")}", guardian.GetGuardianEmbed());
             string recommend = fireteamPrivacy == PrivacySetting.Open || fireteamPrivacy == PrivacySetting.ClanAndFriendsOnly || fireteamPrivacy == PrivacySetting.FriendsOnly ? $" It is recommended to change your privacy to prevent people from joining you. {user.Mention}" : "";
             await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
 
             ActiveConfig.AddActiveUserToConfig(newUser, logType);
             ActiveConfig.UpdateActiveAFKUsersConfig();
             string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 1 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
             await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
 
             await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
@@ -152,7 +153,7 @@ namespace Levante.Commands
 
             if (!ActiveConfig.IsExistingActiveUser(user.Id))
             {
-                await RespondAsync($"You are not actively using our logging feature.", ephemeral: true);
+                await RespondAsync($"You are not actively using my logging feature.", ephemeral: true);
                 return;
             }
 
@@ -174,9 +175,9 @@ namespace Levante.Commands
             ActiveConfig.DeleteActiveUserFromConfig(user.Id);
             ActiveConfig.UpdateActiveAFKUsersConfig();
             string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 1 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
             await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
-            await RespondAsync($"Stopped AFK logging for {aau.UniqueBungieName}.", ephemeral: true);
+            await RespondAsync($"Stopped XP logging for {aau.UniqueBungieName}.", ephemeral: true);
             LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {aau.UniqueBungieName} via user request.");
         }
 

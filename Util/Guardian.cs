@@ -103,21 +103,34 @@ namespace Levante.Util
             embed.ThumbnailUrl = GetEmblem().GetIconUrl();
 
             dynamic item = JsonConvert.DeserializeObject(GuardianContent);
+            var wep1 = new Weapon((long)item.Response.equipment.data.items[0].itemHash);
+            var wep2 = new Weapon((long)item.Response.equipment.data.items[1].itemHash);
+            var wep3 = new Weapon((long)item.Response.equipment.data.items[2].itemHash);
             embed.AddField(x =>
             {
                 x.Name = "Weapons";
-                x.Value = $"K: {new Weapon((long)item.Response.equipment.data.items[0].itemHash).GetName()}\n" +
-                    $"E: {new Weapon((long)item.Response.equipment.data.items[1].itemHash).GetName()}\n" +
-                    $"P: {new Weapon((long)item.Response.equipment.data.items[2].itemHash).GetName()}";
+                x.Value = $"{wep1.GetDamageTypeEmote()} {wep1.GetName()}\n" +
+                    $"{wep2.GetDamageTypeEmote()} {wep2.GetName()}\n" +
+                    $"{wep3.GetDamageTypeEmote()} {wep3.GetName()}";
                 x.IsInline = true;
             }).AddField(x =>
             {
                 x.Name = "Armor";
-                x.Value = $"{DestinyEmote.Helmet}: {new Weapon((long)item.Response.equipment.data.items[3].itemHash).GetName()}\n" +
-                    $"{DestinyEmote.Arms}: {new Weapon((long)item.Response.equipment.data.items[4].itemHash).GetName()}\n" +
-                    $"{DestinyEmote.Chest}: {new Weapon((long)item.Response.equipment.data.items[5].itemHash).GetName()}\n" +
-                    $"{DestinyEmote.Legs}: {new Weapon((long)item.Response.equipment.data.items[6].itemHash).GetName()}\n" +
-                    $"{DestinyEmote.Class}: {new Weapon((long)item.Response.equipment.data.items[7].itemHash).GetName()}";
+                x.Value = $"{DestinyEmote.Helmet} {new Weapon((long)item.Response.equipment.data.items[3].itemHash).GetName()}\n" +
+                    $"{DestinyEmote.Arms} {new Weapon((long)item.Response.equipment.data.items[4].itemHash).GetName()}\n" +
+                    $"{DestinyEmote.Chest} {new Weapon((long)item.Response.equipment.data.items[5].itemHash).GetName()}\n" +
+                    $"{DestinyEmote.Legs} {new Weapon((long)item.Response.equipment.data.items[6].itemHash).GetName()}\n" +
+                    $"{DestinyEmote.Class} {new Weapon((long)item.Response.equipment.data.items[7].itemHash).GetName()}";
+                x.IsInline = true;
+            }).AddField(x =>
+            {
+                x.Name = "Stats";
+                x.Value = $"{DestinyEmote.Mobility} {item.Response.character.data.stats["2996146975"]}\n" +
+                    $"{DestinyEmote.Resilience} {item.Response.character.data.stats["392767087"]}\n" +
+                    $"{DestinyEmote.Recovery} {item.Response.character.data.stats["1943323491"]}\n" +
+                    $"{DestinyEmote.Discipline} {item.Response.character.data.stats["1735777505"]}\n" +
+                    $"{DestinyEmote.Intellect} {item.Response.character.data.stats["144602215"]}\n" +
+                    $"{DestinyEmote.Strength} {item.Response.character.data.stats["4244567218"]}";
                 x.IsInline = true;
             });
 

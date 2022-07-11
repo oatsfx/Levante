@@ -349,7 +349,11 @@ namespace Levante.Rotations
                 else
                     user = Client.GetUser(Link.DiscordID);
 
-                if (LostSector == Link.LostSector || LostSectorArmorDrop == Link.ArmorDrop)
+                if (LostSector == Link.LostSector)
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.GetLostSectorString(LostSector)}** (Requested) and is dropping **{LostSectorArmorDrop}** today. I have removed your tracking, good luck!");
+                else if (LostSectorArmorDrop == Link.ArmorDrop)
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.GetLostSectorString(LostSector)}** and is dropping **{LostSectorArmorDrop}** (Requested) today. I have removed your tracking, good luck!");
+                else if (LostSector == Link.LostSector && LostSectorArmorDrop == Link.ArmorDrop)
                     await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.GetLostSectorString(LostSector)}** and is dropping **{LostSectorArmorDrop}** today. I have removed your tracking, good luck!");
                 else
                     lsTemp.Add(Link);

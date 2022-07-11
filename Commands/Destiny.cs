@@ -16,6 +16,7 @@ using Levante.Rotations;
 using APIHelper;
 using System.Linq;
 using Levante.Helpers;
+using BungieSharper;
 
 namespace Levante.Commands
 {
@@ -24,14 +25,14 @@ namespace Levante.Commands
         public InteractiveService Interactive { get; set; }
 
         [SlashCommand("current-offers", "Gives a list of emblem offers. If hash code provided, command will return with the specific offer.")]
-        public async Task CurrentOffers([Summary("emblem-hash-code", "Hash code of an emblem offer. Make sure the code is an existing offer.")] long EmblemHashCode = -1)
+        public async Task CurrentOffers([Summary("emblem-name", "Emblem name of an emblem that is a current offer."), Autocomplete(typeof(CurrentOfferAutocomplete))] string EmblemHash = null)
         {
-            if (EmblemHashCode == -1)
+            if (EmblemHash == null)
             {
                 await RespondAsync(embed: EmblemOffer.GetOfferListEmbed().Build());
                 return;
             }
-
+            long EmblemHashCode = long.Parse(EmblemHash);
             if (!EmblemOffer.HasExistingOffer(EmblemHashCode))
                 await RespondAsync("Are you sure you entered the correct hash code? Run this command without any arguments and try again.");
             else
@@ -76,7 +77,7 @@ namespace Levante.Commands
             return;
         }
 
-        [Group("guardians", "Display Guardian information.")]
+        [Group("guardian", "Display Guardian information.")]
         public class Guardians : InteractionModuleBase<SocketInteractionContext>
         {
             [SlashCommand("linked-user", "Get Guardian information of a Linked User.")]
@@ -569,7 +570,7 @@ namespace Levante.Commands
         }
 
         [SlashCommand("try-on", "Try on any emblem in the Bungie API.")]
-        public async Task TryOut([Summary("emblem-hash", "Emblem hash code of the Emblem you want to try on.")] long HashCode)
+        public async Task TryOut([Summary("emblem-name", "Emblem name of the Emblem you want to try on."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
         {
             string name = "";
             var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
@@ -577,6 +578,12 @@ namespace Levante.Commands
                 name = linkedUser.UniqueBungieName.Substring(0, linkedUser.UniqueBungieName.Length - 5);
             else
                 name = Context.User.Username;
+
+            if (!long.TryParse(SearchQuery, out long HashCode))
+            {
+                await RespondAsync($"Invalid search, please try again. Make sure to choose one of the autocomplete options!", ephemeral: true);
+                return;
+            }
 
             Emblem emblem;
             Bitmap bitmap;
@@ -645,319 +652,74 @@ namespace Levante.Commands
             public InteractiveService Interactive { get; set; }
 
             [SlashCommand("emblem", "Get details on an emblem via its Hash Code found via Bungie's API.")]
-            public async Task ViewEmblem([Summary("name", "Name of the emblem you want details for.")] string SearchQuery)
+            public async Task ViewEmblem([Summary("name", "Name of the emblem you want details for."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
             {
+                if (string.IsNullOrWhiteSpace(SearchQuery))
+                {
+                    await RespondAsync($"Invalid search, please try again.", ephemeral: true);
+                    return;
+                }
+
+                if (!long.TryParse(SearchQuery, out long HashCode))
+                {
+                    await RespondAsync($"Invalid search, please try again. Make sure to choose one of the autocomplete options!", ephemeral: true);
+                    return;
+                }
+
+                await DeferAsync();
+                Emblem emblem;
                 try
                 {
-                    using (var client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                        var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/").Result;
-                        var content = response.Content.ReadAsStringAsync().Result;
-                        dynamic item;
-                        try
-                        {
-                            item = JsonConvert.DeserializeObject(content);
-                        }
-                        catch (Exception)
-                        {
-                            await RespondAsync($"Unknown error. Try using a simplier search query.", ephemeral: true);
-                            return;
-                        }
-
-                        if (DataConfig.IsBungieAPIDown(content))
-                        {
-                            await RespondAsync($"Bungie API is temporary down, try again later.", ephemeral: true);
-                            return;
-                        }
-
-                        if (item.Response.results.totalResults <= 0 || SearchQuery.Length < 4)
-                        {
-                            await RespondAsync($"Unable to search using the term: {SearchQuery}", ephemeral: true);
-                            return;
-                        }
-
-                        List<EmblemSearch> emblemList = new List<EmblemSearch>();
-                        int resultNum = int.Parse($"{item.Response.results.totalResults}");
-                        int currentPage = -1;
-                        if (resultNum > 1)
-                        {
-                            await RespondAsync($"Searching through {resultNum} entries, *estimated {(resultNum > 20 ? Math.Ceiling(resultNum / (double)25) * 4 + 2 : Math.Ceiling(resultNum / (double)25) + 2)} seconds*... <a:loading:872886173075378197>");
-                            for (int i = 0; i < resultNum; i++)
-                            {
-                                if (i % 25 == 0)
-                                {
-                                    currentPage++;
-                                    await Task.Delay(400);
-                                    response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + Uri.EscapeDataString(SearchQuery) + "/?page=" + currentPage).Result;
-                                    content = response.Content.ReadAsStringAsync().Result;
-                                    item = JsonConvert.DeserializeObject(content);
-                                }
-                                var hash = long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}");
-                                var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
-                                if (invItem.ItemTypeDisplayName.Equals("Emblem"))
-                                {
-                                    emblemList.Add(new EmblemSearch(long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}"), $"{item.Response.results.results[i - (currentPage * 25)].displayProperties.name}"));
-                                }
-                            }
-                        }
-                        else if (resultNum == 1)
-                        {
-                            var hash = long.Parse($"{item.Response.results.results[0].hash}");
-                            var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
-                            if (invItem.ItemTypeDisplayName.Equals("Emblem"))
-                            {
-                                emblemList.Add(new EmblemSearch(long.Parse($"{item.Response.results.results[0].hash}"), $"{item.Response.results.results[0].displayProperties.name}"));
-                            }
-                            await DeferAsync();
-                        }
-
-                        if (emblemList.Count > 25)
-                        {
-                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Too many search results. Try being more specific."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                            return;
-                        }
-
-                        int responseNum = 1;
-                        if (emblemList.Count > 1)
-                        {
-                            var multAuth = new EmbedAuthorBuilder()
-                            {
-                                Name = $"Multiple Emblems Found for: {SearchQuery}"
-                            };
-                            var multFoot = new EmbedFooterBuilder()
-                            {
-                                Text = $"Don't see the emblem you are looking for? Try doing a more specific search."
-                            };
-                            var multEmbed = new EmbedBuilder()
-                            {
-                                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                                Author = multAuth,
-                                Footer = multFoot
-                            };
-                            //multEmbed.Title = $"React with the number of the emblem you want to view.";
-                            multEmbed.Description = "Use the selection menu to choose which emblem you want to view.";
-                            ComponentBuilder list = new ComponentBuilder();
-                            var menu = new SelectMenuBuilder();
-
-                            for (int i = 0; i < emblemList.Count; i++)
-                            {
-                                //list.WithButton(customId: $"weaponSearch:{i}", emote: reactEmotes[i], style: ButtonStyle.Secondary, row: 0);
-                                menu.AddOption(emblemList[i].GetName(), $"emblemSelect:{i}:");
-                            }
-                            menu.CustomId = "weaponMenu";
-                            menu.Placeholder = "Select the emblem you wish to view.";
-                            list.WithSelectMenu(menu);
-
-                            var msg = await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = multEmbed.Build(); message.Content = null; message.Components = list.Build(); });
-
-                            var responseMenu = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.Interaction.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
-
-                            if (responseMenu == null)
-                            {
-                                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                                return;
-                            }
-
-                            if (responseMenu.IsTimeout)
-                            {
-                                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Response timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                                return;
-                            }
-
-                            for (int i = 0; i < emblemList.Count; i++)
-                                if (responseMenu.Value.Data.Values.FirstOrDefault().Contains($"emblemSelect:{i}:"))
-                                    responseNum = i + 1;
-
-                            await responseMenu.Value.DeferAsync();
-                        }
-
-                        if (emblemList.Count == 0)
-                        {
-                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{SearchQuery} did not bring results of the Emblem type."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                            return;
-                        }
-
-                        long HashCode = emblemList[responseNum - 1].GetEmblemHash();
-                        Emblem emblem;
-                        try
-                        {
-                            emblem = new Emblem(HashCode);
-                        }
-                        catch (Exception)
-                        {
-                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No emblem found for Hash Code: {HashCode}."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                            return;
-                        }
-
-                        if (!ManifestConnection.GetInventoryItemById(unchecked((int)HashCode)).ItemTypeDisplayName.Contains("Emblem"))
-                        {
-                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{emblem.GetName()} ({emblem.GetHashCode()}) is not an Emblem type."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                            return;
-                        }
-
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
-                    }
+                    emblem = new Emblem(HashCode);
                 }
-                catch (Exception x)
+                catch (Exception)
                 {
-                    Console.WriteLine($"{x}");
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No emblem found for Hash Code: {HashCode}."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                    return;
                 }
+
+                if (!ManifestConnection.GetInventoryItemById(unchecked((int)HashCode)).ItemTypeDisplayName.Contains("Emblem"))
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{emblem.GetName()} ({emblem.GetHashCode()}) is not an Emblem type."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                    return;
+                }
+
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
 
             [SlashCommand("weapon", "Get details on a weapon via its Hash Code found via Bungie's API.")]
-            public async Task ViewWeapon([Summary("name", "Name of the weapon you want details for.")] string SearchQuery)
+            public async Task ViewWeapon([Summary("name", "Name of the weapon you want details for."), Autocomplete(typeof(WeaponAutocomplete))] string SearchQuery)
             {
-                using (var client = new HttpClient())
+                if (string.IsNullOrWhiteSpace(SearchQuery))
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + Uri.EscapeDataString(SearchQuery) + "/").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item;
-                    try
-                    {
-                        item = JsonConvert.DeserializeObject(content);
-                    }
-                    catch (Exception)
-                    {
-                        await RespondAsync($"Unknown error. Try using a simplier search query.", ephemeral: true);
-                        return;
-                    }
-
-                    if (DataConfig.IsBungieAPIDown(content))
-                    {
-                        await RespondAsync($"Bungie API is temporary down, try again later.", ephemeral: true);
-                        return;
-                    }
-
-                    if (item.Response.results.totalResults <= 0 || SearchQuery.Length < 4)
-                    {
-                        await RespondAsync($"Unable to search using the term: {SearchQuery}", ephemeral: true);
-                        return;
-                    }
-
-                    List<WeaponSearch> weaponList = new List<WeaponSearch>();
-                    int resultNum = int.Parse($"{item.Response.results.totalResults}");
-                    int currentPage = -1;
-                    if (resultNum > 1)
-                    {
-                        await RespondAsync($"Searching through {resultNum} entries, *estimated {(resultNum > 20 ? Math.Ceiling(resultNum / (double)25) * 4 + 2 : Math.Ceiling(resultNum / (double)25) + 2)} seconds*... <a:loading:872886173075378197>");
-                        for (int i = 0; i < resultNum; i++)
-                        {
-                            if (i % 25 == 0)
-                            {
-                                currentPage++;
-                                await Task.Delay(400);
-                                response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + Uri.EscapeDataString(SearchQuery) + "/?page=" + currentPage).Result;
-                                content = response.Content.ReadAsStringAsync().Result;
-                                item = JsonConvert.DeserializeObject(content);
-                            }
-                            var hash = long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}");
-                            var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
-                            if (invItem.TraitIds == null || invItem.Sockets == null)
-                                continue;
-                            if (invItem.TraitIds.Contains("item_type.weapon") /*&& invItem.Sockets.SocketEntries.Count() > 8*/)
-                                weaponList.Add(new WeaponSearch(long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}"), $"{item.Response.results.results[i - (currentPage * 25)].displayProperties.name}"));
-                        }
-                    }
-                    else if (resultNum == 1)
-                    {
-                        var hash = long.Parse($"{item.Response.results.results[0].hash}");
-                        var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
-                        if (invItem.TraitIds.Contains("item_type.weapon"))
-                        {
-                            weaponList.Add(new WeaponSearch(long.Parse($"{item.Response.results.results[0].hash}"), $"{item.Response.results.results[0].displayProperties.name}"));
-                        }
-                        await DeferAsync();
-                    }
-
-                    if (weaponList.Count > 25)
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Too many search results. Try being more specific."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                        return;
-                    }
-
-                    int responseNum = 1;
-                    if (weaponList.Count > 1)
-                    {
-                        var multAuth = new EmbedAuthorBuilder()
-                        {
-                            Name = $"Multiple Weapons Found for: {SearchQuery}"
-                        };
-                        var multFoot = new EmbedFooterBuilder()
-                        {
-                            Text = $"Don't see the weapon you are looking for? Try doing a more specific search."
-                        };
-                        var multEmbed = new EmbedBuilder()
-                        {
-                            Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                            Author = multAuth,
-                            Footer = multFoot
-                        };
-                        //multEmbed.Title = $"React with the number of the weapon you want to view.";
-                        multEmbed.Description = "Use the selection menu to choose which weapon you want to view.";
-                        ComponentBuilder list = new ComponentBuilder();
-                        var menu = new SelectMenuBuilder();
-
-                        for (int i = 0; i < weaponList.Count; i++)
-                        {
-                            //list.WithButton(customId: $"weaponSearch:{i}", emote: reactEmotes[i], style: ButtonStyle.Secondary, row: 0);
-                            menu.AddOption(weaponList[i].GetName(), $"weaponSelect:{i}:");
-                        }
-                        menu.CustomId = "weaponMenu";
-                        menu.Placeholder = "Select the weapon you wish to view.";
-                        list.WithSelectMenu(menu);
-
-                        var msg = await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = multEmbed.Build(); message.Content = null; message.Components = list.Build(); });
-
-                        var responseMenu = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.Interaction.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
-
-                        if (responseMenu == null)
-                        {
-                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                            return;
-                        }
-
-                        if (responseMenu.IsTimeout)
-                        {
-                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Response timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                            return;
-                        }
-
-                        for (int i = 0; i < weaponList.Count; i++)
-                            if (responseMenu.Value.Data.Values.FirstOrDefault().Contains($"weaponSelect:{i}:"))
-                                responseNum = i + 1; 
-
-                        await responseMenu.Value.DeferAsync();
-                    }
-
-                    if (weaponList.Count == 0)
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{SearchQuery} did not bring results of the Weapon type."; });
-                        return;
-                    }
-
-                    long HashCode = weaponList[responseNum - 1].GetWeaponHash();
-                    Weapon weapon;
-                    try
-                    {
-                        weapon = new Weapon(HashCode);
-                    }
-                    catch (Exception)
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No weapon found for Hash Code: {HashCode}."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                        return;
-                    }
-                    if (!ManifestConnection.GetInventoryItemById(unchecked((int)HashCode)).TraitIds.Contains("item_type.weapon"))
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{weapon.GetName()} ({weapon.GetHashCode()}) is not a Weapon type."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                        return;
-                    }
-
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = weapon.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
+                    await RespondAsync($"Invalid search, please try again.", ephemeral: true);
+                    return;
                 }
+
+                if (!long.TryParse(SearchQuery, out long HashCode))
+                {
+                    await RespondAsync($"Invalid search, please try again. Make sure to choose one of the autocomplete options!", ephemeral: true);
+                    return;
+                }
+
+                await DeferAsync();
+                Weapon weapon;
+                try
+                {
+                    weapon = new Weapon(HashCode);
+                }
+                catch (Exception)
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No weapon found for Hash Code: {HashCode}."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                    return;
+                }
+                if (!ManifestConnection.GetInventoryItemById(unchecked((int)HashCode)).TraitIds.Contains("item_type.weapon"))
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{weapon.GetName()} ({weapon.GetHashCode()}) is not a Weapon type."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                    return;
+                }
+
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = weapon.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
         }
 
@@ -966,6 +728,124 @@ namespace Levante.Commands
         {
             await RespondAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
             return;
+        }
+
+        [SlashCommand("weapons-test", "description")]
+        public async Task ExampleCommand3([Summary("weapon"), Autocomplete(typeof(WeaponAutocomplete))] string Weapon) => await Context.Interaction.RespondAsync($"{new Weapon(long.Parse(Weapon)).GetItemType()}");
+
+        public class EmblemAutocomplete : AutocompleteHandler
+        {
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            {
+                await Task.Delay(0);
+                // Create a collection with suggestions for autocomplete
+                List<AutocompleteResult> results = new();
+                string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+                if (String.IsNullOrWhiteSpace(SearchQuery))
+                    return AutocompletionResult.FromSuccess(results);
+                else
+                    foreach (var Emblem in ManifestHelper.Emblems)
+                        if (Emblem.Value.ToLower().Contains(SearchQuery.ToLower()))
+                            results.Add(new AutocompleteResult(Emblem.Value, $"{Emblem.Key}"));
+
+                //Console.WriteLine($"Searching for: {SearchQuery}");
+                //using (var client = new HttpClient())
+                //{
+                //    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                //    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/").Result;
+                //    var content = response.Content.ReadAsStringAsync().Result;
+                //    dynamic item = JsonConvert.DeserializeObject(content);
+
+                //    List<EmblemSearch> emblemList = new List<EmblemSearch>();
+                //    int resultNum = int.Parse($"{item.Response.results.totalResults}");
+                //    Console.WriteLine($"Emblems found with SearchQuery: {resultNum}");
+                //    int currentPage = -1;
+                //    if (resultNum == 0)
+                //        return AutocompletionResult.FromSuccess(results);
+                //    else if (resultNum > 1)
+                //    {
+                //        for (int i = 0; i < resultNum; i++)
+                //        {
+                //            if (results.Count >= 25) break;
+                //            if (i % 25 == 0)
+                //            {
+                //                currentPage++;
+                //                response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + Uri.EscapeDataString(SearchQuery) + "/?page=" + currentPage).Result;
+                //                content = response.Content.ReadAsStringAsync().Result;
+                //                item = JsonConvert.DeserializeObject(content);
+                //            }
+                //            var hash = long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}");
+                //            var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
+                //            if (invItem.ItemTypeDisplayName.Equals("Emblem"))
+                //            {
+                //                Console.WriteLine($"Adding: {item.Response.results.results[i - (currentPage * 25)].displayProperties.name}");
+                //                results.Add(new AutocompleteResult($"{item.Response.results.results[i - (currentPage * 25)].displayProperties.name}", $"{hash}"));
+                //            }
+                //        }
+                //    }
+                //    else if (resultNum == 1)
+                //    {
+                //        var hash = long.Parse($"{item.Response.results.results[0].hash}");
+                //        var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
+                //        if (invItem.ItemTypeDisplayName.Equals("Emblem"))
+                //        {
+                //            Console.WriteLine($"Adding: {item.Response.results.results[0].displayProperties.name}");
+                //            results.Add(new AutocompleteResult($"{item.Response.results.results[0].displayProperties.name}", $"{hash}"));
+                //        }
+                //    }
+                //}
+
+                // max - 25 suggestions at a time (API limit)
+                Console.WriteLine($"Completion Success");
+                return AutocompletionResult.FromSuccess(results);
+            }
+        }
+
+        public class WeaponAutocomplete : AutocompleteHandler
+        {
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            {
+                await Task.Delay(0);
+                // Create a collection with suggestions for autocomplete
+                List<AutocompleteResult> results = new();
+                string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+                if (String.IsNullOrWhiteSpace(SearchQuery))
+                    return AutocompletionResult.FromSuccess(results);
+                else
+                    foreach (var Emblem in ManifestHelper.Weapons)
+                        if (Emblem.Value.ToLower().Contains(SearchQuery.ToLower()))
+                            results.Add(new AutocompleteResult(Emblem.Value, $"{Emblem.Key}"));
+
+                // max - 25 suggestions at a time (API limit)
+                Console.WriteLine($"Completion Success");
+                return AutocompletionResult.FromSuccess(results);
+            }
+        }
+
+        public class CurrentOfferAutocomplete : AutocompleteHandler
+        {
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            {
+                await Task.Delay(0);
+                // Create a collection with suggestions for autocomplete
+                List<AutocompleteResult> results = new();
+                string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+
+                if (String.IsNullOrWhiteSpace(SearchQuery))
+                    foreach (var Offer in EmblemOffer.CurrentOffers)
+                        results.Add(new AutocompleteResult(Offer.OfferedEmblem.GetName(), $"{Offer.EmblemHashCode}"));
+                else
+                    foreach (var Offer in EmblemOffer.CurrentOffers)
+                        if (Offer.OfferedEmblem.GetName().ToLower().Contains(SearchQuery.ToLower()))
+                            results.Add(new AutocompleteResult(Offer.OfferedEmblem.GetName(), $"{Offer.EmblemHashCode}"));
+
+                results = results.OrderBy(x => x.Name).ToList();
+
+                // max - 25 suggestions at a time (API limit)
+                Console.WriteLine($"Completion Success");
+                return AutocompletionResult.FromSuccess(results);
+            }
         }
 
         private string GetCurrentDestiny2Season(out int SeasonNumber)

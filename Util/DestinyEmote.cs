@@ -91,9 +91,11 @@ namespace Levante.Util
 
         // Misc
         public static readonly string AscendantChallengeBounty = "<:ACBounty:934478080737693787>";
+        public static readonly string Gilded = "<:Gilded:994067890024235029>";
         public static readonly string Light = "<:LightLevel:844029708077367297>";
         public static readonly string LostSector = "<:LostSector:955004180618174475>";
         public static readonly string Nightfall = "<:Nightfall:934476602006458409>";
+        public static readonly string Pattern = "<:Pattern:995752936586092595>";
         public static readonly string RaidBounty = "<:LWRaidBounty:933963726535655425>";
         public static readonly string RaidChallenge = "<:RaidChallenge:933971625118924820>";
         public static readonly string VoGRaidChallenge = "<:VoGRaidChallenge:933963748295720960>";
@@ -113,6 +115,14 @@ namespace Levante.Util
         public static readonly string ResonantElement = "<:ResonantElement:986676994731278417>";
         public static readonly string SpoilsOfConquest = "<:SpoilsOfConquest:986514871850008616>";
         public static readonly string UpgradeModule = "<:UpgradeModule:986514733609926656>";
+
+        // Stats
+        public static readonly string Mobility = "<:Mobility:994283641259708417>";
+        public static readonly string Resilience = "<:Resilience:994283643965026334>";
+        public static readonly string Recovery = "<:Recovery:994283642694140005>";
+        public static readonly string Discipline = "<:Discipline:994283639019946114>";
+        public static readonly string Intellect = "<:Intellect:994283640349536357>";
+        public static readonly string Strength = "<:Strength:994283644938100746>";
 
         // Needs to be char for char.
         public static string MatchEmote(string Query)

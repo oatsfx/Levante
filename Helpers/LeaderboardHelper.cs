@@ -209,7 +209,7 @@ namespace Levante.Helpers
 
                 int xpPerHour = 0;
                 if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
-                    xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+                    xpPerHour = (int)Math.Floor((((AAU.LastLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
 
                 // Only add back if the entry is better than their previous.
                 if (xpPerHour > entry.XPPerHour)
@@ -226,7 +226,7 @@ namespace Levante.Helpers
             {
                 int xpPerHour = 0;
                 if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
-                    xpPerHour = (int)Math.Floor((((AAU.LastLoggedLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+                    xpPerHour = (int)Math.Floor((((AAU.LastLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
 
                 XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
                 {

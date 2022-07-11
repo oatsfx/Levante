@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System.Net.Http;
 using HtmlAgilityPack;
 using System.Net;
+using System;
 
 namespace Levante.Util
 {
@@ -86,6 +87,7 @@ namespace Levante.Util
 
         public override EmbedBuilder GetEmbed()
         {
+            Console.WriteLine(GetIconUrl());
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Emblem Details: {GetName()}",
@@ -105,14 +107,53 @@ namespace Levante.Util
             try
             {
                 var unlock = GetEmblemUnlock();
-                var source = string.IsNullOrEmpty(unlock) ? "" : $"[Unlock (DEC)](https://destinyemblemcollector.com/emblem?id={GetItemHash()}): {unlock}\n";
+                string offerStr = "Unavailable or is not a limited-time offer.";
+                if (EmblemOffer.HasExistingOffer(GetItemHash()))
+                {
+                    var offer = EmblemOffer.GetSpecificOffer(GetItemHash());
+                    if (offer.StartDate > DateTime.Now)
+                        offerStr = $"This emblem is [available]({offer.SpecialUrl}) {TimestampTag.FromDateTime(offer.StartDate, TimestampTagStyles.Relative)}!\n";
+                    else
+                        offerStr = $"This emblem is [currently available]({offer.SpecialUrl})!\n";
+                }
+                
+                if (BotConfig.UniversalCodes.Exists(x => x.Name.Equals(GetName())))
+                {
+                    var uniCode = BotConfig.UniversalCodes.Find(x => x.Name.Equals(GetName()));
+                    offerStr = $"This emblem is available via a code: {uniCode.Code}.\nRedeem it [here](https://www.bungie.net/7/en/Codes/Redeem).";
+                }
 
-                embed.Description = (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) + "\n" +
-                        $"Hash Code: {GetItemHash()}\n" +
-                        $"Collectible Hash: {GetCollectableHash()}\n" +
-                        $"{source}";
+                embed.Description = (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) + "\n";
                 embed.ImageUrl = GetBackgroundUrl();
                 embed.ThumbnailUrl = GetIconUrl();
+
+                embed.AddField(x =>
+                {
+                    x.Name = "Hash Code";
+                    x.Value = $"{GetItemHash()}";
+                    x.IsInline = true;
+                }).AddField(x =>
+                {
+                    x.Name = "Collectible Hash";
+                    x.Value = $"{GetCollectableHash()}";
+                    x.IsInline = true;
+                })
+                .AddField(x =>
+                {
+                    x.Name = "Availbility";
+                    x.Value = $"{offerStr}";
+                    x.IsInline = false;
+                });
+
+                if (!string.IsNullOrEmpty(unlock))
+                {
+                    embed.AddField(x =>
+                    {
+                        x.Name = "Unlock";
+                        x.Value = $"[DEC](https://destinyemblemcollector.com/emblem?id={GetItemHash()}): {unlock}";
+                        x.IsInline = false;
+                    });
+                }
             }
             catch
             {

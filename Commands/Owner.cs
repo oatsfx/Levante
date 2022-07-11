@@ -48,9 +48,10 @@ namespace Levante.Commands
                 Name = $"Active XP Logging Users",
                 IconUrl = app.IconUrl
             };
+            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} people are logging their XP."
+                Text = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} people are logging their XP."
             };
             var embed = new EmbedBuilder()
             {
@@ -65,7 +66,7 @@ namespace Levante.Commands
                 foreach (var aau in ActiveConfig.ActiveAFKUsers)
                 {
                     embed.Description +=
-                        $"{aau.UniqueBungieName}: Level {aau.LastLoggedLevel}\n";
+                        $"{aau.UniqueBungieName}: Level {aau.LastLevel}\n";
                 }
             }
             else
@@ -197,6 +198,7 @@ namespace Levante.Commands
                 }
                 else if (sendResponse.Value.ToString().Equals("skip"))
                 {
+                    newOffer.CreateJSON();
                     await ReplyAsync("Skipped announcement!");
                 }
                 else
@@ -323,7 +325,8 @@ namespace Levante.Commands
             ActiveConfig.UpdateActiveAFKUsersConfig();
 
             string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} Player{s} XP", ActivityType.Watching));
+            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
             await ReplyAsync($"Changed maximum XP Logging users to {NewMaxUserCount}.");
         }
 

@@ -34,11 +34,10 @@ namespace Levante.Util
         [JsonProperty("SpecialUrl")]
         public readonly string SpecialUrl;
 
-        [JsonProperty("IsActive")]
         public readonly bool IsActive;
 
         [JsonConstructor]
-        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime? endDate, string description, string imageUrl, string specialUrl = null, bool isActive = false)
+        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime? endDate, string description, string imageUrl, string specialUrl = null)
         {
             EmblemHashCode = emblemHashCode;
             OfferedEmblem = new Emblem(EmblemHashCode);
@@ -48,13 +47,16 @@ namespace Levante.Util
             Description = description;
             ImageUrl = imageUrl;
             SpecialUrl = specialUrl;
-            IsActive = isActive;
+            if (DateTime.Now < startDate || DateTime.Now > endDate)
+                IsActive = false;
+            else
+                IsActive = true;
         }
 
         public EmbedBuilder BuildEmbed()
         {
             // Appends the word "Soon" to an offer that is not yet available.
-            string s = IsActive ? " Soon" : "";
+            string s = !IsActive ? " Soon" : "";
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Emblem Available{s}: {OfferedEmblem.GetName()}",
@@ -76,12 +78,20 @@ namespace Levante.Util
             end = !IsActive ? $"Starts {TimestampTag.FromDateTime((DateTime)StartDate, TimestampTagStyles.Relative)}." : end;
             embed.Description =
                 $"__How to get this emblem:__\n" +
-                $"{Description} {(SpecialUrl != null ? $"\n[LINK]({SpecialUrl})" : "")}\n" +
-                $"Offer Type: {GetOfferTypeString(OfferType)}\n" +
-                $"Time Window: {GetDateRange()}\n" +
-                $"{end}";
+                $"{Description} {(SpecialUrl != null ? $"\n[LINK]({SpecialUrl})" : "")}\n";
             embed.ThumbnailUrl = OfferedEmblem.GetIconUrl();
             embed.ImageUrl = ImageUrl;
+            embed.AddField(x =>
+            {
+                x.Name = "Offer Type";
+                x.Value = GetOfferTypeString(OfferType);
+                x.IsInline = true;
+            }).AddField(x =>
+            {
+                x.Name = "Time Window";
+                x.Value = $"{GetDateRange()}\n{end}";
+                x.IsInline = true;
+            });
             return embed;
         }
 
@@ -118,8 +128,8 @@ namespace Levante.Util
             if (CurrentOffers.Count != 0)
             {
                 foreach (var Offer in CurrentOffers)
-                    desc += $"> [{Offer.OfferedEmblem.GetName()}]({Offer.ImageUrl}) ({Offer.OfferedEmblem.GetItemHash()})\n";
-                desc += $"\n*Want specific details? Use the command \"/current-offers [HASH CODE]\".*";
+                    desc += $"> [{Offer.OfferedEmblem.GetName()}]({Offer.SpecialUrl}) ({Offer.OfferedEmblem.GetItemHash()}) ([IMAGE]({Offer.ImageUrl}))\n";
+                desc += $"\n*Want specific details? Use the command \"/current-offers [EMBLEM NAME]\".*";
             }
             else
                 desc = "There are currently no limited time emblem offers; you are all caught up!";

@@ -179,6 +179,8 @@ namespace Levante.Configs
         public static DiscordIDLink GetLinkedUser(ulong DiscordID)
         {
             var dil = DiscordIDLinks.Find(x => x.DiscordID == DiscordID);
+            if (dil == null)
+                return null;
             if (dil.AccessToken.Equals("[ACCESS TOKEN]"))
                 return null;
             if (dil.DiscordID == DiscordID)
@@ -354,19 +356,19 @@ namespace Levante.Configs
             return false;
         }
 
-        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out PrivacySetting FireteamPrivacy, out string CharacterId, out string ErrorStatus)
+        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out int PowerBonus, out PrivacySetting FireteamPrivacy, out string CharacterId, out string ErrorStatus)
         {
+            ErrorStatus = $"ResponseError";
             try
             {
                 var dil = GetLinkedUser(DiscordID);
-
                 using (var client = new HttpClient())
                 {
                     int Level = 0;
                     client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
                     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
-                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,202,204,1000").Result;
+                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202,204,1000").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
                     dynamic item = JsonConvert.DeserializeObject(content);
 
@@ -374,6 +376,7 @@ namespace Levante.Configs
                     if (!ErrorStatus.Equals("Success"))
                     {
                         XPProgress = -1;
+                        PowerBonus = -1;
                         FireteamPrivacy = PrivacySetting.Open;
                         CharacterId = null;
                         return -1;
@@ -383,6 +386,7 @@ namespace Levante.Configs
                     {
                         ErrorStatus = $"PlayerNotOnline";
                         XPProgress = -1;
+                        PowerBonus = -1;
                         FireteamPrivacy = PrivacySetting.Open;
                         CharacterId = null;
                         return -1;
@@ -419,21 +423,24 @@ namespace Levante.Configs
                         XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].progressToNextLevel;
                     }
 
+                    PowerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
+
                     return Level;
                 }
             }
             catch
             {
-                ErrorStatus = $"ResponseError";
                 XPProgress = -1;
+                PowerBonus = -1;
                 FireteamPrivacy = PrivacySetting.Open;
                 CharacterId = null;
                 return -1;
             }
         }
 
-        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out bool IsPlaying, out string ErrorStatus)
+        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out int PowerBonus, out string ErrorStatus)
         {
+            ErrorStatus = $"ResponseError";
             try
             {
                 var dil = GetLinkedUser(DiscordID);
@@ -443,18 +450,23 @@ namespace Levante.Configs
                     client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
                     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
-                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,202,204,1000").Result;
+                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202,204,1000").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
                     dynamic item = JsonConvert.DeserializeObject(content);
 
                     ErrorStatus = $"{item.ErrorStatus}";
-                    IsPlaying = true;
+                    if (!ErrorStatus.Equals("Success"))
+                    {
+                        XPProgress = -1;
+                        PowerBonus = -1;
+                        return -1;
+                    }
 
                     if (item.Response.profileTransitoryData.data == null)
                     {
                         ErrorStatus = $"PlayerNotOnline";
                         XPProgress = -1;
-                        IsPlaying = false;
+                        PowerBonus = -1;
                         return -1;
                     }
 
@@ -462,7 +474,7 @@ namespace Levante.Configs
                     {
                         ErrorStatus = $"PlayerProgressionPrivate";
                         XPProgress = -1;
-                        IsPlaying = true;
+                        PowerBonus = -1;
                         return -1;
                     }
 
@@ -481,14 +493,15 @@ namespace Levante.Configs
                         XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].progressToNextLevel;
                     }
 
+                    PowerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
+
                     return Level;
                 }
             }
             catch
             {
-                ErrorStatus = $"ResponseError";
                 XPProgress = -1;
-                IsPlaying = false;
+                PowerBonus = -1;
                 return -1;
             }
         }

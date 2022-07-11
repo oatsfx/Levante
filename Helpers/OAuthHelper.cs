@@ -174,7 +174,7 @@ namespace Levante.Helpers
 
                 var auth = new EmbedAuthorBuilder()
                 {
-                    Name = $"Account Linking"
+                    Name = $"Account Linking",
                 };
                 var foot = new EmbedFooterBuilder()
                 {

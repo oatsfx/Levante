@@ -78,6 +78,7 @@ namespace Levante
             CurrentRotations.CreateJSONs();
 
             API.FetchManifest();
+            ManifestHelper.LoadAutocompleteLists();
 
             EmblemOffer.LoadCurrentOffers();
 
@@ -150,7 +151,7 @@ namespace Levante
             {
                 case 0:
                     string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-                    string p = ActiveConfig.PriorityActiveAFKUsers.Count != 1 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+                    string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
                     await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching)); break;
                 case 1:
                     await _client.SetActivityAsync(new Game($"{BotConfig.Note} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing)); break;
@@ -172,6 +173,8 @@ namespace Levante
                     await _client.SetActivityAsync(new Game($"{EmblemOffer.CurrentOffers.Count} Available Emblems", ActivityType.Watching)); break;
                 case 10:
                     await _client.SetActivityAsync(new Game($"this ratio", ActivityType.Watching)); break;
+                case 11:
+                    await _client.SetActivityAsync(new Game($"for /support | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 default: break;
             }
             return;
@@ -225,14 +228,13 @@ namespace Levante
         {
             if (ActiveConfig.ActiveAFKUsers.Count <= 0 && ActiveConfig.PriorityActiveAFKUsers.Count <= 0)
             {
-                LogHelper.ConsoleLog($"[LOGGING] Skipping refresh, no active AFK users...");
+                LogHelper.ConsoleLog($"[LOGGING] Skipping refresh, no active logging users...");
                 return;
             }
 
             // Stop Timer
             _xpTimer.Change(Timeout.Infinite, Timeout.Infinite);
             LogHelper.ConsoleLog($"[LOGGING] Refreshing Bungie API...");
-            ActiveConfig.IsRefreshing = true;
             //List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
             //List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
             try // XP Logs
@@ -242,7 +244,7 @@ namespace Levante
                 foreach (ActiveConfig.ActiveAFKUser aau in combinedAFKUsers.ToList())
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
-                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out bool isPlaying, out string errorStatus);
+                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out int powerBonus, out string errorStatus);
 
                     LogHelper.ConsoleLog($"[LOGGING] Checking {tempAau.UniqueBungieName}.");
                     var actualUser = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
@@ -251,7 +253,7 @@ namespace Levante
                         actualUser = ActiveConfig.PriorityActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
                     }
 
-                    if (!errorStatus.Equals("Success") && !errorStatus.Equals("PlayerNotOnline"))
+                    if (!errorStatus.Equals("Success"))
                     {
                         if (tempAau.NoXPGainRefreshes >= ActiveConfig.RefreshesBeforeKick)
                         {
@@ -293,7 +295,14 @@ namespace Levante
                         continue;
                     }
 
-                    if (!isPlaying)
+                    if (powerBonus > tempAau.LastPowerBonus)
+                    {
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Power bonus increase detected: {tempAau.LastPowerBonus} -> {powerBonus} (Start: {tempAau.StartPowerBonus}).");
+
+                        actualUser.LastPowerBonus = powerBonus;
+                    }
+
+                    /*if (!isPlaying)
                     {
                         string uniqueName = tempAau.UniqueBungieName;
 
@@ -319,20 +328,19 @@ namespace Levante
                         ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID));
                         await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                     }
-                    else if (updatedLevel > tempAau.LastLoggedLevel)
+                    else */
+                    if (updatedLevel > tempAau.LastLevel)
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected: {tempAau.LastLoggedLevel} -> {updatedLevel}");
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected: {tempAau.LastLevel} -> {updatedLevel}. " +
+                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {updatedLevel} ({String.Format("{0:n0}", updatedProgression)}/100,000 XP).");
 
-                        actualUser.LastLoggedLevel = updatedLevel;
+                        actualUser.LastLevel = updatedLevel;
                         actualUser.LastLevelProgress = updatedProgression;
                         actualUser.NoXPGainRefreshes = 0;
                         //tempAau.LastLoggedLevel = updatedLevel;
                         //tempAau.LastLevelProgress = updatedProgression;
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
-
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, 
-                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {tempAau.LastLoggedLevel} ({String.Format("{0:n0}", tempAau.LastLevelProgress)}/100,000 XP)");
                     }
                     else if (updatedProgression <= tempAau.LastLevelProgress)
                     {
@@ -373,9 +381,9 @@ namespace Levante
                     }
                     else
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel}): {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP");
+                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel} | Power Bonus: +{powerBonus}): {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP.");
 
-                        actualUser.LastLoggedLevel = updatedLevel;
+                        actualUser.LastLevel = updatedLevel;
                         actualUser.LastLevelProgress = updatedProgression;
                         actualUser.NoXPGainRefreshes = 0;
                         //tempAau.LastLoggedLevel = updatedLevel;
@@ -510,10 +518,10 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //397846250797662208
-                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
+                await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                await _interaction.RegisterCommandsGloballyAsync();
+                //await _interaction.RegisterCommandsGloballyAsync();
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
             };

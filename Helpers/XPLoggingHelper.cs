@@ -33,7 +33,8 @@ namespace Levante.Helpers
                 Author = auth,
                 Footer = foot,
             };
-            int levelsGained = aau.LastLoggedLevel - aau.StartLevel;
+            int levelsGained = aau.LastLevel - aau.StartLevel;
+            int powerBonusGained = aau.LastPowerBonus - aau.StartPowerBonus;
             long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
             var timeSpan = DateTime.Now - aau.TimeStarted;
             string timeString = $"{(Math.Floor(timeSpan.TotalHours) > 0 ? $"{Math.Floor(timeSpan.TotalHours)}h " : "")}" +
@@ -49,7 +50,7 @@ namespace Levante.Helpers
             {
                 x.Name = "Level Information";
                 x.Value = $"Start: {aau.StartLevel} ({aau.StartLevelProgress:n0}/100,000)\n" +
-                    $"Now: {aau.LastLoggedLevel} ({aau.LastLevelProgress:n0}/100,000)\n" +
+                    $"Now: {aau.LastLevel} ({aau.LastLevelProgress:n0}/100,000)\n" +
                     $"Gained: {levelsGained}\n";
                 x.IsInline = true;
             }).AddField(x =>
@@ -57,6 +58,13 @@ namespace Levante.Helpers
                 x.Name = "XP Information";
                 x.Value = $"Gained: {xpGained:n0}\n" +
                     $"XP Per Hour: {xpPerHour:n0}";
+                x.IsInline = true;
+            }).AddField(x =>
+            {
+                x.Name = "Power Bonus Information";
+                x.Value = $"Start: {aau.StartPowerBonus}\n" +
+                    $"Now: {aau.LastPowerBonus}\n" +
+                    $"Gained: {powerBonusGained}\n";
                 x.IsInline = true;
             });
 

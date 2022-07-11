@@ -32,7 +32,8 @@ namespace Levante.Commands
 
             if (ActiveConfig.ActiveAFKUsers.Count >= 1)
             {
-                embed.Description = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers} people are logging their XP.";
+                string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+                embed.Description = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} people are logging their XP.";
             }
             else
             {

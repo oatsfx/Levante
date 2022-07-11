@@ -38,7 +38,9 @@ namespace Levante.Util
             }
         }
 
-        public string GetDamageType() => $"{DestinyEmote.MatchEmote($"{(DamageType)Content.DefaultDamageType}")} {(DamageType)Content.DefaultDamageType}";
+        public string GetDamageType() => $"{GetDamageTypeEmote()} {(DamageType)Content.DefaultDamageType}";
+
+        public string GetDamageTypeEmote() => DestinyEmote.MatchEmote($"{(DamageType)Content.DefaultDamageType}");
 
         public WeaponPerk GetIntrinsic() => new WeaponPerk(Content.Sockets.SocketEntries.ElementAt(0).SingleInitialItemHash);
 
@@ -130,7 +132,7 @@ namespace Levante.Util
                 x.Name = $"> Information";
                 x.Value = $"{GetDamageType()} {GetSpecificItemType()}\n" +
                     $"*{GetFlavorText()}*\n";
-                x.Value += $"Craftable?: {(Content.Inventory.RecipeItemHash != null ? "Yes" : "No")}";
+                x.Value += $"{DestinyEmote.Pattern}Craftable?: {(Content.Inventory.RecipeItemHash != null ? "Yes" : "No")}";
                 x.IsInline = false;
             })
             .AddField(x =>
@@ -151,7 +153,7 @@ namespace Levante.Util
                 x.Name = $"Column 2";
                 x.Value = $"{(GetRandomPerks(2) == null ? "No perks." : GetRandomPerks(2).BuildStringList())}";
                 x.IsInline = true;
-            })
+            }).AddField("\u200b", '\u200b')
             .AddField(x =>
             {
                 x.Name = $"Column 3";
@@ -170,7 +172,7 @@ namespace Levante.Util
                 embed.AddField(x => {
                     x.Name = $"Column 5 (Foundry/Origin)";
                     x.Value = $"{GetFoundryPerks().BuildStringList()}";
-                    x.IsInline = true;
+                    x.IsInline = false;
                 });
             }
 

@@ -20,8 +20,6 @@ namespace Levante.Configs
     {
         public static string FilePath { get; } = @"Configs/activeConfig.json";
 
-        public static bool IsRefreshing { get; set; } = false;
-
         // Supporter AFK Users. Used in order to maintain without a limit.
         [JsonProperty("PriorityActiveAFKUsers")]
         public static List<ActiveAFKUser> PriorityActiveAFKUsers { get; set; } = new List<ActiveAFKUser>();
@@ -43,9 +41,6 @@ namespace Levante.Configs
             [JsonProperty("DiscordID")]
             public ulong DiscordID { get; set; } = 0;
 
-            [JsonProperty("BungieMembershipID")]
-            public string BungieMembershipID { get; set; } = "Hello World";
-
             [JsonProperty("UniqueBungieName")]
             public string UniqueBungieName { get; set; } = "Guardian#0000";
 
@@ -58,14 +53,20 @@ namespace Levante.Configs
             [JsonProperty("StartLevelProgress")]
             public int StartLevelProgress { get; set; } = 0;
 
+            [JsonProperty("StartPowerBonus")]
+            public int StartPowerBonus { get; set; } = 0;
+
             [JsonProperty("TimeStarted")]
             public DateTime TimeStarted { get; set; } = DateTime.Now;
 
-            [JsonProperty("LastLoggedLevel")]
-            public int LastLoggedLevel { get; set; } = 0;
+            [JsonProperty("LastLevel")]
+            public int LastLevel { get; set; } = 0;
 
-            [JsonProperty("LastLoggedLevelProgress")]
+            [JsonProperty("LastLevelProgress")]
             public int LastLevelProgress { get; set; } = 0;
+
+            [JsonProperty("LastPowerBonus")]
+            public int LastPowerBonus { get; set; } = 0;
 
             [JsonProperty("NoXPGainRefreshes")]
             public int NoXPGainRefreshes { get; set; } = 0;
