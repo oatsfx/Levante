@@ -79,12 +79,12 @@ namespace Levante.Rotations
         {
             switch (Nightfall)
             {
-                case Nightfall.TheScarletKeep: return "https://www.bungie.net/img/destiny_content/pgcr/strike_the_scarlet_keep.jpg";
+                //case Nightfall.TheScarletKeep: return "https://www.bungie.net/img/destiny_content/pgcr/strike_the_scarlet_keep.jpg";
                 case Nightfall.TheArmsDealer: return "https://www.bungie.net/img/destiny_content/pgcr/strike_the_arms_dealer.jpg";
-                case Nightfall.TheLightblade: return "https://www.bungie.net/img/destiny_content/pgcr/strike_lightblade.jpg";
-                case Nightfall.TheGlassway: return "https://www.bungie.net/img/destiny_content/pgcr/europa-strike-blackbird.jpg";
-                case Nightfall.FallenSABER: return "https://www.bungie.net/img/destiny_content/pgcr/cosmodrome_fallen_saber.jpg";
-                case Nightfall.BirthplaceOfTheVile: return "https://www.bungie.net/img/destiny_content/pgcr/strike_birthplace.jpg";
+                //case Nightfall.TheLightblade: return "https://www.bungie.net/img/destiny_content/pgcr/strike_lightblade.jpg";
+                //case Nightfall.TheGlassway: return "https://www.bungie.net/img/destiny_content/pgcr/europa-strike-blackbird.jpg";
+                //case Nightfall.FallenSABER: return "https://www.bungie.net/img/destiny_content/pgcr/cosmodrome_fallen_saber.jpg";
+                //case Nightfall.BirthplaceOfTheVile: return "https://www.bungie.net/img/destiny_content/pgcr/strike_birthplace.jpg";
                 //case Nightfall.TheHollowedLair: return "https://www.bungie.net/img/destiny_content/pgcr/strike_taurus.jpg";
                 //case Nightfall.LakeOfShadows: return "https://www.bungie.net/img/destiny_content/pgcr/strike_lake_of_shadows.jpg";
                 //case Nightfall.ExodusCrash: return "https://www.bungie.net/img/destiny_content/pgcr/strike_exodus_crash.jpg";
@@ -99,12 +99,12 @@ namespace Levante.Rotations
         {
             switch (Nightfall)
             {
-                case Nightfall.TheScarletKeep: return "Investigate the recently erected Scarlet Keep and discover its dark purpose.";
+                //case Nightfall.TheScarletKeep: return "Investigate the recently erected Scarlet Keep and discover its dark purpose.";
                 case Nightfall.TheArmsDealer: return "Shut down the operations of an ironmonger providing weapons to the Red Legion.";
-                case Nightfall.TheLightblade: return "Recover an artifact from a monument to Oryx, located deep in the swamps of Savathûn's throne world.";
-                case Nightfall.TheGlassway: return "Prevent ancient and powerful Vex from escaping the Glassway on Europa.";
-                case Nightfall.FallenSABER: return "Enter Rasputin's bunker in the Cosmodrome and discover the source of the security breach.";
-                case Nightfall.BirthplaceOfTheVile: return "Aided by the Witness, the Scorn have gained the power to break into the Throne World through areas the Light cannot touch. Beat them back.";
+                //case Nightfall.TheLightblade: return "Recover an artifact from a monument to Oryx, located deep in the swamps of Savathûn's throne world.";
+                //case Nightfall.TheGlassway: return "Prevent ancient and powerful Vex from escaping the Glassway on Europa.";
+                //case Nightfall.FallenSABER: return "Enter Rasputin's bunker in the Cosmodrome and discover the source of the security breach.";
+                //case Nightfall.BirthplaceOfTheVile: return "Aided by the Witness, the Scorn have gained the power to break into the Throne World through areas the Light cannot touch. Beat them back.";
                 //case Nightfall.TheHollowedLair: return "The Fanatic has returned. Take him down and finish the job you started.";
                 //case Nightfall.LakeOfShadows: return "Stem the tide of Taken flowing into the European Dead Zone from beneath the waves.";
                 //case Nightfall.ExodusCrash: return "Purge the Fallen infestation of the Exodus Black.";
