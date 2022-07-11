@@ -62,7 +62,7 @@ namespace Levante.Rotations
         public static AscendantChallenge AscendantChallenge = AscendantChallenge.AgonarchAbyss;
 
         [JsonProperty("Nightfall")]
-        public static Nightfall Nightfall = Nightfall.TheScarletKeep;
+        public static Nightfall Nightfall = Nightfall.ProvingGrounds;
 
         [JsonProperty("NightfallWeaponDrop")]
         public static NightfallWeapon NightfallWeaponDrop = NightfallWeapon.DutyBound;
@@ -93,6 +93,7 @@ namespace Levante.Rotations
             GoSChallengeEncounter = GoSChallengeEncounter == GardenOfSalvationEncounter.SanctifiedMind ? GardenOfSalvationEncounter.Evade : GoSChallengeEncounter + 1;
             VoGChallengeEncounter = VoGChallengeEncounter == VaultOfGlassEncounter.Atheon ? VaultOfGlassEncounter.Confluxes : VoGChallengeEncounter + 1;
             VowChallengeEncounter = VowChallengeEncounter == VowOfTheDiscipleEncounter.Rhulk ? VowOfTheDiscipleEncounter.Acquisition : VowChallengeEncounter + 1;
+            FeaturedRaid = FeaturedRaid == Raid.VaultOfGlass ? Raid.LastWish : FeaturedRaid + 1;
             CurseWeek = CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : CurseWeek + 1;
             AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? AscendantChallenge.AgonarchAbyss : AscendantChallenge + 1;
             Nightfall = Nightfall == Nightfall.BirthplaceOfTheVile ? Nightfall.TheScarletKeep : Nightfall + 1;
@@ -450,7 +451,9 @@ namespace Levante.Rotations
                     else
                         user = Client.GetUser(Link.DiscordID);
 
-                    if (DSCChallengeEncounter == Link.Encounter)
+                    if (FeaturedRaid == Raid.DeepStoneCrypt)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Deep Stone Crypt this week, meaning that all challenges including, **{DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)}** (**{DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)}**), are available this week. I have removed your tracking, good luck!");
+                    else if (DSCChallengeEncounter == Link.Encounter)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The Deep Stone Crypt challenge is **{DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)}** (**{DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
                     else
                         dscTemp.Add(Link);
@@ -489,6 +492,31 @@ namespace Levante.Rotations
             EmpireHuntRotation.EmpireHuntLinks = ehuntTemp;
             EmpireHuntRotation.UpdateJSON();
 
+            var frTemp = new List<FeaturedRaidRotation.FeaturedRaidLink>();
+            foreach (var Link in FeaturedRaidRotation.FeaturedRaidLinks)
+            {
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
+
+                    if (FeaturedRaid == Link.FeaturedRaid)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is **{FeaturedRaidRotation.GetRaidString(FeaturedRaid)}** this week. I have removed your tracking, good luck!");
+                    else
+                        frTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
+            }
+            FeaturedRaidRotation.FeaturedRaidLinks = frTemp;
+            FeaturedRaidRotation.UpdateJSON();
+
             var gosTemp = new List<GardenOfSalvationRotation.GardenOfSalvationLink>();
             foreach (var Link in GardenOfSalvationRotation.GardenOfSalvationLinks)
             {
@@ -500,7 +528,9 @@ namespace Levante.Rotations
                     else
                         user = Client.GetUser(Link.DiscordID);
 
-                    if (GoSChallengeEncounter == Link.Encounter)
+                    if (FeaturedRaid == Raid.GardenOfSalvation)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Garden of Salvation this week, meaning that all challenges including, **{GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)}** (**{GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)}**), are available this week. I have removed your tracking, good luck!");
+                    else if (GoSChallengeEncounter == Link.Encounter)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The Garden of Salvation challenge is **{GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)}** (**{GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
                     else
                         gosTemp.Add(Link);
@@ -525,7 +555,9 @@ namespace Levante.Rotations
                     else
                         user = Client.GetUser(Link.DiscordID);
 
-                    if (LWChallengeEncounter == Link.Encounter)
+                    if (FeaturedRaid == Raid.LastWish)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Last Wish this week, meaning that all challenges including, **{LastWishRotation.GetChallengeString(LWChallengeEncounter)}** (**{LastWishRotation.GetEncounterString(LWChallengeEncounter)}**), are available this week. I have removed your tracking, good luck!");
+                    else if (LWChallengeEncounter == Link.Encounter)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The Last Wish challenge is **{LastWishRotation.GetChallengeString(LWChallengeEncounter)}** (**{LastWishRotation.GetEncounterString(LWChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
                     else
                         lwTemp.Add(Link);
@@ -596,7 +628,9 @@ namespace Levante.Rotations
                     else
                         user = Client.GetUser(Link.DiscordID);
 
-                    if (VoGChallengeEncounter == Link.Encounter)
+                    if (FeaturedRaid == Raid.VaultOfGlass)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Vault of Glass this week, meaning that all challenges including, **{VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)}** (**{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)}**), are available this week. I have removed your tracking, good luck!");
+                    else if (VoGChallengeEncounter == Link.Encounter)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The Vault of Glass challenge is **{VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)}** (**{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
                     else
                         vogTemp.Add(Link);

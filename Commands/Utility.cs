@@ -207,14 +207,13 @@ namespace Levante.Commands
 
             [SlashCommand("nightfall", "Be notified when a Nightfall and/or Weapon is active.")]
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
-                Choice("The Scarlet Keep", 0), Choice("The Arms Dealer", 1), Choice("The Lightblade", 2),
-                Choice("The Glassway", 3), Choice("Fallen S.A.B.E.R.", 4), Choice("Birthplace of the Vile", 5)] int? ArgNF = null,
+                Choice("Proving Grounds", 0), Choice("The Insight Terminus", 1), Choice("Warden of Nothing", 2),
+                Choice("The Corrupted", 3), Choice("The Inverted Spire", 4), Choice("The Arms Dealer", 5)] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike Weapon drop."),
-                Choice("The Palindrome", 0), Choice("THE S.W.A.R.M.", 1), Choice("The Comedian", 2),
-                Choice("Shadow Price", 3), Choice("Hung Jury SR4", 4), Choice("The Hothead", 5),
-                Choice("PLUG ONE.1", 6), Choice("Uzume RR4", 7)] int? ArgWeapon = null)
+                Choice("Silicon Neuroma", 0), Choice("D.F.A.", 1), Choice("Duty Bound", 2),
+                Choice("Horror's Least", 3), Choice("The Hothead", 4), Choice("PLUG ONE.1", 5)] int? ArgWeapon = null)
             {
-                /*if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var Weapon) != null)
+                if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var Weapon) != null)
                 {
                     if (NF == null && Weapon == null)
                         await RespondAsync($"An error has occurred.", ephemeral: true);
@@ -233,14 +232,14 @@ namespace Levante.Commands
                 if (NF == null && Weapon == null)
                     await RespondAsync($"An error has occurred.", ephemeral: true);
                 else if (NF != null && Weapon == null)
-                    await RespondAsync($"[{NightfallRotation.ActivityPrediction(NightfallRotation.DatePrediction(NF, Weapon), out NightfallWeapon[] WeaponDrops)} | Drops: {WeaponDrops[0]} {WeaponDrops[1]}]:I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    await RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (NF == null && Weapon != null)
                     await RespondAsync($"I will remind you when {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (NF != null && Weapon != null)
                     await RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                */
-                await RespondAsync($"Gathering data on new Nightfalls. Check back later!");
-                return;
+                
+                //await RespondAsync($"Gathering data on new Nightfalls. Check back later!");
+                //return;
             }
 
             [SlashCommand("nightmare-hunt", "Be notified when an Nightmare Hunt is active.")]
@@ -583,14 +582,13 @@ namespace Levante.Commands
 
             [SlashCommand("nightfall", "Find out when a Nightfall and/or Weapon is active next.")]
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
-                Choice("The Scarlet Keep", 0), Choice("The Arms Dealer", 1), Choice("The Lightblade", 2),
-                Choice("The Glassway", 3), Choice("Fallen S.A.B.E.R.", 4), Choice("Birthplace of the Vile", 5)] int? ArgNF = null,
+                Choice("Proving Grounds", 0), Choice("The Insight Terminus", 1), Choice("Warden of Nothing", 2),
+                Choice("The Corrupted", 3), Choice("The Inverted Spire", 4), Choice("The Arms Dealer", 5)] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike Weapon drop."),
-                Choice("The Palindrome", 0), Choice("THE S.W.A.R.M.", 1), Choice("The Comedian", 2),
-                Choice("Shadow Price", 3), Choice("Hung Jury SR4", 4), Choice("The Hothead", 5),
-                Choice("PLUG ONE.1", 6), Choice("Uzume RR4", 7)] int? ArgWeapon = null)
+                Choice("Silicon Neuroma", 0), Choice("D.F.A.", 1), Choice("Duty Bound", 2),
+                Choice("Horror's Least", 3), Choice("The Hothead", 4), Choice("PLUG ONE.1", 5)] int? ArgWeapon = null)
             {
-                /*Nightfall? NF = (Nightfall?)ArgNF;
+                Nightfall? NF = (Nightfall?)ArgNF;
                 NightfallWeapon? Weapon = (NightfallWeapon?)ArgWeapon;
 
                 var predictedDate = NightfallRotation.DatePrediction(NF, Weapon);
@@ -613,9 +611,9 @@ namespace Levante.Commands
                         $"Next occurrance of {NightfallRotation.GetStrikeNameString((Nightfall)NF)}" +
                             $"{(Weapon != null ? $" dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}."; 
 
-                await RespondAsync($"", embed: embed.Build());*/
-                await RespondAsync($"Gathering data on new Nightfalls. Check back later!");
-                return;
+                await RespondAsync($"", embed: embed.Build());
+                //await RespondAsync($"Gathering data on new Nightfalls. Check back later!");
+                //return;
             }
 
             [SlashCommand("nightmare-hunt", "Find out when an Nightmare Hunt is active next.")]

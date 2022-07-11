@@ -26,25 +26,31 @@ namespace Levante.Rotations
             public Nightfall? Nightfall { get; set; } = 0;
 
             [JsonProperty("WeaponDrop")]
-            public NightfallWeapon? WeaponDrop { get; set; } = NightfallWeapon.ThePalindrome;
+            public NightfallWeapon? WeaponDrop { get; set; } = NightfallWeapon.SiliconNeuroma;
         }
 
         public static string GetStrikeNameString(Nightfall Nightfall)
         {
             switch (Nightfall)
             {
-                case Nightfall.TheScarletKeep: return "The Scarlet Keep";
+                //case Nightfall.TheScarletKeep: return "The Scarlet Keep";
                 case Nightfall.TheArmsDealer: return "The Arms Dealer";
-                case Nightfall.TheLightblade: return "The Lightblade";
-                case Nightfall.TheGlassway: return "The Glassway";
-                case Nightfall.FallenSABER: return "The Fallen S.A.B.E.R.";
-                case Nightfall.BirthplaceOfTheVile: return "Birthplace of the Vile";
+                //case Nightfall.TheLightblade: return "The Lightblade";
+                //case Nightfall.TheGlassway: return "The Glassway";
+                //case Nightfall.FallenSABER: return "The Fallen S.A.B.E.R.";
+                //case Nightfall.BirthplaceOfTheVile: return "Birthplace of the Vile";
+
                 //case Nightfall.TheHollowedLair: return "The Hollowed Lair";
                 //case Nightfall.LakeOfShadows: return "Lake of Shadows";
                 //case Nightfall.ExodusCrash: return "Exodus Crash";
-                //case Nightfall.TheCorrupted: return "The Corrupted";
+                case Nightfall.TheCorrupted: return "The Corrupted";
                 //case Nightfall.TheDevilsLair: return "The Devils' Lair";
-                //case Nightfall.ProvingGrounds: return "Proving Grounds";
+                case Nightfall.ProvingGrounds: return "Proving Grounds";
+
+                case Nightfall.TheInsightTerminus: return "The Insight Terminus";
+                case Nightfall.WardenOfNothing: return "Warden of Nothing";
+                case Nightfall.TheInvertedSpire: return "The Inverted Spire";
+
                 default: return "Nightfall: The Ordeal";
             }
         }
@@ -53,12 +59,12 @@ namespace Levante.Rotations
         {
             switch (Nightfall)
             {
-                case Nightfall.TheScarletKeep: return "Hashladûn, Daughter of Crota";
+                //case Nightfall.TheScarletKeep: return "Hashladûn, Daughter of Crota";
                 case Nightfall.TheArmsDealer: return "Bracus Zahn";
-                case Nightfall.TheLightblade: return "Alak-Hul, The Lightblade";
-                case Nightfall.TheGlassway: return "Belmon, Transcendent Mind";
-                case Nightfall.FallenSABER: return "S.A.B.E.R.-2";
-                case Nightfall.BirthplaceOfTheVile: return "Heimiks, Warden of the Harvest";
+                //case Nightfall.TheLightblade: return "Alak-Hul, The Lightblade";
+                //case Nightfall.TheGlassway: return "Belmon, Transcendent Mind";
+                //case Nightfall.FallenSABER: return "S.A.B.E.R.-2";
+                //case Nightfall.BirthplaceOfTheVile: return "Heimiks, Warden of the Harvest";
                 //case Nightfall.TheHollowedLair: return "Fikrul, the Fanatic";
                 //case Nightfall.LakeOfShadows: return "Grask, the Consumed";
                 //case Nightfall.ExodusCrash: return "Thaviks, the Depraved";
@@ -113,18 +119,18 @@ namespace Levante.Rotations
         {
             switch (Nightfall)
             {
-                case Nightfall.TheScarletKeep: return "Scarlet Keep, The Moon";
+                //case Nightfall.TheScarletKeep: return "Scarlet Keep, The Moon";
                 case Nightfall.TheArmsDealer: return "European Dead Zone, Earth";
-                case Nightfall.TheLightblade: return "Court of Savathûn, Throne World";
-                case Nightfall.TheGlassway: return "Rathmore Chaos, Europa";
-                case Nightfall.FallenSABER: return "The Cosmodrome, Earth";
-                case Nightfall.BirthplaceOfTheVile: return "Court of Savathûn, Throne World";
+                //case Nightfall.TheLightblade: return "Court of Savathûn, Throne World";
+                //case Nightfall.TheGlassway: return "Rathmore Chaos, Europa";
+                //case Nightfall.FallenSABER: return "The Cosmodrome, Earth";
+                //case Nightfall.BirthplaceOfTheVile: return "Court of Savathûn, Throne World";
                 //case Nightfall.TheHollowedLair: return "The Tangled Shore, The Reef";
                 //case Nightfall.LakeOfShadows: return "European Dead Zone, Earth";
                 //case Nightfall.ExodusCrash: return "Arcadian Valley, Nessus";
-                //case Nightfall.TheCorrupted: return "The Dreaming City, The Reef";
+                case Nightfall.TheCorrupted: return "The Dreaming City, The Reef";
                 //case Nightfall.TheDevilsLair: return "The Cosmodrome, Earth";
-                //case Nightfall.ProvingGrounds: return "Halphas Electus, Nessus.";
+                case Nightfall.ProvingGrounds: return "Halphas Electus, Nessus.";
                 default: return "The Sol System, Space";
             }
         }
@@ -133,7 +139,7 @@ namespace Levante.Rotations
         {
             switch (Nightfall)
             {
-                case Nightfall.TheScarletKeep:
+                /*case Nightfall.TheScarletKeep:
                     {
                         switch (Difficulty)
                         {
@@ -183,7 +189,7 @@ namespace Levante.Rotations
                                     $"{DestinyEmote.Extinguish} {DestinyEmote.LimitedRevives} {DestinyEmote.AcuteVoidBurn}";
                             default: return "None.";
                         }
-                    }
+                    }*/
                 /*case Nightfall.TheHollowedLair:
                     switch (Difficulty)
                     {
@@ -258,9 +264,9 @@ namespace Levante.Rotations
         {
             switch (Weapon)
             {
-                case NightfallWeapon.ThePalindrome: return "The Palindrome";
+                //case NightfallWeapon.ThePalindrome: return "The Palindrome";
                 //case NightfallWeapon.TheSWARM: return "THE S.W.A.R.M.";
-                case NightfallWeapon.TheComedian: return "The Comedian";
+                //case NightfallWeapon.TheComedian: return "The Comedian";
                 //case NightfallWeapon.ShadowPrice: return "Shadow Price";
                 //case NightfallWeapon.HungJurySR4: return "Hung Jury SR4";
                 case NightfallWeapon.TheHothead: return "The Hothead";
@@ -268,6 +274,8 @@ namespace Levante.Rotations
                 //case NightfallWeapon.UzumeRR4: return "Uzume RR4";
                 case NightfallWeapon.DutyBound: return "Duty Bound";
                 case NightfallWeapon.SiliconNeuroma: return "Silicon Neuroma";
+                case NightfallWeapon.DFA: return "D.F.A.";
+                case NightfallWeapon.HorrorsLeast: return "Horror's Least";
                 default: return "Nightfall Weapon";
             }
         }
@@ -276,9 +284,9 @@ namespace Levante.Rotations
         {
             switch (Weapon)
             {
-                case NightfallWeapon.ThePalindrome: return $"{DestinyEmote.HandCannon}";
+                //case NightfallWeapon.ThePalindrome: return $"{DestinyEmote.HandCannon}";
                 //case NightfallWeapon.TheSWARM: return $"{DestinyEmote.MachineGun}";
-                case NightfallWeapon.TheComedian: return $"{DestinyEmote.Shotgun}";
+                //case NightfallWeapon.TheComedian: return $"{DestinyEmote.Shotgun}";
                 //case NightfallWeapon.ShadowPrice: return $"{DestinyEmote.AutoRifle}";
                 //case NightfallWeapon.HungJurySR4: return $"{DestinyEmote.ScoutRifle}";
                 case NightfallWeapon.TheHothead: return $"{DestinyEmote.RocketLauncher}";
@@ -286,6 +294,8 @@ namespace Levante.Rotations
                 //case NightfallWeapon.UzumeRR4: return $"{DestinyEmote.SniperRifle}";
                 case NightfallWeapon.DutyBound: return $"{DestinyEmote.AutoRifle}";
                 case NightfallWeapon.SiliconNeuroma: return $"{DestinyEmote.SniperRifle}";
+                case NightfallWeapon.DFA: return $"{DestinyEmote.HandCannon}";
+                case NightfallWeapon.HorrorsLeast: return $"{DestinyEmote.PulseRifle}";
                 default: return "Nightfall Weapon Emote";
             }
         }
@@ -294,11 +304,11 @@ namespace Levante.Rotations
         {
             switch (Difficulty)
             {
-                case NightfallDifficulty.Adept: return $"1480";
-                case NightfallDifficulty.Hero: return $"1520";
-                case NightfallDifficulty.Legend: return $"1550";
-                case NightfallDifficulty.Master: return $"1580";
-                case NightfallDifficulty.Grandmaster: return $"1600";
+                case NightfallDifficulty.Adept: return $"1490";
+                case NightfallDifficulty.Hero: return $"1530";
+                case NightfallDifficulty.Legend: return $"1560";
+                case NightfallDifficulty.Master: return $"1590";
+                case NightfallDifficulty.Grandmaster: return $"1610";
                 default: return "Nightfall Power Level";
             }
         }
@@ -405,7 +415,7 @@ namespace Levante.Rotations
             {
                 do
                 {
-                    iterationStrike = iterationStrike == Nightfall.BirthplaceOfTheVile ? Nightfall.TheScarletKeep : iterationStrike + 1;
+                    iterationStrike = iterationStrike == Nightfall.TheArmsDealer ? Nightfall.ProvingGrounds : iterationStrike + 1;
                     WeeksUntil++;
                 } while (iterationStrike != NightfallStrike);
             }
@@ -413,8 +423,8 @@ namespace Levante.Rotations
             {
                 do
                 {
-                    iterationWeapon = iterationWeapon >= NightfallWeapon.PlugOne1 ? NightfallWeapon.DutyBound : iterationWeapon + 1;
-                    iterationStrike = iterationStrike == Nightfall.BirthplaceOfTheVile ? Nightfall.TheScarletKeep : iterationStrike + 1;
+                    iterationWeapon = iterationWeapon >= NightfallWeapon.PlugOne1 ? NightfallWeapon.SiliconNeuroma : iterationWeapon + 1;
+                    iterationStrike = iterationStrike == Nightfall.TheArmsDealer ? Nightfall.ProvingGrounds : iterationStrike + 1;
                     WeeksUntil++;
                 } while (iterationStrike != NightfallStrike && iterationWeapon != WeaponDrop);
             }
@@ -429,8 +439,8 @@ namespace Levante.Rotations
 
             do
             {
-                iterationWeapon = iterationWeapon >= NightfallWeapon.PlugOne1 ? NightfallWeapon.DutyBound : iterationWeapon + 1;
-                iterationStrike = iterationStrike == Nightfall.BirthplaceOfTheVile ? Nightfall.TheScarletKeep : iterationStrike + 1;
+                iterationWeapon = iterationWeapon >= NightfallWeapon.PlugOne1 ? NightfallWeapon.SiliconNeuroma : iterationWeapon + 1;
+                iterationStrike = iterationStrike == Nightfall.TheArmsDealer ? Nightfall.ProvingGrounds : iterationStrike + 1;
                 iterationDate.AddDays(7);
             } while ((iterationDate - Date).Days >= 7);
 
@@ -441,36 +451,49 @@ namespace Levante.Rotations
 
     public enum Nightfall
     {
-        TheScarletKeep,
-        TheArmsDealer,
-        TheLightblade,
-        TheGlassway,
-        FallenSABER,
-        BirthplaceOfTheVile,
+        //TheScarletKeep,
+        //TheArmsDealer,
+        //TheLightblade,
+        //TheGlassway,
+        //FallenSABER,
+        //BirthplaceOfTheVile,
         //TheHollowedLair,
         //LakeOfShadows,
         //ExodusCrash,
         //TheCorrupted,
         //TheDevilsLair,
         //ProvingGrounds,
+
+        ProvingGrounds,
+        TheInsightTerminus,
+        WardenOfNothing,
+        TheCorrupted,
+        TheInvertedSpire,
+        TheArmsDealer,
     }
 
     public enum NightfallWeapon
     {
-        ThePalindrome,
+        //ThePalindrome,
         //TheSWARM, // Gone
         //TheComedian,
         //ShadowPrice, // Gone
         //HungJurySR4, // Gone
         //TheHothead,
-        PlugOne1,
+        //PlugOne1,
         //UzumeRR4, // Gone
 
-        DutyBound,
+        //DutyBound,
+        //SiliconNeuroma,
+        //TheComedian,
+        //TheHothead,
+
         SiliconNeuroma,
-        TheComedian,
+        DFA,
+        DutyBound,
+        HorrorsLeast,
         TheHothead,
-        // DutyBound???
+        PlugOne1,
     }
 
     public enum NightfallDifficulty

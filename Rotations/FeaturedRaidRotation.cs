@@ -10,8 +10,7 @@ namespace Levante.Rotations
 {
     public class FeaturedRaidRotation
     {
-        // TO-DO
-        public static readonly int DeepStoneCryptEncounterCount = 4;
+        public static readonly int FeaturedRaidCount = 4;
         public static readonly string FilePath = @"Trackers/featuredRaid.json";
 
         [JsonProperty("FeaturedRaidLinks")]
@@ -65,15 +64,15 @@ namespace Levante.Rotations
 
         public static void CreateJSON()
         {
-            DeepStoneCryptRotation obj;
+            FeaturedRaidRotation obj;
             if (File.Exists(FilePath))
             {
                 string json = File.ReadAllText(FilePath);
-                obj = JsonConvert.DeserializeObject<DeepStoneCryptRotation>(json);
+                obj = JsonConvert.DeserializeObject<FeaturedRaidRotation>(json);
             }
             else
             {
-                obj = new DeepStoneCryptRotation();
+                obj = new FeaturedRaidRotation();
                 File.WriteAllText(FilePath, JsonConvert.SerializeObject(obj, Formatting.Indented));
                 Console.WriteLine($"No {FilePath} file detected. No action needed.");
             }
@@ -81,7 +80,7 @@ namespace Levante.Rotations
 
         public static void UpdateJSON()
         {
-            var obj = new DeepStoneCryptRotation();
+            var obj = new FeaturedRaidRotation();
             string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -101,9 +100,9 @@ namespace Levante.Rotations
 
     public enum Raid
     {
-        LastWish,
-        GardenOfSalvation,
-        DeepStoneCrypt,
-        VaultOfGlass,
+        LastWish, // Shattered Throne
+        GardenOfSalvation, // Pit of Heresy
+        DeepStoneCrypt, // Prophecy
+        VaultOfGlass, // Grasp of Avarice
     }
 }

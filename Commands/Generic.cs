@@ -133,5 +133,29 @@ namespace Levante.Commands
 
             await RespondAsync(embed: embed.Build());
         }
+
+        [SlashCommand("support", "Supporting is the best way to keep Levante around and get supporter perks!")]
+        public async Task Support()
+        {
+            var app = await Context.Client.GetApplicationInfoAsync();
+            var auth = new EmbedAuthorBuilder()
+            {
+                IconUrl = app.IconUrl,
+            };
+            var embed = new EmbedBuilder();
+            embed.WithColor(new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
+
+            embed.ThumbnailUrl = app.IconUrl;
+
+            embed.Title = "Support Levante";
+            embed.Url = "https://donate.levante.dev/";
+            embed.Description =
+                "Levante is available to everyone for free, and will continue to stay this way. " +
+                "Anyone who supports Levante and her team by donating will be eligible for [supporter perks](https://www.levante.dev/features/). " +
+                "Those extra perks is a way of saying thank you to all of our generous supporters.\n" +
+                "You can support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/).";
+
+            await RespondAsync(embed: embed.Build());
+        }
     }
 }
