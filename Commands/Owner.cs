@@ -62,7 +62,13 @@ namespace Levante.Commands
 
             if (ActiveConfig.ActiveAFKUsers.Count >= 1)
             {
-                embed.Description = $"__XP Logging List:__\n";
+                embed.Description = $"__Priority XP Logging List:__\n";
+                foreach (var aau in ActiveConfig.PriorityActiveAFKUsers)
+                {
+                    embed.Description +=
+                        $"{aau.UniqueBungieName}: Level {aau.LastLevel}\n";
+                }
+                embed.Description += $"__XP Logging List:__\n";
                 foreach (var aau in ActiveConfig.ActiveAFKUsers)
                 {
                     embed.Description +=
@@ -215,25 +221,83 @@ namespace Levante.Commands
             }
         }
 
-        [Command("removeEmblemOffer", RunMode = RunMode.Async)]
-        [Alias("deleteEmblemOffer", "removeOffer", "deleteOffer")]
-        [Summary("Removes an offer from database.")]
+        [Command("flushOffers", RunMode = RunMode.Async)]
+        [Alias("removeOffers", "deleteOffers")]
+        [Summary("Removes all Emblem offers where the end date has passed.")]
         [RequireBotStaff]
-        public async Task RemoveOfferAsync(long HashCode)
+        public async Task RemoveOfferAsync()
         {
-            if (!EmblemOffer.HasExistingOffer(HashCode))
+            string result = "";
+            int removedCount = 0;
+            var removeHashes = new List<long>();
+            foreach (var Offer in EmblemOffer.CurrentOffers)
             {
-                await ReplyAsync("No such offer exists.");
+                if (Offer.EndDate != null && Offer.EndDate < DateTime.Now)
+                {
+                    removedCount++;
+                    removeHashes.Add(Offer.EmblemHashCode);
+                    result += $"[{Offer.OfferedEmblem.GetName()}]({Offer.SpecialUrl}): Ended {TimestampTag.FromDateTime((DateTime)Offer.EndDate, TimestampTagStyles.Relative)}.\n";
+                }
+            }
+
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
+                Footer = new EmbedFooterBuilder() { Text = $"{removedCount} expired Emblem offers" },
+            };
+            embed.Title = "Remove these offers?";
+            embed.Description = result;
+
+            var buttonBuilder = new ComponentBuilder()
+                .WithButton("Yes", customId: $"removeYes", ButtonStyle.Success, row: 0)
+                .WithButton("No", customId: $"removeNo", ButtonStyle.Danger, row: 0);
+
+            await Context.Message.ReplyAsync(embed: embed.Build(), components: buttonBuilder.Build());
+
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+            if (buttonResponse == null)
+            {
+                await Context.Message.ReplyAsync($"Closed command, invaild response.");
                 return;
             }
 
-            var offerToDelete = EmblemOffer.GetSpecificOffer(HashCode);
+            if (buttonResponse.IsTimeout)
+            {
+                await Context.Message.ReplyAsync($"Closed command, timed out.");
+                return;
+            }
 
-            EmblemOffer.DeleteOffer(offerToDelete);
+            if (buttonResponse.Value.Data.CustomId.Equals("removeYes"))
+            {
+                await buttonResponse.Value.DeferAsync();
+                try
+                {
+                    foreach (var OfferHash in removeHashes)
+                    {
+                        var offerToDelete = EmblemOffer.GetSpecificOffer(OfferHash);
+                        EmblemOffer.DeleteOffer(offerToDelete);
+                    }
+                        
+                }
+                catch (Exception x)
+                {
+                    Console.WriteLine($"{x}");
+                }
 
-            await ReplyAsync($"Removed offer.\n" +
-                $"Hash Code: {HashCode}\n" +
-                $"Emblem Name: {offerToDelete.OfferedEmblem.GetName()}");
+                embed.Title = "Removed these offers";
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Components = new ComponentBuilder().Build(); message.Embed = embed.Build(); });
+                await buttonResponse.Value.RespondAsync($"Removed {removedCount} Emblem offers.");
+                return;
+            }
+            else
+            {
+                embed.Title = "Did not remove these offers";
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Components = new ComponentBuilder().Build(); message.Embed = embed.Build(); });
+                await buttonResponse.Value.RespondAsync($"Not removing Emblem offers.");
+                return;
+            }
         }
 
         [Command("sendOffer", RunMode = RunMode.Async)]

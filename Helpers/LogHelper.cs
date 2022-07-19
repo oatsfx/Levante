@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Discord;
+using Discord.WebSocket;
+using Levante.Configs;
 
 namespace Levante.Helpers
 {
@@ -58,11 +60,18 @@ namespace Levante.Helpers
             }
         }
 
-        // This is here for the future when developer logs eventually make it to a specific Discord Channel.
-        public static void ConsoleLog(string Message) =>
+        public static void ConsoleLog(string Message)
+        {
             Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:" +
-            $"{String.Format("{0:00}", DateTime.Now.Minute)}:" +
-            $"{String.Format("{0:00}", DateTime.Now.Second)}] {Message}");
+                $"{String.Format("{0:00}", DateTime.Now.Minute)}:" +
+                $"{String.Format("{0:00}", DateTime.Now.Second)}] {Message}");
+
+            if (LevanteCordInstance.Client != null)
+            {
+                (LevanteCordInstance.Client.GetChannel(BotConfig.LogChannel) as SocketTextChannel).SendMessageAsync($"> [{GetTimePrefix()}]: {Message}");
+            }
+        }
+            
 
         private static TimestampTag GetTimePrefix() => TimestampTag.FromDateTime(DateTime.Now, TimestampTagStyles.LongTime);
     }

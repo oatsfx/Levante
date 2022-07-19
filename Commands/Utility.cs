@@ -11,6 +11,8 @@ using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System;
 using System.Text;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Levante.Commands
 {
@@ -110,8 +112,12 @@ namespace Levante.Commands
                 }
                 Encounter = (DeepStoneCryptEncounter)ArgEncounter;
 
+                var predictedDate = DeepStoneCryptRotation.DatePrediction(Encounter);
+                if (predictedDate < FeaturedRaidRotation.DatePrediction(Raid.DeepStoneCrypt))
+                    predictedDate = FeaturedRaidRotation.DatePrediction(Raid.DeepStoneCrypt);
+
                 DeepStoneCryptRotation.AddUserTracking(Context.User.Id, Encounter);
-                await RespondAsync($"I will remind you when {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(DeepStoneCryptRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                await RespondAsync($"I will remind you when {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 return;
             }
 
@@ -131,6 +137,22 @@ namespace Levante.Commands
                 return;
             }
 
+            [SlashCommand("featured-raid", "Be notified when a raid is featured.")]
+            public async Task FeaturedRaid([Summary("raid", "Legacy raid activity."),
+                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3)] int ArgRaid)
+            {
+                if (FeaturedRaidRotation.GetUserTracking(Context.User.Id, out var Raid) != null)
+                {
+                    await RespondAsync($"You already have tracking for Featured Raids. I am watching for {FeaturedRaidRotation.GetRaidString(Raid)}.", ephemeral: true);
+                    return;
+                }
+                Raid = (Raid)ArgRaid;
+
+                FeaturedRaidRotation.AddUserTracking(Context.User.Id, Raid);
+                await RespondAsync($"I will remind you when {FeaturedRaidRotation.GetRaidString(Raid)} is the featured raid, which will be on {TimestampTag.FromDateTime(FeaturedRaidRotation.DatePrediction(Raid), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                return;
+            }
+
             [SlashCommand("garden-of-salvation", "Be notified when a Garden of Salvation challenge is active.")]
             public async Task GardenOfSalvation([Summary("challenge", "Garden of Salvation challenge."),
                 Choice("Evade the Consecrated Mind (Staying Alive)", 0), Choice("Summon the Consecrated Mind (A Link to the Chain)", 1),
@@ -143,8 +165,12 @@ namespace Levante.Commands
                 }
                 Encounter = (GardenOfSalvationEncounter)ArgEncounter;
 
+                var predictedDate = GardenOfSalvationRotation.DatePrediction(Encounter);
+                if (predictedDate < FeaturedRaidRotation.DatePrediction(Raid.GardenOfSalvation))
+                    predictedDate = FeaturedRaidRotation.DatePrediction(Raid.GardenOfSalvation);
+
                 GardenOfSalvationRotation.AddUserTracking(Context.User.Id, Encounter);
-                await RespondAsync($"I will remind you when {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(GardenOfSalvationRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                await RespondAsync($"I will remind you when {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 return;
             }
 
@@ -160,8 +186,12 @@ namespace Levante.Commands
                 }
                 Encounter = (LastWishEncounter)ArgEncounter;
 
+                var predictedDate = LastWishRotation.DatePrediction(Encounter);
+                if (predictedDate < FeaturedRaidRotation.DatePrediction(Raid.LastWish))
+                    predictedDate = FeaturedRaidRotation.DatePrediction(Raid.LastWish);
+
                 LastWishRotation.AddUserTracking(Context.User.Id, Encounter);
-                await RespondAsync($"I will remind you when {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(LastWishRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                await RespondAsync($"I will remind you when {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 return;
             }
 
@@ -192,10 +222,14 @@ namespace Levante.Commands
                 LS = (LostSector?)ArgLS;
                 EAT = ArgEAT;
 
-                LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
                 if (LS == null && EAT == null)
-                    await RespondAsync($"An error has occurred.", ephemeral: true);
-                else if (LS != null && EAT == null)
+                {
+                    await RespondAsync($"You left both arguments blank; I can't track nothing!", ephemeral: true);
+                    return;
+                }
+
+                LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
+                if (LS != null && EAT == null)
                     await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (LS == null && EAT != null)
                     await RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
@@ -226,17 +260,27 @@ namespace Levante.Commands
                     return;
                 }
                 NF = (Nightfall?)ArgNF;
-                Weapon = (NightfallWeapon)ArgWeapon;
+                Weapon = (NightfallWeapon?)ArgWeapon;
+
+                if (NF == null && Weapon == null)
+                {
+                    await RespondAsync($"You left both arguments blank; I can't track nothing!", ephemeral: true);
+                    return;
+                }
+                var predictDate = NightfallRotation.DatePrediction(NF, Weapon);
+                if (predictDate < DateTime.Now)
+                {
+                    await RespondAsync($"This rotation is not possible this season.", ephemeral: true);
+                    return;
+                }
 
                 NightfallRotation.AddUserTracking(Context.User.Id, NF, Weapon);
-                if (NF == null && Weapon == null)
-                    await RespondAsync($"An error has occurred.", ephemeral: true);
-                else if (NF != null && Weapon == null)
-                    await RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                if (NF != null && Weapon == null)
+                    await RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is in rotation, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (NF == null && Weapon != null)
-                    await RespondAsync($"I will remind you when {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} is in rotation, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    await RespondAsync($"I will remind you when {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} is in rotation, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (NF != null && Weapon != null)
-                    await RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}, which will be on {TimestampTag.FromDateTime(NightfallRotation.DatePrediction(NF, Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    await RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 
                 //await RespondAsync($"Gathering data on new Nightfalls. Check back later!");
                 //return;
@@ -273,8 +317,12 @@ namespace Levante.Commands
                 }
                 Encounter = (VaultOfGlassEncounter)ArgEncounter;
 
+                var predictedDate = VaultOfGlassRotation.DatePrediction(Encounter);
+                if (predictedDate < FeaturedRaidRotation.DatePrediction(Raid.VaultOfGlass))
+                    predictedDate = FeaturedRaidRotation.DatePrediction(Raid.VaultOfGlass);
+
                 VaultOfGlassRotation.AddUserTracking(Context.User.Id, Encounter);
-                await RespondAsync($"I will remind you when {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(VaultOfGlassRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                await RespondAsync($"I will remind you when {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 return;
             }
 
@@ -467,14 +515,20 @@ namespace Levante.Commands
                 DeepStoneCryptEncounter Encounter = (DeepStoneCryptEncounter)ArgEncounter;
 
                 var predictedDate = DeepStoneCryptRotation.DatePrediction(Encounter);
+                var predictedFeaturedDate = FeaturedRaidRotation.DatePrediction(Raid.DeepStoneCrypt);
                 var embed = new EmbedBuilder()
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
                 embed.Title = "Deep Stone Crypt";
-                embed.Description =
-                    $"Next occurrance of {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                if (predictedDate < predictedFeaturedDate)
+                    embed.Description =
+                        $"Next occurrance of {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else
+                    embed.Description =
+                        $"Next occurrance of {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}. Deep Stone Crypt will also be the featured raid, making this challenge, and all others, available.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
@@ -500,6 +554,26 @@ namespace Levante.Commands
                 return;
             }
 
+            [SlashCommand("featured-raid", "Find out when a raid is being featured next.")]
+            public async Task FeaturedRaid([Summary("raid", "Legacy raid activity."),
+                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3)] int ArgRaid)
+            {
+                Raid Raid = (Raid)ArgRaid;
+
+                var predictedDate = FeaturedRaidRotation.DatePrediction(Raid);
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                };
+                embed.Title = "Featured Raid";
+                embed.Description =
+                    $"Next occurrance of {FeaturedRaidRotation.GetRaidString(Raid)} " +
+                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                await RespondAsync($"", embed: embed.Build());
+                return;
+            }
+
             [SlashCommand("garden-of-salvation", "Find out when a Garden of Salvation challenge is active next.")]
             public async Task GardenOfSalvation([Summary("challenge", "Garden of Salvation challenge."),
                 Choice("Evade the Consecrated Mind (Staying Alive)", 0), Choice("Summon the Consecrated Mind (A Link to the Chain)", 1),
@@ -508,14 +582,20 @@ namespace Levante.Commands
                 GardenOfSalvationEncounter Encounter = (GardenOfSalvationEncounter)ArgEncounter;
 
                 var predictedDate = GardenOfSalvationRotation.DatePrediction(Encounter);
+                var predictedFeaturedDate = FeaturedRaidRotation.DatePrediction(Raid.GardenOfSalvation);
                 var embed = new EmbedBuilder()
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
                 embed.Title = "Garden of Salvation";
-                embed.Description =
-                    $"Next occurrance of {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                if (predictedDate < predictedFeaturedDate)
+                    embed.Description =
+                        $"Next occurrance of {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else
+                    embed.Description =
+                        $"Next occurrance of {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}. Garden of Salvation will also be the featured raid, making this challenge, and all others, available.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
@@ -529,14 +609,20 @@ namespace Levante.Commands
                 LastWishEncounter Encounter = (LastWishEncounter)ArgEncounter;
 
                 var predictedDate = LastWishRotation.DatePrediction(Encounter);
+                var predictedFeaturedDate = FeaturedRaidRotation.DatePrediction(Raid.LastWish);
                 var embed = new EmbedBuilder()
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
                 embed.Title = "Last Wish";
-                embed.Description =
-                    $"Next occurrance of {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                if (predictedDate < predictedFeaturedDate)
+                    embed.Description =
+                        $"Next occurrance of {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else
+                    embed.Description =
+                        $"Next occurrance of {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) " +
+                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}. Last Wish will also be the featured raid, making this challenge, and all others, available.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
@@ -592,14 +678,25 @@ namespace Levante.Commands
                 NightfallWeapon? Weapon = (NightfallWeapon?)ArgWeapon;
 
                 var predictedDate = NightfallRotation.DatePrediction(NF, Weapon);
+
+                if (NF == null && Weapon == null)
+                {
+                    await RespondAsync($"You left both arguments blank; I can't predict nothing!", ephemeral: true);
+                    return;
+                }
+                var predictDate = NightfallRotation.DatePrediction(NF, Weapon);
+                if (predictDate < DateTime.Now)
+                {
+                    await RespondAsync($"This rotation is not possible this season.", ephemeral: true);
+                    return;
+                }
+
                 var embed = new EmbedBuilder()
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
                 embed.Title = "Nightfall";
-                if (NF == null && Weapon == null)
-                    await RespondAsync($"An error has occurred. No parameters.", ephemeral: true);
-                else if (NF != null && Weapon == null)
+                if (NF != null && Weapon == null)
                     embed.Description =
                         $"Next occurrance of {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
                 else if (NF == null && Weapon != null)
@@ -647,14 +744,21 @@ namespace Levante.Commands
                 VaultOfGlassEncounter Encounter = (VaultOfGlassEncounter)ArgEncounter;
 
                 var predictedDate = VaultOfGlassRotation.DatePrediction(Encounter);
+                var predictedFeaturedDate = FeaturedRaidRotation.DatePrediction(Raid.VaultOfGlass);
                 var embed = new EmbedBuilder()
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
                 embed.Title = "Vault of Glass";
-                embed.Description =
-                    $"Next occurrance of {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}), " +
-                        $"which drops {VaultOfGlassRotation.GetChallengeRewardString(Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                if (predictedDate < predictedFeaturedDate)
+                    embed.Description =
+                        $"Next occurrance of {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}), " +
+                            $"which drops {VaultOfGlassRotation.GetChallengeRewardString(Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else
+                    embed.Description =
+                        $"Next occurrance of {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}), " +
+                            $"which drops {VaultOfGlassRotation.GetChallengeRewardString(Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}. " +
+                            $"Vault of Glass will also be the featured raid, making this challenge, and all others, available.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
@@ -835,5 +939,167 @@ namespace Levante.Commands
 
             await RespondAsync($"Your Bungie account: {linkedUser.UniqueBungieName} has been unlinked. Use the command \"/link\" if you want to re-link!", ephemeral: true);
         }
+
+        // Attempt to add Autocomplete to /next and /notify. Ran into issue with activities that have 2 rotations, like Lost Sectors and Nightfalls.
+
+        //[SlashCommand("notify-test", "Display a Destiny 2 leaderboard of choice.")]
+        //public async Task Test([Summary("rotation-type", "The activity with rotations of interest."), Autocomplete(typeof(RotationAutocomplete))] string Rotation,
+        //    [Summary("rotation", "The rotation of interest."), Autocomplete(typeof(RotationArgAutocomplete))] string Arg)
+        //{
+        //    var next = new Next();
+        //    switch (Rotation)
+        //    {
+        //        case "Altars of Sorrow":
+        //            {
+        //                AltarsOfSorrow Weapon = Enum.Parse<AltarsOfSorrow>(Arg);
+
+        //                var predictedDate = AltarsOfSorrowRotation.DatePrediction(Weapon);
+        //                var embed = new EmbedBuilder()
+        //                {
+        //                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+        //                };
+        //                embed.Title = "Altars of Sorrow";
+        //                embed.Description =
+        //                    $"Next occurrance of {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}) " +
+        //                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+        //                await RespondAsync($"", embed: embed.Build());
+        //                return;
+        //            }
+        //        default: return;
+        //    }
+        //}
+
+        //public class RotationAutocomplete : AutocompleteHandler
+        //{
+        //    List<AutocompleteResult> resultOptions = new()
+        //    {
+        //        new AutocompleteResult("Altars of Sorrow", "Altars of Sorrow"),
+        //        new AutocompleteResult("Ascendant Challenge", "Ascendant Challenge"),
+        //        new AutocompleteResult("Dreaming City Curse Strength", "Dreaming City Curse Strength"),
+        //        new AutocompleteResult("Deep Stone Crypt Challenge", "Deep Stone Crypt Challenge"),
+        //        new AutocompleteResult("Empire Hunt", "Empire Hunt"),
+        //        new AutocompleteResult("Featured Raid", "Featured Raid"),
+        //        //new AutocompleteResult("Featured Dungeon", "Featured Dungeon"),
+        //        new AutocompleteResult("Garden of Salvation Challenge", "Garden of Salvation Challenge"),
+        //        new AutocompleteResult("Last Wish Challenge", "Last Wish Challenge"),
+        //        new AutocompleteResult("Lost Sector", "Lost Sector"),
+        //        new AutocompleteResult("Nightfall", "Nightfall"),
+        //        new AutocompleteResult("Nightmare Hunt", "Nightmare Hunt"),
+        //        //new AutocompleteResult("Shadowkeep Mission Rotation", "Shadowkeep Mission Rotation"),
+        //        new AutocompleteResult("Vault of Glass Challenge", "Vault of Glass Challenge"),
+        //        new AutocompleteResult("Vow of the Disciple Challenge", "Vow of the Disciple Challenge"),
+        //        new AutocompleteResult("Wellspring", "Wellspring"),
+        //        new AutocompleteResult("Witch Queen Mission Rotation", "Witch Queen Mission Rotation"),
+        //    };
+
+        //    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        //    {
+        //        await Task.Delay(0);
+        //        // Create a collection with suggestions for autocomplete
+                
+        //        List<AutocompleteResult> results = new();
+        //        string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+
+        //        if (String.IsNullOrWhiteSpace(SearchQuery))
+        //            results = resultOptions;
+        //        else
+        //            foreach (var Rotation in resultOptions)
+        //                if (Rotation.Name.ToLower().Contains(SearchQuery.ToLower()))
+        //                    results.Add(Rotation);
+
+        //        results = results.OrderBy(x => x.Name).ToList();
+
+        //        // max - 25 suggestions at a time (API limit)
+        //        Console.WriteLine($"Completion Success");
+        //        return AutocompletionResult.FromSuccess(results);
+        //    }
+        //}
+
+        //public class RotationArgAutocomplete : AutocompleteHandler
+        //{
+        //    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        //    {
+        //        await Task.Delay(0);
+        //        // Create a collection with suggestions for autocomplete
+
+        //        List<AutocompleteResult> results = new();
+        //        string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+
+        //        var rotation = autocompleteInteraction.Data.Options.FirstOrDefault(x => x.Name.Equals("rotation-type")).Value.ToString();
+        //        Console.WriteLine($"Parsing: {rotation}");
+        //        switch ($"{rotation}")
+        //        {
+        //            case "Altars of Sorrow":
+        //                {
+        //                    Console.WriteLine("Altars of Sorrow");
+        //                    for (int i = 0; i < AltarsOfSorrowRotation.AltarWeaponCount; i++)
+        //                        results.Add(new AutocompleteResult($"{AltarsOfSorrowRotation.GetWeaponNameString((AltarsOfSorrow)i)} ({(AltarsOfSorrow)i})", $"{(AltarsOfSorrow)i}"));
+        //                    break;
+        //                }
+        //            case "Ascendant Challenge":
+        //                {
+        //                    Console.WriteLine("Ascendant Challenge");
+        //                    for (int i = 0; i < AscendantChallengeRotation.AscendantChallengeCount; i++)
+        //                        results.Add(new AutocompleteResult($"{AscendantChallengeRotation.GetChallengeNameString((AscendantChallenge)i)} ({AscendantChallengeRotation.GetChallengeLocationString((AscendantChallenge)i)})", $"{(AscendantChallenge)i}"));
+        //                    break;
+        //                }
+        //            case "Dreaming City Curse Strength":
+        //                {
+        //                    Console.WriteLine("Dreaming City Curse Strength");
+        //                    for (int i = 0; i < CurseWeekRotation.CurseWeekCount; i++)
+        //                        results.Add(new AutocompleteResult($"{(CurseWeek)i}", $"{(CurseWeek)i}"));
+        //                    break;
+        //                }
+        //            case "Deep Stone Crypt Challenge":
+        //                {
+        //                    Console.WriteLine("Deep Stone Crypt Challenge");
+        //                    for (int i = 0; i < DeepStoneCryptRotation.DeepStoneCryptEncounterCount; i++)
+        //                        results.Add(new AutocompleteResult($"{DeepStoneCryptRotation.GetEncounterString((DeepStoneCryptEncounter)i)} ({DeepStoneCryptRotation.GetChallengeString((DeepStoneCryptEncounter)i)})", $"{(DeepStoneCryptEncounter)i}"));
+        //                    break;
+        //                }
+        //            case "Empire Hunt":
+        //                {
+        //                    Console.WriteLine("Empire Hunt");
+        //                    for (int i = 0; i < EmpireHuntRotation.EmpireHuntCount; i++)
+        //                        results.Add(new AutocompleteResult($"{EmpireHuntRotation.GetHuntNameString((EmpireHunt)i)} ({EmpireHuntRotation.GetHuntBossString((EmpireHunt)i)})", $"{(EmpireHunt)i}"));
+        //                    break;
+        //                }
+        //            case "Featured Raid":
+        //                {
+        //                    Console.WriteLine("Featured Raid");
+        //                    for (int i = 0; i < FeaturedRaidRotation.FeaturedRaidCount; i++)
+        //                        results.Add(new AutocompleteResult($"{FeaturedRaidRotation.GetRaidString((Raid)i)}", $"{(Raid)i}"));
+        //                    break;
+        //                }
+        //            case "Garden of Salvation Challenge":
+        //                {
+        //                    Console.WriteLine("Garden of Salvation Challenge");
+        //                    for (int i = 0; i < GardenOfSalvationRotation.GardenOfSalvationEncounterCount; i++)
+        //                        results.Add(new AutocompleteResult($"{GardenOfSalvationRotation.GetEncounterString((GardenOfSalvationEncounter)i)} ({GardenOfSalvationRotation.GetChallengeString((GardenOfSalvationEncounter)i)})", $"{(GardenOfSalvationEncounter)i}"));
+        //                    break;
+        //                }
+        //            case "Last Wish Challenge":
+        //                {
+        //                    Console.WriteLine("Last Wish Challenge");
+        //                    for (int i = 0; i < LastWishRotation.LastWishEncounterCount; i++)
+        //                        results.Add(new AutocompleteResult($"{LastWishRotation.GetEncounterString((LastWishEncounter)i)} ({LastWishRotation.GetChallengeString((LastWishEncounter)i)})", $"{(LastWishEncounter)i}"));
+        //                    break;
+        //                }
+        //            case "Lost Sector":
+        //                {
+        //                    Console.WriteLine("Lost Sector");
+        //                    for (int i = 0; i < LastWishRotation.LastWishEncounterCount; i++)
+        //                        results.Add(new AutocompleteResult($"{LastWishRotation.GetEncounterString((LastWishEncounter)i)} ({LastWishRotation.GetChallengeString((LastWishEncounter)i)})", $"{(LastWishEncounter)i}"));
+        //                    break;
+        //                }
+        //            default: break;
+        //        }
+
+        //        // max - 25 suggestions at a time (API limit)
+        //        Console.WriteLine($"Completion Success");
+        //        return AutocompletionResult.FromSuccess(results);
+        //    }
+        //}
     }
 }

@@ -2,6 +2,8 @@
 using Discord;
 using Newtonsoft.Json;
 using System.Net.Http;
+using System.Collections.Generic;
+using Levante.Helpers;
 
 namespace Levante.Util
 {
@@ -78,6 +80,49 @@ namespace Levante.Util
             return Emblem;
         }
 
+        public string GetSeal()
+        {
+            List<long> gildableSeals = new()
+            {
+                3464275895, // Conqueror
+                1556658903, // Gambit/Dredgen
+                1343839969, // Crucible/Unbroken
+                1438167672, // Deadeye
+                3298130972 // Flawless
+            };
+            List<long> gildableSealsGuildTrackers = new()
+            {
+                1715149073, // Conqueror
+                1249847601, // Gambit/Dredgen
+                2843544039, // Crucible/Unbroken
+                4141599814, // Deadeye
+                2506618338 // Flawless
+            };
+            dynamic item1 = JsonConvert.DeserializeObject(GuardianContent);
+            if (item1.Response.character.data.titleRecordHash == null)
+                return null;
+            long sealHash = (long)item1.Response.character.data.titleRecordHash;
+            string sealResult = $"*{ManifestHelper.Seals[sealHash]}*";
+
+            if (gildableSeals.Contains(sealHash))
+            {
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    var trackHash = gildableSealsGuildTrackers[gildableSeals.IndexOf(sealHash)];
+                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=900").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item2 = JsonConvert.DeserializeObject(content);
+                    bool isGildedThisSeason = item2.Response.profileRecords.data.records[$"{trackHash}"].objectives[0].complete;
+                    if (isGildedThisSeason && item2.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
+                        sealResult += $" {DestinyEmote.Gilded}{item2.Response.profileRecords.data.records[$"{trackHash}"].completedCount}";
+                    else if (item2.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
+                        sealResult += $" {DestinyEmote.GildedPurple}{item2.Response.profileRecords.data.records[$"{trackHash}"].completedCount}";
+                }
+            }
+            return sealResult;
+        }
+
         public EmbedBuilder GetGuardianEmbed()
         {
             var auth = new EmbedAuthorBuilder()
@@ -96,10 +141,12 @@ namespace Levante.Util
                 Author = auth,
                 Footer = foot
             };
+            var seal = GetSeal();
             embed.Description =
                 $"{GetClassEmote()} **{GetRace()} {GetGender()} {GetClass()}** {GetClassEmote()}\n" +
                 $"Light Level: {DestinyEmote.Light}{GetLightLevel()}\n" +
-                $"Emblem: {GetEmblem().GetName()} ({GetEmblem().GetItemHash()})";
+                $"Emblem: {GetEmblem().GetName()} ({GetEmblem().GetItemHash()})\n" +
+                $"{(seal != null ? $"Title: {seal}" : "")}";
             embed.ThumbnailUrl = GetEmblem().GetIconUrl();
 
             dynamic item = JsonConvert.DeserializeObject(GuardianContent);

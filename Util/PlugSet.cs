@@ -56,12 +56,10 @@ namespace Levante.Util
             {
                 if (!emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
                 {
-                    using (WebClient client = new WebClient())
-                    {
-                        client.DownloadFile(Perk.GetIconUrl(), @"tempEmote.png");
-                        Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(@"tempEmote.png"))).Wait();
-                    }
+                    var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
+                    Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
                 }
+                //{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}
                 result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}\n";
             }
             emoteCfg.UpdateJSON();

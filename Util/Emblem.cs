@@ -92,6 +92,7 @@ namespace Levante.Util
             {
                 Name = $"Emblem Details: {GetName()}",
                 IconUrl = GetIconUrl(),
+                Url = $"https://destinyemblemcollector.com/emblem?id={GetItemHash()}",
             };
             var foot = new EmbedFooterBuilder()
             {
@@ -150,7 +151,7 @@ namespace Levante.Util
                     embed.AddField(x =>
                     {
                         x.Name = "Unlock";
-                        x.Value = $"[DEC](https://destinyemblemcollector.com/emblem?id={GetItemHash()}): {unlock}";
+                        x.Value = $"[DEC](https://destinyemblemcollector.com/emblem?id={GetItemHash()}): {System.Web.HttpUtility.HtmlDecode(unlock)}";
                         x.IsInline = false;
                     });
                 }

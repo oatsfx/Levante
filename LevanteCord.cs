@@ -72,6 +72,18 @@ namespace Levante
 
             await Task.Run(() => Console.Title = $"Levante v{BotConfig.Version:0.00}");
 
+            var client = _services.GetRequiredService<DiscordSocketClient>();
+            var commands = _services.GetRequiredService<InteractionService>();
+            client.Log += log =>
+            {
+                Console.WriteLine(log.ToString());
+                return Task.CompletedTask;
+            };
+            await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
+            await _client.StartAsync();
+
+            await InitializeListeners();
+
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
 
@@ -82,36 +94,23 @@ namespace Levante
 
             EmblemOffer.LoadCurrentOffers();
 
-            Console.WriteLine($"[STARTUP] Current Bot Version: v{BotConfig.Version:0.00}");
-            Console.WriteLine($"[STARTUP] Current Developer Note: {BotConfig.Note}");
-            Console.WriteLine();
-
-            Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine($"[ROTATIONS]");
-            Console.WriteLine($"Legend/Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LostSector)} ({CurrentRotations.LostSectorArmorDrop})");
-            Console.WriteLine($"Altar Weapon: {AltarsOfSorrowRotation.GetWeaponNameString(CurrentRotations.AltarWeapon)} ({CurrentRotations.AltarWeapon})");
-            Console.WriteLine($"Wellspring ({WellspringRotation.GetWellspringTypeString(CurrentRotations.Wellspring)}): {WellspringRotation.GetWeaponNameString(CurrentRotations.Wellspring)} ({WellspringRotation.GetWellspringBossString(CurrentRotations.Wellspring)})");
-            Console.WriteLine($"Last Wish Challenge: {LastWishRotation.GetEncounterString(CurrentRotations.LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(CurrentRotations.LWChallengeEncounter)})");
-            Console.WriteLine($"Garden of Salvation Challenge: {GardenOfSalvationRotation.GetEncounterString(CurrentRotations.GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(CurrentRotations.GoSChallengeEncounter)})");
-            Console.WriteLine($"Deep Stone Crypt Challenge: {DeepStoneCryptRotation.GetEncounterString(CurrentRotations.DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(CurrentRotations.DSCChallengeEncounter)})");
-            Console.WriteLine($"Vault of Glass Challenge: {VaultOfGlassRotation.GetEncounterString(CurrentRotations.VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(CurrentRotations.VoGChallengeEncounter)})");
-            Console.WriteLine($"Vow of the Disciple Challenge: {VowOfTheDiscipleRotation.GetEncounterString(CurrentRotations.VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(CurrentRotations.VowChallengeEncounter)})");
-            Console.WriteLine($"Curse Week: {CurrentRotations.CurseWeek}");
-            Console.WriteLine($"Ascendant Challenge: {AscendantChallengeRotation.GetChallengeNameString(CurrentRotations.AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(CurrentRotations.AscendantChallenge)})");
-            Console.WriteLine($"Nightfall: {NightfallRotation.GetStrikeNameString(CurrentRotations.Nightfall)} (dropping {NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrop)})");
-            Console.WriteLine($"Empire Hunt: {EmpireHuntRotation.GetHuntNameString(CurrentRotations.EmpireHunt)}");
-            Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
-            Console.WriteLine();
+            //Console.ForegroundColor = ConsoleColor.Magenta;
+            //Console.WriteLine($"[ROTATIONS]");
+            //Console.WriteLine($"Legend/Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LostSector)} ({CurrentRotations.LostSectorArmorDrop})");
+            //Console.WriteLine($"Altar Weapon: {AltarsOfSorrowRotation.GetWeaponNameString(CurrentRotations.AltarWeapon)} ({CurrentRotations.AltarWeapon})");
+            //Console.WriteLine($"Wellspring ({WellspringRotation.GetWellspringTypeString(CurrentRotations.Wellspring)}): {WellspringRotation.GetWeaponNameString(CurrentRotations.Wellspring)} ({WellspringRotation.GetWellspringBossString(CurrentRotations.Wellspring)})");
+            //Console.WriteLine($"Last Wish Challenge: {LastWishRotation.GetEncounterString(CurrentRotations.LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(CurrentRotations.LWChallengeEncounter)})");
+            //Console.WriteLine($"Garden of Salvation Challenge: {GardenOfSalvationRotation.GetEncounterString(CurrentRotations.GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(CurrentRotations.GoSChallengeEncounter)})");
+            //Console.WriteLine($"Deep Stone Crypt Challenge: {DeepStoneCryptRotation.GetEncounterString(CurrentRotations.DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(CurrentRotations.DSCChallengeEncounter)})");
+            //Console.WriteLine($"Vault of Glass Challenge: {VaultOfGlassRotation.GetEncounterString(CurrentRotations.VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(CurrentRotations.VoGChallengeEncounter)})");
+            //Console.WriteLine($"Vow of the Disciple Challenge: {VowOfTheDiscipleRotation.GetEncounterString(CurrentRotations.VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(CurrentRotations.VowChallengeEncounter)})");
+            //Console.WriteLine($"Curse Week: {CurrentRotations.CurseWeek}");
+            //Console.WriteLine($"Ascendant Challenge: {AscendantChallengeRotation.GetChallengeNameString(CurrentRotations.AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(CurrentRotations.AscendantChallenge)})");
+            //Console.WriteLine($"Nightfall: {NightfallRotation.GetStrikeNameString(CurrentRotations.Nightfall)} (dropping {NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrop)})");
+            //Console.WriteLine($"Empire Hunt: {EmpireHuntRotation.GetHuntNameString(CurrentRotations.EmpireHunt)}");
+            //Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
+            //Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Cyan;
-
-            var client = _services.GetRequiredService<DiscordSocketClient>();
-            var commands = _services.GetRequiredService<InteractionService>();
-
-            client.Log += log =>
-            {
-                Console.WriteLine(log.ToString());
-                return Task.CompletedTask;
-            };
 
             _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
             _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 600000);
@@ -121,13 +120,11 @@ namespace Levante
             else
                 SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 0, 0));
 
-            await InitializeListeners();
-
             var oauthManager = new OAuthHelper();
 
-            await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
-            await _client.StartAsync();
-
+            Console.WriteLine();
+            LogHelper.ConsoleLog($"[STARTUP] Bot successfully started! v{BotConfig.Version:0.00} ({BotConfig.Note})");
+            Console.WriteLine();
             await Task.Delay(-1);
 
             await _xpTimer.DisposeAsync();
@@ -228,29 +225,51 @@ namespace Levante
         {
             if (ActiveConfig.ActiveAFKUsers.Count <= 0 && ActiveConfig.PriorityActiveAFKUsers.Count <= 0)
             {
-                LogHelper.ConsoleLog($"[LOGGING] Skipping refresh, no active logging users...");
+                LogHelper.ConsoleLog($"[XP SESSIONS] Skipping refresh, no active logging users...");
                 return;
             }
 
             // Stop Timer
             _xpTimer.Change(Timeout.Infinite, Timeout.Infinite);
-            LogHelper.ConsoleLog($"[LOGGING] Refreshing Bungie API...");
+            LogHelper.ConsoleLog($"[XP SESSIONS] Refreshing Bungie API...");
             //List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
             //List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
             try // XP Logs
             {
-                LogHelper.ConsoleLog($"[LOGGING] Refreshing XP Logging Users...");
+                LogHelper.ConsoleLog($"[XP SESSIONS] Refreshing XP Logging Users...");
                 var combinedAFKUsers = ActiveConfig.PriorityActiveAFKUsers.Concat(ActiveConfig.ActiveAFKUsers);
                 foreach (ActiveConfig.ActiveAFKUser aau in combinedAFKUsers.ToList())
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
                     int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out int powerBonus, out string errorStatus);
 
-                    LogHelper.ConsoleLog($"[LOGGING] Checking {tempAau.UniqueBungieName}.");
+                    LogHelper.ConsoleLog($"[XP SESSIONS] Checking {tempAau.UniqueBungieName}.");
                     var actualUser = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
                     if (actualUser == null)
                     {
                         actualUser = ActiveConfig.PriorityActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
+                    }
+
+                    if (_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel == null)
+                    {
+                        IUser user;
+                        if (_client.GetUser(tempAau.DiscordID) == null)
+                        {
+                            var _rClient = _client.Rest;
+                            user = await _rClient.GetUserAsync(tempAau.DiscordID);
+                        }
+                        else
+                        {
+                            user = _client.GetUser(tempAau.DiscordID);
+                        }
+
+                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: LoggingChannelNotFound. Logging will be terminated for {tempAau.UniqueBungieName}.");
+                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
+
+                        LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
+
+                        ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
+                        await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                     }
 
                     if (!errorStatus.Equals("Success"))
@@ -260,7 +279,7 @@ namespace Levante
                             string uniqueName = tempAau.UniqueBungieName;
 
                             await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
-                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateDeleteChannelButton());
+                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons());
 
                             IUser user;
                             if (_client.GetUser(tempAau.DiscordID) == null)
@@ -275,7 +294,7 @@ namespace Levante
                             await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Logging will be terminated for {uniqueName}.");
                             await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
-                            LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {tempAau.UniqueBungieName} via automation.");
+                            LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
                             //listOfRemovals.Add(tempAau);
                             // ***Change to remove it from list because file update is called at end of method.***
                             //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
@@ -285,7 +304,7 @@ namespace Levante
                         else
                         {
                             await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}. Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
-                            LogHelper.ConsoleLog($"[LOGGING] Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
+                            LogHelper.ConsoleLog($"[XP SESSIONS] Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
                             // Move onto the next user so everyone gets the message.
                             //newList.Add(tempAau);
 
@@ -349,7 +368,7 @@ namespace Levante
                             string uniqueName = tempAau.UniqueBungieName;
 
                             await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player has been determined as inactive.");
-                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateDeleteChannelButton());
+                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons());
 
                             IUser user;
                             if (_client.GetUser(tempAau.DiscordID) == null)
@@ -364,7 +383,7 @@ namespace Levante
                             await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
                             await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
-                            LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {tempAau.UniqueBungieName} via automation.");
+                            LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
                             //listOfRemovals.Add(tempAau);
                             // ***Change to remove it from list because file update is called at end of method.***
                             //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
@@ -407,11 +426,11 @@ namespace Levante
                 ActiveConfig.UpdateActiveAFKUsersConfig();
 
                 _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, ActiveConfig.TimeBetweenRefresh * 60000);
-                LogHelper.ConsoleLog($"[LOGGING] Bungie API Refreshed! Next refresh in: {ActiveConfig.TimeBetweenRefresh} minute(s).");
+                LogHelper.ConsoleLog($"[XP SESSIONS] Bungie API Refreshed! Next refresh in: {ActiveConfig.TimeBetweenRefresh} minute(s).");
             }
             catch (Exception x)
             {
-                LogHelper.ConsoleLog($"[LOGGING] Refresh failed, trying again! Reason: {x.Message} ({x.StackTrace})");
+                LogHelper.ConsoleLog($"[XP SESSIONS] Refresh failed, trying again! Reason: {x.Message} ({x.StackTrace})");
                 await Task.Delay(8000);
                 await RefreshBungieAPI().ConfigureAwait(false);
                 return;
@@ -429,6 +448,7 @@ namespace Levante
                 bool nameChange = false;
                 foreach (var link in DataConfig.DiscordIDLinks.ToList()) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
                 {
+                    string errorReason = "ResponseError";
                     int Level = 0;
                     int PowerLevel = -1;
                     using (var client = new HttpClient())
@@ -441,6 +461,7 @@ namespace Levante
 
                         //first 100 levels: 4095505052 (S15); 2069932355 (S16); 26079066 (S17)
                         //anything after: 1531004716 (S15); 1787069365 (S16); 482365574 (S17)
+                        errorReason = item.ErrorStatus;
                         try
                         {
                             for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
@@ -474,7 +495,8 @@ namespace Levante
                         catch
                         {
                             // Continue with the rest of the linked users. Don't want to stop the populating for one problematic account.
-                            LogHelper.ConsoleLog($"[LEADERBOARDS] Error while pulling data for user: {_client.GetUserAsync(link.DiscordID).Result.Username}#{_client.GetUserAsync(link.DiscordID).Result.Discriminator} linked with {link.UniqueBungieName}.");
+                            LogHelper.ConsoleLog($"[LEADERBOARDS] Error while pulling data for user: {_client.GetUserAsync(link.DiscordID).Result.Username}#{_client.GetUserAsync(link.DiscordID).Result.Discriminator} linked with {link.UniqueBungieName}." +
+                                $"Reason: {errorReason}");
                             await Task.Delay(250);
                             continue;
                         }
@@ -518,12 +540,13 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //397846250797662208
-                await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
+                await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
                 //await _interaction.RegisterCommandsGloballyAsync();
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
+                LogHelper.ConsoleLog($"[DISCORD] Successfully connected to Discord.");
             };
 
             _interaction.SlashCommandExecuted += SlashCommandExecuted;

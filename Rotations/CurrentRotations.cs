@@ -96,9 +96,9 @@ namespace Levante.Rotations
             FeaturedRaid = FeaturedRaid == Raid.VaultOfGlass ? Raid.LastWish : FeaturedRaid + 1;
             CurseWeek = CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : CurseWeek + 1;
             AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? AscendantChallenge.AgonarchAbyss : AscendantChallenge + 1;
-            Nightfall = Nightfall == Nightfall.BirthplaceOfTheVile ? Nightfall.TheScarletKeep : Nightfall + 1;
+            Nightfall = Nightfall == Nightfall.TheArmsDealer ? Nightfall.ProvingGrounds : Nightfall + 1;
             // Missing data.
-            NightfallWeaponDrop = NightfallWeaponDrop == NightfallWeapon.PlugOne1 ? NightfallWeapon.DutyBound : NightfallWeaponDrop + 1;
+            NightfallWeaponDrop = NightfallWeaponDrop == NightfallWeapon.PlugOne1 ? NightfallWeapon.SiliconNeuroma : NightfallWeaponDrop + 1;
             EmpireHunt = EmpireHunt == EmpireHunt.DarkPriestess ? EmpireHunt.Warrior : EmpireHunt + 1;
 
             NightmareHunts[0] = NightmareHunts[0] >= NightmareHunt.Skolas ? NightmareHunts[0] - 5 : NightmareHunts[0] + 3;
@@ -120,6 +120,7 @@ namespace Levante.Rotations
                 CurseWeekRotation.CurseWeekLinks.Count +
                 DeepStoneCryptRotation.DeepStoneCryptLinks.Count +
                 EmpireHuntRotation.EmpireHuntLinks.Count +
+                FeaturedRaidRotation.FeaturedRaidLinks.Count +
                 GardenOfSalvationRotation.GardenOfSalvationLinks.Count +
                 LastWishRotation.LastWishLinks.Count +
                 LostSectorRotation.LostSectorLinks.Count +
@@ -154,6 +155,7 @@ namespace Levante.Rotations
             CurseWeekRotation.CreateJSON();
             DeepStoneCryptRotation.CreateJSON();
             EmpireHuntRotation.CreateJSON();
+            FeaturedRaidRotation.CreateJSON();
             GardenOfSalvationRotation.CreateJSON();
             LastWishRotation.CreateJSON();
             LostSectorRotation.CreateJSON();
@@ -230,32 +232,31 @@ namespace Levante.Rotations
             embed.AddField(x =>
             {
                 x.Name = "> Raid Challenges";
-                x.Value = $"*Use command /raid for more info!*";
+                x.Value = $"★ - Featured Raid";
                 x.IsInline = false;
             })
             .AddField(x =>
             {
-                x.Name = "Last Wish";
-                x.Value = $"{DestinyEmote.RaidBounty} {LastWishRotation.GetEncounterString(LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(LWChallengeEncounter)})";
+                x.Name = $"{(FeaturedRaid == Raid.LastWish ? "★ " : "")}Last Wish";
+                x.Value = $"{DestinyEmote.RaidBounty} {(FeaturedRaid == Raid.LastWish ? "All challenges available." : $"{LastWishRotation.GetEncounterString(LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(LWChallengeEncounter)})")}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
-                x.Name = "Garden of Salvation";
-                x.Value = $"{DestinyEmote.RaidChallenge} {GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)})";
+                x.Name = $"{(FeaturedRaid == Raid.GardenOfSalvation ? "★ " : "")}Garden of Salvation";
+                x.Value = $"{DestinyEmote.RaidChallenge} {(FeaturedRaid == Raid.GardenOfSalvation ? "All challenges available." : $"{GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)})")}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
-                x.Name = "Deep Stone Crypt";
-                x.Value = $"{DestinyEmote.RaidChallenge} {DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)})";
+                x.Name = $"{(FeaturedRaid == Raid.DeepStoneCrypt ? "★ " : "")}Deep Stone Crypt";
+                x.Value = $"{DestinyEmote.RaidChallenge} {(FeaturedRaid == Raid.DeepStoneCrypt ? "All challenges available." : $"{DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)})")}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
-                x.Name = "Vault of Glass";
-                x.Value = $"{DestinyEmote.RaidChallenge} {VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)})\n" +
-                    $"Weapon Drop: {VaultOfGlassRotation.GetChallengeRewardString(VoGChallengeEncounter)}";
+                x.Name = $"{(FeaturedRaid == Raid.VaultOfGlass ? "★ " : "")}Vault of Glass";
+                x.Value = $"{DestinyEmote.VoGRaidChallenge} {(FeaturedRaid == Raid.VaultOfGlass ? "All challenges available." : $"{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)})\nWeapon Drop: {VaultOfGlassRotation.GetChallengeRewardString(VoGChallengeEncounter)}")}";
                 x.IsInline = true;
             })
             .AddField(x =>
@@ -264,7 +265,7 @@ namespace Levante.Rotations
                 x.Value = $"{DestinyEmote.VowRaidChallenge} {VowOfTheDiscipleRotation.GetEncounterString(VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(VowChallengeEncounter)})";
                 x.IsInline = true;
             })
-            /*.AddField(x =>
+            .AddField(x =>
             {
                 x.Name = "> Nightfall: The Ordeal";
                 x.Value = $"*Use command /nightfall for more info!*";
@@ -278,11 +279,10 @@ namespace Levante.Rotations
             })
             .AddField(x =>
             {
-                x.Name = "Weapons";
-                x.Value = $"{NightfallRotation.GetWeaponEmote(NightfallWeaponDrops[0])} {NightfallRotation.GetWeaponString(NightfallWeaponDrops[0])}\n" +
-                    $"{NightfallRotation.GetWeaponEmote(NightfallWeaponDrops[1])} {NightfallRotation.GetWeaponString(NightfallWeaponDrops[1])}";
+                x.Name = "Weapon";
+                x.Value = $"{NightfallRotation.GetWeaponEmote(NightfallWeaponDrop)} {NightfallRotation.GetWeaponString(NightfallWeaponDrop)}";
                 x.IsInline = true;
-            })*/
+            })
             .AddField(x =>
             {
                 x.Name = "> Patrol";
@@ -350,9 +350,9 @@ namespace Levante.Rotations
                 else
                     user = Client.GetUser(Link.DiscordID);
 
-                if (LostSector == Link.LostSector)
+                if (LostSector == Link.LostSector && Link.ArmorDrop == null)
                     await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.GetLostSectorString(LostSector)}** (Requested) and is dropping **{LostSectorArmorDrop}** today. I have removed your tracking, good luck!");
-                else if (LostSectorArmorDrop == Link.ArmorDrop)
+                else if (Link.LostSector == null && LostSectorArmorDrop == Link.ArmorDrop)
                     await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.GetLostSectorString(LostSector)}** and is dropping **{LostSectorArmorDrop}** (Requested) today. I have removed your tracking, good luck!");
                 else if (LostSector == Link.LostSector && LostSectorArmorDrop == Link.ArmorDrop)
                     await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.GetLostSectorString(LostSector)}** and is dropping **{LostSectorArmorDrop}** today. I have removed your tracking, good luck!");

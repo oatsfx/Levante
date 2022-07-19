@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Levante.Helpers;
 
 namespace Levante.Util
 {
@@ -139,13 +140,6 @@ namespace Levante.Util
             return embed;
         }
 
-        public void DeleteEmblemOffer(long emblemHash)
-        {
-            foreach (var Offer in CurrentOffers)
-                if (Offer.OfferedEmblem.GetItemHash() == emblemHash)
-                    CurrentOffers.Remove(Offer);
-        }
-
         public void CreateJSON()
         {
             string emblemOfferPath = @"Configs/EmblemOffers/" + OfferedEmblem.GetItemHash() + ".json";
@@ -169,6 +163,7 @@ namespace Levante.Util
                 var offer = JsonConvert.DeserializeObject<EmblemOffer>(json);
                 CurrentOffers.Add(offer);
             }
+            LogHelper.ConsoleLog($"[OFFERS] Loaded {CurrentOffers.Count} Emblem Offers.");
         }
 
         public static bool HasExistingOffer(long HashCode)
@@ -185,13 +180,6 @@ namespace Levante.Util
                 if (Offer.OfferedEmblem.GetItemHash() == HashCode)
                     return Offer;
             return null;
-        }
-
-        public static void DeleteOffer(long HashCode)
-        {
-            foreach (var Offer in CurrentOffers)
-                if (Offer.OfferedEmblem.GetItemHash() == HashCode)
-                    DeleteOffer(Offer);
         }
 
         public static void DeleteOffer(EmblemOffer offerToDelete)

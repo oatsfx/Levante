@@ -26,6 +26,9 @@ namespace Levante.Configs
         [JsonProperty("DiscordToken")]
         public static string DiscordToken { get; set; } = "[YOUR TOKEN HERE]";
 
+        [JsonProperty("LogChannel")]
+        public static ulong LogChannel { get; set; } = 0;
+
         [JsonProperty("BungieApiKey")]
         public static string BungieApiKey { get; set; } = "[YOUR API KEY HERE]";
 

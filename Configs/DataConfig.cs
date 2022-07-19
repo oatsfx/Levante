@@ -54,9 +54,6 @@ namespace Levante.Configs
 
             [JsonProperty("RefreshExpiration")]
             public DateTime RefreshExpiration { get; set; } = DateTime.Now;
-
-            [JsonProperty("IsPublic")]
-            public bool IsPublic { get; set; } = false;
         }
 
         public class EmblemAnnounceLink
@@ -166,6 +163,11 @@ namespace Levante.Configs
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
+                if (item.refresh_token == null || item.access_token == null)
+                {
+                    LogHelper.ConsoleLog($"Received null tokens from refresh; keep all tokens the same as before.");
+                    return DIL;
+                }
                 DIL.RefreshToken = item.refresh_token;
                 DIL.AccessToken = item.access_token;
 

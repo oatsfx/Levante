@@ -11,7 +11,7 @@ namespace Levante.Rotations
     public class NightfallRotation
     {
         public static readonly int NightfallStrikeCount = 6;
-        public static readonly int NightfallWeaponCount = 8;
+        public static readonly int NightfallWeaponCount = 6;
         public static readonly string FilePath = @"Trackers/nightfall.json";
 
         [JsonProperty("NightfallLinks")]
@@ -68,9 +68,12 @@ namespace Levante.Rotations
                 //case Nightfall.TheHollowedLair: return "Fikrul, the Fanatic";
                 //case Nightfall.LakeOfShadows: return "Grask, the Consumed";
                 //case Nightfall.ExodusCrash: return "Thaviks, the Depraved";
-                //case Nightfall.TheCorrupted: return "Sedia, the Corrupted";
+                case Nightfall.TheCorrupted: return "Sedia, the Corrupted";
                 //case Nightfall.TheDevilsLair: return "Sepiks Prime";
-                //case Nightfall.ProvingGrounds: return "Ignovun, Chosen of Caiatl";
+                case Nightfall.ProvingGrounds: return "Ignovun, Chosen of Caiatl";
+                case Nightfall.TheInsightTerminus: return "Kargen, the Technocrat";
+                case Nightfall.WardenOfNothing: return "Warden’s Servitor";
+                case Nightfall.TheInvertedSpire: return "Protheon, Modular Mind";
                 default: return "Nightfall: The Ordeal Boss";
             }
         }
@@ -403,6 +406,11 @@ namespace Levante.Rotations
             NightfallWeapon iterationWeapon = CurrentRotations.NightfallWeaponDrop;
             Nightfall iterationStrike = CurrentRotations.Nightfall;
             int WeeksUntil = 0;
+            // This logic only works if the position in the enums match up with strike drops.
+            if (NightfallStrikeCount == NightfallWeaponCount && NightfallStrike != null && WeaponDrop != null)
+                if ((int)NightfallStrike != (int)WeaponDrop)
+                    return new DateTime();
+
             if (NightfallStrike == null && WeaponDrop != null)
             {
                 do

@@ -21,7 +21,7 @@ namespace Levante.Rotations
             [JsonProperty("DiscordID")]
             public ulong DiscordID { get; set; } = 0;
 
-            [JsonProperty("Encounter")]
+            [JsonProperty("Raid")]
             public Raid FeaturedRaid { get; set; } = Raid.LastWish;
         }
 

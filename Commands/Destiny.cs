@@ -154,7 +154,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("bungie-tag", "Get Guardian information of any player.")]
-            public async Task BungieTag([Summary("player", "Player's Bungie tag to get Guardian information for.")] string BungieTag,
+            public async Task BungieTag([Summary("player", "Player's Bungie tag to get Guardian information for."), Autocomplete(typeof(BungieTagAutocomplete))] string BungieTag,
                 [Summary("class", "Guardian Class to get information for.")] Guardian.Class ClassType,
                 [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
                 Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5)]int ArgPlatform = 0)
@@ -678,12 +678,6 @@ namespace Levante.Commands
                     return;
                 }
 
-                if (!ManifestConnection.GetInventoryItemById(unchecked((int)HashCode)).ItemTypeDisplayName.Contains("Emblem"))
-                {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{emblem.GetName()} ({emblem.GetHashCode()}) is not an Emblem type."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                    return;
-                }
-
                 await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
 
@@ -713,11 +707,6 @@ namespace Levante.Commands
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No weapon found for Hash Code: {HashCode}."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
                     return;
                 }
-                if (!ManifestConnection.GetInventoryItemById(unchecked((int)HashCode)).TraitIds.Contains("item_type.weapon"))
-                {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"{weapon.GetName()} ({weapon.GetHashCode()}) is not a Weapon type."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                    return;
-                }
 
                 await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = weapon.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
@@ -730,8 +719,53 @@ namespace Levante.Commands
             return;
         }
 
-        [SlashCommand("weapons-test", "description")]
-        public async Task ExampleCommand3([Summary("weapon"), Autocomplete(typeof(WeaponAutocomplete))] string Weapon) => await Context.Interaction.RespondAsync($"{new Weapon(long.Parse(Weapon)).GetItemType()}");
+        public class BungieTagAutocomplete : AutocompleteHandler
+        {
+            public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+            {
+                await Task.Delay(0);
+                // Create a collection with suggestions for autocomplete
+                List<AutocompleteResult> results = new();
+                string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+                Console.WriteLine($"Searching for {SearchQuery}");
+                if (String.IsNullOrWhiteSpace(SearchQuery))
+                    return AutocompletionResult.FromSuccess();
+                else if (SearchQuery.Contains('#'))
+                {
+                    foreach (var linkUser in DataConfig.DiscordIDLinks)
+                        if (linkUser.UniqueBungieName.ToLower().Contains(SearchQuery.ToLower()))
+                            results.Add(new AutocompleteResult($"{linkUser.UniqueBungieName}", $"{linkUser.UniqueBungieName}"));
+                }
+                else
+                {
+                    using (var client = new HttpClient())
+                    {
+                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                        // Attempt to use post, but results in Error Code 30.
+                        //var values = new Dictionary<string, string>
+                        //{
+                        //    { "displayNamePrefix", SearchQuery },
+                        //};
+                        //var postContent = new FormUrlEncodedContent(values);
+
+                        //var response = client.PostAsync("https://www.bungie.net/Platform/User/Search/GlobalName/0/", postContent).Result;
+                        var response = client.GetAsync($"https://www.bungie.net/Platform/User/Search/Prefix/{SearchQuery}/0/").Result;
+                        var content = response.Content.ReadAsStringAsync().Result;
+                        dynamic item = JsonConvert.DeserializeObject(content);
+
+                        foreach (var result in item.Response.searchResults)
+                            results.Add(new AutocompleteResult($"{result.bungieGlobalDisplayName}#{$"{result.bungieGlobalDisplayNameCode}".PadLeft(4, '0')}",
+                                $"{result.bungieGlobalDisplayName}#{$"{result.bungieGlobalDisplayNameCode}".PadLeft(4, '0')}"));
+                    }
+                }
+
+                results = results.OrderBy(x => x.Name).ToList();
+
+                // max - 25 suggestions at a time (API limit)
+                Console.WriteLine($"Completion Success");
+                return AutocompletionResult.FromSuccess(results.Take(25));
+            }
+        }
 
         public class EmblemAutocomplete : AutocompleteHandler
         {
@@ -742,63 +776,21 @@ namespace Levante.Commands
                 List<AutocompleteResult> results = new();
                 string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
                 if (String.IsNullOrWhiteSpace(SearchQuery))
-                    return AutocompletionResult.FromSuccess(results);
+                    for (int i = 0; i < 7; i++)
+                    {
+                        var emblem = ManifestHelper.Emblems.ElementAt(new Random().Next(0, ManifestHelper.Emblems.Count));
+                        results.Add(new AutocompleteResult(emblem.Value, $"{emblem.Key}"));
+                    }
                 else
                     foreach (var Emblem in ManifestHelper.Emblems)
                         if (Emblem.Value.ToLower().Contains(SearchQuery.ToLower()))
                             results.Add(new AutocompleteResult(Emblem.Value, $"{Emblem.Key}"));
 
-                //Console.WriteLine($"Searching for: {SearchQuery}");
-                //using (var client = new HttpClient())
-                //{
-                //    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                //    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + SearchQuery + "/").Result;
-                //    var content = response.Content.ReadAsStringAsync().Result;
-                //    dynamic item = JsonConvert.DeserializeObject(content);
-
-                //    List<EmblemSearch> emblemList = new List<EmblemSearch>();
-                //    int resultNum = int.Parse($"{item.Response.results.totalResults}");
-                //    Console.WriteLine($"Emblems found with SearchQuery: {resultNum}");
-                //    int currentPage = -1;
-                //    if (resultNum == 0)
-                //        return AutocompletionResult.FromSuccess(results);
-                //    else if (resultNum > 1)
-                //    {
-                //        for (int i = 0; i < resultNum; i++)
-                //        {
-                //            if (results.Count >= 25) break;
-                //            if (i % 25 == 0)
-                //            {
-                //                currentPage++;
-                //                response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Armory/Search/DestinyInventoryItemDefinition/" + Uri.EscapeDataString(SearchQuery) + "/?page=" + currentPage).Result;
-                //                content = response.Content.ReadAsStringAsync().Result;
-                //                item = JsonConvert.DeserializeObject(content);
-                //            }
-                //            var hash = long.Parse($"{item.Response.results.results[i - (currentPage * 25)].hash}");
-                //            var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
-                //            if (invItem.ItemTypeDisplayName.Equals("Emblem"))
-                //            {
-                //                Console.WriteLine($"Adding: {item.Response.results.results[i - (currentPage * 25)].displayProperties.name}");
-                //                results.Add(new AutocompleteResult($"{item.Response.results.results[i - (currentPage * 25)].displayProperties.name}", $"{hash}"));
-                //            }
-                //        }
-                //    }
-                //    else if (resultNum == 1)
-                //    {
-                //        var hash = long.Parse($"{item.Response.results.results[0].hash}");
-                //        var invItem = ManifestConnection.GetInventoryItemById(unchecked((int)hash));
-                //        if (invItem.ItemTypeDisplayName.Equals("Emblem"))
-                //        {
-                //            Console.WriteLine($"Adding: {item.Response.results.results[0].displayProperties.name}");
-                //            results.Add(new AutocompleteResult($"{item.Response.results.results[0].displayProperties.name}", $"{hash}"));
-                //        }
-                //    }
-                //}
+                results = results.OrderBy(x => x.Name).ToList();
 
                 // max - 25 suggestions at a time (API limit)
                 Console.WriteLine($"Completion Success");
-                return AutocompletionResult.FromSuccess(results);
+                return AutocompletionResult.FromSuccess(results.Take(25));
             }
         }
 
@@ -811,15 +803,21 @@ namespace Levante.Commands
                 List<AutocompleteResult> results = new();
                 string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
                 if (String.IsNullOrWhiteSpace(SearchQuery))
-                    return AutocompletionResult.FromSuccess(results);
+                    for (int i = 0; i < 7; i++)
+                    {
+                        var weapon = ManifestHelper.Weapons.ElementAt(new Random().Next(0, ManifestHelper.Emblems.Count));
+                        results.Add(new AutocompleteResult(weapon.Value, $"{weapon.Key}"));
+                    }
                 else
-                    foreach (var Emblem in ManifestHelper.Weapons)
-                        if (Emblem.Value.ToLower().Contains(SearchQuery.ToLower()))
-                            results.Add(new AutocompleteResult(Emblem.Value, $"{Emblem.Key}"));
+                    foreach (var Weapon in ManifestHelper.Weapons)
+                        if (Weapon.Value.ToLower().Contains(SearchQuery.ToLower()))
+                            results.Add(new AutocompleteResult(Weapon.Value, $"{Weapon.Key}"));
+
+                results = results.OrderBy(x => x.Name).ToList();
 
                 // max - 25 suggestions at a time (API limit)
                 Console.WriteLine($"Completion Success");
-                return AutocompletionResult.FromSuccess(results);
+                return AutocompletionResult.FromSuccess(results.Take(25));
             }
         }
 
@@ -844,7 +842,7 @@ namespace Levante.Commands
 
                 // max - 25 suggestions at a time (API limit)
                 Console.WriteLine($"Completion Success");
-                return AutocompletionResult.FromSuccess(results);
+                return AutocompletionResult.FromSuccess(results.Take(25));
             }
         }
 
