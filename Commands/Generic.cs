@@ -27,7 +27,7 @@ namespace Levante.Commands
             };
 
             string desc = "For in-depth explanations for all commands and features, visit [this page](https://www.levante.dev/features/).\n" +
-                "__Commands:__";
+                "__Commands:__\n";
             foreach (var cmd in Context.Client.GetGlobalApplicationCommandsAsync().Result.OrderBy(cmd => cmd.Name))
                 desc += $"/{cmd.Name}\n";
             embed.Description = desc;
