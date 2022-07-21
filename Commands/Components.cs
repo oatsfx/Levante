@@ -83,7 +83,7 @@ namespace Levante.Commands
             }
 
             string uniqueName = dil.UniqueBungieName;
-            var userLogChannel = await guild.CreateTextChannelAsync($"{uniqueName.Replace('#', '-')}", options: new RequestOptions(){ AuditLogReason = "XP Logging Session Create" });
+            var userLogChannel = await guild.CreateTextChannelAsync($"{uniqueName.Split('#')[0]}", options: new RequestOptions(){ AuditLogReason = "XP Logging Session Create" });
 
             ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
             {
@@ -101,7 +101,7 @@ namespace Levante.Commands
             await userLogChannel.ModifyAsync(x =>
             {
                 x.CategoryId = cc.Id;
-                x.Topic = $"{uniqueName} (Starting Level: {newUser.StartLevel} [{String.Format("{0:n0}", newUser.StartLevelProgress)}/100,000 XP] | Starting Power Bonus: +{newUser.StartPowerBonus}) - Time Started: {TimestampTag.FromDateTime(newUser.TimeStarted)}";
+                x.Topic = $"{uniqueName.Split('#')[0]} (Starting Level: {newUser.StartLevel} [{String.Format("{0:n0}", newUser.StartLevelProgress)}/100,000 XP] | Starting Power Bonus: +{newUser.StartPowerBonus}) - Time Started: {TimestampTag.FromDateTime(newUser.TimeStarted)}";
                 x.PermissionOverwrites = new[]
                 {
                         new Overwrite(user.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),

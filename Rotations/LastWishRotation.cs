@@ -91,35 +91,35 @@ namespace Levante.Rotations
             .AddField(y =>
             {
                 y.Name = $"{GetEncounterString(LastWishEncounter.Kalli)}";
-                y.Value = $"{DestinyEmote.RaidBounty} {GetChallengeString(LastWishEncounter.Kalli)}\n" +
+                y.Value = $"{DestinyEmote.RaidChallenge} {GetChallengeString(LastWishEncounter.Kalli)}\n" +
                     $"{GetChallengeDescriptionString(LastWishEncounter.Kalli)}";
                 y.IsInline = false;
             })
             .AddField(y =>
             {
                 y.Name = $"{GetEncounterString(LastWishEncounter.ShuroChi)}";
-                y.Value = $"{DestinyEmote.RaidBounty} {GetChallengeString(LastWishEncounter.ShuroChi)}\n" +
+                y.Value = $"{DestinyEmote.RaidChallenge} {GetChallengeString(LastWishEncounter.ShuroChi)}\n" +
                     $"{GetChallengeDescriptionString(LastWishEncounter.ShuroChi)}";
                 y.IsInline = false;
             })
             .AddField(y =>
             {
                 y.Name = $"{GetEncounterString(LastWishEncounter.Morgeth)}";
-                y.Value = $"{DestinyEmote.RaidBounty} {GetChallengeString(LastWishEncounter.Morgeth)}\n" +
+                y.Value = $"{DestinyEmote.RaidChallenge} {GetChallengeString(LastWishEncounter.Morgeth)}\n" +
                     $"{GetChallengeDescriptionString(LastWishEncounter.Morgeth)}";
                 y.IsInline = false;
             })
             .AddField(y =>
             {
                 y.Name = $"{GetEncounterString(LastWishEncounter.Vault)}";
-                y.Value = $"{DestinyEmote.RaidBounty} {GetChallengeString(LastWishEncounter.Vault)}\n" +
+                y.Value = $"{DestinyEmote.RaidChallenge} {GetChallengeString(LastWishEncounter.Vault)}\n" +
                     $"{GetChallengeDescriptionString(LastWishEncounter.Vault)}";
                 y.IsInline = false;
             })
             .AddField(y =>
             {
                 y.Name = $"{GetEncounterString(LastWishEncounter.Riven)}";
-                y.Value = $"{DestinyEmote.RaidBounty} {GetChallengeString(LastWishEncounter.Riven)}\n" +
+                y.Value = $"{DestinyEmote.RaidChallenge} {GetChallengeString(LastWishEncounter.Riven)}\n" +
                     $"{GetChallengeDescriptionString(LastWishEncounter.Riven)}";
                 y.IsInline = false;
             });

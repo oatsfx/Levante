@@ -105,13 +105,13 @@ namespace Levante.Commands
             int[] colors = new int[3];
             int latency = Context.Client.Latency;
 
-            if (latency >= 0 && latency < 120)
+            if (latency >= 0 && latency < 110)
             {
                 colors[0] = 123;
                 colors[1] = 232;
                 colors[2] = 98;
             }
-            else if (latency >= 120 && latency < 300)
+            else if (latency >= 110 && latency < 300)
             {
                 colors[0] = 251;
                 colors[1] = 254;
