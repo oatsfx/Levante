@@ -113,7 +113,7 @@ namespace Levante.Commands
                 Encounter = (DeepStoneCryptEncounter)ArgEncounter;
 
                 var predictedDate = DeepStoneCryptRotation.DatePrediction(Encounter);
-                if (predictedDate < FeaturedRaidRotation.DatePrediction(Raid.DeepStoneCrypt))
+                if (predictedDate >= FeaturedRaidRotation.DatePrediction(Raid.DeepStoneCrypt))
                     predictedDate = FeaturedRaidRotation.DatePrediction(Raid.DeepStoneCrypt);
 
                 DeepStoneCryptRotation.AddUserTracking(Context.User.Id, Encounter);
@@ -166,7 +166,7 @@ namespace Levante.Commands
                 Encounter = (GardenOfSalvationEncounter)ArgEncounter;
 
                 var predictedDate = GardenOfSalvationRotation.DatePrediction(Encounter);
-                if (predictedDate < FeaturedRaidRotation.DatePrediction(Raid.GardenOfSalvation))
+                if (predictedDate >= FeaturedRaidRotation.DatePrediction(Raid.GardenOfSalvation))
                     predictedDate = FeaturedRaidRotation.DatePrediction(Raid.GardenOfSalvation);
 
                 GardenOfSalvationRotation.AddUserTracking(Context.User.Id, Encounter);
@@ -187,7 +187,7 @@ namespace Levante.Commands
                 Encounter = (LastWishEncounter)ArgEncounter;
 
                 var predictedDate = LastWishRotation.DatePrediction(Encounter);
-                if (predictedDate < FeaturedRaidRotation.DatePrediction(Raid.LastWish))
+                if (predictedDate >= FeaturedRaidRotation.DatePrediction(Raid.LastWish))
                     predictedDate = FeaturedRaidRotation.DatePrediction(Raid.LastWish);
 
                 LastWishRotation.AddUserTracking(Context.User.Id, Encounter);
@@ -318,7 +318,7 @@ namespace Levante.Commands
                 Encounter = (VaultOfGlassEncounter)ArgEncounter;
 
                 var predictedDate = VaultOfGlassRotation.DatePrediction(Encounter);
-                if (predictedDate < FeaturedRaidRotation.DatePrediction(Raid.VaultOfGlass))
+                if (predictedDate >= FeaturedRaidRotation.DatePrediction(Raid.VaultOfGlass))
                     predictedDate = FeaturedRaidRotation.DatePrediction(Raid.VaultOfGlass);
 
                 VaultOfGlassRotation.AddUserTracking(Context.User.Id, Encounter);
@@ -528,7 +528,7 @@ namespace Levante.Commands
                 else
                     embed.Description =
                         $"Next occurrance of {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}. Deep Stone Crypt will also be the featured raid, making this challenge, and all others, available.";
+                            $"is: {TimestampTag.FromDateTime(predictedFeaturedDate, TimestampTagStyles.ShortDate)}. Deep Stone Crypt will be the featured raid, making this challenge, and all others, available.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
@@ -595,7 +595,7 @@ namespace Levante.Commands
                 else
                     embed.Description =
                         $"Next occurrance of {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}. Garden of Salvation will also be the featured raid, making this challenge, and all others, available.";
+                            $"is: {TimestampTag.FromDateTime(predictedFeaturedDate, TimestampTagStyles.ShortDate)}. Garden of Salvation will be the featured raid, making this challenge, and all others, available.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
@@ -622,7 +622,7 @@ namespace Levante.Commands
                 else
                     embed.Description =
                         $"Next occurrance of {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}. Last Wish will also be the featured raid, making this challenge, and all others, available.";
+                            $"is: {TimestampTag.FromDateTime(predictedFeaturedDate, TimestampTagStyles.ShortDate)}. Last Wish will be the featured raid, making this challenge, and all others, available.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;
@@ -757,8 +757,8 @@ namespace Levante.Commands
                 else
                     embed.Description =
                         $"Next occurrance of {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}), " +
-                            $"which drops {VaultOfGlassRotation.GetChallengeRewardString(Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}. " +
-                            $"Vault of Glass will also be the featured raid, making this challenge, and all others, available.";
+                            $"which drops {VaultOfGlassRotation.GetChallengeRewardString(Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedFeaturedDate, TimestampTagStyles.ShortDate)}. " +
+                            $"Vault of Glass will be the featured raid, making this challenge, and all others, available.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;

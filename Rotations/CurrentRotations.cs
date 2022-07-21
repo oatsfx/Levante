@@ -238,7 +238,7 @@ namespace Levante.Rotations
             .AddField(x =>
             {
                 x.Name = $"{(FeaturedRaid == Raid.LastWish ? "★ " : "")}Last Wish";
-                x.Value = $"{DestinyEmote.RaidBounty} {(FeaturedRaid == Raid.LastWish ? "All challenges available." : $"{LastWishRotation.GetEncounterString(LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(LWChallengeEncounter)})")}";
+                x.Value = $"{DestinyEmote.RaidChallenge} {(FeaturedRaid == Raid.LastWish ? "All challenges available." : $"{LastWishRotation.GetEncounterString(LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(LWChallengeEncounter)})")}";
                 x.IsInline = true;
             })
             .AddField(x =>
@@ -571,7 +571,7 @@ namespace Levante.Rotations
             LastWishRotation.LastWishLinks = lwTemp;
             LastWishRotation.UpdateJSON();
 
-            /*var nfTemp = new List<NightfallRotation.NightfallLink>();
+            var nfTemp = new List<NightfallRotation.NightfallLink>();
             foreach (var Link in NightfallRotation.NightfallLinks)
             {
                 IUser user;
@@ -580,13 +580,17 @@ namespace Levante.Rotations
                 else
                     user = Client.GetUser(Link.DiscordID);
 
-                if (Link.Nightfall == Nightfall || Link.WeaponDrop == NightfallWeaponDrops[0] || Link.WeaponDrop == NightfallWeaponDrops[1])
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrops[0])}** and **{NightfallRotation.GetWeaponString(NightfallWeaponDrops[1])}** this week. I have removed your tracking, good luck!");
+                if (Link.Nightfall == Nightfall || Link.WeaponDrop == null)
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** (Requested) and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** today. I have removed your tracking, good luck!");
+                else if (Link.Nightfall == null || Link.WeaponDrop == NightfallWeaponDrop)
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** (Requested) today. I have removed your tracking, good luck!");
+                else if (Link.Nightfall == Nightfall || Link.WeaponDrop == NightfallWeaponDrop)
+                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** today. I have removed your tracking, good luck!");
                 else
                     nfTemp.Add(Link);
             }
             NightfallRotation.NightfallLinks = nfTemp;
-            NightfallRotation.UpdateJSON();*/
+            NightfallRotation.UpdateJSON();
 
             var nhuntTemp = new List<NightmareHuntRotation.NightmareHuntLink>();
             foreach (var Link in NightmareHuntRotation.NightmareHuntLinks)

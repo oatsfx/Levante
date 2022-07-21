@@ -24,6 +24,7 @@ namespace Levante.Commands
                 "Ok and?",
                 "Who asked?",
                 "💀 x7",
+                "Cope",
             };
 
             var random = new Random();

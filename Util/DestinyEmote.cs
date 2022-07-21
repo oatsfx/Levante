@@ -97,7 +97,6 @@ namespace Levante.Util
         public static readonly string LostSector = "<:LostSector:955004180618174475>";
         public static readonly string Nightfall = "<:Nightfall:934476602006458409>";
         public static readonly string Pattern = "<:Pattern:995752936586092595>";
-        public static readonly string RaidBounty = "<:LWRaidBounty:933963726535655425>";
         public static readonly string RaidChallenge = "<:RaidChallenge:933971625118924820>";
         public static readonly string VoGRaidChallenge = "<:VoGRaidChallenge:933963748295720960>";
         public static readonly string WellspringActivity = "<:WellspringActivity:947293754174365726>";

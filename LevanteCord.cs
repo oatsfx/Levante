@@ -72,18 +72,6 @@ namespace Levante
 
             await Task.Run(() => Console.Title = $"Levante v{BotConfig.Version:0.00}");
 
-            var client = _services.GetRequiredService<DiscordSocketClient>();
-            var commands = _services.GetRequiredService<InteractionService>();
-            client.Log += log =>
-            {
-                Console.WriteLine(log.ToString());
-                return Task.CompletedTask;
-            };
-            await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
-            await _client.StartAsync();
-
-            await InitializeListeners();
-
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
 
@@ -120,7 +108,18 @@ namespace Levante
             else
                 SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 0, 0));
 
-            var oauthManager = new OAuthHelper();
+            //var oauthManager = new OAuthHelper();
+            await InitializeListeners();
+            var client = _services.GetRequiredService<DiscordSocketClient>();
+            var commands = _services.GetRequiredService<InteractionService>();
+            client.Log += log =>
+            {
+                LogHelper.ConsoleLog($"[DISCORD] {log.Message}.");
+                return Task.CompletedTask;
+            };
+            
+            await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
+            await _client.StartAsync();
 
             Console.WriteLine();
             LogHelper.ConsoleLog($"[STARTUP] Bot successfully started! v{BotConfig.Version:0.00} ({BotConfig.Note})");
@@ -540,17 +539,15 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //397846250797662208
-                await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
+                await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
                 //await _interaction.RegisterCommandsGloballyAsync();
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
-                LogHelper.ConsoleLog($"[DISCORD] Successfully connected to Discord.");
             };
 
             _interaction.SlashCommandExecuted += SlashCommandExecuted;
-
             _client.SelectMenuExecuted += SelectMenuHandler;
             LevanteCordInstance.Client = _client;
         }
