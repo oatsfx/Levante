@@ -78,7 +78,7 @@ namespace Levante
             CurrentRotations.CreateJSONs();
 
             API.FetchManifest();
-            ManifestHelper.LoadAutocompleteLists();
+            ManifestHelper.LoadManifestDictionaries();
 
             EmblemOffer.LoadCurrentOffers();
 

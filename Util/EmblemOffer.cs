@@ -48,7 +48,7 @@ namespace Levante.Util
             Description = description;
             ImageUrl = imageUrl;
             SpecialUrl = specialUrl;
-            if (DateTime.Now < startDate || DateTime.Now > endDate)
+            if (DateTime.Now < startDate)
                 IsActive = false;
             else
                 IsActive = true;
@@ -75,8 +75,8 @@ namespace Levante.Util
                 Footer = foot
             };
             // Final line logic.
-            string end = EndDate != null ? $"Ends {TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.Relative)}." : "There is no apparent end to this offer.";
-            end = !IsActive ? $"Starts {TimestampTag.FromDateTime((DateTime)StartDate, TimestampTagStyles.Relative)}." : end;
+            string end = EndDate != null ? $"End{(EndDate > DateTime.Now ? "s" : "ed")} {TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.Relative)}." : "There is no apparent end to this offer.";
+            end = !IsActive ? $"Starts {TimestampTag.FromDateTime(StartDate, TimestampTagStyles.Relative)}." : end;
             embed.Description =
                 $"__How to get this emblem:__\n" +
                 $"{Description} {(SpecialUrl != null ? $"\n[LINK]({SpecialUrl})" : "")}\n";
@@ -89,9 +89,14 @@ namespace Levante.Util
                 x.IsInline = true;
             }).AddField(x =>
             {
+                x.Name = "Hash Code";
+                x.Value = $"{EmblemHashCode}";
+                x.IsInline = true;
+            }).AddField(x =>
+            {
                 x.Name = "Time Window";
                 x.Value = $"{GetDateRange()}\n{end}";
-                x.IsInline = true;
+                x.IsInline = false;
             });
             return embed;
         }
@@ -150,6 +155,7 @@ namespace Levante.Util
 
             string output = JsonConvert.SerializeObject(this, Formatting.Indented);
             File.WriteAllText(emblemOfferPath, output);
+            LogHelper.ConsoleLog($"[OFFERS] Created Emblem Offer for emblem: {OfferedEmblem.GetName()} ({EmblemHashCode}).");
         }
 
         public static void LoadCurrentOffers()
@@ -187,6 +193,7 @@ namespace Levante.Util
             string emblemOfferPath = @"Configs/EmblemOffers/";
             CurrentOffers.Remove(offerToDelete);
             File.Delete(emblemOfferPath + @"/" + offerToDelete.EmblemHashCode + @".json");
+            LogHelper.ConsoleLog($"[OFFERS] Deleted Emblem Offer for emblem: {offerToDelete.OfferedEmblem.GetName()} ({offerToDelete.EmblemHashCode}).");
         }
 
         public static string GetOfferTypeString(EmblemOfferType OfferType)

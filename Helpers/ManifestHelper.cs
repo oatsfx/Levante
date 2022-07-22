@@ -19,8 +19,10 @@ namespace Levante.Helpers
         public static Dictionary<long, string> Emblems = new Dictionary<long, string>();
         public static Dictionary<long, string> Weapons = new Dictionary<long, string>();
         public static Dictionary<long, string> Seals = new Dictionary<long, string>();
+        // Seal Hash, Tracker Hash
+        public static Dictionary<long, long> GildableSeals = new Dictionary<long, long>();
 
-        public static void LoadAutocompleteLists()
+        public static void LoadManifestDictionaries()
         {
             LogHelper.ConsoleLog($"[MANIFEST] Begin emblem and weapon Dictionary population.");
             using (var client = new HttpClient())
@@ -77,7 +79,13 @@ namespace Levante.Helpers
                     {
                         if (record.Value.TitleInfo == null) continue;
                         if (record.Value.TitleInfo.HasTitle)
+                        {
                             Seals.Add(record.Value.Hash, $"{record.Value.TitleInfo.TitlesByGender.Values.FirstOrDefault()}");
+                            if (record.Value.TitleInfo.GildingTrackingRecordHash != null)
+                                GildableSeals.Add(record.Value.Hash, (long)record.Value.TitleInfo.GildingTrackingRecordHash);
+
+                        }
+                            
                     }
                 }
                 catch (Exception x)

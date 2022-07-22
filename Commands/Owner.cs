@@ -166,6 +166,7 @@ namespace Levante.Commands
         }
 
         [Command("newEmblemOffer", RunMode = RunMode.Async)]
+        [Alias("makeOffer", "newOffer")]
         [RequireBotStaff]
         public async Task NewEmblemOffer()
         {
@@ -187,32 +188,59 @@ namespace Levante.Commands
                 }
                 catch
                 {
-                    await ReplyAsync("Error with JSON file. Make sure all values are correct.");
+                    await Context.Message.ReplyAsync("Error with JSON file. Make sure all values are correct.");
                     return;
                 }
 
-                await ReplyAsync("This is what the embed looks like. Ready to send to all channels? Reply \"yes\" to confirm. Reply \"skip\" to skip this step.", false, newOffer.BuildEmbed().Build());
-
-                var sendResponse = await Interactive.NextMessageAsync(x => x.Channel.Id == Context.Channel.Id && x.Author == Context.Message.Author, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
-
-                if (sendResponse.Value.ToString().Equals("yes"))
+                if (EmblemOffer.HasExistingOffer(newOffer.EmblemHashCode))
                 {
-                    await ReplyAsync("Sending...");
+                    await Context.Message.ReplyAsync("Emblem has an offer already. Delete it first.");
+                    return;
+                }
+
+                var buttonBuilder = new ComponentBuilder()
+                    .WithButton("Post Offer", customId: $"newPost", ButtonStyle.Success, row: 0)
+                    .WithButton("Skip Posting", customId: $"newSkip", ButtonStyle.Secondary, row: 0)
+                    .WithButton("Cancel", customId: $"newCancel", ButtonStyle.Danger, row: 0);
+
+                await Context.Message.ReplyAsync("This is what the embed looks like. What would you like to do?", embed: newOffer.BuildEmbed().Build(), components: buttonBuilder.Build());
+
+                var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+                if (buttonResponse == null)
+                {
+                    await Context.Message.ReplyAsync($"Closed command, invaild response.");
+                    return;
+                }
+
+                if (buttonResponse.IsTimeout)
+                {
+                    await Context.Message.ReplyAsync($"Closed command, timed out.");
+                    return;
+                }
+
+                if (buttonResponse.Value.Data.CustomId.Equals("newPost"))
+                {
+                    await buttonResponse.Value.DeferAsync();
+                    await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sending to {DataConfig.AnnounceEmblemLinks.Count} channels..."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
                     newOffer.CreateJSON();
                     await SendToAllAnnounceChannels(newOffer.BuildEmbed());
-                    await ReplyAsync("Sent!");
+                    await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sent to {DataConfig.AnnounceEmblemLinks.Count} channels!"; });
+                    return;
                 }
-                else if (sendResponse.Value.ToString().Equals("skip"))
+                else if (buttonResponse.Value.Data.CustomId.Equals("newSkip"))
                 {
+                    await buttonResponse.Value.DeferAsync();
                     newOffer.CreateJSON();
-                    await ReplyAsync("Skipped announcement!");
+                    await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Created Emblem Offer, but did not send to channels."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                    return;
                 }
                 else
                 {
-                    await ReplyAsync("Cancelled operation.");
+                    await buttonResponse.Value.DeferAsync();
+                    await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Cancelled operation."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                    return;
                 }
-
-                return;
             }
             else
             {
@@ -225,26 +253,30 @@ namespace Levante.Commands
         [Alias("removeOffers", "deleteOffers")]
         [Summary("Removes all Emblem offers where the end date has passed.")]
         [RequireBotStaff]
-        public async Task RemoveOfferAsync()
+        public async Task RemoveOffersAsync()
         {
             string result = "";
-            int removedCount = 0;
             var removeHashes = new List<long>();
             foreach (var Offer in EmblemOffer.CurrentOffers)
             {
                 if (Offer.EndDate != null && Offer.EndDate < DateTime.Now)
                 {
-                    removedCount++;
                     removeHashes.Add(Offer.EmblemHashCode);
                     result += $"[{Offer.OfferedEmblem.GetName()}]({Offer.SpecialUrl}): Ended {TimestampTag.FromDateTime((DateTime)Offer.EndDate, TimestampTagStyles.Relative)}.\n";
                 }
+            }
+
+            if (removeHashes.Count == 0)
+            {
+                await Context.Message.ReplyAsync($"No emblem offers are past their end dates.");
+                return;
             }
 
             var embed = new EmbedBuilder()
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                Footer = new EmbedFooterBuilder() { Text = $"{removedCount} expired Emblem offers" },
+                Footer = new EmbedFooterBuilder() { Text = $"{removeHashes.Count} expired Emblem offers" },
             };
             embed.Title = "Remove these offers?";
             embed.Description = result;
@@ -288,14 +320,78 @@ namespace Levante.Commands
 
                 embed.Title = "Removed these offers";
                 await buttonResponse.Value.Message.ModifyAsync(message => { message.Components = new ComponentBuilder().Build(); message.Embed = embed.Build(); });
-                await buttonResponse.Value.RespondAsync($"Removed {removedCount} Emblem offers.");
                 return;
             }
             else
             {
                 embed.Title = "Did not remove these offers";
                 await buttonResponse.Value.Message.ModifyAsync(message => { message.Components = new ComponentBuilder().Build(); message.Embed = embed.Build(); });
-                await buttonResponse.Value.RespondAsync($"Not removing Emblem offers.");
+                return;
+            }
+        }
+
+        [Command("removeEmblemOffer", RunMode = RunMode.Async)]
+        [Alias("deleteEmblemOffer", "removeOffer", "deleteOffer")]
+        [Summary("Removes an offer from database.")]
+        [RequireBotStaff]
+        public async Task RemoveOfferAsync(long HashCode = -1)
+        {
+            if (HashCode == -1)
+            {
+                await RemoveOffersAsync();
+                return;
+            }
+
+            if (!EmblemOffer.HasExistingOffer(HashCode))
+            {
+                await ReplyAsync("No such offer exists.");
+                return;
+            }
+
+            var offerToDelete = EmblemOffer.GetSpecificOffer(HashCode);
+
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
+                Footer = new EmbedFooterBuilder() { Text = $"Hash Code: {offerToDelete.EmblemHashCode}" },
+            };
+            string timestamp = offerToDelete.EndDate == null ? "This offer has no end." : $"End{(offerToDelete.EndDate > DateTime.Now ? "s" : "ed")} {TimestampTag.FromDateTime((DateTime)offerToDelete.EndDate, TimestampTagStyles.Relative)}.";
+            embed.Title = "Remove this offer?";
+            embed.Description = $"[{offerToDelete.OfferedEmblem.GetName()}]({offerToDelete.SpecialUrl}): {timestamp}";
+
+            var buttonBuilder = new ComponentBuilder()
+                .WithButton("Yes", customId: $"removeYes", ButtonStyle.Success, row: 0)
+                .WithButton("No", customId: $"removeNo", ButtonStyle.Danger, row: 0);
+
+            await Context.Message.ReplyAsync(embed: embed.Build(), components: buttonBuilder.Build());
+
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+            if (buttonResponse == null)
+            {
+                await Context.Message.ReplyAsync($"Closed command, invaild response.");
+                return;
+            }
+
+            if (buttonResponse.IsTimeout)
+            {
+                await Context.Message.ReplyAsync($"Closed command, timed out.");
+                return;
+            }
+
+            if (buttonResponse.Value.Data.CustomId.Equals("removeYes"))
+            {
+                EmblemOffer.DeleteOffer(offerToDelete);
+
+                embed.Title = "Removed this offer";
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Components = new ComponentBuilder().Build(); message.Embed = embed.Build(); });
+                return;
+            }
+            else
+            {
+                embed.Title = "Did not remove this offer";
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Components = new ComponentBuilder().Build(); message.Embed = embed.Build(); });
                 return;
             }
         }
