@@ -4,6 +4,12 @@ using Levante.Configs;
 using Discord.Interactions;
 using System;
 using System.Collections.Generic;
+using Levante.Helpers;
+using System.Net.Http;
+using Newtonsoft.Json;
+using System.Linq;
+using BungieSharper.Entities.Destiny.Definitions;
+using BungieSharper.Entities.Destiny;
 
 namespace Levante.Commands
 {
@@ -12,6 +18,7 @@ namespace Levante.Commands
         [SlashCommand("ratio", "Get ratioed.")]
         public async Task Ratio()
         {
+            await DeferAsync();
             string[] ratioMsgs =
             {
                 "Counter",
@@ -52,10 +59,40 @@ namespace Levante.Commands
                 result += $"You aren't linked";
             else
             {
-                result += $"You don't have Wish Ascended";
-            }
+                var dil = DataConfig.GetLinkedUser(Context.User.Id);
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
-            await RespondAsync(result);
+                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=800").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+
+                    bool HasEmblem = true;
+                    while (HasEmblem)
+                    {
+                        var emblem = ManifestHelper.Emblems.ElementAt(random.Next(0, ManifestHelper.EmblemsCollectible.Count));
+                        var emblemCollectible = ManifestHelper.EmblemsCollectible[emblem.Key];
+                        try
+                        {
+                            Console.WriteLine($"{item.Response.profileCollectibles.data.collectibles[$"{emblemCollectible}"].state}");
+                            if (((DestinyCollectibleState)item.Response.profileCollectibles.data.collectibles[$"{emblemCollectible}"].state).HasFlag(DestinyCollectibleState.NotAcquired))
+                            {
+                                HasEmblem = false;
+                                result += $"You don't have {emblem.Value}";
+                                break;
+                            }
+                        }
+                        catch
+                        {
+                            continue;
+                        }
+                    }
+                }
+            }
+            Emoji thumbsUp = new Emoji("👍");
+            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = result; }).Result.AddReactionAsync(thumbsUp);
         }
     }
 }

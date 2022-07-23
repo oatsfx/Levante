@@ -17,6 +17,8 @@ namespace Levante.Helpers
     {
         // Name, Hash
         public static Dictionary<long, string> Emblems = new Dictionary<long, string>();
+        // Inv Hash, Collectible Hash
+        public static Dictionary<long, uint> EmblemsCollectible = new Dictionary<long, uint>();
         public static Dictionary<long, string> Weapons = new Dictionary<long, string>();
         public static Dictionary<long, string> Seals = new Dictionary<long, string>();
         // Seal Hash, Tracker Hash
@@ -50,10 +52,16 @@ namespace Levante.Helpers
 
                         //Console.WriteLine($"{invItem.Value.DisplayProperties.Name}");
                         if (/*invItem.Value.TraitIds.Contains("item_type.emblem") || */invItem.Value.ItemType == DestinyItemType.Emblem)
+                        {
                             if (invItem.Value.Hash == 1968995963) // соняшник (Sunflower) Ukraine Relief Emblem
                                 Emblems.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} (Sunflower)");
                             else
                                 Emblems.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name);
+
+                            if (invItem.Value.CollectibleHash != null)
+                                EmblemsCollectible.Add(invItem.Value.Hash, (uint)invItem.Value.CollectibleHash);
+                        }
+                            
 
                         if (/*invItem.Value.TraitIds != null && invItem.Value.TraitIds.Contains("item_type.weapon")*/invItem.Value.ItemType == DestinyItemType.Weapon)
                             if (invItem.Value.Hash == 417164956) // Jötunn
@@ -83,7 +91,6 @@ namespace Levante.Helpers
                             Seals.Add(record.Value.Hash, $"{record.Value.TitleInfo.TitlesByGender.Values.FirstOrDefault()}");
                             if (record.Value.TitleInfo.GildingTrackingRecordHash != null)
                                 GildableSeals.Add(record.Value.Hash, (long)record.Value.TitleInfo.GildingTrackingRecordHash);
-
                         }
                             
                     }

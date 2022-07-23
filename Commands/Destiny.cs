@@ -24,6 +24,102 @@ namespace Levante.Commands
     {
         public InteractiveService Interactive { get; set; }
 
+        [SlashCommand("artifact", "Project what level you need to hit for a specific Power bonus.")]
+        public async Task ArtifactBonusPrediction([Summary("power-bonus", "Projected Power bonus you want to see what level it'll be hit at.")] int PowerBonus)
+        {
+            await DeferAsync();
+
+            var app = await Context.Client.GetApplicationInfoAsync();
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Power Bonus Projection",
+                IconUrl = app.IconUrl
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = auth,
+                Footer = foot,
+            };
+            embed.Title = $"Power Bonus +{PowerBonus} at Level ";
+            if (DataConfig.IsExistingLinkedUser(Context.User.Id))
+            {
+                var dil = DataConfig.GetLinkedUser(Context.User.Id);
+                int Level;
+                int XPProgress;
+                dynamic item;
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
+
+                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    item = JsonConvert.DeserializeObject(content);
+
+                    //first 100 levels: 4095505052 (S15); 2069932355 (S16); 26079066 (S17)
+                    //anything after: 1531004716 (S15); 1787069365 (S16); 482365574 (S17)
+
+                    if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level == 100)
+                    {
+                        int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].level;
+                        Level = 100 + extraLevel;
+                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].progressToNextLevel;
+                    }
+                    else
+                    {
+                        Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level;
+                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].progressToNextLevel;
+                    }
+                }
+                int currentPowerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
+
+                if (currentPowerBonus >= PowerBonus)
+                {
+                    int xpNeeded = GetXPForBoost(PowerBonus);
+                    var seasonRanksNeeded = (double)xpNeeded / 100000;
+                    var remainder = xpNeeded % 100000;
+
+                    embed.Title += $"{seasonRanksNeeded:.00}";
+                    embed.Description =
+                        $"You already hit this Power bonus; I cannot provide a personalized prediction.\n" +
+                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:.00}**.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                }
+                else
+                {
+                    int progressToNextLevel = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.progressToNextLevel;
+                    int xpForNextBoost = GetXPForBoost(PowerBonus);
+                    int xpNeeded = xpForNextBoost - GetXPForBoost(currentPowerBonus) - progressToNextLevel;
+                    var seasonRanksNeeded = (double)xpNeeded / 100000;
+                    var remainder = xpNeeded % 100000;
+                    if (remainder + XPProgress > 100000)
+                        seasonRanksNeeded += 1;
+
+                    embed.Title += $"{seasonRanksNeeded:.00}";
+                    embed.Description =
+                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:.00}** (Need {seasonRanksNeeded - (Level + ((double)XPProgress / 100000)):.00}).";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                }
+            }
+            else
+            {
+                int xpNeeded = GetXPForBoost(PowerBonus);
+                var seasonRanksNeeded = (double)xpNeeded / 100000;
+                var remainder = xpNeeded % 100000;
+
+                embed.Title += $"{seasonRanksNeeded:.00}";
+                embed.Description =
+                        $"You are not linked; I cannot provide a personalized prediction.\n" +
+                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:.00}**.";
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+            }
+        }
+
         [SlashCommand("current-offers", "Gives a list of emblem offers. If hash code provided, command will return with the specific offer.")]
         public async Task CurrentOffers([Summary("emblem-name", "Emblem name of an emblem that is a current offer."), Autocomplete(typeof(CurrentOfferAutocomplete))] string EmblemHash = null)
         {
@@ -544,30 +640,30 @@ namespace Levante.Commands
             }
         }
 
-        [SlashCommand("nightfall", "Display Nightfall information.")]
-        public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
-                Choice("The Scarlet Keep", 0), Choice("The Arms Dealer", 1), Choice("The Lightblade", 2),
-                Choice("The Glassway", 3), Choice("Fallen S.A.B.E.R.", 4), Choice("Birthplace of the Vile", 5)] int ArgNF)
-        {
-            await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
-            return;
-        }
+        //[SlashCommand("nightfall", "Display Nightfall information.")]
+        //public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
+        //        Choice("The Scarlet Keep", 0), Choice("The Arms Dealer", 1), Choice("The Lightblade", 2),
+        //        Choice("The Glassway", 3), Choice("Fallen S.A.B.E.R.", 4), Choice("Birthplace of the Vile", 5)] int ArgNF)
+        //{
+        //    await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
+        //    return;
+        //}
 
-        [SlashCommand("patrol", "Display Patrol information.")]
-        public async Task Patrol([Summary("location", "Patrol location."),
-                Choice("The Dreaming City", 0), Choice("The Moon", 1), Choice("Europa", 2)] int ArgLocation)
-        {
-            await RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-            return;
-        }
+        //[SlashCommand("patrol", "Display Patrol information.")]
+        //public async Task Patrol([Summary("location", "Patrol location."),
+        //        Choice("The Dreaming City", 0), Choice("The Moon", 1), Choice("Europa", 2)] int ArgLocation)
+        //{
+        //    await RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
+        //    return;
+        //}
 
-        [SlashCommand("raid", "Display Raid information.")]
-        public async Task Raid([Summary("raid", "Raid name."),
-                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3)] int ArgRaid)
-        {
-            await RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-            return;
-        }
+        //[SlashCommand("raid", "Display Raid information.")]
+        //public async Task Raid([Summary("raid", "Raid name."),
+        //        Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3)] int ArgRaid)
+        //{
+        //    await RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
+        //    return;
+        //}
 
         [SlashCommand("try-on", "Try on any emblem in the Bungie API.")]
         public async Task TryOut([Summary("emblem-name", "Emblem name of the Emblem you want to try on."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
@@ -727,7 +823,6 @@ namespace Levante.Commands
                 // Create a collection with suggestions for autocomplete
                 List<AutocompleteResult> results = new();
                 string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
-                Console.WriteLine($"Searching for {SearchQuery}");
                 if (String.IsNullOrWhiteSpace(SearchQuery))
                     return AutocompletionResult.FromSuccess();
                 else if (SearchQuery.Contains('#'))
@@ -762,7 +857,6 @@ namespace Levante.Commands
                 results = results.OrderBy(x => x.Name).ToList();
 
                 // max - 25 suggestions at a time (API limit)
-                Console.WriteLine($"Completion Success");
                 return AutocompletionResult.FromSuccess(results.Take(25));
             }
         }
@@ -789,7 +883,6 @@ namespace Levante.Commands
                 results = results.OrderBy(x => x.Name).ToList();
 
                 // max - 25 suggestions at a time (API limit)
-                Console.WriteLine($"Completion Success");
                 return AutocompletionResult.FromSuccess(results.Take(25));
             }
         }
@@ -816,7 +909,6 @@ namespace Levante.Commands
                 results = results.OrderBy(x => x.Name).ToList();
 
                 // max - 25 suggestions at a time (API limit)
-                Console.WriteLine($"Completion Success");
                 return AutocompletionResult.FromSuccess(results.Take(25));
             }
         }
@@ -841,7 +933,6 @@ namespace Levante.Commands
                 results = results.OrderBy(x => x.Name).ToList();
 
                 // max - 25 suggestions at a time (API limit)
-                Console.WriteLine($"Completion Success");
                 return AutocompletionResult.FromSuccess(results.Take(25));
             }
         }

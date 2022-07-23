@@ -268,7 +268,7 @@ namespace Levante.Rotations
             .AddField(x =>
             {
                 x.Name = "> Nightfall: The Ordeal";
-                x.Value = $"*Use command /nightfall for more info!*";
+                x.Value = $"*Nightfall Strike and Weapon Rotation*";
                 x.IsInline = false;
             })
             .AddField(x =>
@@ -286,7 +286,7 @@ namespace Levante.Rotations
             .AddField(x =>
             {
                 x.Name = "> Patrol";
-                x.Value = $"*Use command /patrol for more info!*";
+                x.Value = $"*Patrol Location Rotations*";
                 x.IsInline = false;
             })
             .AddField(x =>
