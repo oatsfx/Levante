@@ -119,7 +119,7 @@ namespace Levante.Commands
         public async Task Refresh()
         {
             ConfigHelper.CheckAndLoadConfigFiles();
-            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Note} | v{BotConfig.Version}", ActivityType.Playing));
+            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Note} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing));
 
             var react = Emote.Parse("<:complete:927315594951426048>");
 

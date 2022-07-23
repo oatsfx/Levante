@@ -65,7 +65,7 @@ namespace Levante.Util
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
             };
             int[] emblemRGB = OfferedEmblem.GetRGBAsIntArray();
             var embed = new EmbedBuilder()

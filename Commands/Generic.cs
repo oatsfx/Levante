@@ -4,6 +4,7 @@ using Levante.Configs;
 using Fergun.Interactive;
 using Discord.Interactions;
 using System.Linq;
+using System;
 
 namespace Levante.Commands
 {
@@ -64,7 +65,7 @@ namespace Levante.Commands
             .AddField(x =>
             {
                 x.Name = "Bot Version";
-                x.Value = $"v{BotConfig.Version}";
+                x.Value = $"v{String.Format("{0:0.00#}", BotConfig.Version)}";
                 x.IsInline = true;
             })
             .AddField(x =>
