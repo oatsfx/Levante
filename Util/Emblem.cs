@@ -23,9 +23,18 @@ namespace Levante.Util
         public int[] GetRGBAsIntArray()
         {
             int[] result = new int[3];
-            result[0] = (int)Content.BackgroundColor.Red;
-            result[1] = (int)Content.BackgroundColor.Green;
-            result[2] = (int)Content.BackgroundColor.Blue;
+            if (Content.BackgroundColor == null)
+            {
+                result[0] = BotConfig.EmbedColorGroup.R;
+                result[1] = BotConfig.EmbedColorGroup.G;
+                result[2] = BotConfig.EmbedColorGroup.B;
+            }
+            else
+            {
+                result[0] = (int)Content.BackgroundColor.Red;
+                result[1] = (int)Content.BackgroundColor.Green;
+                result[2] = (int)Content.BackgroundColor.Blue;
+            }
             return result;
         }
 
@@ -51,23 +60,6 @@ namespace Levante.Util
 
         public string GetBackgroundUrl() => "https://www.bungie.net" + Content.SecondaryIcon;
 
-        public static bool HashIsAnEmblem(long HashCode)
-        {
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Manifest/DestinyInventoryItemDefinition/" + HashCode).Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-                string displayType = $"{item.Response.itemTypeDisplayName}";
-                if (!displayType.Equals($"Emblem"))
-                    return false;
-                else
-                    return true;
-            }
-        }
-
         // Use DEC's information on how to unlock an emblem, if DEC has it in their data.
         public string GetEmblemUnlock()
         {
@@ -87,7 +79,6 @@ namespace Levante.Util
 
         public override EmbedBuilder GetEmbed()
         {
-            Console.WriteLine(GetIconUrl());
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Emblem Details: {GetName()}",
@@ -98,15 +89,15 @@ namespace Levante.Util
             {
                 Text = $"Powered by the Bungie API"
             };
-            int[] emblemRGB = GetRGBAsIntArray();
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(emblemRGB[0], emblemRGB[1], emblemRGB[2]),
                 Author = auth,
                 Footer = foot
             };
             try
             {
+                int[] emblemRGB = GetRGBAsIntArray();
+                embed.WithColor(emblemRGB[0], emblemRGB[1], emblemRGB[2]);
                 var unlock = GetEmblemUnlock();
                 string offerStr = "Unavailable or is not a limited-time offer.";
                 if (EmblemOffer.HasExistingOffer(GetItemHash()))
@@ -158,6 +149,7 @@ namespace Levante.Util
             }
             catch
             {
+                embed.WithColor(new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
                 embed.Description = "This emblem is missing some API values, sorry about that!";
             }
             

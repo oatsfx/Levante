@@ -494,8 +494,8 @@ namespace Levante
                         catch
                         {
                             // Continue with the rest of the linked users. Don't want to stop the populating for one problematic account.
-                            LogHelper.ConsoleLog($"[LEADERBOARDS] Error while pulling data for user: {_client.GetUserAsync(link.DiscordID).Result.Username}#{_client.GetUserAsync(link.DiscordID).Result.Discriminator} linked with {link.UniqueBungieName}." +
-                                $"Reason: {errorReason}");
+                            LogHelper.ConsoleLog($"[LEADERBOARDS] Error while pulling data for user: {_client.GetUserAsync(link.DiscordID).Result.Username}#{_client.GetUserAsync(link.DiscordID).Result.Discriminator} linked with {link.UniqueBungieName}. " +
+                                $"Reason: {errorReason}. Privacy: {item.Response.profile.privacy}");
                             await Task.Delay(250);
                             continue;
                         }

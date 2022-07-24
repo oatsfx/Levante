@@ -72,11 +72,10 @@ namespace Levante.Commands
                     bool HasEmblem = true;
                     while (HasEmblem)
                     {
-                        var emblem = ManifestHelper.Emblems.ElementAt(random.Next(0, ManifestHelper.EmblemsCollectible.Count));
-                        var emblemCollectible = ManifestHelper.EmblemsCollectible[emblem.Key];
                         try
                         {
-                            Console.WriteLine($"{item.Response.profileCollectibles.data.collectibles[$"{emblemCollectible}"].state}");
+                            var emblem = ManifestHelper.Emblems.ElementAt(random.Next(0, ManifestHelper.EmblemsCollectible.Count));
+                            var emblemCollectible = ManifestHelper.EmblemsCollectible[emblem.Key];
                             if (((DestinyCollectibleState)item.Response.profileCollectibles.data.collectibles[$"{emblemCollectible}"].state).HasFlag(DestinyCollectibleState.NotAcquired))
                             {
                                 HasEmblem = false;

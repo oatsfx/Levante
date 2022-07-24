@@ -29,6 +29,12 @@ namespace Levante.Commands
         {
             await DeferAsync();
 
+            if (PowerBonus < 1)
+                PowerBonus = 1;
+
+            if (PowerBonus > 100)
+                PowerBonus = 100;
+
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
@@ -84,25 +90,26 @@ namespace Levante.Commands
                     var seasonRanksNeeded = (double)xpNeeded / 100000;
                     var remainder = xpNeeded % 100000;
 
-                    embed.Title += $"{seasonRanksNeeded:.00}";
+                    embed.Title += $"{seasonRanksNeeded:0.00}";
                     embed.Description =
-                        $"You already hit this Power bonus; I cannot provide a personalized prediction.\n" +
-                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:.00}**.";
+                        $"You already hit this Power bonus; I cannot provide a personalized projection.\n" +
+                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:0.00}**.";
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                 }
                 else
                 {
                     int progressToNextLevel = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.progressToNextLevel;
-                    int xpForNextBoost = GetXPForBoost(PowerBonus);
-                    int xpNeeded = xpForNextBoost - GetXPForBoost(currentPowerBonus) - progressToNextLevel;
+                    int xpNeeded = GetXPForBoost(PowerBonus);
+                    int xpNeededPlayer = xpNeeded - GetXPForBoost(currentPowerBonus) - progressToNextLevel;
                     var seasonRanksNeeded = (double)xpNeeded / 100000;
+                    var seasonRanksNeededPlayer = (double)xpNeededPlayer / 100000;
                     var remainder = xpNeeded % 100000;
                     if (remainder + XPProgress > 100000)
-                        seasonRanksNeeded += 1;
+                        seasonRanksNeededPlayer += 1;
 
-                    embed.Title += $"{seasonRanksNeeded:.00}";
+                    embed.Title += $"{seasonRanksNeeded:0.00}";
                     embed.Description =
-                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:.00}** (Need {seasonRanksNeeded - (Level + ((double)XPProgress / 100000)):.00}).";
+                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:0.00}** (Need {seasonRanksNeededPlayer - (Level + ((double)XPProgress / 100000)):0.00}).";
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                 }
             }
@@ -112,9 +119,9 @@ namespace Levante.Commands
                 var seasonRanksNeeded = (double)xpNeeded / 100000;
                 var remainder = xpNeeded % 100000;
 
-                embed.Title += $"{seasonRanksNeeded:.00}";
+                embed.Title += $"{seasonRanksNeeded:0.00}";
                 embed.Description =
-                        $"You are not linked; I cannot provide a personalized prediction.\n" +
+                        $"You are not linked; I cannot provide a personalized projection.\n" +
                         $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:.00}**.";
                 await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
             }
@@ -461,7 +468,15 @@ namespace Levante.Commands
             }
         }
 
-        private static int GetXPForBoost(int boostLevel) => 55000 * (boostLevel - 1) * (boostLevel - 1);
+        private static int GetXPForBoost(int boostLevel)
+        {
+            int diff = 0;
+            if (boostLevel > 70)
+            {
+                diff = boostLevel - 70;
+            }
+            return 55000 * (boostLevel - 1) * (boostLevel - 1) + (diff * 7645000);
+        }
 
         [SlashCommand("lost-sector", "Get info on a Lost Sector based on Difficulty.")]
         public async Task LostSector([Summary("lost-sector", "Lost Sector name."),

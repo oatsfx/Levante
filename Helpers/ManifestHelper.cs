@@ -51,7 +51,7 @@ namespace Levante.Helpers
                             string.IsNullOrWhiteSpace(invItem.Value.ItemTypeDisplayName)) continue;
 
                         //Console.WriteLine($"{invItem.Value.DisplayProperties.Name}");
-                        if (/*invItem.Value.TraitIds.Contains("item_type.emblem") || */invItem.Value.ItemType == DestinyItemType.Emblem)
+                        if (/*invItem.Value.TraitIds.Contains("item_type.emblem") || */invItem.Value.ItemType == DestinyItemType.Emblem && invItem.Value.BackgroundColor != null)
                         {
                             if (invItem.Value.Hash == 1968995963) // соняшник (Sunflower) Ukraine Relief Emblem
                                 Emblems.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} (Sunflower)");
