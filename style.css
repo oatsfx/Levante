@@ -86,6 +86,7 @@ nav ul li a:hover{
 	align-items: center;
 	position: fixed;
 	background-color: none;
+	border-bottom: 0px solid #80ccbf;
 	transition: all 0.3s ease-in-out;
 }
 
@@ -350,6 +351,7 @@ a:hover{
 	border-left: 1px solid #80ccbf;
 	border-right: 1px solid #80ccbf;
 	border-bottom: 1px solid #80ccbf;
+	transition: 0.4s ease-out;
 }
 
 .panel p {
@@ -357,8 +359,8 @@ a:hover{
 }
 
 .panel-active {
-	transition: 0.3s ease-out;
+	transition: 0.4s ease-out;
 	padding-top: 24px;
 	padding-bottom: 16px;
-	max-height: 1000px;
+	max-height: 101px;
 }

@@ -32,7 +32,7 @@
 		<nav>
 			<ul>
 				<li><a href="/features/">Features</a></li>
-				<li><a href="https://discord.gg/Levante">Support Server</a></li>
+				<li><a href="https://support.levante.dev/">Support Server</a></li>
 				<li><a href="/about-us/">About Us</a></li>
 			</ul>
 		</nav>
@@ -82,10 +82,10 @@
 				<p>Creates a hub where users can start XP sessions in your server.</p>
 				<p>Requires the Manage Channels permission.</p>
 			</div>
-			<button class="accordion">/current-offers <span style="opacity: 0.6;">[emblem-hash-code]</span></button>
+			<button class="accordion">/current-offers <span style="opacity: 0.6;">[emblem-name]</span></button>
 			<div class="panel">
 				<p>Provides a list of available emblems announced by the bot.</p>
-				<p>Provide any of the emblems' hash code and a more specific embed will be provided.</p>
+				<p>Provide any of the emblems' name and a more specific embed will be provided.</p>
 			</div>
 			<button class="accordion">/current-session <span style="opacity: 0.6;">[user]</span></button>
 			<div class="panel">
@@ -155,14 +155,21 @@
 			<div class="panel">
 				<p>Provides a global leaderboard (all linked users) of the specified leaderboard.</p>
 			</div>
-			<button class="accordion">/server-info </button>
+			<button class="accordion">/ratio</button>
+			<div class="panel">
+				<p>Allow the bot to ratio you.</p>
+			</div>
+			<button class="accordion">/server-info</button>
 			<div class="panel">
 				<p>Pulls some information about the server this command is used in as well as any Levante integrations that are set up.</p>
 			</div>
-			<button class="accordion">/try-on <span style="opacity: 0.6;">&lt;emblem-hash&gt;</span></button>
+			<button class="accordion">/support</button>
+			<div class="panel">
+				<p>Returns a small block of text explaining how to support the Levante project.</p>
+			</div>
+			<button class="accordion">/try-on <span style="opacity: 0.6;">&lt;emblem-name&gt;</span></button>
 			<div class="panel">
 				<p>Provides an image of what it would look like if you had a specific emblem in Destiny 2.</p>
-				<p>The emblem hash is the unique identifier that the Bungie API gives emblems (i.e. Parallel Program's hash is 3936625542).</p>
 			</div>
 			<button class="accordion">/unlink</button>
 			<div class="panel">
@@ -183,6 +190,19 @@
 				<p>Replies with an embed of select Weekly reset rotations.</p>
 			</div>
 		</div>
+		<div class="content">
+			<h2 id="supporter-perks">Supporter Perks</h2>
+			<p>Additional perks available to Supporters.</p>
+			<ul>
+				<li><b>Priority XP Logging</b>: Users using priority XP logging get refreshed first, and the ability to bypass the capacity limit.
+					<ul><li style="list-style: none;">Users are placed into priority automatically when they become a supporter.</li></ul></li>
+				<li><b>Exclusive Clan Tag</b>: Users that use the <b>/try-on</b> command will have the "Levante Bot Supporter" clan tag as opposed to "Levante Bot".
+					<ul><li style="list-style: none;">Flex any emblem as well as your supporter status with us.</li></ul></li>
+				<li><b>Custom Role</b>: A personalized role and access to a super-secret channel in the <a href="https://support.levante.dev/" target="_blank">Levante Support Server</a>.
+					<ul><li style="list-style: none;">Once you donate, you'll be able to notify any of the staff members about your generous support and they can get you situated.</li></ul></li>
+			</ul>
+			<p></p>
+		</div>
 	</div>
 </body>
 
@@ -200,7 +220,7 @@
 					<a href="https://twitter.com/Levante_Bot" target="_blank">Twitter</a>
 				</li>
 				<li>
-					<a href="https://discord.gg/Levante" target="_blank">Discord</a>
+					<a href="https://support.levante.dev/" target="_blank">Discord</a>
 				</li>
 			</ul>
 		</div>
@@ -219,7 +239,7 @@
 					<a href="https://github.com/oatsfx/Levante" target="_blank">Source Code</a>
 				</li>
 				<li>
-					<a href="https://discord.gg/Levante" target="_blank">Support Server</a>
+					<a href="https://support.levante.dev/" target="_blank">Support Server</a>
 				</li>
 				<li>
 					<a href="/terms-of-service/">Terms of Use</a>
@@ -231,7 +251,7 @@
 		</div>
 		<div class="footer-column-colored">
 			<h2>Contact Us!</h2>
-			<a href="https://discord.gg/Levante" target="_blank">On Discord: discord.gg/Levante</a>
+			<a href="https://support.levante.dev/" target="_blank">On Discord: discord.gg/Levante</a>
 			<p>Via Email: levantebot@gmail.com</p>
 		</div>
 	</div>
