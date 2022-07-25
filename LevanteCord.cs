@@ -108,7 +108,7 @@ namespace Levante
             else
                 SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 0, 0));
 
-            //var oauthManager = new OAuthHelper();
+            var oauthManager = new OAuthHelper();
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
@@ -267,7 +267,8 @@ namespace Levante
 
                         LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
 
-                        ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
+                        ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
+                        //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
                         await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                     }
 
@@ -296,8 +297,8 @@ namespace Levante
                             LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
                             //listOfRemovals.Add(tempAau);
                             // ***Change to remove it from list because file update is called at end of method.***
-                            //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
-                            ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
+                            ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
+                            //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
                             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                         }
                         else
@@ -385,8 +386,8 @@ namespace Levante
                             LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
                             //listOfRemovals.Add(tempAau);
                             // ***Change to remove it from list because file update is called at end of method.***
-                            //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
-                            ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
+                            ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
+                            //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
                             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                         }
                         else
