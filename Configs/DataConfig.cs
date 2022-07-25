@@ -183,6 +183,8 @@ namespace Levante.Configs
             var dil = DiscordIDLinks.Find(x => x.DiscordID == DiscordID);
             if (dil == null)
                 return null;
+            if (dil.AccessToken == null)
+                return null;
             if (dil.AccessToken.Equals("[ACCESS TOKEN]"))
                 return null;
             if (dil.DiscordID == DiscordID)

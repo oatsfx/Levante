@@ -126,8 +126,8 @@ namespace Levante.Commands
             await Context.Message.AddReactionAsync(react);
         }
 
-        [Command("addSupporter", RunMode = RunMode.Async)]
-        [Summary("Add a bot supporter.")]
+        [Command("supporter", RunMode = RunMode.Async)]
+        [Summary("Add or remove a bot supporter.")]
         [RequireOwner]
         public async Task AddSupporter(ulong DiscordID = 0)
         {
@@ -139,14 +139,16 @@ namespace Levante.Commands
 
             if (BotConfig.BotSupportersDiscordIDs.Contains(DiscordID))
             {
-                await Context.Message.ReplyAsync($"{DiscordID} already exists!");
-                return;
+                BotConfig.BotSupportersDiscordIDs.Remove(DiscordID);
+                await Context.Message.ReplyAsync($"{DiscordID} has been removed as a bot supporter!");
             }
-
-            BotConfig.BotSupportersDiscordIDs.Add(DiscordID);
+            else
+            {
+                BotConfig.BotSupportersDiscordIDs.Add(DiscordID);
+                await Context.Message.ReplyAsync($"Added {DiscordID} to my list of Supporters!");
+            }
             var bConfig = new BotConfig();
             File.WriteAllText(BotConfig.FilePath, JsonConvert.SerializeObject(bConfig, Formatting.Indented));
-            await Context.Message.ReplyAsync($"Added {DiscordID} to my list of Supporters!");
         }
 
         [Command("deleteBotMessage", RunMode = RunMode.Async)]

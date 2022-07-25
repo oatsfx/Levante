@@ -486,7 +486,7 @@ namespace Levante
                             string nameCode = int.Parse($"{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode}").ToString().PadLeft(4, '0');
                             if (!link.UniqueBungieName.Equals($"{name}#{nameCode}"))
                             {
-                                Console.WriteLine($"[LEADERBOARDS] Name change detected: {link.UniqueBungieName} -> {name}#{nameCode}");
+                                LogHelper.ConsoleLog($"[LEADERBOARDS] Name change detected: {link.UniqueBungieName} -> {name}#{nameCode}");
                                 DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == link.DiscordID).UniqueBungieName = $"{name}#{nameCode}";
                                 nameChange = true;
                             }
@@ -539,10 +539,10 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //397846250797662208
-                await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
+                //await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                //await _interaction.RegisterCommandsGloballyAsync();
+                await _interaction.RegisterCommandsGloballyAsync();
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
             };

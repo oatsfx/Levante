@@ -77,7 +77,7 @@ namespace Levante.Helpers
             response.ContentLength64 = buffer.Length;
             if (result.Reason != ErrorReason.None)
             {
-                LogHelper.ConsoleLog("[OAUTH] Redirecting to Link Fail.");
+                LogHelper.ConsoleLog($"[OAUTH] Redirecting to Link Fail with reason {result.Reason}.");
                 response.Redirect($"https://www.levante.dev/link-fail/?error={Convert.ToInt32(result.Reason)}");
             }
             else

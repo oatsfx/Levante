@@ -47,7 +47,7 @@ namespace Levante.Commands
 
             embed.Title = "Bot Information";
             embed.Description =
-                "Levante is an [open-source](https://github.com/oatsfx/Levante) Discord bot using Discord.Net for various Destiny 2 Needs. " +
+                "Levante is an [open-source](https://github.com/oatsfx/Levante) Discord bot using Discord.Net for various Destiny 2 needs. " +
                 "This bot is actively developed by [@OatsFX](https://twitter.com/OatsFX). It pulls most of its information from the Bungie API.";
 
             embed.AddField(x =>
@@ -143,7 +143,10 @@ namespace Levante.Commands
             {
                 IconUrl = app.IconUrl,
             };
-            var embed = new EmbedBuilder();
+            var embed = new EmbedBuilder()
+            {
+                Author = auth,
+            };
             embed.WithColor(new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
 
             embed.ThumbnailUrl = app.IconUrl;
@@ -153,8 +156,8 @@ namespace Levante.Commands
             embed.Description =
                 "Levante is available to everyone for free, and will continue to stay this way. " +
                 "Anyone who supports Levante and her team by donating will be eligible for [supporter perks](https://www.levante.dev/features/). " +
-                "Those extra perks is a way of saying thank you to all of our generous supporters.\n" +
-                "You can support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/).";
+                "Those extra perks are a way of saying thank you to all of our generous supporters.\n" +
+                "> You can support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/).";
 
             await RespondAsync(embed: embed.Build());
         }
