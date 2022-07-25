@@ -109,7 +109,7 @@ namespace Levante.Commands
 
                     embed.Title += $"{seasonRanksNeeded:0.00}";
                     embed.Description =
-                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:0.00}** (Need {seasonRanksNeededPlayer - (Level + ((double)XPProgress / 100000)):0.00}).";
+                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:0.00}** (Need {seasonRanksNeededPlayer:0.00}).";
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                 }
             }
