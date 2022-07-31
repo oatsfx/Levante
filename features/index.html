@@ -53,6 +53,8 @@
 			<ul>
 				<li><b>XP Logging</b>: Generally used for AFK XP farming using whatever method of your choice.
 					<ul><li style="list-style: none;">Server Administrators (specificially those with the Manage Channels permission) can use the command <b>/create-hub</b> to create a channel category where server members can start logging their XP.</li></ul></li>
+					<ul><li style="list-style: none;">Server members can then, use the "XP Hub" and its buttons to manage their XP Sessions accordingly.</li></ul></li>
+				
 				<li><b>Emblem Offers</b>: An announcement feature where the bot will notify server members of any newly released, limited time emblems. 
 					<ul><li style="list-style: none;">Server Administrators can opt-in via the <b>/alert emblem-offers</b> command in the channel they want these alerts in.</li></ul></li>
 				<li><b>Rotation Alerts</b>: Using the command <b>/notify</b> will have the bot message you on Discord when your specified rotation is active.
@@ -66,128 +68,208 @@
 			<button class="accordion">/active-logging</button>
 			<div class="panel">
 				<p>Responds with the amount of users actively using the XP logging feature.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/active-logging/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/alert emblem-offers <span style="opacity: 0.6;">[role]</span></button>
 			<div class="panel">
 				<p>Set up alerts for upcoming and released limited time emblems. NOTE: Use in the channel you want the alerts in.</p>
 				<p>Requires the Manage Channels permission.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/alert/emblem-offers/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/alert/emblem-offers/result-1.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/alert resets <span style="opacity: 0.6;">&lt;reset-type&gt;</span></button>
 			<div class="panel">
 				<p>Set up alerts for daily and/or weekly resets. NOTE: Use in the channel you want the alerts in.</p>
 				<p>Requires the Manage Channels permission.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/alert/resets/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/alert/resets/result-1.png" class="cmd-img-right">
+			</div>
+			<button class="accordion">/artifact <span style="opacity: 0.6;">[power-bonus]</span></button>
+			<div class="panel">
+				<p>Project when you'll hit a specified Power Bonus.	</p>
+				<p>Example: <b>Coming Soon!</b></p>
 			</div>
 			<button class="accordion">/create-hub</button>
 			<div class="panel">
 				<p>Creates a hub where users can start XP sessions in your server.</p>
 				<p>Requires the Manage Channels permission.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/create-hub/result-1.png" class="cmd-img-left">
+				<img src="../images/cmds/create-hub/result-2.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/current-offers <span style="opacity: 0.6;">[emblem-name]</span></button>
 			<div class="panel">
 				<p>Provides a list of available emblems announced by the bot.</p>
 				<p>Provide any of the emblems' name and a more specific embed will be provided.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/current-offers/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/current-offers/result-1.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/current-session <span style="opacity: 0.6;">[user]</span></button>
 			<div class="panel">
 				<p>Pulls stats of your or another user's XP session.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/current-session/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/current-session/result.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/daily</button>
 			<div class="panel">
 				<p>Replies with an embed of select Daily reset rotations.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/daily/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/free-emblems</button>
 			<div class="panel">
 				<p>Displays a list of universal emblem codes available to all players.</p>
 				<p>No, it does not give you a random free emblem code.</p>
-			</div>
-			<button class="accordion">/guardians linked-user <span style="opacity: 0.6;">&lt;user&gt; &lt;class&gt; [platform]</span></button>
-			<div class="panel">
-				<p>Get a player's Guardian information, like equipped weapons, armor, emblem, etc.</p>
-				<p>Requires the user to be linked.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/free-emblems/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/guardians bungie-tag <span style="opacity: 0.6;">&lt;player&gt; &lt;class&gt; [platform]</span></button>
 			<div class="panel">
 				<p>Get a player's Guardian information, like equipped weapons, armor, emblem, etc.</p>
-				<p>Does not require the user to be linked as you are searching with their Bungie tag.</p>
+				<p>Does not require the user to be linked as you are searching with their Bungie tag. <i>Specify platform if the player does not have <a href="https://www.bungie.net/7/en/CrossSave" target="_blank">Cross Save</a> enabled.</i></p>
+				<p>Example:</p>
+				<img src="../images/cmds/guardian/bungie-tag/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/guardian/bungie-tag/result.png" class="cmd-img-right">
+			</div>
+			<button class="accordion">/guardians linked-user <span style="opacity: 0.6;">&lt;user&gt; &lt;class&gt; [platform]</span></button>
+			<div class="panel">
+				<p>Get a player's Guardian information, like equipped weapons, armor, emblem, etc.</p>
+				<p>Requires the user to be linked. <i>Specify platform if the player does not have <a href="https://www.bungie.net/7/en/CrossSave" target="_blank">Cross Save</a> enabled.</i></p>
+				<p>Example:</p>
+				<img src="../images/cmds/guardian/linked-user/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/guardian/linked-user/result.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/help</button>
 			<div class="panel">
 				<p>Links you to this page.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/help/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/info</button>
 			<div class="panel">
 				<p>Provides you info on the Levante bot, such as server count and version.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/info/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/invite</button>
 			<div class="panel">
 				<p>Provides you an invite link for the bot so you can add it to your own server!</p>
+				<p>Example:</p>
+				<img src="../images/cmds/invite/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/level</button>
 			<div class="panel">
 				<p>Pulls your Destiny 2 Season Rank within the current season. Will also provide the level you need for the next artifact bonus.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/level/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/level/result.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/link</button>
 			<div class="panel">
 				<p>Provides you a URL to begin the linking/registering process.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/link/result-1.png" class="cmd-img-left">
+				<img src="../images/cmds/link/result-2.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/lost-sector <span style="opacity: 0.6;">&lt;lost-sector&gt; &lt;difficulty&gt;</span></button>
 			<div class="panel">
 				<p>Provides information of a Lost Sector in rotation based on requested difficulty.</p>
 				<p>Only provides the Lost Sectors that are available in the current season.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/lost-sector/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/lost-sector/result.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/next <span style="opacity: 0.6;">&lt;activity&gt; &lt;rotation&gt;</span></button>
 			<div class="panel">
 				<p>Provides a prediction of when the next set rotation is available.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/next/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/next/result.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/notify <span style="opacity: 0.6;">&lt;activity&gt; &lt;rotation&gt;</span></button>
 			<div class="panel">
 				<p>Set up to be notified when a specific rotation is active (i.e. when the Wellspring is dropping the bow).</p>
+				<p>Example:</p>
+				<img src="../images/cmds/notify/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/notify/result-1.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/notify remove</button>
 			<div class="panel">
 				<p>Remove any rotation notifications you have set up.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/notify/remove/result-1.png" class="cmd-img-left">
+				<img src="../images/cmds/notify/remove/result-2.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/ping</button>
 			<div class="panel">
 				<p>Responds with the bot's latency to Discord in milliseconds.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/ping/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/rank <span style="opacity: 0.6;">&lt;leaderboard&gt;</span></button>
 			<div class="panel">
 				<p>Provides a global leaderboard (all linked users) of the specified leaderboard.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/rank/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/rank/result.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/ratio</button>
 			<div class="panel">
 				<p>Allow the bot to ratio you.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/ratio/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/server-info</button>
 			<div class="panel">
 				<p>Pulls some information about the server this command is used in as well as any Levante integrations that are set up.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/server-info/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/support</button>
 			<div class="panel">
-				<p>Returns a small block of text explaining how to support the Levante project.</p>
+				<p>Returns a small block of text explaining how to support the Levante project. (Which is done by <a href="https://ko-fi.com/oatsfx" target="_blank">buying us a coffee</a>!)</p>
+				<p>Example:</p>
+				<img src="../images/cmds/support/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/try-on <span style="opacity: 0.6;">&lt;emblem-name&gt;</span></button>
 			<div class="panel">
 				<p>Provides an image of what it would look like if you had a specific emblem in Destiny 2.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/try-on/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/try-on/result.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/unlink</button>
 			<div class="panel">
 				<p>Unlink your Bungie account from your Discord account.</p>
 				<p>Please note that this will remove all leaderboard entries your account has with Levante.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/unlink/result.png" class="cmd-img-left">
 			</div>
 			<button class="accordion">/view emblem <span style="opacity: 0.6;">&lt;name&gt;</span></button>
 			<div class="panel">
 				<p>Pulls information about an emblem from the Bungie API.</p>
 				<p><a href="https://twitter.com/emblemcollector">DEC</a> is amazing and lets us pull his information about emblems he has listed.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/view/emblem/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/view/emblem/result.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/view weapon <span style="opacity: 0.6;">&lt;name&gt;</span></button>
 			<div class="panel">
 				<p>Pulls information about a weapon as well as its ability to be crafted and perk lists from the Bungie API.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/view/weapon/arguments.png" class="cmd-img-left">
+				<img src="../images/cmds/view/weapon/result.png" class="cmd-img-right">
 			</div>
 			<button class="accordion">/weekly</button>
 			<div class="panel">
 				<p>Replies with an embed of select Weekly reset rotations.</p>
+				<p>Example:</p>
+				<img src="../images/cmds/weekly/result.png" class="cmd-img-left">
 			</div>
 		</div>
 		<div class="content">
@@ -221,6 +303,9 @@
 				</li>
 				<li>
 					<a href="https://support.levante.dev/" target="_blank">Discord</a>
+				</li>
+				<li>
+					<a href="https://ko-fi.com/oatsfx" target="_blank">Ko-Fi</a>
 				</li>
 			</ul>
 		</div>

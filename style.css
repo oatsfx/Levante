@@ -362,5 +362,16 @@ a:hover{
 	transition: 0.4s ease-out;
 	padding-top: 24px;
 	padding-bottom: 16px;
-	max-height: 101px;
+	max-height: 750px;
+}
+
+.cmd-img-left {
+	max-height: 600px;
+	padding-left: 100px;
+}
+
+.cmd-img-right {
+	max-height: 600px;
+	padding-left: 50px;
+	
 }
