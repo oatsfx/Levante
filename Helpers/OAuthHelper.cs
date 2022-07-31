@@ -57,6 +57,7 @@ namespace Levante.Helpers
                 else if (!string.IsNullOrEmpty(query["error"]))
                 {
                     LogHelper.ConsoleLog($"[OAUTH] Error occurred: {query["error_description"]}.");
+                    _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
                     return;
                 }
             }

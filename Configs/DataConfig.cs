@@ -44,10 +44,10 @@ namespace Levante.Configs
             public string UniqueBungieName { get; set; } = "Guardian#0000";
 
             [JsonProperty("AccessToken")]
-            public string AccessToken { get; set; } = "[ACCESS TOKEN]";
+            public string AccessToken { get; set; } = null;
 
             [JsonProperty("RefreshToken")]
-            public string RefreshToken { get; set; } = "[REFRESH TOKEN]";
+            public string RefreshToken { get; set; } = null;
 
             [JsonProperty("AccessExpiration")]
             public DateTime AccessExpiration { get; set; } = DateTime.Now;
@@ -332,7 +332,17 @@ namespace Levante.Configs
             File.WriteAllText(FilePath, output);
         }
 
-        public static bool IsExistingLinkedUser(ulong DiscordID) => DiscordIDLinks.Exists(x => x.DiscordID == DiscordID);
+        public static bool IsExistingLinkedUser(ulong DiscordID)
+        {
+            var user = DiscordIDLinks.Find(x => x.DiscordID == DiscordID);
+            if (user == null)
+                return false;
+            
+            if (user.AccessToken == null || user.AccessToken.Equals("[ACCESS TOKEN]"))
+                return false;
+
+            return true;
+        }
 
         public static bool IsExistingLinkedChannel(ulong ChannelID, bool IsDaily)
         {

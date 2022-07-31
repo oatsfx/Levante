@@ -168,7 +168,7 @@ namespace Levante.Commands
                 return;
             }
 
-            await LogHelper.Log(Context.Client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: XPLoggingHelper.GenerateSessionSummary(aau, Context.Client.CurrentUser.GetAvatarUrl()), CB: XPLoggingHelper.GenerateChannelButtons());
+            await LogHelper.Log(Context.Client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: XPLoggingHelper.GenerateSessionSummary(aau, Context.Client.CurrentUser.GetAvatarUrl()), CB: XPLoggingHelper.GenerateChannelButtons(aau.DiscordID));
             await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(aau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(aau, Context.Client.CurrentUser.GetAvatarUrl()));
 
             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(aau));
@@ -209,9 +209,15 @@ namespace Levante.Commands
             await RespondAsync($"", embed: helpEmbed.Build(), ephemeral: true);
         }
 
-        [ComponentInteraction("restartLogging")]
-        public async Task RestartLogging()
+        [ComponentInteraction("restartLogging:*")]
+        public async Task RestartLogging(ulong DiscordID)
         {
+            if (Context.User.Id != DiscordID)
+            {
+                await RespondAsync($"You do not have permission to perform this action.", ephemeral: true);
+                return;
+            }
+
             var user = Context.User;
             var guild = Context.Guild;
 

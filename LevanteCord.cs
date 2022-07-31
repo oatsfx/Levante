@@ -279,7 +279,7 @@ namespace Levante
                             string uniqueName = tempAau.UniqueBungieName;
 
                             await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
-                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons());
+                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
                             IUser user;
                             if (_client.GetUser(tempAau.DiscordID) == null)
@@ -368,7 +368,7 @@ namespace Levante
                             string uniqueName = tempAau.UniqueBungieName;
 
                             await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player has been determined as inactive.");
-                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons());
+                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
                             IUser user;
                             if (_client.GetUser(tempAau.DiscordID) == null)
@@ -540,7 +540,7 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //397846250797662208
-                //await _interaction.RegisterCommandsToGuildAsync(915020047154565220, true);
+                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
                 await _interaction.RegisterCommandsGloballyAsync();

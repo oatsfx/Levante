@@ -86,7 +86,7 @@ namespace Levante.Util
             if (item1.Response.character.data.titleRecordHash == null)
                 return null;
             long sealHash = (long)item1.Response.character.data.titleRecordHash;
-            string sealResult = $"*{ManifestHelper.Seals[sealHash]}*";
+            string sealResult = $"{ManifestHelper.Seals[sealHash]}";
 
             if (ManifestHelper.GildableSeals.ContainsKey(sealHash))
             {
@@ -128,9 +128,7 @@ namespace Levante.Util
             var seal = GetSeal();
             embed.Description =
                 $"{GetClassEmote()} **{GetRace()} {GetGender()} {GetClass()}** {GetClassEmote()}\n" +
-                $"Light Level: {DestinyEmote.Light}{GetLightLevel()}\n" +
-                $"Emblem: {GetEmblem().GetName()} ({GetEmblem().GetItemHash()})\n" +
-                $"{(seal != null ? $"Title: {seal}" : "")}";
+                $"{DestinyEmote.Light}{GetLightLevel()}";
             embed.ThumbnailUrl = GetEmblem().GetIconUrl();
 
             dynamic item = JsonConvert.DeserializeObject(GuardianContent);
@@ -163,7 +161,22 @@ namespace Levante.Util
                     $"{DestinyEmote.Intellect} {item.Response.character.data.stats["144602215"]}\n" +
                     $"{DestinyEmote.Strength} {item.Response.character.data.stats["4244567218"]}";
                 x.IsInline = true;
+            }).AddField(x =>
+            {
+                x.Name = "Emblem";
+                x.Value = $"{GetEmblem().GetName()}";
+                x.IsInline = true;
             });
+
+            if (seal != null)
+            {
+                embed.AddField(x =>
+                {
+                    x.Name = "Title";
+                    x.Value = $"{seal}";
+                    x.IsInline = true;
+                });
+            }
 
             return embed;
         }
