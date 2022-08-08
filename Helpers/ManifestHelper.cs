@@ -24,11 +24,15 @@ namespace Levante.Helpers
         // Seal Hash, Tracker Hash
         public static Dictionary<long, long> GildableSeals = new Dictionary<long, long>();
 
+        private static Dictionary<string, int> SeasonIconURLs = new Dictionary<string, int>();
+
         public static void LoadManifestDictionaries()
         {
             LogHelper.ConsoleLog($"[MANIFEST] Begin emblem and weapon Dictionary population.");
             using (var client = new HttpClient())
             {
+                var dimAiResponse = client.GetAsync($"https://raw.githubusercontent.com/DestinyItemManager/d2-additional-info/master/output/watermark-to-season.json").Result;
+                SeasonIconURLs = JsonConvert.DeserializeObject<Dictionary<string, int>>(dimAiResponse.Content.ReadAsStringAsync().Result);
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/").Result;
@@ -64,10 +68,40 @@ namespace Levante.Helpers
                             
 
                         if (/*invItem.Value.TraitIds != null && invItem.Value.TraitIds.Contains("item_type.weapon")*/invItem.Value.ItemType == DestinyItemType.Weapon)
+                        {
+                            if (invItem.Value.DisplayProperties.Name == null)
+                                continue; 
+
                             if (invItem.Value.Hash == 417164956) // Jötunn
                                 Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} (Jotunn)");
                             else
-                                Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
+                            {
+                                var dupeWeapons = Weapons.Where(x => x.Value.Contains(invItem.Value.DisplayProperties.Name));
+                                if (dupeWeapons.Count() > 0)
+                                {
+                                    foreach (var weapon in dupeWeapons.ToList())
+                                    {
+                                        Console.WriteLine($"Weapon Dupe: {weapon.Value}");
+                                        if (!weapon.Value.Contains("[S"))
+                                        {
+                                            Weapons.Remove(weapon.Key);
+                                            if (invItemList[$"{weapon.Key}"].IconWatermark == null)
+                                                Weapons.Add(weapon.Key, $"{weapon.Value} [S1]");
+                                            else if (SeasonIconURLs.ContainsKey(invItem.Value.IconWatermark))
+                                                Weapons.Add(weapon.Key, $"{weapon.Value} [S{SeasonIconURLs[$"{invItemList[$"{weapon.Key}"].IconWatermark}"]}]");
+                                        }
+                                    }
+                                    if (invItem.Value.IconWatermark == null)
+                                        Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} [S1]");
+                                    else if (SeasonIconURLs.ContainsKey(invItem.Value.IconWatermark))
+                                        Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} [S{SeasonIconURLs[$"{invItem.Value.IconWatermark}"]}]");
+                                }
+                                else
+                                    Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
+                            }
+                                
+                        }
+                            
                     }
                 }
                 catch (Exception x)

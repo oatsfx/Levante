@@ -918,8 +918,9 @@ namespace Levante.Commands
                     }
                 else
                     foreach (var Weapon in ManifestHelper.Weapons)
-                        if (Weapon.Value.ToLower().Contains(SearchQuery.ToLower()))
+                        if (Weapon.Value.Split('[')[0].ToLower().Contains(SearchQuery.ToLower()))
                             results.Add(new AutocompleteResult(Weapon.Value, $"{Weapon.Key}"));
+
 
                 results = results.OrderBy(x => x.Name).ToList();
 

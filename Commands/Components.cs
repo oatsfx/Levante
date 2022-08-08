@@ -36,7 +36,7 @@ namespace Levante.Commands
 
             if (ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
-                await RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumLoggingUsers}). Try again later.", ephemeral: true);
+                await RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumLoggingUsers}). Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.", ephemeral: true);
                 return;
             }
 
@@ -223,7 +223,7 @@ namespace Levante.Commands
 
             if (ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
-                await RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumLoggingUsers}). Try again later.", ephemeral: true);
+                await RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumLoggingUsers}). Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.", ephemeral: true);
                 return;
             }
 
