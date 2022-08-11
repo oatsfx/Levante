@@ -1,13 +1,14 @@
 ﻿using Levante.Configs;
-using Discord.Commands;
 using System;
 using System.Threading.Tasks;
+using Discord.Interactions;
+using Discord;
 
 namespace Levante.Util
 {
     public sealed class RequireBotStaff : PreconditionAttribute
     {
-        public override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
+        public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo command, IServiceProvider services)
         {
             if (BotConfig.BotStaffDiscordIDs.Contains(context.User.Id))
                 return Task.FromResult(PreconditionResult.FromSuccess());

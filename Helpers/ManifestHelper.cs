@@ -26,8 +26,32 @@ namespace Levante.Helpers
 
         private static Dictionary<string, int> SeasonIconURLs = new Dictionary<string, int>();
 
+        public static string DestinyManifestVersion { get; internal set; } = "[VERSION]";
+
+        public static bool IsNewManifest()
+        {
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/").Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                dynamic item = JsonConvert.DeserializeObject(content);
+                if (DestinyManifestVersion.Equals(item.Response.version))
+                    return false;
+                else
+                    return true;
+            }
+        }
+
         public static void LoadManifestDictionaries()
         {
+            Emblems.Clear();
+            EmblemsCollectible.Clear();
+            Weapons.Clear();
+            Seals.Clear();
+            GildableSeals.Clear();
+            SeasonIconURLs.Clear();
             LogHelper.ConsoleLog($"[MANIFEST] Begin emblem and weapon Dictionary population.");
             using (var client = new HttpClient())
             {
@@ -39,6 +63,7 @@ namespace Levante.Helpers
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
                 LogHelper.ConsoleLog($"[MANIFEST] Found v.{item.Response.version}. Pulling DestinyInventoryItemDefinition (EN)...");
+                DestinyManifestVersion = item.Response.version;
 
                 string invItemUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyInventoryItemDefinition"]}";
                 var response1 = client.GetAsync(invItemUrl).Result;
@@ -81,7 +106,6 @@ namespace Levante.Helpers
                                 {
                                     foreach (var weapon in dupeWeapons.ToList())
                                     {
-                                        Console.WriteLine($"Weapon Dupe: {weapon.Value}");
                                         if (!weapon.Value.Contains("[S"))
                                         {
                                             Weapons.Remove(weapon.Key);

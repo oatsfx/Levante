@@ -21,6 +21,7 @@ using System.IO;
 using System.Web;
 using System.Net;
 using APIHelper;
+using System.Collections.Immutable;
 
 namespace Levante
 {
@@ -102,6 +103,7 @@ namespace Levante
 
             _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
             _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 600000);
+            LogHelper.ConsoleLog($"[XP SESSIONS] Continued XP logging for {ActiveConfig.ActiveAFKUsers.Count} (+{ActiveConfig.PriorityActiveAFKUsers.Count}) Users.");
 
             if (DateTime.Now.Hour >= 10) // after daily reset
                 SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 0));
@@ -240,6 +242,12 @@ namespace Levante
                 foreach (ActiveConfig.ActiveAFKUser aau in combinedAFKUsers.ToList())
                 {
                     ActiveConfig.ActiveAFKUser tempAau = aau;
+
+                    // If the user has removed themselves from logging while we are refreshing.
+                    if (!(ActiveConfig.ActiveAFKUsers.Exists(x => x.DiscordChannelID == tempAau.DiscordChannelID) ||
+                        ActiveConfig.PriorityActiveAFKUsers.Exists(x => x.DiscordChannelID == tempAau.DiscordChannelID)))
+                        continue;
+
                     int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out int powerBonus, out string errorStatus);
 
                     LogHelper.ConsoleLog($"[XP SESSIONS] Checking {tempAau.UniqueBungieName}.");
@@ -410,7 +418,7 @@ namespace Levante
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
                     }
-                    await Task.Delay(2000); // we dont want to spam API if we have a ton of AFK subscriptions
+                    await Task.Delay(1500); // we dont want to spam API if we have a ton of AFK subscriptions
                 }
 
                 // Add in users that joined mid-refresh.
@@ -464,6 +472,10 @@ namespace Levante
                         errorReason = item.ErrorStatus;
                         try
                         {
+                            if (item.Response.profile.privacy != 1) continue;
+                            if (item.Response.characters.privacy != 1) continue;
+                            if (item.Response.characterProgressions.privacy != 1) continue;
+
                             for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
                             {
                                 string charId = $"{item.Response.profile.data.characterIds[i]}";
@@ -471,7 +483,7 @@ namespace Levante
                                 if (PowerLevel <= powerLevelComp)
                                     PowerLevel = powerLevelComp;
                             }
-
+                            
                             if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level == 100)
                             {
                                 int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].level;
@@ -496,7 +508,7 @@ namespace Levante
                         {
                             // Continue with the rest of the linked users. Don't want to stop the populating for one problematic account.
                             LogHelper.ConsoleLog($"[LEADERBOARDS] Error while pulling data for user: {_client.GetUserAsync(link.DiscordID).Result.Username}#{_client.GetUserAsync(link.DiscordID).Result.Discriminator} linked with {link.UniqueBungieName}. " +
-                                $"Reason: {errorReason}. Privacy: {item.Response.profile.privacy}");
+                                $"Reason: {errorReason}. Privacy: {item.Response.profile.privacy}/{item.Response.characters.privacy}/{item.Response.characterProgressions.privacy}");
                             await Task.Delay(250);
                             continue;
                         }
@@ -536,7 +548,6 @@ namespace Levante
             _client.MessageReceived += HandleMessageAsync;
             _client.InteractionCreated += HandleInteraction;
 
-            // This tells us how to build slash commands.
             _client.Ready += async () =>
             {
                 //397846250797662208
@@ -544,6 +555,17 @@ namespace Levante
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
                 await _interaction.RegisterCommandsGloballyAsync();
+
+                foreach (var m in _interaction.Modules)
+                {
+                    foreach (var a in m.Attributes)
+                    {
+                        if (a is not DevGuildOnlyAttribute support) continue;
+                        await _interaction.AddModulesToGuildAsync(_client.GetGuild(BotConfig.DevServerID), false, m);
+                        break;
+                    }
+                }
+
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
             };

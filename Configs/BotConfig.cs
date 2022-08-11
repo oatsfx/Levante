@@ -50,6 +50,9 @@ namespace Levante.Configs
         [JsonProperty("DurationToWaitForNextMessage")]
         public static int DurationToWaitForNextMessage { get; set; } = 20;
 
+        [JsonProperty("DevServerID")]
+        public static ulong DevServerID { get; set; } = 0;
+
         [JsonProperty("BotStaff")]
         public static List<ulong> BotStaffDiscordIDs { get; set; } = new List<ulong>();
 

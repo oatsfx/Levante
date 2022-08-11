@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -13,16 +15,26 @@ namespace Levante.Commands
 {
     public class Components : InteractionModuleBase<SocketInteractionContext>
     {
-        [ComponentInteraction("force")]
-        public async Task Force()
+        [ComponentInteraction("dailyForce")]
+        public async Task DailyForce()
         {
-            await RespondAsync("Forcing...");
-            CurrentRotations.WeeklyRotation();
-            await DataConfig.PostWeeklyResetUpdate(Context.Client);
+            await RespondAsync("Forcing daily...");
+            CurrentRotations.DailyRotation();
             await DataConfig.PostDailyResetUpdate(Context.Client);
             await CurrentRotations.CheckUsersDailyTracking(Context.Client);
+            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "Forced Daily Reset!"; });
+        }
+
+        [ComponentInteraction("weeklyForce")]
+        public async Task WeeklyForce()
+        {
+            await RespondAsync("Forcing weekly...");
+            CurrentRotations.WeeklyRotation();
+            await DataConfig.PostDailyResetUpdate(Context.Client);
+            await DataConfig.PostWeeklyResetUpdate(Context.Client);
+            await CurrentRotations.CheckUsersDailyTracking(Context.Client);
             await CurrentRotations.CheckUsersWeeklyTracking(Context.Client);
-            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "Forced!"; });
+            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "Forced Weekly Reset!"; });
         }
 
         [ComponentInteraction("deleteChannel")]
@@ -34,9 +46,23 @@ namespace Levante.Commands
             var user = Context.User;
             var guild = Context.Guild;
 
-            if (ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
+            if (!BotConfig.IsSupporter(Context.User.Id) && ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
-                await RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumLoggingUsers}). Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.", ephemeral: true);
+                var app = await Context.Client.GetApplicationInfoAsync();
+
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
+                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version:0.00}" },
+                };
+                embed.Title = $"Max users reached! ({ActiveConfig.MaximumLoggingUsers})";
+                embed.Description = $"Want to bypass this limit? Support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/)!\n" +
+                    $"Use the '/support' command for more info!";
+
+                embed.ThumbnailUrl = app.IconUrl;
+
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
@@ -221,9 +247,23 @@ namespace Levante.Commands
             var user = Context.User;
             var guild = Context.Guild;
 
-            if (ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
+            if (!BotConfig.IsSupporter(Context.User.Id) && ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
-                await RespondAsync($"Unfortunately, I am at the maximum number of users to watch ({ActiveConfig.MaximumLoggingUsers}). Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.", ephemeral: true);
+                var app = await Context.Client.GetApplicationInfoAsync();
+
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
+                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version:0.00}" },
+                };
+                embed.Title = $"Max users reached! ({ActiveConfig.MaximumLoggingUsers})";
+                embed.Description = $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +
+                    $"Use the '/support' command for more info!";
+
+                embed.ThumbnailUrl = app.IconUrl;
+
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
