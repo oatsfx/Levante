@@ -131,7 +131,7 @@ namespace Levante
         private async Task UpdateBotActivity(int SetRNG = -1)
         {
             int RNG = 0;
-            int RNGMax = 15;
+            int RNGMax = 20;
             if (SetRNG != -1 && SetRNG < RNGMax)
                 RNG = SetRNG;
             else

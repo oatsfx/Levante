@@ -137,7 +137,7 @@ namespace Levante.Commands
             }
             long EmblemHashCode = long.Parse(EmblemHash);
             if (!EmblemOffer.HasExistingOffer(EmblemHashCode))
-                await RespondAsync("Are you sure you entered the correct hash code? Run this command without any arguments and try again.");
+                await RespondAsync("Invalid search, please try again. Make sure to choose one of the autocomplete options!");
             else
                 await RespondAsync(embed: EmblemOffer.GetSpecificOffer(EmblemHashCode).BuildEmbed().Build());
         }
