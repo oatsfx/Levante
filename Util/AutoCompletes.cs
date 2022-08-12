@@ -16,13 +16,14 @@ namespace Levante.Util
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
         {
             await Task.Delay(0);
+            var random = new Random();
             // Create a collection with suggestions for autocomplete
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
                 for (int i = 0; i < 7; i++)
                 {
-                    var weapon = ManifestHelper.Weapons.ElementAt(new Random().Next(0, ManifestHelper.Emblems.Count));
+                    var weapon = ManifestHelper.Weapons.ElementAt(random.Next(0, ManifestHelper.Emblems.Count));
                     results.Add(new AutocompleteResult(weapon.Value, $"{weapon.Key}"));
                 }
             else
@@ -113,13 +114,14 @@ namespace Levante.Util
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
         {
             await Task.Delay(0);
+            var random = new Random();
             // Create a collection with suggestions for autocomplete
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
                 for (int i = 0; i < 7; i++)
                 {
-                    var emblem = ManifestHelper.Emblems.ElementAt(new Random().Next(0, ManifestHelper.Emblems.Count));
+                    var emblem = ManifestHelper.Emblems.ElementAt(random.Next(0, ManifestHelper.Emblems.Count));
                     results.Add(new AutocompleteResult(emblem.Value, $"{emblem.Key}"));
                 }
             else
