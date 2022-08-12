@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Discord;
 using Newtonsoft.Json;
 using System.Linq;
-using System.Collections.Generic;
 using Levante.Configs;
 using System.Net.Http;
 using Levante.Helpers;
@@ -17,11 +16,7 @@ using Levante.Rotations;
 using Levante.Util;
 using Fergun.Interactive;
 using Discord.Interactions;
-using System.IO;
-using System.Web;
-using System.Net;
 using APIHelper;
-using System.Collections.Immutable;
 
 namespace Levante
 {
@@ -257,21 +252,24 @@ namespace Levante
                         actualUser = ActiveConfig.PriorityActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
                     }
 
-                    if (_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel == null)
+                    IUser user;
+                    if (_client.GetUser(tempAau.DiscordID) == null)
                     {
-                        IUser user;
-                        if (_client.GetUser(tempAau.DiscordID) == null)
-                        {
-                            var _rClient = _client.Rest;
-                            user = await _rClient.GetUserAsync(tempAau.DiscordID);
-                        }
-                        else
-                        {
-                            user = _client.GetUser(tempAau.DiscordID);
-                        }
+                        var _rClient = _client.Rest;
+                        user = await _rClient.GetUserAsync(tempAau.DiscordID);
+                    }
+                    else
+                    {
+                        user = _client.GetUser(tempAau.DiscordID);
+                    }
 
-                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: LoggingChannelNotFound. Logging will be terminated for {tempAau.UniqueBungieName}.");
-                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
+                    var logChannel = _client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel;
+                    var dmChannel = user.CreateDMChannelAsync().Result;
+
+                    if (logChannel == null)
+                    {
+                        await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: LoggingChannelNotFound. Logging will be terminated for {tempAau.UniqueBungieName}.");
+                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
                         LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
 
@@ -286,21 +284,11 @@ namespace Levante
                         {
                             string uniqueName = tempAau.UniqueBungieName;
 
-                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
-                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
+                            await LogHelper.Log(logChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
+                            await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
-                            IUser user;
-                            if (_client.GetUser(tempAau.DiscordID) == null)
-                            {
-                                var _rClient = _client.Rest;
-                                user = await _rClient.GetUserAsync(tempAau.DiscordID);
-                            }
-                            else
-                            {
-                                user = _client.GetUser(tempAau.DiscordID);
-                            }
-                            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Logging will be terminated for {uniqueName}.");
-                            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
+                            await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Logging will be terminated for {uniqueName}.");
+                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
                             LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
                             //listOfRemovals.Add(tempAau);
@@ -311,7 +299,7 @@ namespace Levante
                         }
                         else
                         {
-                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refresh unsuccessful. Reason: {errorStatus}. Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
+                            await LogHelper.Log(logChannel, $"Refresh unsuccessful. Reason: {errorStatus}. Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
                             LogHelper.ConsoleLog($"[XP SESSIONS] Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
                             // Move onto the next user so everyone gets the message.
                             //newList.Add(tempAau);
@@ -324,7 +312,7 @@ namespace Levante
 
                     if (powerBonus > tempAau.LastPowerBonus)
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Power bonus increase detected: {tempAau.LastPowerBonus} -> {powerBonus} (Start: {tempAau.StartPowerBonus}).");
+                        await LogHelper.Log(logChannel, $"Power bonus increase detected: {tempAau.LastPowerBonus} -> {powerBonus} (Start: {tempAau.StartPowerBonus}).");
 
                         actualUser.LastPowerBonus = powerBonus;
                     }
@@ -375,21 +363,11 @@ namespace Levante
                         {
                             string uniqueName = tempAau.UniqueBungieName;
 
-                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player has been determined as inactive.");
-                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
+                            await LogHelper.Log(logChannel, $"Player has been determined as inactive.");
+                            await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
-                            IUser user;
-                            if (_client.GetUser(tempAau.DiscordID) == null)
-                            {
-                                var _rClient = _client.Rest;
-                                user = await _rClient.GetUserAsync(tempAau.DiscordID);
-                            }
-                            else
-                            {
-                                user = _client.GetUser(tempAau.DiscordID);
-                            }
-                            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
-                            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
+                            await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
+                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
                             LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
                             //listOfRemovals.Add(tempAau);
@@ -403,12 +381,12 @@ namespace Levante
                             actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
                             //tempAau.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
                             //newList.Add(tempAau);
-                            await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"No XP change detected, waiting for next refresh... Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
+                            await LogHelper.Log(logChannel, $"No XP change detected, waiting for next refresh... Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
                         }
                     }
                     else
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel} | Power Bonus: +{powerBonus}): {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP.");
+                        await LogHelper.Log(logChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel} | Power Bonus: +{powerBonus}): {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP.");
 
                         actualUser.LastLevel = updatedLevel;
                         actualUser.LastLevelProgress = updatedProgression;
@@ -418,7 +396,7 @@ namespace Levante
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
                     }
-                    await Task.Delay(1500); // we dont want to spam API if we have a ton of AFK subscriptions
+                    await Task.Delay(2000); // We dont want to spam APIs if we have a ton of XP Logging subscriptions.
                 }
 
                 // Add in users that joined mid-refresh.
