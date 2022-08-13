@@ -450,28 +450,6 @@ namespace Levante
                         errorReason = item.ErrorStatus;
                         try
                         {
-                            if (item.Response.profile.privacy != 1) continue;
-                            if (item.Response.characters.privacy != 1) continue;
-                            if (item.Response.characterProgressions.privacy != 1) continue;
-
-                            for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
-                            {
-                                string charId = $"{item.Response.profile.data.characterIds[i]}";
-                                int powerLevelComp = (int)item.Response.characters.data[charId].light;
-                                if (PowerLevel <= powerLevelComp)
-                                    PowerLevel = powerLevelComp;
-                            }
-                            
-                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level == 100)
-                            {
-                                int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].level;
-                                Level = 100 + extraLevel;
-                            }
-                            else
-                            {
-                                Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level;
-                            }
-
                             // System to update names in case players do change name.
                             string name = $"{item.Response.profile.data.userInfo.bungieGlobalDisplayName}";
                             string nameCode = int.Parse($"{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode}").ToString().PadLeft(4, '0');
@@ -480,6 +458,28 @@ namespace Levante
                                 LogHelper.ConsoleLog($"[LEADERBOARDS] Name change detected: {link.UniqueBungieName} -> {name}#{nameCode}");
                                 DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == link.DiscordID).UniqueBungieName = $"{name}#{nameCode}";
                                 nameChange = true;
+                            }
+
+                            if (item.Response.profile.privacy != 1) continue;
+                            if (item.Response.characters.privacy != 1) continue;
+
+                            for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                            {
+                                string charId = $"{item.Response.profile.data.characterIds[i]}";
+                                int powerLevelComp = (int)item.Response.characters.data[charId].light;
+                                if (PowerLevel <= powerLevelComp)
+                                    PowerLevel = powerLevelComp;
+                            }
+
+                            if (item.Response.characterProgressions.privacy != 1) continue;
+                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level == 100)
+                            {
+                                int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].level;
+                                Level = 100 + extraLevel;
+                            }
+                            else
+                            {
+                                Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level;
                             }
                         }
                         catch
