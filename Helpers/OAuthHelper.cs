@@ -24,7 +24,7 @@ namespace Levante.Helpers
             _listener.Prefixes.Add("http://*:8080/");
             _listener.Start();
             _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
-            LogHelper.ConsoleLog("[OAUTH] Listening.");
+            LogHelper.ConsoleLog("[OAUTH] Listening...");
         }
 
         public async void GetToken(IAsyncResult ar)
@@ -36,7 +36,7 @@ namespace Levante.Helpers
             }
 
             HttpListenerContext context = _listener.EndGetContext(ar);
-            LogHelper.ConsoleLog("[OAUTH] Connection Received.");
+            //LogHelper.ConsoleLog("[OAUTH] Connection Received.");
 
             var query = context.Request.QueryString;
 
@@ -67,7 +67,7 @@ namespace Levante.Helpers
             }
 
             _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
-            LogHelper.ConsoleLog("[OAUTH] Sending Request.");
+            //LogHelper.ConsoleLog("[OAUTH] Sending Request.");
 
             HttpListenerRequest request = context.Request;
             HttpListenerResponse response = context.Response;
@@ -78,12 +78,12 @@ namespace Levante.Helpers
             response.ContentLength64 = buffer.Length;
             if (result.Reason != ErrorReason.None)
             {
-                LogHelper.ConsoleLog($"[OAUTH] Redirecting to Link Fail with reason {result.Reason}.");
+                //LogHelper.ConsoleLog($"[OAUTH] Redirecting to Link Fail with reason {result.Reason}.");
                 response.Redirect($"https://www.levante.dev/link-fail/?error={Convert.ToInt32(result.Reason)}");
             }
             else
             {
-                LogHelper.ConsoleLog("[OAUTH] Redirecting to Link Success.");
+                //LogHelper.ConsoleLog("[OAUTH] Redirecting to Link Success.");
                 response.Redirect($"https://www.levante.dev/link-success/?discDisp={Uri.EscapeDataString(result.DiscordDisplayName)}");
             }
 
@@ -99,7 +99,7 @@ namespace Levante.Helpers
             }
             catch (Exception x)
             {
-                LogHelper.ConsoleLog("[OAUTH] Unable to send response write data.");
+                //LogHelper.ConsoleLog("[OAUTH] Unable to send response write data.");
             }
             LogHelper.ConsoleLog("[OAUTH] Flow completed. Listening...");
         }

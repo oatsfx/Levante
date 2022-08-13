@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Discord.WebSocket;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -28,6 +29,8 @@ namespace Levante.Configs
 
         [JsonProperty("LogChannel")]
         public static ulong LogChannel { get; set; } = 0;
+
+        public static SocketTextChannel LoggingChannel { get; set; } = null;
 
         [JsonProperty("BungieApiKey")]
         public static string BungieApiKey { get; set; } = "[YOUR API KEY HERE]";
