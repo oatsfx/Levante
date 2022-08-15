@@ -87,6 +87,8 @@ namespace Levante.Rotations
             AltarWeapon = AltarWeapon == AltarsOfSorrow.Rocket ? AltarsOfSorrow.Shotgun : AltarWeapon + 1;
             Wellspring = Wellspring == Wellspring.Zeerik ? Wellspring.Golmag : Wellspring + 1;
 
+            Ada1Rotation.GetAda1Inventory();
+
             DailyResetTimestamp = DateTime.Now;
 
             UpdateRotationsJSON();
@@ -142,6 +144,19 @@ namespace Levante.Rotations
             if (!Directory.Exists("Trackers"))
                 Directory.CreateDirectory("Trackers");
 
+            CurrentRotations cr;
+            if (File.Exists(FilePath))
+            {
+                string json = File.ReadAllText(FilePath);
+                cr = JsonConvert.DeserializeObject<CurrentRotations>(json);
+            }
+            else
+            {
+                cr = new CurrentRotations();
+                File.WriteAllText(FilePath, JsonConvert.SerializeObject(cr, Formatting.Indented));
+                Console.WriteLine($"No currentRotations.json file detected. Restart the program and change the values accordingly.");
+            }
+
             // Create/Check the tracking JSONs.
             AltarsOfSorrowRotation.CreateJSON();
             AscendantChallengeRotation.CreateJSON();
@@ -159,19 +174,6 @@ namespace Levante.Rotations
             WellspringRotation.CreateJSON();
 
             Ada1Rotation.CreateJSON();
-
-            CurrentRotations cr;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                cr = JsonConvert.DeserializeObject<CurrentRotations>(json);
-            }
-            else
-            {
-                cr = new CurrentRotations();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(cr, Formatting.Indented));
-                Console.WriteLine($"No currentRotations.json file detected. Restart the program and change the values accordingly.");
-            }
         }
 
         private static void UpdateRotationsJSON()

@@ -256,12 +256,8 @@ namespace Levante.Commands
             }
 
             [SlashCommand("nightfall", "Be notified when a Nightfall and/or Weapon is active.")]
-            public async Task Nightfall([Summary("nightfall", "Nightfall Strike to be alerted for."),
-                Choice("Proving Grounds", 0), Choice("The Insight Terminus", 1), Choice("Warden of Nothing", 2),
-                Choice("The Corrupted", 3), Choice("The Inverted Spire", 4), Choice("The Arms Dealer", 5)] int? ArgNF = null,
-                [Summary("weapon", "Nightfall Strike weapon drop to be alerted for."),
-                Choice("Silicon Neuroma", 0), Choice("D.F.A.", 1), Choice("Duty Bound", 2),
-                Choice("Horror's Least", 3), Choice("The Hothead", 4), Choice("PLUG ONE.1", 5)] int? ArgWeapon = null)
+            public async Task Nightfall([Summary("nightfall", "Nightfall Strike to be alerted for."), Autocomplete(typeof(NightfallAutocomplete))] int? ArgNF = null,
+                [Summary("weapon", "Nightfall Strike weapon drop to be alerted for."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int? ArgWeapon = null)
             {
                 if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var Weapon) != null)
                 {
@@ -682,12 +678,8 @@ namespace Levante.Commands
             }
 
             [SlashCommand("nightfall", "Find out when a Nightfall and/or Weapon is active next.")]
-            public async Task Nightfall([Summary("nightfall", "Nightfall Strike to predict its next appearance."),
-                Choice("Proving Grounds", 0), Choice("The Insight Terminus", 1), Choice("Warden of Nothing", 2),
-                Choice("The Corrupted", 3), Choice("The Inverted Spire", 4), Choice("The Arms Dealer", 5)] int? ArgNF = null,
-                [Summary("weapon", "Nightfall Strike Weapon drop."),
-                Choice("Silicon Neuroma", 0), Choice("D.F.A.", 1), Choice("Duty Bound", 2),
-                Choice("Horror's Least", 3), Choice("The Hothead", 4), Choice("PLUG ONE.1", 5)] int? ArgWeapon = null)
+            public async Task Nightfall([Summary("nightfall", "Nightfall Strike to predict its next appearance."), Autocomplete(typeof(NightfallAutocomplete))] int? ArgNF = null,
+                [Summary("weapon", "Nightfall Strike Weapon drop."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int? ArgWeapon = null)
             {
                 Nightfall? NF = (Nightfall?)ArgNF;
                 NightfallWeapon? Weapon = (NightfallWeapon?)ArgWeapon;

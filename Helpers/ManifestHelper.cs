@@ -147,7 +147,6 @@ namespace Levante.Helpers
                             if (!ada1ItemList.Contains(invItem.Value.Hash))
                                 continue;
                             Ada1ArmorMods.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
-                            Console.WriteLine($"{invItem.Value.DisplayProperties.Name}");
                         }
                     }
                 }

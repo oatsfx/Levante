@@ -68,6 +68,56 @@ namespace Levante.Util
         }
     }
 
+    public class NightfallAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < NightfallRotation.NightfallStrikeCount; i++)
+                {
+                    results.Add(new AutocompleteResult(NightfallRotation.GetStrikeNameString((Nightfall)i), (Nightfall)i));
+                }
+            else
+                for (int i = 0; i < NightfallRotation.NightfallStrikeCount; i++)
+                {
+                    if (NightfallRotation.GetStrikeNameString((Nightfall)i).Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(NightfallRotation.GetStrikeNameString((Nightfall)i), (Nightfall)i));
+                }
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class NightfallWeaponAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < NightfallRotation.NightfallWeaponCount; i++)
+                {
+                    results.Add(new AutocompleteResult(NightfallRotation.GetWeaponString((NightfallWeapon)i), (NightfallWeapon)i));
+                }
+            else
+                for (int i = 0; i < NightfallRotation.NightfallWeaponCount; i++)
+                {
+                    if (NightfallRotation.GetWeaponString((NightfallWeapon)i).Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(NightfallRotation.GetWeaponString((NightfallWeapon)i), (NightfallWeapon)i));
+                }
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
     public class LostSectorAutocomplete : AutocompleteHandler
     {
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)

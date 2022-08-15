@@ -207,7 +207,7 @@ namespace Levante
             await CurrentRotations.CheckUsersDailyTracking(_client);
 
             // Start the next timer.
-            SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 0));
+            SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 30));
             Console.ForegroundColor = ConsoleColor.Cyan;
         }
 

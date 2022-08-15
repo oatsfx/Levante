@@ -54,7 +54,7 @@ namespace Levante.Rotations
             return null;
         }
 
-        public static void CreateJSON()
+        public static void GetAda1Inventory()
         {
             var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotStaffDiscordIDs[0]);
             devLinked = DataConfig.RefreshCode(devLinked);
@@ -73,8 +73,6 @@ namespace Levante.Rotations
                 content = response.Content.ReadAsStringAsync().Result;
                 item = JsonConvert.DeserializeObject(content);
 
-                //first 100 levels: 4095505052 (S15); 2069932355 (S16); 26079066 (S17)
-                //anything after: 1531004716 (S15); 1787069365 (S16); 482365574 (S17)
                 var token = JToken.Parse($"{item.Response.sales.data}");
                 var jObject = token.Value<JObject>();
                 List<string> keys = jObject.Properties().Select(p => p.Name).ToList();
@@ -89,7 +87,10 @@ namespace Levante.Rotations
                     }
                 }
             }
+        }
 
+        public static void CreateJSON()
+        {
             Ada1Rotation obj;
             if (File.Exists(FilePath))
             {
