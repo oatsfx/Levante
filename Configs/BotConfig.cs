@@ -69,7 +69,7 @@ namespace Levante.Configs
         public static List<UniversalCode> UniversalCodes { get; set; } = new List<UniversalCode>();
 
         [JsonProperty("Hashes")]
-        public HashesList Hashes { get; set; } = new HashesList();
+        public static HashesList Hashes { get; set; } = new HashesList();
 
         public class EmbedColorGroup
         {
@@ -98,10 +98,10 @@ namespace Levante.Configs
         public class HashesList
         {
             [JsonProperty("First100Ranks")]
-            public string First100RanksHash { get; set; } = "[HASH]";
+            public string First100Ranks { get; set; } = "[HASH]";
 
             [JsonProperty("Above100Ranks")]
-            public string Above100RanksHash { get; set; } = "[HASH]";
+            public string Above100Ranks { get; set; } = "[HASH]";
         }
 
         public static bool IsSupporter(ulong DiscordID) => BotSupportersDiscordIDs.Contains(DiscordID);

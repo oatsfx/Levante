@@ -71,11 +71,10 @@ namespace Levante
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
 
-            CurrentRotations.CreateJSONs();
-
             API.FetchManifest();
             ManifestHelper.LoadManifestDictionaries();
 
+            CurrentRotations.CreateJSONs();
             EmblemOffer.LoadCurrentOffers();
 
             //Console.ForegroundColor = ConsoleColor.Magenta;
@@ -227,7 +226,7 @@ namespace Levante
 
             // Stop Timer
             _xpTimer.Change(Timeout.Infinite, Timeout.Infinite);
-            LogHelper.ConsoleLog($"[XP SESSIONS] Refreshing Bungie API...");
+            //LogHelper.ConsoleLog($"[XP SESSIONS] Refreshing Bungie API...");
             //List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
             //List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
             try // XP Logs
@@ -472,14 +471,14 @@ namespace Levante
                             }
 
                             if (item.Response.characterProgressions.privacy != 1) continue;
-                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level == 100)
+                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == 100)
                             {
-                                int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"482365574"].level;
+                                int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
                                 Level = 100 + extraLevel;
                             }
                             else
                             {
-                                Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"26079066"].level;
+                                Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
                             }
                         }
                         catch
@@ -529,7 +528,7 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //397846250797662208
-                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208, true);
+                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
                 await _interaction.RegisterCommandsGloballyAsync();
@@ -539,7 +538,7 @@ namespace Levante
                     foreach (var a in m.Attributes)
                     {
                         if (a is not DevGuildOnlyAttribute support) continue;
-                        await _interaction.AddModulesToGuildAsync(_client.GetGuild(BotConfig.DevServerID), false, m);
+                        await _interaction.AddModulesToGuildAsync(_client.GetGuild(BotConfig.DevServerID), true, m);
                         break;
                     }
                 }
@@ -574,7 +573,18 @@ namespace Levante
         {
             string trackerType = interaction.Data.Values.First();
 
-            if (trackerType.Equals("altars-of-sorrow"))
+            if (trackerType.Equals("ada-1"))
+            {
+                if (Ada1Rotation.GetUserTracking(interaction.User.Id, out var ModHash) == null)
+                {
+                    await interaction.RespondAsync($"No Ada-1 tracking enabled.", ephemeral: true);
+                    return;
+                }
+                Ada1Rotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Ada-1 tracking, you will not be notified when {ManifestHelper.Ada1ArmorMods[ModHash]} is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("altars-of-sorrow"))
             {
                 if (AltarsOfSorrowRotation.GetUserTracking(interaction.User.Id, out var Weapon) == null)
                 {

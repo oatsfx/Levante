@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Levante.Helpers;
+using System.Net.Http;
+using System.Reflection.Emit;
+using System.Linq;
 
 namespace Levante.Rotations
 {
@@ -73,6 +76,9 @@ namespace Levante.Rotations
         [JsonProperty("NightmareHunts")]
         public static NightmareHunt[] NightmareHunts = { NightmareHunt.Crota, NightmareHunt.Phogoth, NightmareHunt.Ghaul };
 
+        [JsonProperty("Ada1Mods")]
+        public static Dictionary<long, string> Ada1Mods = new Dictionary<long, string>();
+
         public static void DailyRotation()
         {
             LostSector = LostSector == LostSector.TheQuarry ? LostSector.K1CrewQuarters : LostSector + 1;
@@ -136,19 +142,6 @@ namespace Levante.Rotations
             if (!Directory.Exists("Trackers"))
                 Directory.CreateDirectory("Trackers");
 
-            CurrentRotations cr;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                cr = JsonConvert.DeserializeObject<CurrentRotations>(json);
-            }
-            else
-            {
-                cr = new CurrentRotations();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(cr, Formatting.Indented));
-                Console.WriteLine($"No currentRotations.json file detected. Restart the program and change the values accordingly.");
-            }
-
             // Create/Check the tracking JSONs.
             AltarsOfSorrowRotation.CreateJSON();
             AscendantChallengeRotation.CreateJSON();
@@ -164,6 +157,21 @@ namespace Levante.Rotations
             VaultOfGlassRotation.CreateJSON();
             VowOfTheDiscipleRotation.CreateJSON();
             WellspringRotation.CreateJSON();
+
+            Ada1Rotation.CreateJSON();
+
+            CurrentRotations cr;
+            if (File.Exists(FilePath))
+            {
+                string json = File.ReadAllText(FilePath);
+                cr = JsonConvert.DeserializeObject<CurrentRotations>(json);
+            }
+            else
+            {
+                cr = new CurrentRotations();
+                File.WriteAllText(FilePath, JsonConvert.SerializeObject(cr, Formatting.Indented));
+                Console.WriteLine($"No currentRotations.json file detected. Restart the program and change the values accordingly.");
+            }
         }
 
         private static void UpdateRotationsJSON()
@@ -187,6 +195,12 @@ namespace Levante.Rotations
             embed.Title = $"Daily Reset of {TimestampTag.FromDateTime(DailyResetTimestamp, TimestampTagStyles.ShortDate)}";
             embed.Description = "Below are some of the things that are available today.";
 
+            string adaMods = "";
+            foreach (var pair in Ada1Mods)
+            {
+                adaMods += $"{pair.Value}\n";
+            }
+
             embed.AddField(x =>
              {
                  x.Name = "Lost Sector";
@@ -194,22 +208,26 @@ namespace Levante.Rotations
                      $"{LostSectorRotation.GetArmorEmote(LostSectorArmorDrop)} {LostSectorArmorDrop}\n" +
                      $"{DestinyEmote.LostSector} {LostSectorRotation.GetLostSectorString(LostSector)}";
                  x.IsInline = true;
-             })
-            .AddField(x =>
+             }).AddField(x =>
             {
                 x.Name = $"The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)}";
                 x.Value =
                     $"{WellspringRotation.GetWeaponEmote(Wellspring)} {WellspringRotation.GetWeaponNameString(Wellspring)}\n" +
                     $"{DestinyEmote.WellspringActivity} {WellspringRotation.GetWellspringBossString(Wellspring)}";
                 x.IsInline = true;
-            })
-            .AddField(x =>
+            }).AddField(x =>
             {
                 x.Name = "Altars of Sorrow";
                 x.Value =
                     $"{AltarsOfSorrowRotation.GetWeaponEmote(AltarWeapon)} {AltarsOfSorrowRotation.GetWeaponNameString(AltarWeapon)}\n" +
                     $"{DestinyEmote.Luna} {AltarsOfSorrowRotation.GetAltarBossString(AltarWeapon)}";
-                x.IsInline = false;
+                x.IsInline = true;
+            }).AddField(x =>
+            {
+                x.Name = "Ada-1 Mod Sales";
+                x.Value =
+                    $"{adaMods}";
+                x.IsInline = true;
             });
 
             return embed;
@@ -316,6 +334,31 @@ namespace Levante.Rotations
 
         public static async Task CheckUsersDailyTracking(DiscordSocketClient Client)
         {
+            var ada1Temp = new List<Ada1Rotation.Ada1ModLink>();
+            foreach (var Link in Ada1Rotation.Ada1ModLinks)
+            {
+                try
+                {
+                    IUser user;
+                    if (Client.GetUser(Link.DiscordID) == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+                    else
+                        user = Client.GetUser(Link.DiscordID);
+
+                    if (Ada1Mods.ContainsKey(Link.ModHash))
+                        await user.SendMessageAsync($"> Hey {user.Mention}! Ada-1 is selling **{ManifestHelper.Ada1ArmorMods[Link.ModHash]}** today. I have removed your tracking, good luck!");
+                    else
+                        ada1Temp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
+            }
+            Ada1Rotation.Ada1ModLinks = ada1Temp;
+            Ada1Rotation.UpdateJSON();
+
             var altarTemp = new List<AltarsOfSorrowRotation.AltarsOfSorrowLink>();
             foreach (var Link in AltarsOfSorrowRotation.AltarsOfSorrowLinks)
             {

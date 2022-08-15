@@ -164,7 +164,7 @@ namespace Levante.Util
             }).AddField(x =>
             {
                 x.Name = "Emblem";
-                x.Value = $"{GetEmblem().GetName()}";
+                x.Value = $"[{GetEmblem().GetName()}]({GetEmblem().GetDECUrl()})";
                 x.IsInline = true;
             });
 

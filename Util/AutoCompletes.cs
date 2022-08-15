@@ -2,6 +2,7 @@
 using Discord.Interactions;
 using Levante.Configs;
 using Levante.Helpers;
+using Levante.Rotations;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace Levante.Util
             if (String.IsNullOrWhiteSpace(SearchQuery))
                 for (int i = 0; i < 7; i++)
                 {
-                    var weapon = ManifestHelper.Weapons.ElementAt(random.Next(0, ManifestHelper.Emblems.Count));
+                    var weapon = ManifestHelper.Weapons.ElementAt(random.Next(0, ManifestHelper.Weapons.Count));
                     results.Add(new AutocompleteResult(weapon.Value, $"{weapon.Key}"));
                 }
             else
@@ -33,6 +34,59 @@ namespace Levante.Util
 
 
             results = results.OrderBy(x => x.Name).ToList();
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class ArmorModsAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            var random = new Random();
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < 7; i++)
+                {
+                    var mod = ManifestHelper.Ada1ArmorMods.ElementAt(random.Next(0, ManifestHelper.Ada1ArmorMods.Count));
+                    results.Add(new AutocompleteResult(mod.Value, $"{mod.Key}"));
+                }
+            else
+                foreach (var Mod in ManifestHelper.Ada1ArmorMods)
+                    if (Mod.Value.ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(Mod.Value, $"{Mod.Key}"));
+
+
+            results = results.OrderBy(x => x.Name).ToList();
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class LostSectorAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < LostSectorRotation.LostSectorCount; i++)
+                {
+                    results.Add(new AutocompleteResult(LostSectorRotation.GetLostSectorString((LostSector)i), (LostSector)i));
+                }
+            else
+                for (int i = 0; i < LostSectorRotation.LostSectorCount; i++)
+                {
+                    if (LostSectorRotation.GetLostSectorString((LostSector)i).Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(LostSectorRotation.GetLostSectorString((LostSector)i), (LostSector)i));
+                }
 
             // max - 25 suggestions at a time (API limit)
             return AutocompletionResult.FromSuccess(results.Take(25));

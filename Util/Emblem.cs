@@ -77,13 +77,15 @@ namespace Levante.Util
             }
         }
 
+        public string GetDECUrl() => $"https://destinyemblemcollector.com/emblem?id={GetItemHash()}";
+
         public override EmbedBuilder GetEmbed()
         {
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Emblem Details: {GetName()}",
                 IconUrl = GetIconUrl(),
-                Url = $"https://destinyemblemcollector.com/emblem?id={GetItemHash()}",
+                Url = GetDECUrl(),
             };
             var foot = new EmbedFooterBuilder()
             {

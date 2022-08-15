@@ -21,6 +21,7 @@ namespace Levante.Helpers
         public static Dictionary<long, uint> EmblemsCollectible = new Dictionary<long, uint>();
         public static Dictionary<long, string> Weapons = new Dictionary<long, string>();
         public static Dictionary<long, string> Seals = new Dictionary<long, string>();
+        public static Dictionary<long, string> Ada1ArmorMods = new Dictionary<long, string>();
         // Seal Hash, Tracker Hash
         public static Dictionary<long, long> GildableSeals = new Dictionary<long, long>();
 
@@ -66,9 +67,16 @@ namespace Levante.Helpers
                 DestinyManifestVersion = item.Response.version;
 
                 string invItemUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyInventoryItemDefinition"]}";
-                var response1 = client.GetAsync(invItemUrl).Result;
-                var content1 = response1.Content.ReadAsStringAsync().Result;
-                var invItemList = JsonConvert.DeserializeObject<Dictionary<string, DestinyInventoryItemDefinition>>(content1);
+                response = client.GetAsync(invItemUrl).Result;
+                content = response.Content.ReadAsStringAsync().Result;
+                var invItemList = JsonConvert.DeserializeObject<Dictionary<string, DestinyInventoryItemDefinition>>(content);
+
+                string vendorListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyVendorDefinition"]}";
+                response = client.GetAsync(vendorListUrl).Result;
+                content = response.Content.ReadAsStringAsync().Result;
+                var vendorList = JsonConvert.DeserializeObject<Dictionary<string, DestinyVendorDefinition>>(content);
+
+                var ada1ItemList = vendorList["350061650"].ItemList.Select(x => x.ItemHash);
 
                 LogHelper.ConsoleLog($"[MANIFEST] Populating Weapon and Emblem Dictionaries...");
                 try
@@ -125,7 +133,22 @@ namespace Levante.Helpers
                             }
                                 
                         }
-                            
+                        
+                        if (invItem.Value.ItemType == DestinyItemType.Mod && invItem.Value.ItemSubType == 0)
+                        {
+                            //if (invItem.Value.DisplayProperties.Name == null || 
+                            //    invItem.Value.DisplayProperties.Name.Equals("Empty Mod Socket") || 
+                            //    invItem.Value.DisplayProperties.Name.Equals("Deprecated Armor Mod"))
+                            //    continue;
+
+                            //if (!invItem.Value.ItemCategoryHashes.Contains(4104513227))
+                            //    continue;
+
+                            if (!ada1ItemList.Contains(invItem.Value.Hash))
+                                continue;
+                            Ada1ArmorMods.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
+                            Console.WriteLine($"{invItem.Value.DisplayProperties.Name}");
+                        }
                     }
                 }
                 catch (Exception x)

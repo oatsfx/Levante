@@ -51,8 +51,28 @@ namespace Levante.Commands
         [Group("notify", "Be notified when a specific rotation is active.")]
         public class Notify : InteractionModuleBase<SocketInteractionContext>
         {
+            [SlashCommand("ada-1", "Be notified when an armor mod is for sale at Ada-1.")]
+            public async Task Ada1([Summary("mod-name", "Armor mod to be alerted for."), Autocomplete(typeof(ArmorModsAutocomplete))] string ArmorModHash)
+            {
+                if (!long.TryParse(ArmorModHash, out long ModHashArg))
+                {
+                    await RespondAsync($"Invalid search, please try again. Make sure to choose one of the autocomplete options!", ephemeral: true);
+                    return;
+                }
+
+                if (Ada1Rotation.GetUserTracking(Context.User.Id, out var ModHash) != null)
+                {
+                    await RespondAsync($"You already have tracking for Ada-1 Armor Mods. I am watching for {ManifestHelper.Ada1ArmorMods[ModHash]}.", ephemeral: true);
+                    return;
+                }
+
+                Ada1Rotation.AddUserTracking(Context.User.Id, ModHashArg);
+                await RespondAsync($"I will remind you when {ManifestHelper.Ada1ArmorMods[ModHashArg]} is being sold at Ada-1; I cannot provide a prediction for when it will return.", ephemeral: true);
+                return;
+            }
+
             [SlashCommand("altars-of-sorrow", "Be notified when an Altars of Sorrow weapon is active.")]
-            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon."),
+            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to be alerted for."),
                 Choice("Blasphemer (Shotgun)", 0), Choice("Apostate (Sniper)", 1), Choice("Heretic (Rocket)", 2)] int ArgWeapon)
             {
                 if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Weapon) != null)
@@ -68,7 +88,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("ascendant-challenge", "Be notified when an Ascendant Challenge is active.")]
-            public async Task AscendantChallenge([Summary("ascendant-challenge", "Ascendant Challenge name."),
+            public async Task AscendantChallenge([Summary("ascendant-challenge", "Ascendant Challenge to be alerted for."),
                 Choice("Agonarch Abyss (Bay of Drowned Wishes)", 0), Choice("Cimmerian Garrison (Chamber of Starlight)", 1),
                 Choice("Ouroborea (Aphelion's Rest)", 2), Choice("Forfeit Shrine (Gardens of Esila)", 3),
                 Choice("Shattered Ruins (Spine of Keres)", 4), Choice("Keep of Honed Edges (Harbinger's Seclude)", 5)] int ArgAscendantChallenge)
@@ -86,7 +106,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("curse-week", "Be notified when a Curse Week strength is active.")]
-            public async Task CurseWeek([Summary("strength", "Curse Week strength.")] CurseWeek ArgCurseWeek)
+            public async Task CurseWeek([Summary("strength", "Curse Week strength to be alerted for.")] CurseWeek ArgCurseWeek)
             {
                 if (CurseWeekRotation.GetUserTracking(Context.User.Id, out var CurseWeek) != null)
                 {
@@ -101,7 +121,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("deep-stone-crypt", "Be notified when a Deep Stone Crypt challenge is active.")]
-            public async Task DeepStoneCrypt([Summary("challenge", "Deep Stone Crypt challenge."),
+            public async Task DeepStoneCrypt([Summary("challenge", "Deep Stone Crypt challenge to be alerted for."),
                 Choice("Crypt Security (Red Rover)", 0), Choice("Atraks-1 (Copies of Copies)", 1),
                 Choice("The Descent (Of All Trades)", 2), Choice("Taniks (The Core Four)", 3)] int ArgEncounter)
             {
@@ -122,7 +142,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("empire-hunt", "Be notified when an Empire Hunt is active.")]
-            public async Task EmpireHunt([Summary("empire-hunt", "Empire Hunt boss."),
+            public async Task EmpireHunt([Summary("empire-hunt", "Empire Hunt boss to be alerted for."),
                 Choice("Phylaks, the Warrior", 0), Choice("Praksis, the Technocrat", 1), Choice("Kridis, the Dark Priestess", 2)] int ArgHunt)
             {
                 if (EmpireHuntRotation.GetUserTracking(Context.User.Id, out var Hunt) != null)
@@ -138,7 +158,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("featured-raid", "Be notified when a raid is featured.")]
-            public async Task FeaturedRaid([Summary("raid", "Legacy raid activity."),
+            public async Task FeaturedRaid([Summary("raid", "Legacy raid activity to be alerted for."),
                 Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3)] int ArgRaid)
             {
                 if (FeaturedRaidRotation.GetUserTracking(Context.User.Id, out var Raid) != null)
@@ -154,7 +174,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("garden-of-salvation", "Be notified when a Garden of Salvation challenge is active.")]
-            public async Task GardenOfSalvation([Summary("challenge", "Garden of Salvation challenge."),
+            public async Task GardenOfSalvation([Summary("challenge", "Garden of Salvation challenge to be alerted for."),
                 Choice("Evade the Consecrated Mind (Staying Alive)", 0), Choice("Summon the Consecrated Mind (A Link to the Chain)", 1),
                 Choice("Consecrated Mind (To the Top)", 2), Choice("Sanctified Mind (Zero to One Hundred)", 3)] int ArgEncounter)
             {
@@ -175,7 +195,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("last-wish", "Be notified when a Last Wish challenge is active.")]
-            public async Task LastWish([Summary("challenge", "Last Wish challenge."),
+            public async Task LastWish([Summary("challenge", "Last Wish challenge to be alerted for."),
                 Choice("Kalli (Summoning Ritual)", 0), Choice("Shuro Chi (Which Witch)", 1), Choice("Morgeth (Forever Fight)", 2),
                 Choice("Vault (Keep Out)", 3), Choice("Riven (Strength of Memory)", 4)] int ArgEncounter)
             {
@@ -196,12 +216,8 @@ namespace Levante.Commands
             }
 
             [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
-            public async Task LostSector([Summary("lost-sector", "Lost Sector name."),
-                Choice("K1 Crew Quarters", 0), Choice("K1 Logistics", 1), Choice("K1 Revelation", 2),
-                Choice("K1 Communion", 3), Choice("The Conflux", 4), Choice("Metamorphosis", 5),
-                Choice("Sepulcher", 6), Choice("Extraction", 7), Choice("Excavation Site XII", 8),
-                Choice("Skydock IV", 9), Choice("The Quarry", 10)] int? ArgLS = null,
-                [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
+            public async Task LostSector([Summary("lost-sector", "Lost Sector to be alerted for."), Autocomplete(typeof(LostSectorAutocomplete))] int? ArgLS = null,
+                [Summary("armor-drop", "Lost Sector Exotic armor drop to be alerted for.")] ExoticArmorType? ArgEAT = null)
             {
                 //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
                 //return;
@@ -240,10 +256,10 @@ namespace Levante.Commands
             }
 
             [SlashCommand("nightfall", "Be notified when a Nightfall and/or Weapon is active.")]
-            public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
+            public async Task Nightfall([Summary("nightfall", "Nightfall Strike to be alerted for."),
                 Choice("Proving Grounds", 0), Choice("The Insight Terminus", 1), Choice("Warden of Nothing", 2),
                 Choice("The Corrupted", 3), Choice("The Inverted Spire", 4), Choice("The Arms Dealer", 5)] int? ArgNF = null,
-                [Summary("weapon", "Nightfall Strike Weapon drop."),
+                [Summary("weapon", "Nightfall Strike weapon drop to be alerted for."),
                 Choice("Silicon Neuroma", 0), Choice("D.F.A.", 1), Choice("Duty Bound", 2),
                 Choice("Horror's Least", 3), Choice("The Hothead", 4), Choice("PLUG ONE.1", 5)] int? ArgWeapon = null)
             {
@@ -287,7 +303,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("nightmare-hunt", "Be notified when an Nightmare Hunt is active.")]
-            public async Task NightmareHunt([Summary("nightmare-hunt", "Nightmare Hunt boss."),
+            public async Task NightmareHunt([Summary("nightmare-hunt", "Nightmare Hunt boss to be alerted for."),
                 Choice("Despair (Crota, Son of Oryx)", 0), Choice("Fear (Phogoth, the Untamed)", 1), Choice("Rage (Dominus Ghaul)", 2),
                 Choice("Isolation (Taniks, the Scarred)", 3), Choice("Servitude (Zydron, Gate Lord)", 4),
                 Choice("Pride (Skolas, Kell of Kells)", 5), Choice("Anguish (Omnigul, Will of Crota)", 5),
@@ -306,7 +322,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("vault-of-glass", "Be notified when a Vault of Glass challenge is active.")]
-            public async Task VaultOfGlass([Summary("challenge", "Vault of Glass challenge."),
+            public async Task VaultOfGlass([Summary("challenge", "Vault of Glass challenge to be alerted for."),
                 Choice("Confluxes (Wait for It...)", 0), Choice("Oracles (The Only Oracle for You)", 1), Choice("Templar (Out of Its Way)", 2),
                 Choice("Gatekeepers (Strangers in Time)", 3), Choice("Atheon (Ensemble's Refrain)", 4)] int ArgEncounter)
             {
@@ -327,7 +343,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("vow-of-the-disciple", "Be notified when a Vow of the Disciple challenge is active.")]
-            public async Task VowOfTheDisciple([Summary("challenge", "Vow of the Disciple challenge."),
+            public async Task VowOfTheDisciple([Summary("challenge", "Vow of the Disciple challenge to be alerted for."),
                 Choice("Acquisition (Swift Destruction)", 0), Choice("Caretaker (Base Information)", 1),
                 Choice("Exhibition (Defenses Down)", 2), Choice("Rhulk (Looping Catalyst)", 3)] int ArgEncounter)
             {
@@ -344,7 +360,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("wellspring", "Be notified when a Wellspring boss/weapon is active.")]
-            public async Task Wellspring([Summary("wellspring", "Wellspring weapon drop."),
+            public async Task Wellspring([Summary("wellspring", "Wellspring weapon drop to be alerted for."),
                 Choice("Come to Pass (Auto)", 0), Choice("Tarnation (Grenade Launcher)", 1), Choice("Fel Taradiddle (Bow)", 2), Choice("Father's Sins (Sniper)", 3)] int ArgWellspring)
             {
                 if (WellspringRotation.GetUserTracking(Context.User.Id, out var Wellspring) != null)
@@ -371,6 +387,9 @@ namespace Levante.Commands
                     .WithCustomId("notifyRemovalMenu")
                     .WithMinValues(1)
                     .WithMaxValues(1);
+
+                if (Ada1Rotation.GetUserTracking(Context.User.Id, out var ModHash) != null)
+                    menuBuilder.AddOption("Ada-1", "ada-1", $"{ManifestHelper.Ada1ArmorMods[ModHash]}");
 
                 if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Weapon) != null)
                     menuBuilder.AddOption("Altars of Sorrow", "altars-of-sorrow", $"{AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon})");
@@ -447,7 +466,7 @@ namespace Levante.Commands
         public class Next : InteractionModuleBase<SocketInteractionContext>
         {
             [SlashCommand("altars-of-sorrow", "Find out when an Altars of Sorrow weapon is active next.")]
-            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon."),
+            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to predict its next appearance."),
                 Choice("Blasphemer (Shotgun)", 0), Choice("Apostate (Sniper)", 1), Choice("Heretic (Rocket)", 2)] int ArgWeapon)
             {
                 AltarsOfSorrow Weapon = (AltarsOfSorrow)ArgWeapon;
@@ -467,7 +486,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("ascendant-challenge", "Find out when an Ascendant Challenge is active next.")]
-            public async Task AscendantChallenge([Summary("ascendant-challenge", "Ascendant Challenge name."),
+            public async Task AscendantChallenge([Summary("ascendant-challenge", "Ascendant Challenge to predict its next appearance."),
                 Choice("Agonarch Abyss (Bay of Drowned Wishes)", 0), Choice("Cimmerian Garrison (Chamber of Starlight)", 1),
                 Choice("Ouroborea (Aphelion's Rest)", 2), Choice("Forfeit Shrine (Gardens of Esila)", 3),
                 Choice("Shattered Ruins (Spine of Keres)", 4), Choice("Keep of Honed Edges (Harbinger's Seclude)", 5)] int ArgAscendantChallenge)
@@ -508,7 +527,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("deep-stone-crypt", "Find out when a Deep Stone Crypt challenge is active next.")]
-            public async Task DeepStoneCrypt([Summary("challenge", "Deep Stone Crypt challenge."),
+            public async Task DeepStoneCrypt([Summary("challenge", "Deep Stone Crypt challenge to predict its next appearance."),
                 Choice("Crypt Security (Red Rover)", 0), Choice("Atraks-1 (Copies of Copies)", 1),
                 Choice("The Descent (Of All Trades)", 2), Choice("Taniks (The Core Four)", 3)] int ArgEncounter)
             {
@@ -535,7 +554,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("empire-hunt", "Find out when an Empire Hunt is active next.")]
-            public async Task EmpireHunt([Summary("empire-hunt", "Empire Hunt boss."),
+            public async Task EmpireHunt([Summary("empire-hunt", "Empire Hunt boss to predict its next appearance."),
                 Choice("Phylaks, the Warrior", 0), Choice("Praksis, the Technocrat", 1), Choice("Kridis, the Dark Priestess", 2)] int ArgHunt)
             {
                 EmpireHunt Hunt = (EmpireHunt)ArgHunt;
@@ -555,7 +574,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("featured-raid", "Find out when a raid is being featured next.")]
-            public async Task FeaturedRaid([Summary("raid", "Legacy raid activity."),
+            public async Task FeaturedRaid([Summary("raid", "Legacy raid activity to predict its next appearance."),
                 Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3)] int ArgRaid)
             {
                 Raid Raid = (Raid)ArgRaid;
@@ -575,7 +594,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("garden-of-salvation", "Find out when a Garden of Salvation challenge is active next.")]
-            public async Task GardenOfSalvation([Summary("challenge", "Garden of Salvation challenge."),
+            public async Task GardenOfSalvation([Summary("challenge", "Garden of Salvation challenge to predict its next appearance."),
                 Choice("Evade the Consecrated Mind (Staying Alive)", 0), Choice("Summon the Consecrated Mind (A Link to the Chain)", 1),
                 Choice("Consecrated Mind (To the Top)", 2), Choice("Sanctified Mind (Zero to One Hundred)", 3)] int ArgEncounter)
             {
@@ -602,7 +621,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("last-wish", "Find out when a Last Wish challenge is active next.")]
-            public async Task LastWish([Summary("challenge", "Last Wish challenge."),
+            public async Task LastWish([Summary("challenge", "Last Wish challenge to predict its next appearance."),
                 Choice("Kalli (Summoning Ritual)", 0), Choice("Shuro Chi (Which Witch)", 1), Choice("Morgeth (Forever Fight)", 2),
                 Choice("Vault (Keep Out)", 3), Choice("Riven (Strength of Memory)", 4)] int ArgEncounter)
             {
@@ -629,12 +648,8 @@ namespace Levante.Commands
             }
 
             [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
-            public async Task LostSector([Summary("lost-sector", "Lost Sector name."),
-                Choice("K1 Crew Quarters", 0), Choice("K1 Logistics", 1), Choice("K1 Revelation", 2),
-                Choice("K1 Communion", 3), Choice("The Conflux", 4), Choice("Metamorphosis", 5),
-                Choice("Sepulcher", 6), Choice("Extraction", 7), Choice("Excavation Site XII", 8),
-                Choice("Skydock IV", 9), Choice("The Quarry", 10)] int? ArgLS = null,
-                [Summary("armor-drop", "Lost Sector Exotic armor drop.")] ExoticArmorType? ArgEAT = null)
+            public async Task LostSector([Summary("lost-sector", "Lost Sector to predict its next appearance."), Autocomplete(typeof(LostSectorAutocomplete))] int? ArgLS = null,
+                [Summary("armor-drop", "Lost Sector Exotic armor drop to predict its next appearance.")] ExoticArmorType? ArgEAT = null)
             {
                 //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
                 //return;
@@ -667,7 +682,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("nightfall", "Find out when a Nightfall and/or Weapon is active next.")]
-            public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
+            public async Task Nightfall([Summary("nightfall", "Nightfall Strike to predict its next appearance."),
                 Choice("Proving Grounds", 0), Choice("The Insight Terminus", 1), Choice("Warden of Nothing", 2),
                 Choice("The Corrupted", 3), Choice("The Inverted Spire", 4), Choice("The Arms Dealer", 5)] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike Weapon drop."),
@@ -714,7 +729,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("nightmare-hunt", "Find out when an Nightmare Hunt is active next.")]
-            public async Task NightmareHunt([Summary("nightmare-hunt", "Nightmare Hunt boss."),
+            public async Task NightmareHunt([Summary("nightmare-hunt", "Nightmare Hunt boss to predict its next appearance."),
                 Choice("Despair (Crota, Son of Oryx)", 0), Choice("Fear (Phogoth, the Untamed)", 1), Choice("Rage (Dominus Ghaul)", 2),
                 Choice("Isolation (Taniks, the Scarred)", 3), Choice("Servitude (Zydron, Gate Lord)", 4),
                 Choice("Pride (Skolas, Kell of Kells)", 5), Choice("Anguish (Omnigul, Will of Crota)", 5),
@@ -737,7 +752,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("vault-of-glass", "Find out when a Vault of Glass challenge is active next.")]
-            public async Task VaultOfGlass([Summary("challenge", "Vault of Glass challenge."),
+            public async Task VaultOfGlass([Summary("challenge", "Vault of Glass challenge to predict its next appearance."),
                 Choice("Confluxes (Wait for It...)", 0), Choice("Oracles (The Only Oracle for You)", 1), Choice("Templar (Out of Its Way)", 2),
                 Choice("Gatekeepers (Strangers in Time)", 3), Choice("Atheon (Ensemble's Refrain)", 4)] int ArgEncounter)
             {
@@ -765,7 +780,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("vow-of-the-disciple", "Be notified when a Vow of the Disciple challenge is active.")]
-            public async Task VowOfTheDisciple([Summary("challenge", "Vow of the Disciple challenge."),
+            public async Task VowOfTheDisciple([Summary("challenge", "Vow of the Disciple challenge to predict its next appearance."),
                 Choice("Acquisition (Swift Destruction)", 0), Choice("Caretaker (Base Information)", 1),
                 Choice("Exhibition (Defenses Down)", 2), Choice("Rhulk (Looping Catalyst)", 3)] int ArgEncounter)
             {
@@ -786,7 +801,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("wellspring", "Find out when a Wellspring boss/weapon is active next.")]
-            public async Task Wellspring([Summary("wellspring", "Wellspring weapon drop."),
+            public async Task Wellspring([Summary("wellspring", "Wellspring weapon drop to predict its next appearance."),
                 Choice("Come to Pass (Auto)", 0), Choice("Tarnation (Grenade Launcher)", 1), Choice("Fel Taradiddle (Bow)", 2), Choice("Father's Sins (Sniper)", 3)] int ArgWellspring)
             {
                 Wellspring Wellspring = (Wellspring)ArgWellspring;
