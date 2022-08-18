@@ -90,6 +90,7 @@ namespace Levante.Util
         public static readonly string ThroneWorld = "<:ThroneWorld:947293281983799337>";
 
         // Misc
+        public static readonly string Ada1 = "<:Ada1:1009837298814288003>";
         public static readonly string AscendantChallengeBounty = "<:ACBounty:934478080737693787>";
         public static readonly string Gilded = "<:Gilded:994067890024235029>";
         public static readonly string GildedPurple = "<:GildedPurple:996604027867500574>";

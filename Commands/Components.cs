@@ -80,13 +80,7 @@ namespace Levante.Commands
             }
 
             await RespondAsync($"Getting things ready...", ephemeral: true);
-
             var dil = DataConfig.GetLinkedUser(user.Id);
-            if (dil == null)
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Unable to pull user data. I may have lost access to your information, likely, you'll have to link again."; });
-                return;
-            }
 
             string memId = dil.BungieMembershipID;
             string memType = dil.BungieMembershipType;
@@ -282,13 +276,7 @@ namespace Levante.Commands
             }
 
             await RespondAsync($"Getting things ready...", ephemeral: true);
-
             var dil = DataConfig.GetLinkedUser(user.Id);
-            if (dil == null)
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Unable to pull user data. I may have lost access to your information, likely, you'll have to link again."; });
-                return;
-            }
 
             string memId = dil.BungieMembershipID;
             string memType = dil.BungieMembershipType;

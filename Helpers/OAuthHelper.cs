@@ -161,11 +161,9 @@ namespace Levante.Helpers
                     return result;
                 }
 
-                IUser user;
-                if (LevanteCordInstance.Client.GetUser(DiscordID) == null)
+                IUser user = LevanteCordInstance.Client.GetUser(DiscordID);
+                if (user == null)
                     user = LevanteCordInstance.Client.Rest.GetUserAsync(DiscordID).Result;
-                else
-                    user = LevanteCordInstance.Client.GetUser(DiscordID);
 
                 if (user == null)
                 {

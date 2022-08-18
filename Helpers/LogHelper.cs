@@ -67,9 +67,7 @@ namespace Levante.Helpers
                 $"{String.Format("{0:00}", DateTime.Now.Second)}] {Message}");
 
             if (LevanteCordInstance.Client != null && BotConfig.LoggingChannel != null)
-            {
                 BotConfig.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}");
-            }
         }
             
 

@@ -226,7 +226,7 @@ namespace Levante.Rotations
                 x.IsInline = true;
             }).AddField(x =>
             {
-                x.Name = "Ada-1 Mod Sales";
+                x.Name = $"{DestinyEmote.Ada1}Ada-1 Mod Sales";
                 x.Value =
                     $"{adaMods}";
                 x.IsInline = true;
@@ -341,11 +341,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (Ada1Mods.ContainsKey(Link.ModHash))
                         await user.SendMessageAsync($"> Hey {user.Mention}! Ada-1 is selling **{ManifestHelper.Ada1ArmorMods[Link.ModHash]}** today. I have removed your tracking, good luck!");
@@ -366,11 +364,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (AltarWeapon == Link.WeaponDrop)
                         await user.SendMessageAsync($"> Hey {user.Mention}! Altars of Sorrow is dropping **{AltarsOfSorrowRotation.GetWeaponNameString(AltarWeapon)}** (**{AltarWeapon}**) today. I have removed your tracking, good luck!");
@@ -389,11 +385,9 @@ namespace Levante.Rotations
             var lsTemp = new List<LostSectorRotation.LostSectorLink>();
             foreach (var Link in LostSectorRotation.LostSectorLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
+                IUser user = Client.GetUser(Link.DiscordID);
+                if (user == null)
                     user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
 
                 if (LostSector == Link.LostSector && Link.ArmorDrop == null)
                     await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.GetLostSectorString(LostSector)}** (Requested) and is dropping **{LostSectorArmorDrop}** today. I have removed your tracking, good luck!");
@@ -412,11 +406,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (Wellspring == Link.WellspringBoss)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}) is dropping **{WellspringRotation.GetWeaponNameString(Wellspring)}** (**{WellspringRotation.GetWeaponTypeString(Wellspring)}**) today. I have removed your tracking, good luck!");
@@ -440,11 +432,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (AscendantChallenge == Link.AscendantChallenge)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The Ascendant Challenge is **{AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)}** (**{AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}**) this week. I have removed your tracking, good luck!");
@@ -465,11 +455,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (CurseWeek == Link.Strength)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The Curse Strength is **{CurseWeek}** this week. I have removed your tracking, good luck!");
@@ -490,11 +478,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (FeaturedRaid == Raid.DeepStoneCrypt)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Deep Stone Crypt this week, meaning that all challenges including, **{DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)}** (**{DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)}**), are available this week. I have removed your tracking, good luck!");
@@ -517,11 +503,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (EmpireHunt == Link.EmpireHunt)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The Empire Hunt is **{EmpireHuntRotation.GetHuntBossString(EmpireHunt)}** this week. I have removed your tracking, good luck!");
@@ -542,11 +526,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (FeaturedRaid == Link.FeaturedRaid)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is **{FeaturedRaidRotation.GetRaidString(FeaturedRaid)}** this week. I have removed your tracking, good luck!");
@@ -567,11 +549,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (FeaturedRaid == Raid.GardenOfSalvation)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Garden of Salvation this week, meaning that all challenges including, **{GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)}** (**{GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)}**), are available this week. I have removed your tracking, good luck!");
@@ -594,11 +574,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (FeaturedRaid == Raid.LastWish)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Last Wish this week, meaning that all challenges including, **{LastWishRotation.GetChallengeString(LWChallengeEncounter)}** (**{LastWishRotation.GetEncounterString(LWChallengeEncounter)}**), are available this week. I have removed your tracking, good luck!");
@@ -619,20 +597,26 @@ namespace Levante.Rotations
             var nfTemp = new List<NightfallRotation.NightfallLink>();
             foreach (var Link in NightfallRotation.NightfallLinks)
             {
-                IUser user;
-                if (Client.GetUser(Link.DiscordID) == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                else
-                    user = Client.GetUser(Link.DiscordID);
+                try
+                {
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
 
-                if (Link.Nightfall == Nightfall || Link.WeaponDrop == null)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** (Requested) and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** today. I have removed your tracking, good luck!");
-                else if (Link.Nightfall == null || Link.WeaponDrop == NightfallWeaponDrop)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** (Requested) today. I have removed your tracking, good luck!");
-                else if (Link.Nightfall == Nightfall || Link.WeaponDrop == NightfallWeaponDrop)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** today. I have removed your tracking, good luck!");
-                else
-                    nfTemp.Add(Link);
+                    if (Link.Nightfall == Nightfall || Link.WeaponDrop == null)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** (Requested) and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** today. I have removed your tracking, good luck!");
+                    else if (Link.Nightfall == null || Link.WeaponDrop == NightfallWeaponDrop)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** (Requested) today. I have removed your tracking, good luck!");
+                    else if (Link.Nightfall == Nightfall || Link.WeaponDrop == NightfallWeaponDrop)
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** today. I have removed your tracking, good luck!");
+                    else
+                        nfTemp.Add(Link);
+                }
+                catch
+                {
+                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    continue;
+                }
             }
             NightfallRotation.NightfallLinks = nfTemp;
             NightfallRotation.UpdateJSON();
@@ -642,11 +626,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (NightmareHunts[0] == Link.NightmareHunt)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[0])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[0])}**) this week. I have removed your tracking, good luck!");
@@ -671,11 +653,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (FeaturedRaid == Raid.VaultOfGlass)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Vault of Glass this week, meaning that all challenges including, **{VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)}** (**{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)}**), are available this week. I have removed your tracking, good luck!");
@@ -698,11 +678,9 @@ namespace Levante.Rotations
             {
                 try
                 {
-                    IUser user;
-                    if (Client.GetUser(Link.DiscordID) == null)
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-                    else
-                        user = Client.GetUser(Link.DiscordID);
 
                     if (VowChallengeEncounter == Link.Encounter)
                         await user.SendMessageAsync($"> Hey {user.Mention}! The Vow of the Disciple challenge is **{VowOfTheDiscipleRotation.GetChallengeString(VowChallengeEncounter)}** (**{VowOfTheDiscipleRotation.GetEncounterString(VowChallengeEncounter)}**) this week. I have removed your tracking, good luck!");

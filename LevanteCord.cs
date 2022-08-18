@@ -105,13 +105,13 @@ namespace Levante
             else
                 SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 0, 0));
 
-            var oauthManager = new OAuthHelper();
+            //var oauthManager = new OAuthHelper();
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
             client.Log += log =>
             {
-                LogHelper.ConsoleLog($"[DISCORD] {log.Message}.");
+                Console.WriteLine(log);
                 return Task.CompletedTask;
             };
             
@@ -252,15 +252,11 @@ namespace Levante
                         actualUser = ActiveConfig.PriorityActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
                     }
 
-                    IUser user;
-                    if (_client.GetUser(tempAau.DiscordID) == null)
+                    IUser user = _client.GetUser(tempAau.DiscordID);
+                    if (user == null)
                     {
                         var _rClient = _client.Rest;
                         user = await _rClient.GetUserAsync(tempAau.DiscordID);
-                    }
-                    else
-                    {
-                        user = _client.GetUser(tempAau.DiscordID);
                     }
 
                     var logChannel = _client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel;
@@ -287,7 +283,7 @@ namespace Levante
                             await LogHelper.Log(logChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
                             await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
-                            await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Logging will be terminated for {uniqueName}.");
+                            //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Logging will be terminated for {uniqueName}.");
                             await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
                             LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
@@ -299,13 +295,11 @@ namespace Levante
                         }
                         else
                         {
+                            actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
                             await LogHelper.Log(logChannel, $"Refresh unsuccessful. Reason: {errorStatus}. Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
                             LogHelper.ConsoleLog($"[XP SESSIONS] Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
                             // Move onto the next user so everyone gets the message.
                             //newList.Add(tempAau);
-
-                            // Add a warning.
-                            actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
                         }
                         continue;
                     }
@@ -346,7 +340,7 @@ namespace Levante
                     else */
                     if (updatedLevel > tempAau.LastLevel)
                     {
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Level up detected: {tempAau.LastLevel} -> {updatedLevel}. " +
+                        await LogHelper.Log(logChannel, $"Level up detected: {tempAau.LastLevel} -> {updatedLevel}. " +
                             $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {updatedLevel} ({String.Format("{0:n0}", updatedProgression)}/100,000 XP).");
 
                         actualUser.LastLevel = updatedLevel;
@@ -363,10 +357,9 @@ namespace Levante
                         {
                             string uniqueName = tempAau.UniqueBungieName;
 
-                            await LogHelper.Log(logChannel, $"Player has been determined as inactive.");
-                            await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
+                            await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
-                            await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
+                            //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
                             await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
                             LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
@@ -396,7 +389,7 @@ namespace Levante
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
                     }
-                    await Task.Delay(2000); // We dont want to spam APIs if we have a ton of XP Logging subscriptions.
+                    await Task.Delay(2500); // We dont want to spam APIs if we have a ton of XP Logging subscriptions.
                 }
 
                 // Add in users that joined mid-refresh.
@@ -523,26 +516,26 @@ namespace Levante
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
             await _interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
-            _client.MessageReceived += HandleMessageAsync;
+            //_client.MessageReceived += HandleMessageAsync;
             _client.InteractionCreated += HandleInteraction;
 
             _client.Ready += async () =>
             {
                 //397846250797662208
-                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208);
+                await _interaction.RegisterCommandsToGuildAsync(397846250797662208);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                await _interaction.RegisterCommandsGloballyAsync();
+                //await _interaction.RegisterCommandsGloballyAsync();
 
-                foreach (var m in _interaction.Modules)
-                {
-                    foreach (var a in m.Attributes)
-                    {
-                        if (a is not DevGuildOnlyAttribute support) continue;
-                        await _interaction.AddModulesToGuildAsync(_client.GetGuild(BotConfig.DevServerID), true, m);
-                        break;
-                    }
-                }
+                //foreach (var m in _interaction.Modules)
+                //{
+                //    foreach (var a in m.Attributes)
+                //    {
+                //        if (a is not DevGuildOnlyAttribute support) continue;
+                //        await _interaction.AddModulesToGuildAsync(_client.GetGuild(BotConfig.DevServerID), true, m);
+                //        break;
+                //    }
+                //}
                 BotConfig.LoggingChannel = _client.GetChannel(BotConfig.LogChannel) as SocketTextChannel;
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
@@ -744,32 +737,32 @@ namespace Levante
             }
         }
 
-        private async Task HandleMessageAsync(SocketMessage arg)
-        {
-            if (arg.Author.IsWebhook || arg.Author.IsBot) return; // Return if message is from a Webhook or Bot user
-            if (arg.ToString().Length < 0) return; // Return of the message has no text
-            if (arg.Author.Id == _client.CurrentUser.Id) return; // Return of the message is from itself
+        //private async Task HandleMessageAsync(SocketMessage arg)
+        //{
+        //    if (arg.Author.IsWebhook || arg.Author.IsBot) return; // Return if message is from a Webhook or Bot user
+        //    if (arg.ToString().Length < 0) return; // Return of the message has no text
+        //    if (arg.Author.Id == _client.CurrentUser.Id) return; // Return of the message is from itself
 
-            int argPos = 0; // Position to check for command arguments
+        //    int argPos = 0; // Position to check for command arguments
 
-            var msg = arg as SocketUserMessage;
-            if (msg == null) return;
+        //    var msg = arg as SocketUserMessage;
+        //    if (msg == null) return;
 
-            if (msg.HasStringPrefix(BotConfig.DefaultCommandPrefix, ref argPos))
-            {
-                if (arg.Channel.GetType() == typeof(SocketDMChannel) && !BotConfig.BotStaffDiscordIDs.Contains(arg.Author.Id)) // Send message if received via a DM
-                {
-                    await arg.Channel.SendMessageAsync($"I do not accept commands through Direct Messages.");
-                    return;
-                }
+        //    if (msg.HasStringPrefix(BotConfig.DefaultCommandPrefix, ref argPos))
+        //    {
+        //        if (arg.Channel.GetType() == typeof(SocketDMChannel) && !BotConfig.BotStaffDiscordIDs.Contains(arg.Author.Id)) // Send message if received via a DM
+        //        {
+        //            await arg.Channel.SendMessageAsync($"I do not accept commands through Direct Messages.");
+        //            return;
+        //        }
 
-                if (BotConfig.BotStaffDiscordIDs.Contains(arg.Author.Id))
-                {
-                    var handled = await TryHandleCommandAsync(msg, argPos).ConfigureAwait(false);
-                    if (handled) return;
-                }
-            }
-        }
+        //        if (BotConfig.BotStaffDiscordIDs.Contains(arg.Author.Id))
+        //        {
+        //            var handled = await TryHandleCommandAsync(msg, argPos).ConfigureAwait(false);
+        //            if (handled) return;
+        //        }
+        //    }
+        //}
 
         private async Task<bool> TryHandleCommandAsync(SocketUserMessage msg, int argPos)
         {
