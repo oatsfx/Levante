@@ -8,8 +8,8 @@ namespace Levante.Commands
 {
     public class Admin : InteractionModuleBase<SocketInteractionContext>
     {
-        [Group("alert", "Set up announcements for Daily/Weekly Reset and Emblem Offers.")]
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
+        [Group("alert", "Set up announcements for Daily/Weekly Reset and Emblem Offers.")]
         public class Alert : InteractionModuleBase<SocketInteractionContext>
         {
             [SlashCommand("emblem-offers", "Set up announcements for Emblem Offers. Use this in the channel you want this set up in.")]
@@ -72,8 +72,8 @@ namespace Levante.Commands
             }
         }
 
-        [SlashCommand("create-hub", "Creates a post with buttons so people can start their XP logs.")]
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
+        [SlashCommand("create-hub", "Creates a post with buttons so people can start their XP logs.")]
         public async Task CreateHub()
         {
             if (Context.Channel.GetChannelType() == ChannelType.DM)
@@ -151,8 +151,8 @@ namespace Levante.Commands
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Hub created at {hubChannel.Mention}. Feel free to move that Category anywhere!"; });
         }
 
-        [SlashCommand("server-info", "Gets general information about a server/guild along with Levante integrations.")]
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
+        [SlashCommand("server-info", "Gets general information about a server/guild along with Levante integrations.")]
         public async Task ServerInfo()
         {
             if (Context.Channel.GetChannelType() == ChannelType.DM)

@@ -167,6 +167,30 @@ namespace Levante.Util
         }
     }
 
+    public class CountdownAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                foreach (var Countdown in CountdownConfig.Countdowns)
+                    results.Add(new AutocompleteResult(Countdown.Key, Countdown.Key));
+            else
+                foreach (var Countdown in CountdownConfig.Countdowns)
+                    if (Countdown.Key.ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(Countdown.Key, Countdown.Key));
+
+            results = results.OrderBy(x => x.Name).ToList();
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
     public class BungieTagAutocomplete : AutocompleteHandler
     {
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)

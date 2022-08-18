@@ -6,8 +6,6 @@ using Levante.Util;
 using System.Net.Http;
 using System.Linq;
 using System.Text;
-using APIHelper;
-using APIHelper.Structs;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using Newtonsoft.Json;
@@ -16,8 +14,8 @@ using Levante.Helpers;
 using Levante.Rotations;
 using System.Collections.Generic;
 using Discord.Interactions;
-using System.Reflection;
 using System.Diagnostics;
+using Levante.Util.Attributes;
 
 namespace Levante.Commands
 {
@@ -27,8 +25,8 @@ namespace Levante.Commands
     {
         public InteractiveService Interactive { get; set; }
 
-        [SlashCommand("force", "[OWNER]: Sends a button to force a daily/weekly reset.")]
         [RequireOwner]
+        [SlashCommand("force", "[OWNER]: Sends a button to force a daily/weekly reset.")]
         public async Task Force()
         {
             Emoji helpEmote = new Emoji("❔");
@@ -40,8 +38,8 @@ namespace Levante.Commands
             await RespondAsync("This shouldn't really be used...", components: buttonBuilder.Build());
         }
 
-        [SlashCommand("active-logging-users", "[BOT STAFF]: Gets a list of the users that are using my XP logging feature.")]
         [RequireBotStaff]
+        [SlashCommand("active-logging-users", "[BOT STAFF]: Gets a list of the users that are using my XP logging feature.")]
         public async Task ActiveAFK()
         {
             var app = await Context.Client.GetApplicationInfoAsync();
@@ -85,16 +83,16 @@ namespace Levante.Commands
             await RespondAsync(embed: embed.Build());
         }
 
-        [SlashCommand("give-config", "[OWNER]: Sends the botConfig.json file.")]
         [RequireOwner]
+        [SlashCommand("give-config", "[OWNER]: Sends the botConfig.json file.")]
         public async Task GiveConfigs()
         {
             await Context.User.SendFileAsync(BotConfig.FilePath);
             await RespondAsync("Check your DMs.");
         }
 
-        [SlashCommand("replace-config", "[OWNER]: Replaces the botConfig.json file and refreshes the bot's activity.")]
         [RequireOwner]
+        [SlashCommand("replace-config", "[OWNER]: Replaces the botConfig.json file and refreshes the bot's activity.")]
         public async Task ReplaceConfig([Summary("config-json", "Replacement botConfig.json file.")] IAttachment attachment)
         {
             using (var httpCilent = new HttpClient())
@@ -111,8 +109,8 @@ namespace Levante.Commands
             await Context.Interaction.ModifyOriginalResponseAsync(x => x.Content = "Config replaced and bot is refreshed.");
         }
 
-        [SlashCommand("refresh", "[OWNER]: Refreshes the bot's activity.")]
         [RequireOwner]
+        [SlashCommand("refresh", "[OWNER]: Refreshes the bot's activity.")]
         public async Task Refresh()
         {
             ConfigHelper.CheckAndLoadConfigFiles();
@@ -121,8 +119,8 @@ namespace Levante.Commands
             await RespondAsync($"Activity refreshed.");
         }
 
-        [SlashCommand("supporter", "[OWNER]: Add or remove a bot supporter.")]
         [RequireOwner]
+        [SlashCommand("supporter", "[OWNER]: Add or remove a bot supporter.")]
         public async Task AddSupporter([Summary("discord-id", "Discord ID of the user to handle supporter status for.")] IUser User)
         {
             if (BotConfig.BotSupportersDiscordIDs.Contains(User.Id))
@@ -139,8 +137,8 @@ namespace Levante.Commands
             File.WriteAllText(BotConfig.FilePath, JsonConvert.SerializeObject(bConfig, Formatting.Indented));
         }
 
-        [SlashCommand("new-offer", "[BOT STAFF]: Create an Emblem Offer using a JSON file.")]
         [RequireBotStaff]
+        [SlashCommand("new-offer", "[BOT STAFF]: Create an Emblem Offer using a JSON file.")]
         public async Task NewEmblemOffer([Summary("offer-json", "JSON file for the offer.")] IAttachment attachment)
         {
             await DeferAsync();
@@ -214,8 +212,117 @@ namespace Levante.Commands
             }
         }
 
-        [SlashCommand("flush-offers", "[BOT STAFF]: Remove all Emblem Offers where the end date has passed.")]
         [RequireBotStaff]
+        [SlashCommand("new-countdown", "[BOT STAFF]: Add a new countdown to the /countdown command.")]
+        public async Task NewCountdown([Summary("event", "Event that should be tracked on /countdown.")] string Name,
+            [Summary("start-time", "Date and time the event starts.")] DateTime StartTime)
+        {
+            await DeferAsync();
+            if (CountdownConfig.Countdowns.ContainsKey(Name))
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"Countdown of name: \"{Name}\" already exists.");
+                return;
+            }
+
+            if (StartTime < DateTime.Now)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"I won't add a countdown that has already occurred.");
+                return;
+            }
+
+            var buttonBuilder = new ComponentBuilder()
+                .WithButton("Yes", customId: $"sendYes", ButtonStyle.Success, row: 0)
+                .WithButton("No", customId: $"sendNo", ButtonStyle.Danger, row: 0);
+
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
+                Footer = new EmbedFooterBuilder() { Text = $"{Context.User.Username}" },
+            };
+            embed.Title = "New Countdown";
+            embed.Description = $"**{Name}**: Starts {TimestampTag.FromDateTime(StartTime, TimestampTagStyles.Relative)} ({TimestampTag.FromDateTime(StartTime, TimestampTagStyles.ShortDate)})";
+
+            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "This is the countdown you are adding, continue?"; message.Components = buttonBuilder.Build(); message.Embed = embed.Build(); });
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+            if (buttonResponse == null)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+
+            if (buttonResponse.IsTimeout)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+
+            if (buttonResponse.Value.Data.CustomId.Equals("sendYes"))
+            {
+                CountdownConfig.AddCountdown(Name, StartTime);
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Added this countdown."; message.Components = new ComponentBuilder().Build(); });
+            }
+            else
+            {
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Did not add this countdown."; message.Components = new ComponentBuilder().Build(); });
+            }
+        }
+
+        [RequireBotStaff]
+        [SlashCommand("remove-countdown", "[BOT STAFF]: Remove a countdown from the /countdown command.")]
+        public async Task RemoveCountdown([Summary("countdown", "Countdown to remove."), Autocomplete(typeof(CountdownAutocomplete))] string Name)
+        {
+            if (!CountdownConfig.Countdowns.ContainsKey(Name))
+            {
+                await RespondAsync($"No countdown found under \"{Name}\".");
+                return;
+            }
+
+            await DeferAsync();
+            var buttonBuilder = new ComponentBuilder()
+                .WithButton("Yes", customId: $"removeYes", ButtonStyle.Success, row: 0)
+                .WithButton("No", customId: $"removeNo", ButtonStyle.Danger, row: 0);
+
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
+                Footer = new EmbedFooterBuilder() { Text = $"{Context.User.Username}" },
+            };
+            embed.Title = "Countdown Removal";
+            embed.Description = $"**{Name}**: Starts {TimestampTag.FromDateTime(CountdownConfig.Countdowns[Name], TimestampTagStyles.Relative)} ({TimestampTag.FromDateTime(CountdownConfig.Countdowns[Name], TimestampTagStyles.ShortDate)})";
+
+            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Remove this countdown?"; message.Embed = embed.Build(); message.Components = buttonBuilder.Build(); });
+
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+            if (buttonResponse == null)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+
+            if (buttonResponse.IsTimeout)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+
+            if (buttonResponse.Value.Data.CustomId.Equals("removeYes"))
+            {
+                CountdownConfig.RemoveCountdown(Name);
+
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Removed this countdown."; message.Components = new ComponentBuilder().Build();});
+            }
+            else
+            {
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Did not remove this countdown."; message.Components = new ComponentBuilder().Build(); });
+            }
+        }
+
+        [RequireBotStaff]
+        [SlashCommand("flush-offers", "[BOT STAFF]: Remove all Emblem Offers where the end date has passed.")]
         public async Task RemoveOffersAsync()
         {
             await DeferAsync();
@@ -294,8 +401,8 @@ namespace Levante.Commands
             }
         }
 
-        [SlashCommand("remove-offer", "[BOT STAFF]: Remove an Emblem Offer.")]
         [RequireBotStaff]
+        [SlashCommand("remove-offer", "[BOT STAFF]: Remove an Emblem Offer.")]
         public async Task RemoveOfferAsync([Summary("offer-to-remove", "Offer to remove."), Autocomplete(typeof(CurrentOfferAutocomplete))] string EmblemHash)
         {
             await DeferAsync();
@@ -336,8 +443,8 @@ namespace Levante.Commands
             }
         }
 
-        [SlashCommand("send-offer", "[BOT STAFF]: Sends an Emblem Offer embed to all channels with announcements set up.")]
         [RequireBotStaff]
+        [SlashCommand("send-offer", "[BOT STAFF]: Sends an Emblem Offer embed to all channels with announcements set up.")]
         public async Task SendOffer([Summary("offer-to-send", "Offer to send to ALL linked channels."), Autocomplete(typeof(CurrentOfferAutocomplete))] string EmblemHash)
         {
             EmblemOffer.LoadCurrentOffers();
@@ -381,8 +488,8 @@ namespace Levante.Commands
             }
         }
 
-        [SlashCommand("flush-tracking", "[OWNER]: Force send out rotation tracking reminders.")]
         [RequireOwner]
+        [SlashCommand("flush-tracking", "[OWNER]: Force send out rotation tracking reminders.")]
         public async Task FlushTracking()
         {
             // Send reset embeds if applicable.
@@ -398,8 +505,8 @@ namespace Levante.Commands
             await CurrentRotations.CheckUsersDailyTracking(Context.Client);
         }
 
-        [SlashCommand("max-xp-users", "[BOT STAFF]: Change the max number of users allowed in XP Logging.")]
         [RequireBotStaff]
+        [SlashCommand("max-xp-users", "[BOT STAFF]: Change the max number of users allowed in XP Logging.")]
         public async Task ChangeMaxUsers([Summary("max-user-count", "The new maximum logging users.")] int NewMaxUserCount)
         {
             if (NewMaxUserCount > 50)
@@ -423,8 +530,8 @@ namespace Levante.Commands
             await RespondAsync($"Changed maximum XP Logging users to {NewMaxUserCount} (was {old}).");
         }
 
-        [SlashCommand("metrics", "[BOT STAFF]: Get somewhat confidential information about the bot.")]
         [RequireBotStaff]
+        [SlashCommand("metrics", "[BOT STAFF]: Get somewhat confidential information about the bot.")]
         public async Task Metrics()
         {
             var app = await Context.Client.GetApplicationInfoAsync();
@@ -478,8 +585,8 @@ namespace Levante.Commands
             await RespondAsync(embed: embed.Build());
         }
 
-        [SlashCommand("check-manifest", "[BOT STAFF]: Check Bungie.net for an updated Manifest.")]
         [RequireBotStaff]
+        [SlashCommand("check-manifest", "[BOT STAFF]: Check Bungie.net for an updated Manifest.")]
         public async Task CheckManifest()
         {
             await DeferAsync();

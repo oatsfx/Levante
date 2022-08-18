@@ -17,6 +17,7 @@ using Levante.Util;
 using Fergun.Interactive;
 using Discord.Interactions;
 using APIHelper;
+using Levante.Util.Attributes;
 
 namespace Levante
 {
@@ -207,7 +208,7 @@ namespace Levante
             await CurrentRotations.CheckUsersDailyTracking(_client);
 
             // Start the next timer.
-            SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 30));
+            SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 5));
             Console.ForegroundColor = ConsoleColor.Cyan;
         }
 
@@ -559,7 +560,7 @@ namespace Levante
                 switch (result.Error)
                 {
                     case InteractionCommandError.UnmetPrecondition:
-                        await context.Interaction.RespondAsync("You do not have the necessary permissions to run this command.", ephemeral: true);
+                        await context.Interaction.RespondAsync($"{result.ErrorReason}", ephemeral: true);
                         break;
                     default:
                         break;

@@ -1,7 +1,7 @@
 ﻿using Levante.Configs;
 using System;
 
-namespace Levante.Util
+namespace Levante.Util.Attributes
 {
     public class DevGuildOnlyAttribute : Attribute
     {

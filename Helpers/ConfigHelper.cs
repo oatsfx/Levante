@@ -15,6 +15,7 @@ namespace Levante.Helpers
             BotConfig bConfig;
             DataConfig dConfig;
             ActiveConfig aConfig;
+            CountdownConfig cConfig;
 
             bool closeProgram = false;
             if (File.Exists(BotConfig.FilePath))
@@ -53,6 +54,19 @@ namespace Levante.Helpers
                 aConfig = new ActiveConfig();
                 File.WriteAllText(ActiveConfig.FilePath, JsonConvert.SerializeObject(aConfig, Formatting.Indented));
                 Console.WriteLine($"No activeConfig.json file detected. A new one has been created and the program has stopped. No action is needed.");
+                closeProgram = true;
+            }
+
+            if (File.Exists(CountdownConfig.FilePath))
+            {
+                string json = File.ReadAllText(CountdownConfig.FilePath);
+                cConfig = JsonConvert.DeserializeObject<CountdownConfig>(json);
+            }
+            else
+            {
+                cConfig = new CountdownConfig();
+                File.WriteAllText(CountdownConfig.FilePath, JsonConvert.SerializeObject(cConfig, Formatting.Indented));
+                Console.WriteLine($"No countdownConfig.json file detected. A new one has been created and the program has stopped. No action is needed.");
                 closeProgram = true;
             }
 

@@ -9,7 +9,7 @@ using Levante.Configs;
 using Levante.Helpers;
 using Levante.Rotations;
 using Levante.Util;
-
+using Levante.Util.Attributes;
 
 namespace Levante.Commands
 {
@@ -40,6 +40,7 @@ namespace Levante.Commands
         [ComponentInteraction("deleteChannel")]
         public async Task DeleteChannel() => await (Context.Channel as SocketGuildChannel).DeleteAsync(options: new RequestOptions() { AuditLogReason = $"XP Logging Delete Channel (User: {Context.User.Username}#{Context.User.Discriminator})"});
 
+        [RequireBungieOauth]
         [ComponentInteraction("startXPAFK")]
         public async Task StartAFK()
         {
@@ -235,6 +236,7 @@ namespace Levante.Commands
             await RespondAsync($"", embed: helpEmbed.Build(), ephemeral: true);
         }
 
+        [RequireBungieOauth]
         [ComponentInteraction("restartLogging:*")]
         public async Task RestartLogging(ulong DiscordID)
         {

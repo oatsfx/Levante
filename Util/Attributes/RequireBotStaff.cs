@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Discord.Interactions;
 using Discord;
 
-namespace Levante.Util
+namespace Levante.Util.Attributes
 {
     public sealed class RequireBotStaff : PreconditionAttribute
     {

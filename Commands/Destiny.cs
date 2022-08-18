@@ -1,5 +1,4 @@
 using Discord;
-using Discord.WebSocket;
 using Newtonsoft.Json;
 using System;
 using System.Net.Http;
@@ -13,10 +12,7 @@ using System.Collections.Generic;
 using Fergun.Interactive;
 using Discord.Interactions;
 using Levante.Rotations;
-using APIHelper;
-using System.Linq;
-using Levante.Helpers;
-using BungieSharper;
+using Levante.Util.Attributes;
 
 namespace Levante.Commands
 {
@@ -127,6 +123,38 @@ namespace Levante.Commands
             }
         }
 
+        [SlashCommand("countdowns", "Gives remaining time to Destiny 2 or my own events and releases.")]
+        public async Task Countdowns()
+        {
+            await DeferAsync();
+            var app = await Context.Client.GetApplicationInfoAsync();
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Countdowns",
+                IconUrl = app.IconUrl
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = auth,
+                Footer = foot,
+            };
+
+            foreach (var Countdown in CountdownConfig.Countdowns)
+                embed.AddField(x =>
+                {
+                    x.Name = $"{Countdown.Key}";
+                    x.Value = $"Starts {TimestampTag.FromDateTime(Countdown.Value, TimestampTagStyles.Relative)} ({TimestampTag.FromDateTime(Countdown.Value, TimestampTagStyles.ShortDate)})\n";
+                    x.IsInline = false;
+                });
+
+            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
+        }
+
         [SlashCommand("current-offers", "Gives a list of emblem offers. If hash code provided, command will return with the specific offer.")]
         public async Task CurrentOffers([Summary("emblem-name", "Emblem name of an emblem that is a current offer."), Autocomplete(typeof(CurrentOfferAutocomplete))] string EmblemHash = null)
         {
@@ -193,12 +221,6 @@ namespace Levante.Commands
                 Guardian.Platform Platform = (Guardian.Platform)ArgPlatform;
 
                 await DeferAsync();
-
-                if (LinkedUser == null)
-                {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again."; });
-                    return;
-                }
 
                 if (!DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
                 {
@@ -357,6 +379,7 @@ namespace Levante.Commands
             }
         }
 
+        [RequireBungieOauth]
         [SlashCommand("level", "Gets your Destiny 2 Season Pass Rank.")]
         public async Task GetLevel([Summary("user", "User you want the Season Pass rank of. Leave empty for your own.")] IUser User = null)
         {
@@ -479,11 +502,7 @@ namespace Levante.Commands
         }
 
         [SlashCommand("lost-sector", "Get info on a Lost Sector based on Difficulty.")]
-        public async Task LostSector([Summary("lost-sector", "Lost Sector name."),
-                Choice("K1 Crew Quarters", 0), Choice("K1 Logistics", 1), Choice("K1 Revelation", 2),
-                Choice("K1 Communion", 3), Choice("The Conflux", 4), Choice("Metamorphosis", 5),
-                Choice("Sepulcher", 6), Choice("Extraction", 7), Choice("Excavation Site XII", 8),
-                Choice("Skydock IV", 9), Choice("The Quarry", 10)] int ArgLS,
+        public async Task LostSector([Summary("lost-sector", "Lost Sector name."), Autocomplete(typeof(LostSectorAutocomplete))] int ArgLS,
                 [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty ArgLSD)
         {
             //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
@@ -495,16 +514,11 @@ namespace Levante.Commands
             return;
         }
 
+        [RequireBungieOauth]
         [SlashCommand("materials", "Gets your Destiny 2 material/currency counts.")]
         public async Task Materials()
         {
             var User = Context.User;
-
-            if (!DataConfig.IsExistingLinkedUser(User.Id))
-            {
-                await RespondAsync($"No account linked for {User.Mention}.", ephemeral: true);
-                return;
-            }
 
             await DeferAsync();
             var dil = DataConfig.GetLinkedUser(User.Id);
