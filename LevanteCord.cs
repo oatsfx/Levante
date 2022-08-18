@@ -105,7 +105,7 @@ namespace Levante
             else
                 SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 0, 0));
 
-            //var oauthManager = new OAuthHelper();
+            var oauthManager = new OAuthHelper();
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
@@ -522,20 +522,20 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //397846250797662208
-                await _interaction.RegisterCommandsToGuildAsync(397846250797662208);
+                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                //await _interaction.RegisterCommandsGloballyAsync();
+                await _interaction.RegisterCommandsGloballyAsync();
 
-                //foreach (var m in _interaction.Modules)
-                //{
-                //    foreach (var a in m.Attributes)
-                //    {
-                //        if (a is not DevGuildOnlyAttribute support) continue;
-                //        await _interaction.AddModulesToGuildAsync(_client.GetGuild(BotConfig.DevServerID), true, m);
-                //        break;
-                //    }
-                //}
+                foreach (var m in _interaction.Modules)
+                {
+                    foreach (var a in m.Attributes)
+                    {
+                        if (a is not DevGuildOnlyAttribute support) continue;
+                        await _interaction.AddModulesToGuildAsync(_client.GetGuild(BotConfig.DevServerID), true, m);
+                        break;
+                    }
+                }
                 BotConfig.LoggingChannel = _client.GetChannel(BotConfig.LogChannel) as SocketTextChannel;
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
                 await UpdateBotActivity(1);
