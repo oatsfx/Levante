@@ -9,7 +9,8 @@ namespace Levante.Leaderboards
     {
         public static readonly string FilePathS15 = @"Data/S15/mostThrallwayTimeData.json";
         public static readonly string FilePathS16 = @"Data/S16/mostXPLoggingTimeData.json";
-        public static readonly string FilePath = @"Data/S17/mostXPLoggingTimeData.json";
+        public static readonly string FilePathS17 = @"Data/S17/mostXPLoggingTimeData.json";
+        public static readonly string FilePath = @"Data/S18/mostXPLoggingTimeData.json";
 
         [JsonProperty("MostXPLogTimeEntries")]
         public List<MostXPLogTimeEntry> MostXPLogTimeEntries { get; set; } = new List<MostXPLogTimeEntry>();
