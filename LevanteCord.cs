@@ -403,7 +403,7 @@ namespace Levante
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
                     }
-                    await Task.Delay(2500); // We dont want to spam APIs if we have a ton of XP Logging subscriptions.
+                    await Task.Delay(1500); // We dont want to spam APIs if we have a ton of XP Logging subscriptions.
                 }
 
                 // Add in users that joined mid-refresh.
