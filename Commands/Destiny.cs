@@ -506,8 +506,8 @@ namespace Levante.Commands
         public async Task LostSector([Summary("lost-sector", "Lost Sector name."), Autocomplete(typeof(LostSectorAutocomplete))] int ArgLS,
                 [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty ArgLSD)
         {
-            //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-            //return;
+            await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
+            return;
             LostSector LS = (LostSector)ArgLS;
             LostSectorDifficulty LSD = ArgLSD;
 

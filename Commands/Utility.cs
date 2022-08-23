@@ -220,8 +220,8 @@ namespace Levante.Commands
             public async Task LostSector([Summary("lost-sector", "Lost Sector to be alerted for."), Autocomplete(typeof(LostSectorAutocomplete))] int? ArgLS = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop to be alerted for.")] ExoticArmorType? ArgEAT = null)
             {
-                //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-                //return;
+                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
+                return;
 
                 if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
                 {
@@ -260,6 +260,8 @@ namespace Levante.Commands
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike to be alerted for."), Autocomplete(typeof(NightfallAutocomplete))] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike weapon drop to be alerted for."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int? ArgWeapon = null)
             {
+                await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
+                return;
                 if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var Weapon) != null)
                 {
                     if (NF == null && Weapon == null)
@@ -648,8 +650,8 @@ namespace Levante.Commands
             public async Task LostSector([Summary("lost-sector", "Lost Sector to predict its next appearance."), Autocomplete(typeof(LostSectorAutocomplete))] int? ArgLS = null,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop to predict its next appearance.")] ExoticArmorType? ArgEAT = null)
             {
-                //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-                //return;
+                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
+                return;
 
                 LostSector? LS = (LostSector?)ArgLS;
                 ExoticArmorType? EAT = ArgEAT;
@@ -682,6 +684,9 @@ namespace Levante.Commands
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike to predict its next appearance."), Autocomplete(typeof(NightfallAutocomplete))] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike Weapon drop."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int? ArgWeapon = null)
             {
+                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
+                return;
+
                 Nightfall? NF = (Nightfall?)ArgNF;
                 NightfallWeapon? Weapon = (NightfallWeapon?)ArgWeapon;
 
@@ -820,7 +825,7 @@ namespace Levante.Commands
             Choice("Total XP Logging Time", 3), Choice("Equipped Power Level", 4)] int ArgLeaderboard,
             [Summary("season", "Season of the specific leaderboard. Defaults to the current season."),
             Choice("Season of the Lost", 15), Choice("Season of the Risen", 16), Choice("Season of the Haunted", 17),
-            Choice("Season of the Plunder", 18)] int Season = 18)
+            Choice("Season of Plunder", 18)] int Season = 18)
         {
             Leaderboard LeaderboardType = (Leaderboard)ArgLeaderboard;
 

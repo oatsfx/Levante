@@ -201,14 +201,14 @@ namespace Levante.Rotations
                 adaMods += $"{pair.Value}\n";
             }
 
-            embed.AddField(x =>
-             {
-                 x.Name = "Lost Sector";
-                 x.Value =
-                     $"{LostSectorRotation.GetArmorEmote(LostSectorArmorDrop)} {LostSectorArmorDrop}\n" +
-                     $"{DestinyEmote.LostSector} {LostSectorRotation.GetLostSectorString(LostSector)}";
-                 x.IsInline = true;
-             }).AddField(x =>
+            embed/*.AddField(x =>
+            {
+                x.Name = "Lost Sector";
+                x.Value =
+                    $"{LostSectorRotation.GetArmorEmote(LostSectorArmorDrop)} {LostSectorArmorDrop}\n" +
+                    $"{DestinyEmote.LostSector} {LostSectorRotation.GetLostSectorString(LostSector)}";
+                x.IsInline = true;
+            })*/.AddField(x =>
             {
                 x.Name = $"The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)}";
                 x.Value =
@@ -283,7 +283,7 @@ namespace Levante.Rotations
                 x.Value = $"{DestinyEmote.VowRaidChallenge} {VowOfTheDiscipleRotation.GetEncounterString(VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(VowChallengeEncounter)})";
                 x.IsInline = true;
             })
-            .AddField(x =>
+            /*.AddField(x =>
             {
                 x.Name = "> Nightfall: The Ordeal";
                 x.Value = $"*Nightfall Strike and Weapon Rotation*";
@@ -300,7 +300,7 @@ namespace Levante.Rotations
                 x.Name = "Weapon";
                 x.Value = $"{NightfallRotation.GetWeaponEmote(NightfallWeaponDrop)} {NightfallRotation.GetWeaponString(NightfallWeaponDrop)}";
                 x.IsInline = true;
-            })
+            })*/
             .AddField(x =>
             {
                 x.Name = "> Patrol";
