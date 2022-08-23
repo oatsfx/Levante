@@ -46,7 +46,7 @@ namespace Levante.Configs
         public static string DefaultCommandPrefix { get; set; } = "l!";
 
         [JsonProperty("Note")]
-        public static string Note { get; set; } = "Hello World";
+        public static List<string> Notes { get; set; } = new List<string>();
 
         [JsonProperty("DurationToWaitForNextMessage")]
         public static int DurationToWaitForNextMessage { get; set; } = 20;

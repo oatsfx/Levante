@@ -8,9 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Levante.Helpers;
-using System.Net.Http;
-using System.Reflection.Emit;
-using System.Linq;
 
 namespace Levante.Rotations
 {
@@ -123,7 +120,8 @@ namespace Levante.Rotations
 
         public static int GetTotalLinks()
         {
-            return AltarsOfSorrowRotation.AltarsOfSorrowLinks.Count +
+            return Ada1Rotation.Ada1ModLinks.Count +
+                AltarsOfSorrowRotation.AltarsOfSorrowLinks.Count +
                 AscendantChallengeRotation.AscendantChallengeLinks.Count +
                 CurseWeekRotation.CurseWeekLinks.Count +
                 DeepStoneCryptRotation.DeepStoneCryptLinks.Count +

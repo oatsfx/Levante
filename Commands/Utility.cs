@@ -928,23 +928,20 @@ namespace Levante.Commands
 
         [RequireBungieOauth]
         [SlashCommand("unlink", "Unlink your Bungie tag from your Discord account.")]
-        public async Task Unlink()
+        public async Task Unlink([Summary("delete-leaderboards", "Delete your leaderboard stats when you unlink. This is true by default.")]bool RemoveLeaderboard = true)
         {
-            if (!DataConfig.IsExistingLinkedUser(Context.User.Id))
-            {
-                await RespondAsync("You do not have a Bungie account linked. Use the command \"/link\" to begin the linking process!", ephemeral: true);
-                return;
-            }
-
             var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
             DataConfig.DeleteUserFromConfig(Context.User.Id);
 
             // Remove leaderboard data to respect user data.
-            LevelData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
-            LongestSessionData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
-            MostXPLoggingTimeData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
-            PowerLevelData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
-            XPPerHourData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+            if (RemoveLeaderboard)
+            {
+                LevelData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+                LongestSessionData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+                MostXPLoggingTimeData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+                PowerLevelData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+                XPPerHourData.DeleteEntryFromConfig(linkedUser.UniqueBungieName);
+            }
 
             await RespondAsync($"Your Bungie account: {linkedUser.UniqueBungieName} has been unlinked. Use the command \"/link\" if you want to re-link!", ephemeral: true);
         }

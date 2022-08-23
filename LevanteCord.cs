@@ -36,6 +36,7 @@ namespace Levante
         private Timer DailyResetTimer;
         private Timer _xpTimer;
         private Timer _leaderboardTimer;
+        private Timer CheckBungieAPI;
 
         public LevanteCord()
         {
@@ -101,9 +102,9 @@ namespace Levante
             LogHelper.ConsoleLog($"[XP SESSIONS] Continued XP logging for {ActiveConfig.ActiveAFKUsers.Count} (+{ActiveConfig.PriorityActiveAFKUsers.Count}) Users.");
 
             if (DateTime.Now.Hour >= 10) // after daily reset
-                SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 0));
+                SetUpTimer(new DateTime(DateTime.Now.AddDays(1).Year, DateTime.Now.AddDays(1).Month, DateTime.Now.AddDays(1).Day, 10, 0, 0));
             else
-                SetUpTimer(new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 10, 0, 0));
+                SetUpTimer(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 10, 0, 0));
 
             var oauthManager = new OAuthHelper();
             await InitializeListeners();
@@ -119,7 +120,7 @@ namespace Levante
             await _client.StartAsync();
 
             Console.WriteLine();
-            LogHelper.ConsoleLog($"[STARTUP] Bot successfully started! v{BotConfig.Version:0.00} ({BotConfig.Note})");
+            LogHelper.ConsoleLog($"[STARTUP] Bot successfully started! v{BotConfig.Version:0.00}");
             Console.WriteLine();
             await Task.Delay(-1);
 
@@ -132,13 +133,11 @@ namespace Levante
         {
             int RNG = 0;
             int RNGMax = 20;
+            Random rand = new Random();
             if (SetRNG != -1 && SetRNG < RNGMax)
                 RNG = SetRNG;
             else
-            {
-                Random rand = new Random();
                 RNG = rand.Next(0, RNGMax);
-            }
 
             switch (RNG)
             {
@@ -147,7 +146,7 @@ namespace Levante
                     string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
                     await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching)); break;
                 case 1:
-                    await _client.SetActivityAsync(new Game($"{BotConfig.Note} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing)); break;
+                    await _client.SetActivityAsync(new Game($"{BotConfig.Notes[rand.Next(0, BotConfig.Notes.Count)]} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing)); break;
                 case 2:
                     await _client.SetActivityAsync(new Game($"for /help | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
                 case 3:
@@ -183,7 +182,22 @@ namespace Levante
         public async void DailyResetChanges(Object o = null)
         {
             Console.ForegroundColor = ConsoleColor.Green;
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/").Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                dynamic item = JsonConvert.DeserializeObject(content);
+
+                if (item.ErrorCode != 1)
+                {
+                    CheckBungieAPI = new Timer(DailyResetChanges, null, 60000, Timeout.Infinite);
+                    Console.WriteLine($"Reset Delayed; Reason: {item.ErrorStatus}");
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    return;
+                }
+            }
             if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
             {
                 CurrentRotations.WeeklyRotation();

@@ -35,7 +35,7 @@ namespace Levante.Commands
                 .WithButton("Force Daily Reset", customId: "dailyForce", ButtonStyle.Secondary, helpEmote, row: 0)
                 .WithButton("Force Weekly Reset", customId: "weeklyForce", ButtonStyle.Secondary, helpEmote, row: 0);
 
-            await RespondAsync("This shouldn't really be used...", components: buttonBuilder.Build());
+            await RespondAsync("This shouldn't really be used... Additionally, make sure the API is not disabled.", components: buttonBuilder.Build());
         }
 
         [RequireBotStaff]
@@ -114,7 +114,7 @@ namespace Levante.Commands
         public async Task Refresh()
         {
             ConfigHelper.CheckAndLoadConfigFiles();
-            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Note} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing));
+            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Notes[0]} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing));
 
             await RespondAsync($"Activity refreshed.");
         }
