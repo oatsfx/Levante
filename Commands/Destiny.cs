@@ -13,6 +13,8 @@ using Fergun.Interactive;
 using Discord.Interactions;
 using Levante.Rotations;
 using Levante.Util.Attributes;
+using System.Collections.Immutable;
+using System.Linq;
 
 namespace Levante.Commands
 {
@@ -143,8 +145,7 @@ namespace Levante.Commands
                 Author = auth,
                 Footer = foot,
             };
-
-            foreach (var Countdown in CountdownConfig.Countdowns)
+            foreach (var Countdown in CountdownConfig.Countdowns.OrderBy(key => key.Value))
                 embed.AddField(x =>
                 {
                     x.Name = $"{Countdown.Key}";

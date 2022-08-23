@@ -509,7 +509,7 @@ namespace Levante.Commands
         [SlashCommand("max-xp-users", "[BOT STAFF]: Change the max number of users allowed in XP Logging.")]
         public async Task ChangeMaxUsers([Summary("max-user-count", "The new maximum logging users.")] int NewMaxUserCount)
         {
-            if (NewMaxUserCount > 50)
+            if (NewMaxUserCount > 100)
             {
                 await RespondAsync($"That's too high.");
                 return;
