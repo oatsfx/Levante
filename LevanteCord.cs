@@ -106,7 +106,7 @@ namespace Levante
             else
                 SetUpTimer(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 10, 0, 0));
 
-            //var oauthManager = new OAuthHelper();
+            var oauthManager = new OAuthHelper();
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
@@ -540,7 +540,7 @@ namespace Levante
                 //await _interaction.RegisterCommandsToGuildAsync(397846250797662208);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                //await _interaction.RegisterCommandsGloballyAsync();
+                await _interaction.RegisterCommandsGloballyAsync();
 
                 foreach (var m in _interaction.Modules)
                 {
