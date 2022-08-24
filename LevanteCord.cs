@@ -433,9 +433,9 @@ namespace Levante
 
         private async Task LoadLeaderboards()
         {
+            LogHelper.ConsoleLog($"[LEADERBOARDS] Pulling data for leaderboards...");
             try
             {
-                LogHelper.ConsoleLog($"[LEADERBOARDS] Pulling data for leaderboards...");
                 var tempPowerLevelData = new PowerLevelData();
                 var tempLevelData = new LevelData();
                 bool nameChange = false;
@@ -484,7 +484,7 @@ namespace Levante
                                 UniqueBungieName = link.UniqueBungieName,
                             });
 
-                            if (item.Response.characterProgressions.privacy != 1) continue;
+                            if (item.Response.characterProgressions.data == null) continue;
                             if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == 100)
                             {
                                 int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
@@ -495,9 +495,9 @@ namespace Levante
                                 Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
                             }
 
-                            tempPowerLevelData.PowerLevelDataEntries.Add(new PowerLevelData.PowerLevelDataEntry()
+                            tempLevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
                             {
-                                PowerLevel = PowerLevel,
+                                LastLoggedLevel = Level,
                                 UniqueBungieName = link.UniqueBungieName,
                             });
                         }
