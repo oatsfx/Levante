@@ -174,7 +174,7 @@ namespace Levante.Rotations
             Ada1Rotation.CreateJSON();
         }
 
-        private static void UpdateRotationsJSON()
+        public static void UpdateRotationsJSON()
         {
             CurrentRotations cr = new CurrentRotations();
             string output = JsonConvert.SerializeObject(cr, Formatting.Indented);
