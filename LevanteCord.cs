@@ -537,7 +537,7 @@ namespace Levante
             _client.Ready += async () =>
             {
                 //397846250797662208
-                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208);
+                //await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
                 await _interaction.RegisterCommandsGloballyAsync();

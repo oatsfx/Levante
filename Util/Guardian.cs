@@ -97,7 +97,7 @@ namespace Levante.Util
                     var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=900").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
                     dynamic item2 = JsonConvert.DeserializeObject(content);
-                    if (item2.Response.profileRecords.privacy == 2)
+                    if (item2.Response.profileRecords.data == null)
                         return null;
                     bool isGildedThisSeason = item2.Response.profileRecords.data.records[$"{trackHash}"].objectives[0].complete;
                     if (isGildedThisSeason && item2.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
