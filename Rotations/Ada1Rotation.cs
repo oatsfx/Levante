@@ -87,6 +87,7 @@ namespace Levante.Rotations
                     }
                 }
             }
+            CurrentRotations.UpdateRotationsJSON();
         }
 
         public static void CreateJSON()

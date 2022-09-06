@@ -66,7 +66,7 @@ namespace Levante.Util
             try
             {
                 var doc = new HtmlDocument();
-                doc.LoadHtml(new WebClient().DownloadString($"https://destinyemblemcollector.com/emblem?id={HashCode}"));
+                doc.LoadHtml(new HttpClient().GetStringAsync($"https://destinyemblemcollector.com/emblem?id={HashCode}").Result);
                 var emblemUnlock = doc.DocumentNode.SelectNodes("//div[@class='gridemblem-emblemdetail']")[8].InnerHtml;
                 return emblemUnlock.Split("<li>")[1].Split("</li>")[0];
             }

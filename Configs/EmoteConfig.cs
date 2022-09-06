@@ -39,8 +39,6 @@ namespace Levante.Configs
                 catch (Discord.Net.HttpException x)
                 {
                     var json = JsonConvert.SerializeObject(x.Errors, Formatting.Indented);
-
-                    // You can send this error somewhere or just print it to the console, for this example we're just going to print it.
                     Console.WriteLine(json);
                     break;
                 }

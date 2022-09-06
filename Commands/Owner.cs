@@ -590,7 +590,7 @@ namespace Levante.Commands
         public async Task CheckManifest()
         {
             await DeferAsync();
-            if (ManifestHelper.IsNewManifest())
+            if (!ManifestHelper.IsNewManifest())
             {
                 await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"No new Manifest. Current Version: {ManifestHelper.DestinyManifestVersion}");
                 return;

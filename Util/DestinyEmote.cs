@@ -92,6 +92,7 @@ namespace Levante.Util
         // Misc
         public static readonly string Ada1 = "<:Ada1:1009837298814288003>";
         public static readonly string AscendantChallengeBounty = "<:ACBounty:934478080737693787>";
+        public static readonly string Classified = "<:Classified:1014305658390184006>";
         public static readonly string Gilded = "<:Gilded:994067890024235029>";
         public static readonly string GildedPurple = "<:GildedPurple:996604027867500574>";
         public static readonly string Light = "<:LightLevel:844029708077367297>";
@@ -132,7 +133,7 @@ namespace Levante.Util
             if (typeof(DestinyEmote).GetField(Query) != null)
                 return (string)typeof(DestinyEmote).GetField(Query).GetValue(null);
             else
-                return null;
+                return Classified;
         }
     }
 }

@@ -15,6 +15,7 @@ using Levante.Rotations;
 using Levante.Util.Attributes;
 using System.Collections.Immutable;
 using System.Linq;
+using Levante.Helpers;
 
 namespace Levante.Commands
 {
@@ -105,9 +106,9 @@ namespace Levante.Commands
                     if (remainder + XPProgress > 100000)
                         seasonRanksNeededPlayer += 1;
 
-                    embed.Title += $"{seasonRanksNeeded:0.00}";
+                    embed.Title += $"{Level + seasonRanksNeededPlayer:0.00}";
                     embed.Description =
-                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:0.00}** (Need {seasonRanksNeededPlayer:0.00}).";
+                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{Level + seasonRanksNeededPlayer + ((double)XPProgress / 100000):0.00}** (Need {seasonRanksNeededPlayer:0.00}).";
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                 }
             }
@@ -397,7 +398,7 @@ namespace Levante.Commands
             {
                 string season = GetCurrentDestiny2Season(out int seasonNum);
 
-                var dil = DataConfig.GetLinkedUser(Context.User.Id);
+                var dil = DataConfig.GetLinkedUser(User.Id);
                 int Level;
                 int XPProgress;
                 dynamic item;

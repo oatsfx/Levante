@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Discord;
 using Levante.Configs;
 using Levante.Util;
+using APIHelper.Structs;
 
 namespace Levante.Helpers
 {
@@ -29,79 +30,86 @@ namespace Levante.Helpers
 
         public async void GetToken(IAsyncResult ar)
         {
-            if (!HttpListener.IsSupported)
-            {
-                LogHelper.ConsoleLog("[OAUTH] HttpListener is not supported.");
-                return;
-            }
-
-            HttpListenerContext context = _listener.EndGetContext(ar);
-            //LogHelper.ConsoleLog("[OAUTH] Connection Received.");
-
-            var query = context.Request.QueryString;
-
-            CodeResult result = new()
-            {
-                DiscordDisplayName = $"Levante#3845",
-                Reason = ErrorReason.None
-            };
-
-            if (query != null && query.Count > 0)
-            {
-                if (!string.IsNullOrEmpty(query["code"]))
-                {
-                    var base64EncodedBytes = Convert.FromBase64String($"{query["state"]}");
-                    ulong discordId = ulong.Parse(Encoding.UTF8.GetString(base64EncodedBytes));
-                    result = await ProcessCode($"{query["code"]}", discordId).ConfigureAwait(false);
-                }
-                else if (!string.IsNullOrEmpty(query["error"]))
-                {
-                    LogHelper.ConsoleLog($"[OAUTH] Error occurred: {query["error_description"]}.");
-                    _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
-                    return;
-                }
-            }
-            else
-            {
-                result.Reason = ErrorReason.MissingParameters;
-            }
-
-            _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
-            //LogHelper.ConsoleLog("[OAUTH] Sending Request.");
-
-            HttpListenerRequest request = context.Request;
-            HttpListenerResponse response = context.Response;
-
-            string responseString = "You are going to be redirected.";
-            byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
-
-            response.ContentLength64 = buffer.Length;
-            if (result.Reason != ErrorReason.None)
-            {
-                //LogHelper.ConsoleLog($"[OAUTH] Redirecting to Link Fail with reason {result.Reason}.");
-                response.Redirect($"https://www.levante.dev/link-fail/?error={Convert.ToInt32(result.Reason)}");
-            }
-            else
-            {
-                //LogHelper.ConsoleLog("[OAUTH] Redirecting to Link Success.");
-                response.Redirect($"https://www.levante.dev/link-success/?discDisp={Uri.EscapeDataString(result.DiscordDisplayName)}");
-            }
-
-            // simulate work
-            //await Task.Delay(500);
-
             try
             {
-                System.IO.Stream output = response.OutputStream;
-                output.Write(buffer, 0, buffer.Length);
-                // You must close the output stream.
-                output.Close();
+                if (!HttpListener.IsSupported)
+                {
+                    LogHelper.ConsoleLog("[OAUTH] HttpListener is not supported.");
+                    return;
+                }
+
+                HttpListenerContext context = _listener.EndGetContext(ar);
+                //LogHelper.ConsoleLog("[OAUTH] Connection Received.");
+
+                var query = context.Request.QueryString;
+
+                CodeResult result = new()
+                {
+                    DiscordDisplayName = $"Levante#3845",
+                    Reason = ErrorReason.None
+                };
+
+                if (query != null && query.Count > 0)
+                {
+                    if (!string.IsNullOrEmpty(query["code"]))
+                    {
+                        var base64EncodedBytes = Convert.FromBase64String($"{query["state"]}");
+                        ulong discordId = ulong.Parse(Encoding.UTF8.GetString(base64EncodedBytes));
+                        result = await ProcessCode($"{query["code"]}", discordId).ConfigureAwait(false);
+                    }
+                    else if (!string.IsNullOrEmpty(query["error"]))
+                    {
+                        LogHelper.ConsoleLog($"[OAUTH] Error occurred: {query["error_description"]}.");
+                        _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
+                        return;
+                    }
+                }
+                else
+                {
+                    result.Reason = ErrorReason.MissingParameters;
+                }
+
+                _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
+                //LogHelper.ConsoleLog("[OAUTH] Sending Request.");
+
+                HttpListenerRequest request = context.Request;
+                HttpListenerResponse response = context.Response;
+
+                string responseString = "You are going to be redirected.";
+                byte[] buffer = Encoding.UTF8.GetBytes(responseString);
+
+                response.ContentLength64 = buffer.Length;
+                if (result.Reason != ErrorReason.None)
+                {
+                    //LogHelper.ConsoleLog($"[OAUTH] Redirecting to Link Fail with reason {result.Reason}.");
+                    response.Redirect($"https://www.levante.dev/link-fail/?error={Convert.ToInt32(result.Reason)}");
+                }
+                else
+                {
+                    //LogHelper.ConsoleLog("[OAUTH] Redirecting to Link Success.");
+                    response.Redirect($"https://www.levante.dev/link-success/?discDisp={Uri.EscapeDataString(result.DiscordDisplayName)}");
+                }
+
+                // simulate work
+                //await Task.Delay(500);
+
+                try
+                {
+                    System.IO.Stream output = response.OutputStream;
+                    output.Write(buffer, 0, buffer.Length);
+                    // You must close the output stream.
+                    output.Close();
+                }
+                catch (Exception x)
+                {
+                    //LogHelper.ConsoleLog("[OAUTH] Unable to send response write data.");
+                }
+                LogHelper.ConsoleLog("[OAUTH] Flow completed. Listening...");
             }
             catch (Exception x)
             {
-                //LogHelper.ConsoleLog("[OAUTH] Unable to send response write data.");
+                _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
             }
-            LogHelper.ConsoleLog("[OAUTH] Flow completed. Listening...");
         }
 
         private async Task<CodeResult> ProcessCode(string Code, ulong DiscordID)
