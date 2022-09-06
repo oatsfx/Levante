@@ -30,6 +30,11 @@ namespace Levante.Configs
 
         public static SocketTextChannel LoggingChannel { get; set; } = null;
 
+        [JsonProperty("CommunityCreationsLogChannel")]
+        public static ulong CommunityCreationsLogChannel { get; set; } = 0;
+
+        public static SocketTextChannel CreationsLogChannel { get; set; } = null;
+
         [JsonProperty("BungieApiKey")]
         public static string BungieApiKey { get; set; } = "[YOUR API KEY HERE]";
 

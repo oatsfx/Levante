@@ -10,20 +10,25 @@ using System.Text;
 using System.Threading.Tasks;
 using BungieSharper.Entities.Destiny;
 using BungieSharper.Entities.Destiny.Definitions.Records;
+using Levante.Rotations;
+using BungieSharper.Entities.Destiny.Definitions.ActivityModifiers;
+using System.Diagnostics;
+using BungieSharper.Entities.Destiny.Definitions.Lore;
 
 namespace Levante.Helpers
 {
     public class ManifestHelper
     {
         // Name, Hash
-        public static Dictionary<long, string> Emblems = new Dictionary<long, string>();
+        public static Dictionary<long, string> Emblems = new();
         // Inv Hash, Collectible Hash
-        public static Dictionary<long, uint> EmblemsCollectible = new Dictionary<long, uint>();
-        public static Dictionary<long, string> Weapons = new Dictionary<long, string>();
-        public static Dictionary<long, string> Seals = new Dictionary<long, string>();
-        public static Dictionary<long, string> Ada1ArmorMods = new Dictionary<long, string>();
+        public static Dictionary<long, uint> EmblemsCollectible = new();
+        public static Dictionary<long, string> Weapons = new();
+        public static Dictionary<long, string> Seals = new();
+        public static Dictionary<long, string> Ada1ArmorMods = new();
         // Seal Hash, Tracker Hash
-        public static Dictionary<long, long> GildableSeals = new Dictionary<long, long>();
+        public static Dictionary<long, long> GildableSeals = new();
+        public static Dictionary<long, string> Activities = new();
 
         private static Dictionary<string, int> SeasonIconURLs = new Dictionary<string, int>();
 
@@ -51,7 +56,9 @@ namespace Levante.Helpers
             EmblemsCollectible.Clear();
             Weapons.Clear();
             Seals.Clear();
+            Ada1ArmorMods.Clear();
             GildableSeals.Clear();
+            Activities.Clear();
             SeasonIconURLs.Clear();
             LogHelper.ConsoleLog($"[MANIFEST] Begin emblem and weapon Dictionary population.");
             using (var client = new HttpClient())
@@ -75,12 +82,80 @@ namespace Levante.Helpers
                 response = client.GetAsync(vendorListUrl).Result;
                 content = response.Content.ReadAsStringAsync().Result;
                 var vendorList = JsonConvert.DeserializeObject<Dictionary<string, DestinyVendorDefinition>>(content);
-
                 var ada1ItemList = vendorList["350061650"].ItemList.Select(x => x.ItemHash);
 
-                LogHelper.ConsoleLog($"[MANIFEST] Populating Weapon and Emblem Dictionaries...");
+                string activityListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyActivityDefinition"]}";
+                response = client.GetAsync(activityListUrl).Result;
+                content = response.Content.ReadAsStringAsync().Result;
+                var activityList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityDefinition>>(content);
+
+                string placeListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyPlaceDefinition"]}";
+                response = client.GetAsync(placeListUrl).Result;
+                content = response.Content.ReadAsStringAsync().Result;
+                var placeList = JsonConvert.DeserializeObject<Dictionary<string, DestinyPlaceDefinition>>(content);
+
+                string modifierListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyActivityModifierDefinition"]}";
+                response = client.GetAsync(modifierListUrl).Result;
+                content = response.Content.ReadAsStringAsync().Result;
+                var modifierList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityModifierDefinition>>(content);
+
+                string loreListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyLoreDefinition"]}";
+                response = client.GetAsync(loreListUrl).Result;
+                content = response.Content.ReadAsStringAsync().Result;
+                var loreList = JsonConvert.DeserializeObject<Dictionary<string, DestinyLoreDefinition>>(content);
+
+                LogHelper.ConsoleLog($"[MANIFEST] Populating Dictionaries...");
                 try
                 {
+                    foreach (var activity in activityList)
+                    {
+                        if (String.IsNullOrEmpty(activity.Value.DisplayProperties.Name))
+                            if (placeList.ContainsKey($"{activity.Value.PlaceHash}"))
+                            {
+                                Console.WriteLine($"{placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name}");
+                                Activities.Add(activity.Value.Hash, placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name);
+                                continue;
+                            }
+                        Activities.Add(activity.Value.Hash, activity.Value.DisplayProperties.Name);
+                        int index = LostSectorRotation.LostSectors.FindIndex(x => activity.Key.Equals($"{x.LegendActivityHash}"));
+                        if (index != -1)
+                        {
+                            LostSectorRotation.LostSectors[index].Name = activity.Value.OriginalDisplayProperties.Name;
+                            LostSectorRotation.LostSectors[index].Location = placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name;
+                            foreach (var mod in activity.Value.Modifiers)
+                            {
+                                if (String.IsNullOrEmpty(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name) ||
+                                    modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Champion") ||
+                                    modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Shielded") ||
+                                    modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Modifiers"))
+                                {
+                                    continue;
+                                }
+                                LostSectorRotation.LostSectors[index].LegendModifiers.Add(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name);
+                            }
+                        }
+                        else
+                        {
+                            index = LostSectorRotation.LostSectors.FindIndex(x => activity.Key.Equals($"{x.MasterActivityHash}"));
+                            if (index != -1)
+                            {
+                                LostSectorRotation.LostSectors[index].Name = activity.Value.OriginalDisplayProperties.Name;
+                                LostSectorRotation.LostSectors[index].Location = placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name;
+                                foreach (var mod in activity.Value.Modifiers)
+                                {
+                                    // Don't want champion modifier(s) because we have those.
+                                    if (String.IsNullOrEmpty(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name) ||
+                                            modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Champion") ||
+                                            modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Shielded") ||
+                                            modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Modifiers"))
+                                    {
+                                        continue;
+                                    }
+                                    LostSectorRotation.LostSectors[index].MasterModifiers.Add(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name);
+                                }
+                            }
+                        }
+                    }
                     foreach (var invItem in invItemList)
                     {
                         if (invItem.Value == null ||

@@ -169,6 +169,16 @@ namespace Levante.Util
                 x.Value = $"[{GetEmblem().GetName()}]({GetEmblem().GetDECUrl()})";
                 x.IsInline = true;
             });
+            
+            if (item.Response.activities.privacy != 2)
+            {
+                embed.AddField(x =>
+                {
+                    x.Name = "Activity";
+                    x.Value = $"{ManifestHelper.Activities[(long)item.Response.activities.data.currentActivityHash]}";
+                    x.IsInline = true;
+                });
+            }
 
             if (seal != null)
             {

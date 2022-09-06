@@ -73,11 +73,13 @@ namespace Levante
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
 
+            CurrentRotations.CreateJSONs();
+
             API.FetchManifest();
             ManifestHelper.LoadManifestDictionaries();
 
-            CurrentRotations.CreateJSONs();
             EmblemOffer.LoadCurrentOffers();
+            Ada1Rotation.GetAda1Inventory();
 
             //Console.ForegroundColor = ConsoleColor.Magenta;
             //Console.WriteLine($"[ROTATIONS]");
@@ -106,7 +108,8 @@ namespace Levante
             else
                 SetUpTimer(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 10, 0, 0));
 
-            var oauthManager = new OAuthHelper();
+            //var oauthManager = new OAuthHelper();
+            var creationsManager = new CreationsHelper();
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
@@ -198,15 +201,25 @@ namespace Levante
                     return;
                 }
             }
-            if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
+            try
             {
-                CurrentRotations.WeeklyRotation();
-                Console.WriteLine("Weekly Reset Occurred.");
+                if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
+                {
+                    CurrentRotations.WeeklyRotation();
+                    Console.WriteLine("Weekly Reset Occurred.");
+                }
+                else
+                {
+                    CurrentRotations.DailyRotation();
+                    Console.WriteLine("Daily Reset Occurred.");
+                }
             }
-            else
+            catch (Exception x)
             {
-                CurrentRotations.DailyRotation();
-                Console.WriteLine("Daily Reset Occurred.");
+                CheckBungieAPI = new Timer(DailyResetChanges, null, 60000, Timeout.Infinite);
+                Console.WriteLine($"Reset Delayed; Reason: {x}");
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                return;
             }
 
             // Send reset embeds if applicable.
@@ -257,8 +270,6 @@ namespace Levante
                         ActiveConfig.PriorityActiveAFKUsers.Exists(x => x.DiscordChannelID == tempAau.DiscordChannelID)))
                         continue;
 
-                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out int powerBonus, out string errorStatus);
-
                     LogHelper.ConsoleLog($"[XP SESSIONS] Checking {tempAau.UniqueBungieName}.");
                     var actualUser = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
                     if (actualUser == null)
@@ -287,6 +298,8 @@ namespace Levante
                         //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
                         await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                     }
+
+                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out int powerBonus, out string errorStatus);
 
                     if (!errorStatus.Equals("Success"))
                     {
@@ -497,9 +510,10 @@ namespace Levante
 
                             tempLevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
                             {
-                                LastLoggedLevel = Level,
+                                Level = Level,
                                 UniqueBungieName = link.UniqueBungieName,
                             });
+                            await Task.Delay(250);
                         }
                         catch
                         {
@@ -510,7 +524,6 @@ namespace Levante
                             continue;
                         }
                     }
-                    await Task.Delay(250);
                 }
                 if (nameChange)
                     DataConfig.UpdateConfig();
@@ -519,11 +532,12 @@ namespace Levante
                 tempPowerLevelData.UpdateEntriesConfig();
                 LogHelper.ConsoleLog($"[LEADERBOARDS] Data pulling complete!");
             }
-            catch
+            catch (Exception x)
             {
-                LogHelper.ConsoleLog($"[LEADERBOARDS] Error while updating leaderboards, trying again at next refresh.");
+                LogHelper.ConsoleLog($"[LEADERBOARDS] Error while updating leaderboards, trying again at next refresh. {x}");
             }
         }
+
         #endregion
 
         private async Task InitializeListeners()
@@ -532,15 +546,15 @@ namespace Levante
             await _interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
             //_client.MessageReceived += HandleMessageAsync;
-            _client.InteractionCreated += HandleInteraction;
 
             _client.Ready += async () =>
             {
                 //397846250797662208
-                //await _interaction.RegisterCommandsToGuildAsync(397846250797662208);
+                await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                await _interaction.RegisterCommandsGloballyAsync();
+                //await _interaction.RegisterCommandsGloballyAsync();
+                //await _client.Rest.DeleteAllGlobalCommandsAsync();
 
                 foreach (var m in _interaction.Modules)
                 {
@@ -552,11 +566,13 @@ namespace Levante
                     }
                 }
                 BotConfig.LoggingChannel = _client.GetChannel(BotConfig.LogChannel) as SocketTextChannel;
-                //await _client.Rest.DeleteAllGlobalCommandsAsync();
+                BotConfig.CreationsLogChannel = _client.GetChannel(BotConfig.CommunityCreationsLogChannel) as SocketTextChannel;
                 await UpdateBotActivity(1);
             };
 
+            _client.InteractionCreated += HandleInteraction;
             _interaction.SlashCommandExecuted += SlashCommandExecuted;
+            _interaction.ComponentCommandExecuted += ComponentCommandExecuted;
             _client.SelectMenuExecuted += SelectMenuHandler;
             LevanteCordInstance.Client = _client;
         }
@@ -575,6 +591,22 @@ namespace Levante
                 }
             }
             await UpdateBotActivity();
+            return;
+        }
+
+        private async Task ComponentCommandExecuted(ComponentCommandInfo info, IInteractionContext context, Discord.Interactions.IResult result)
+        {
+            if (!result.IsSuccess)
+            {
+                switch (result.Error)
+                {
+                    case InteractionCommandError.UnmetPrecondition:
+                        await context.Interaction.RespondAsync($"{result.ErrorReason}", ephemeral: true);
+                        break;
+                    default:
+                        break;
+                }
+            }
             return;
         }
 
@@ -678,14 +710,14 @@ namespace Levante
                     return;
                 }
                 LostSectorRotation.RemoveUserTracking(interaction.User.Id);
-                if (LS == null && EAT == null)
+                if (LS == -1 && EAT == null)
                     await interaction.RespondAsync($"An error has occurred.", ephemeral: true);
-                else if (LS != null && EAT == null)
-                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is available.", ephemeral: true);
-                else if (LS == null &&EAT != null)
+                else if (LS != -1 && EAT == null)
+                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.LostSectors[LS].Name} is available.", ephemeral: true);
+                else if (LS == -1 && EAT != null)
                     await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when Lost Sectors are dropping {EAT}.", ephemeral: true);
-                else if (LS != null && EAT != null)
-                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is dropping {EAT}.", ephemeral: true);
+                else if (LS != -1 && EAT != null)
+                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.LostSectors[LS].Name} is dropping {EAT}.", ephemeral: true);
                 return;
             }
             else if (trackerType.Equals("nightfall"))
@@ -779,32 +811,6 @@ namespace Levante
         //    }
         //}
 
-        private async Task<bool> TryHandleCommandAsync(SocketUserMessage msg, int argPos)
-        {
-            var context = new SocketCommandContext(_client, msg);
-
-            var result = await _commands.ExecuteAsync(context, argPos, _services);
-
-            await UpdateBotActivity();
-
-            if (result.Error.HasValue)
-            {
-                CommandError error = result.Error.Value;
-
-                if (error == CommandError.UnknownCommand)
-                    return true;
-                else if (error == CommandError.UnmetPrecondition)
-                {
-                    await context.Channel.SendMessageAsync($"[{error}]: {result.ErrorReason}").ConfigureAwait(false);
-                }
-                else if (error == CommandError.BadArgCount)
-                {
-                    await context.Channel.SendMessageAsync($"[{error}]: Command is missing some arguments.").ConfigureAwait(false);
-                }
-            }
-            return true;
-        }
-
         private async Task HandleInteraction(SocketInteraction arg)
         {
             try
@@ -819,6 +825,7 @@ namespace Levante
 
                 // If a Slash Command execution fails it is most likely that the original interaction acknowledgement will persist. It is a good idea to delete the original
                 // response, or at least let the user know that something went wrong during the command execution.
+                var ctx = new SocketInteractionContext(_client, arg);
                 if (arg.Type == InteractionType.ApplicationCommand)
                     await arg.GetOriginalResponseAsync().ContinueWith(async (msg) => await msg.Result.DeleteAsync());
             }

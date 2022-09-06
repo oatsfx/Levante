@@ -88,7 +88,7 @@ namespace Levante.Helpers
         private static string GetValueString(LeaderboardEntry LE)
         {
             if (LE.GetType() == typeof(LevelData.LevelDataEntry))
-                return $"Level: {(LE as LevelData.LevelDataEntry).LastLoggedLevel}";
+                return $"Level: {(LE as LevelData.LevelDataEntry).Level}";
             else if (LE.GetType() == typeof(LongestSessionData.LongestSessionEntry))
                 return $"{(Math.Floor((LE as LongestSessionData.LongestSessionEntry).Time.TotalHours) > 0 ? $"{Math.Floor((LE as LongestSessionData.LongestSessionEntry).Time.TotalHours)}h " : "")}" +
                     $"{((LE as LongestSessionData.LongestSessionEntry).Time.Minutes > 0 ? $"{(LE as LongestSessionData.LongestSessionEntry).Time.Minutes:00}m " : "")}" +

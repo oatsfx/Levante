@@ -10,7 +10,7 @@ namespace Levante.Rotations
 {
     public class FeaturedRaidRotation
     {
-        public static readonly int FeaturedRaidCount = 4;
+        public static readonly int FeaturedRaidCount = 5;
         public static readonly string FilePath = @"Trackers/featuredRaid.json";
 
         [JsonProperty("FeaturedRaidLinks")]
@@ -33,6 +33,7 @@ namespace Levante.Rotations
                 case Raid.GardenOfSalvation: return "Garden of Salvation";
                 case Raid.DeepStoneCrypt: return "Deep Stone Crypt";
                 case Raid.VaultOfGlass: return "Vault of Glass";
+                case Raid.VowOfTheDisciple: return "Vow of the Disciple";
                 default: return "Raid String";
             }
         }
@@ -91,7 +92,7 @@ namespace Levante.Rotations
             int WeeksUntil = 0;
             do
             {
-                iterationRaid = iterationRaid == Raid.VaultOfGlass ? Raid.LastWish : iterationRaid + 1;
+                iterationRaid = iterationRaid == Raid.VowOfTheDisciple ? Raid.LastWish : iterationRaid + 1;
                 WeeksUntil++;
             } while (iterationRaid != Raid);
             return CurrentRotations.WeeklyResetTimestamp.AddDays(WeeksUntil * 7); // Because there is no .AddWeeks().
@@ -104,5 +105,6 @@ namespace Levante.Rotations
         GardenOfSalvation, // Pit of Heresy
         DeepStoneCrypt, // Prophecy
         VaultOfGlass, // Grasp of Avarice
+        VowOfTheDisciple,
     }
 }

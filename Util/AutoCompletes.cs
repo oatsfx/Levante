@@ -127,15 +127,15 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < LostSectorRotation.LostSectorCount; i++)
+                for (int i = 0; i < LostSectorRotation.LostSectors.Count; i++)
                 {
-                    results.Add(new AutocompleteResult(LostSectorRotation.GetLostSectorString((LostSector)i), (LostSector)i));
+                    results.Add(new AutocompleteResult(LostSectorRotation.LostSectors[i].Name, i));
                 }
             else
-                for (int i = 0; i < LostSectorRotation.LostSectorCount; i++)
+                for (int i = 0; i < LostSectorRotation.LostSectors.Count; i++)
                 {
-                    if (LostSectorRotation.GetLostSectorString((LostSector)i).Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult(LostSectorRotation.GetLostSectorString((LostSector)i), (LostSector)i));
+                    if (LostSectorRotation.LostSectors[i].Name.Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(LostSectorRotation.LostSectors[i].Name, i));
                 }
 
             // max - 25 suggestions at a time (API limit)

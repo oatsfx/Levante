@@ -217,41 +217,41 @@ namespace Levante.Commands
             }
 
             [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
-            public async Task LostSector([Summary("lost-sector", "Lost Sector to be alerted for."), Autocomplete(typeof(LostSectorAutocomplete))] int? ArgLS = null,
+            public async Task LostSector([Summary("lost-sector", "Lost Sector to be alerted for."), Autocomplete(typeof(LostSectorAutocomplete))] int ArgLS = -1,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop to be alerted for.")] ExoticArmorType? ArgEAT = null)
             {
-                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-                return;
+                //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
+                //return;
 
                 if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
                 {
-                    if (LS == null && EAT == null)
+                    if (LS == -1 && EAT == null)
                         await RespondAsync($"An error has occurred.", ephemeral: true);
-                    else if (LS != null && EAT == null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)}.", ephemeral: true);
-                    else if (LS == null && EAT != null)
+                    else if (LS != -1 && EAT == null)
+                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.LostSectors[LS].Name}.", ephemeral: true);
+                    else if (LS == -1 && EAT != null)
                         await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {EAT} armor drop.", ephemeral: true);
-                    else if (LS != null && EAT != null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.GetLostSectorString((LostSector)LS)} dropping {EAT}.", ephemeral: true);
+                    else if (LS != -1 && EAT != null)
+                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.LostSectors[LS].Name} dropping {EAT}.", ephemeral: true);
 
                     return;
                 }
-                LS = (LostSector?)ArgLS;
+                LS = ArgLS;
                 EAT = ArgEAT;
 
-                if (LS == null && EAT == null)
+                if (LS == -1 && EAT == null)
                 {
                     await RespondAsync($"You left both arguments blank; I can't track nothing!", ephemeral: true);
                     return;
                 }
 
                 LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
-                if (LS != null && EAT == null)
-                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (LS == null && EAT != null)
+                if (LS != -1 && EAT == null)
+                    await RespondAsync($"I will remind you when {LostSectorRotation.LostSectors[LS].Name} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                else if (LS == -1 && EAT != null)
                     await RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (LS != null && EAT != null)
-                    await RespondAsync($"I will remind you when {LostSectorRotation.GetLostSectorString((LostSector)LS)} is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                else if (LS != -1 && EAT != null)
+                    await RespondAsync($"I will remind you when {LostSectorRotation.LostSectors[LS].Name} is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
 
                 return;
             }
@@ -413,14 +413,14 @@ namespace Levante.Commands
 
                 if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
                 {
-                    if (LS == null && EAT == null)
+                    if (LS == -1 && EAT == null)
                         menuBuilder.AddOption("Lost Sector", "remove-error", $"Nothing found");
-                    else if (LS != null && EAT == null)
-                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)}");
-                    else if (LS == null && EAT != null)
+                    else if (LS != -1 && EAT == null)
+                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.LostSectors[LS].Name}");
+                    else if (LS == -1 && EAT != null)
                         menuBuilder.AddOption("Lost Sector", "lost-sector", $"{EAT} Drop");
-                    else if (LS != null && EAT != null)
-                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.GetLostSectorString((LostSector)LS)} dropping {EAT}");
+                    else if (LS != -1 && EAT != null)
+                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.LostSectors[LS].Name} dropping {EAT}");
                 }
 
                 if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var NFWeapon) != null)
@@ -647,13 +647,13 @@ namespace Levante.Commands
             }
 
             [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
-            public async Task LostSector([Summary("lost-sector", "Lost Sector to predict its next appearance."), Autocomplete(typeof(LostSectorAutocomplete))] int? ArgLS = null,
+            public async Task LostSector([Summary("lost-sector", "Lost Sector to predict its next appearance."), Autocomplete(typeof(LostSectorAutocomplete))] int ArgLS = -1,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop to predict its next appearance.")] ExoticArmorType? ArgEAT = null)
             {
-                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-                return;
+                //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
+                //return;
 
-                LostSector? LS = (LostSector?)ArgLS;
+                int LS = ArgLS;
                 ExoticArmorType? EAT = ArgEAT;
 
                 var predictedDate = LostSectorRotation.DatePrediction(LS, EAT);
@@ -662,18 +662,18 @@ namespace Levante.Commands
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
                 embed.Title = "Lost Sectors";
-                if (LS == null && EAT == null)
+                if (LS == -1 && EAT == null)
                     await RespondAsync($"An error has occurred. No parameters.", ephemeral: true);
-                else if (LS != null && EAT == null)
+                else if (LS != -1 && EAT == null)
                     embed.Description =
-                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (LS == null && EAT != null)
+                        $"Next occurrance of {LostSectorRotation.LostSectors[LS].Name} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                else if (LS == -1 && EAT != null)
                     embed.Description =
                         $"Next occurrance of Lost Sectors" +
                             $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (LS != null && EAT != null)
+                else if (LS != -1 && EAT != null)
                     embed.Description =
-                        $"Next occurrance of {LostSectorRotation.GetLostSectorString((LostSector)LS)}" +
+                        $"Next occurrance of {LostSectorRotation.LostSectors[LS].Name}" +
                             $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
                 await RespondAsync($"", embed: embed.Build());
@@ -684,7 +684,7 @@ namespace Levante.Commands
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike to predict its next appearance."), Autocomplete(typeof(NightfallAutocomplete))] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike Weapon drop."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int? ArgWeapon = null)
             {
-                await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
+                await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
                 return;
 
                 Nightfall? NF = (Nightfall?)ArgNF;
