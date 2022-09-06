@@ -30,8 +30,6 @@ namespace Levante.Util
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                var linkedUser = DataConfig.DiscordIDLinks.Find(x => x.BungieMembershipID.Equals(membershipId));
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
 
                 var response = client.GetAsync(APIUrl).Result;
                 GuardianContent = response.Content.ReadAsStringAsync().Result;
@@ -87,6 +85,8 @@ namespace Levante.Util
             dynamic item1 = JsonConvert.DeserializeObject(GuardianContent);
             if (item1.Response.character.data.titleRecordHash == null)
                 return null;
+            if (item1.Response.records == null)
+                return null;
             long sealHash = (long)item1.Response.character.data.titleRecordHash;
             string sealResult = $"{ManifestHelper.Seals[sealHash]}";
 
@@ -95,8 +95,6 @@ namespace Levante.Util
                 using (var client = new HttpClient())
                 {
                     client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    var linkedUser = DataConfig.DiscordIDLinks.Find(x => x.BungieMembershipID.Equals(MembershipID));
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
                     var trackHash = ManifestHelper.GildableSeals[sealHash];
                     var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=900").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
