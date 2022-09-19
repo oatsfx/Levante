@@ -106,7 +106,7 @@ namespace Levante.Commands
                     if (remainder + XPProgress > 100000)
                         seasonRanksNeededPlayer += 1;
 
-                    embed.Title += $"{Level + seasonRanksNeededPlayer:0.00}";
+                    embed.Title += $"{Level + seasonRanksNeededPlayer + ((double)XPProgress / 100000):0.00}";
                     embed.Description =
                         $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{Level + seasonRanksNeededPlayer + ((double)XPProgress / 100000):0.00}** (Need {seasonRanksNeededPlayer:0.00}).";
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
@@ -217,7 +217,7 @@ namespace Levante.Commands
             public async Task LinkedUser([Summary("user", "User to get Guardian information for.")] IUser User,
                 [Summary("class", "Guardian Class to get information for.")] Guardian.Class ClassType,
                 [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
-                Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5)]int ArgPlatform = 0)
+                Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5), Choice("Epic Games", 6)]int ArgPlatform = 0)
             {
                 DataConfig.DiscordIDLink LinkedUser = DataConfig.GetLinkedUser(User.Id);
                 Guardian.Platform Platform = (Guardian.Platform)ArgPlatform;
@@ -284,7 +284,7 @@ namespace Levante.Commands
             public async Task BungieTag([Summary("player", "Player's Bungie tag to get Guardian information for."), Autocomplete(typeof(BungieTagAutocomplete))] string BungieTag,
                 [Summary("class", "Guardian Class to get information for.")] Guardian.Class ClassType,
                 [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
-                Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5)]int ArgPlatform = 0)
+                Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5), Choice("Epic Games", 6)]int ArgPlatform = 0)
             {
                 Guardian.Platform Platform = (Guardian.Platform)ArgPlatform;
 
@@ -507,12 +507,10 @@ namespace Levante.Commands
         public async Task LostSector([Summary("lost-sector", "Lost Sector name."), Autocomplete(typeof(LostSectorAutocomplete))] int ArgLS,
                 [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty ArgLSD)
         {
-            await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-            return;
-            LostSector LS = (LostSector)ArgLS;
-            LostSectorDifficulty LSD = ArgLSD;
+            //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
+            //return;
 
-            await RespondAsync(embed: LostSectorRotation.GetLostSectorEmbed(LS, LSD).Build());
+            await RespondAsync(embed: LostSectorRotation.GetLostSectorEmbed(ArgLS, ArgLSD).Build());
             return;
         }
 
@@ -531,7 +529,11 @@ namespace Levante.Commands
             }
 
             int Glimmer = 0, LegendaryShards = 0, UpgradeModules = 0, EnhancementCores = 0, EnhancementPrisms = 0, AscendantShards = 0,
-                SpoilsOfConquest = 0, BrightDust = 0, ResonantElement = 0, ResonantAlloy = 0, DrownedAlloy = 0, AscendantAlloy = 0;
+                SpoilsOfConquest = 0, RaidBanners = 0, BrightDust = 0, ResonantElement = 0, ResonantAlloy = 0, HarmonicAlloy = 0, AscendantAlloy = 0,
+                StrangeCoins = 0, TreasureKeys = 0, ParaversalHauls = 0, TinctureOfQueensfoil = 0, PhantasmalFragments = 0, HerealwaysPieces = 0;
+
+            // <Hash, Amount>
+            var seasonalMats = new Dictionary<long, int>();
 
             using (var client = new HttpClient())
             {
@@ -545,6 +547,20 @@ namespace Levante.Commands
                 for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
                 {
                     long hash = item.Response.profileInventory.data.items[i].itemHash;
+                    if (BotConfig.SeasonalCurrencyHashes.ContainsKey(hash))
+                    {
+                        if (seasonalMats.ContainsKey(hash))
+                        {
+                            seasonalMats[hash] += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}");
+                            continue;
+                        }
+                        else
+                        {
+                            seasonalMats.Add(hash, int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"));
+                            continue;
+                        }
+                    }
+
                     switch (hash)
                     {
                         // Upgrade Modules
@@ -565,11 +581,32 @@ namespace Levante.Commands
                         // Resonant Alloy
                         case 2497395625: ResonantAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
 
-                        // Drowned Alloy
-                        case 2708128607: DrownedAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        // Harmonic Alloy
+                        case 2708128607: HarmonicAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
 
                         // Ascendant Alloy
                         case 353704689: AscendantAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Raid Banners
+                        case 3282419336: RaidBanners += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Tincture Of Queensfoil
+                        case 2367713531: TinctureOfQueensfoil += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Strange Coins
+                        case 800069450: StrangeCoins += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Treasure Keys
+                        case 616392721: TreasureKeys += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Paraversal Hauls
+                        case 1116049802: ParaversalHauls += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Phantasmal Fragments
+                        case 443031982: PhantasmalFragments += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Herealways Pieces
+                        case 2993288448: HerealwaysPieces += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
 
                         default: break;
                     }
@@ -601,8 +638,8 @@ namespace Levante.Commands
                             // Resonant Alloy
                             case 2497395625: ResonantAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
-                            // Drowned Alloy
-                            case 2708128607: DrownedAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+                            // Harmonic Alloy
+                            case 2708128607: HarmonicAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
                             // Ascendant Alloy
                             case 353704689: AscendantAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
@@ -655,17 +692,56 @@ namespace Levante.Commands
                     x.Name = "Crafting";
                     x.Value = $"{DestinyEmote.ResonantElement} {ResonantElement:n0}\n" +
                         $"{DestinyEmote.ResonantAlloy} {ResonantAlloy:n0}\n" +
-                        $"{DestinyEmote.DrownedAlloy} {DrownedAlloy:n0}\n" +
+                        $"{DestinyEmote.HarmonicAlloy} {HarmonicAlloy:n0}\n" +
                         $"{DestinyEmote.AscendantAlloy} {AscendantAlloy:n0}";
                     x.IsInline = true;
-                })
-                .AddField(x =>
+                }).AddField(x =>
+                {
+                    x.Name = "Campaign";
+                    x.Value = $"{DestinyEmote.TinctureOfQueensfoil} {TinctureOfQueensfoil:n0}\n" +
+                        $"{DestinyEmote.PhantasmalFragments} {PhantasmalFragments:n0}\n" +
+                        $"{DestinyEmote.HerealwaysPieces} {HerealwaysPieces:n0}";
+                    x.IsInline = true;
+                }).AddField(x =>
                 {
                     x.Name = "Miscellaneous";
                     x.Value = $"{DestinyEmote.UpgradeModule} {UpgradeModules:n0}\n" +
-                        $"{DestinyEmote.SpoilsOfConquest} {SpoilsOfConquest:n0}";
+                        $"{DestinyEmote.SpoilsOfConquest} {SpoilsOfConquest:n0}\n" +
+                        $"{DestinyEmote.RaidBanners} {RaidBanners:n0}\n" +
+                        $"{DestinyEmote.StrangeCoins} {StrangeCoins:n0}\n" +
+                        $"{DestinyEmote.ParaversalHauls} {ParaversalHauls:n0}\n" +
+                        $"{DestinyEmote.TreasureKeys} {TreasureKeys:n0}";
                     x.IsInline = true;
                 });
+
+                if (seasonalMats.Count > 0)
+                {
+                    string json = File.ReadAllText(EmoteConfig.FilePath);
+                    var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
+                    
+
+                    string result = "";
+                    foreach (var seasonalMat in seasonalMats)
+                    {
+                        if (!emoteCfg.Emotes.ContainsKey(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", "")))
+                        {
+                            response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/" + seasonalMat.Key).Result;
+                            content = response.Content.ReadAsStringAsync().Result;
+                            item = JsonConvert.DeserializeObject(content);
+                            var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{item.Response.displayProperties.icon}").Result;
+                            Task.Run(() => emoteCfg.AddEmote(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                            emoteCfg.UpdateJSON();
+                        }
+                        result += $"{emoteCfg.Emotes[BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", "")]} {seasonalMat.Value:n0}\n";
+                    }
+
+                    embed.AddField(x =>
+                    {
+                        x.Name = "Seasonal";
+                        x.Value = result;
+                        x.IsInline = true;
+                    });
+                }
 
                 await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
             }
@@ -805,6 +881,12 @@ namespace Levante.Commands
                     return;
                 }
 
+                if (emblem.GetItemType() != BungieSharper.Entities.Destiny.DestinyItemType.Emblem)
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Hash Code: {HashCode} is not an Emblem type."; });
+                    return;
+                }
+
                 await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
 
@@ -831,7 +913,13 @@ namespace Levante.Commands
                 }
                 catch (Exception)
                 {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No weapon found for Hash Code: {HashCode}."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No weapon found for Hash Code: {HashCode}.";});
+                    return;
+                }
+
+                if (weapon.GetItemType() != BungieSharper.Entities.Destiny.DestinyItemType.Weapon)
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Hash Code: {HashCode} is not a Weapon type."; });
                     return;
                 }
 

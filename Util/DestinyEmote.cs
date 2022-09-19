@@ -93,6 +93,7 @@ namespace Levante.Util
         public static readonly string Ada1 = "<:Ada1:1009837298814288003>";
         public static readonly string AscendantChallengeBounty = "<:ACBounty:934478080737693787>";
         public static readonly string Classified = "<:Classified:1014305658390184006>";
+        public static readonly string Enhanced = "<:Enhanced:1020834766397911080>";
         public static readonly string Gilded = "<:Gilded:994067890024235029>";
         public static readonly string GildedPurple = "<:GildedPurple:996604027867500574>";
         public static readonly string Light = "<:LightLevel:844029708077367297>";
@@ -108,14 +109,21 @@ namespace Levante.Util
         public static readonly string AscendantAlloy = "<:AscendantAlloy:986514954620403752>";
         public static readonly string AscendantShard = "<:AscendantShard:986514809635897394>";
         public static readonly string BrightDust = "<:BrightDust:986514672532471818>";
-        public static readonly string DrownedAlloy = "<:DrownedAlloy:986514928401797150>";
         public static readonly string EnhancementCore = "<:EnhancementCore:986514755458064414>";
         public static readonly string EnhancementPrism = "<:EnhancementPrism:986514778451226744>";
         public static readonly string Glimmer = "<:Glimmer:986514625531088906>";
+        public static readonly string HarmonicAlloy = "<:HarmonicAlloy:986514928401797150>";
+        public static readonly string HerealwaysPieces = "<:HerealwayPieces:1020468055853240320>";
         public static readonly string LegendaryShards = "<:LegendaryShards:986514643449163776>";
+        public static readonly string ParaversalHauls = "<:ParaversalHauls:1020468359260811274>";
+        public static readonly string PhantasmalFragments = "<:PhantasmalFragments:1020468360464576602>";
+        public static readonly string RaidBanners = "<:RaidBanners:1020468791244763226>";
         public static readonly string ResonantAlloy = "<:ResonantAlloy:986514895946268742>";
         public static readonly string ResonantElement = "<:ResonantElement:986676994731278417>";
         public static readonly string SpoilsOfConquest = "<:SpoilsOfConquest:986514871850008616>";
+        public static readonly string StrangeCoins = "<:StrangeCoins:1020469985132425348>";
+        public static readonly string TinctureOfQueensfoil = "<:TinctureOfQueensfoil:1020468790078738462>";
+        public static readonly string TreasureKeys = "<:TreasureKeys:1020468358229016596>";
         public static readonly string UpgradeModule = "<:UpgradeModule:986514733609926656>";
 
         // Stats

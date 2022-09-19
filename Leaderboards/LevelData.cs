@@ -17,7 +17,7 @@ namespace Levante.Leaderboards
         public partial class LevelDataEntry : LeaderboardEntry
         {
             [JsonProperty("LastLoggedLevel")]
-            public int LastLoggedLevel { get; set; } = -1;
+            public int Level { get; set; } = -1;
 
             [JsonProperty("UniqueBungieName")]
             public string UniqueBungieName { get; set; } = "Guardian#0000";
@@ -42,12 +42,12 @@ namespace Levante.Leaderboards
 
         private int Partition(int Start, int End)
         {
-            int Center = LevelDataEntries[End].LastLoggedLevel;
+            int Center = LevelDataEntries[End].Level;
 
             int i = Start - 1;
             for (int j = Start; j < End; j++)
             {
-                if (LevelDataEntries[j].LastLoggedLevel >= Center)
+                if (LevelDataEntries[j].Level >= Center)
                 {
                     i++;
                     var temp1 = LevelDataEntries[i];
@@ -75,7 +75,7 @@ namespace Levante.Leaderboards
         {
             LevelDataEntry lde = new LevelDataEntry()
             {
-                LastLoggedLevel = Level,
+                Level = Level,
                 UniqueBungieName = BungieName
             };
             string json = File.ReadAllText(FilePath);

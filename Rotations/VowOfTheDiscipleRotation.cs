@@ -10,7 +10,7 @@ namespace Levante.Rotations
 {
     public class VowOfTheDiscipleRotation
     {
-        public static readonly int VaultOfGlassEncounterCount = 5;
+        public static readonly int VowOfTheDiscipleEncounterCount = 5;
         public static readonly string FilePath = @"Trackers/vowOfTheDisciple.json";
 
         [JsonProperty("VowOfTheDiscipleLinks")]

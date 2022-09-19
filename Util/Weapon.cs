@@ -14,12 +14,15 @@ namespace Levante.Util
 {
     public class Weapon : InventoryItem
     {
+        private readonly bool IsCraftable;
+
         public Weapon(long hashCode)
         {
             HashCode = hashCode;
             APIUrl = $"https://www.bungie.net/platform/Destiny2/Manifest/DestinyInventoryItemDefinition/" + HashCode;
 
             Content = ManifestConnection.GetInventoryItemById(unchecked((int)hashCode));
+            IsCraftable = (Content.Inventory != null && Content.Inventory.RecipeItemHash != null) || Content.ItemType == BungieSharper.Entities.Destiny.DestinyItemType.Pattern;
         }
 
         public string GetSourceString()
@@ -51,7 +54,8 @@ namespace Levante.Util
                 List<int> perkIndexes = new List<int>();
                 for (int i = 0; i < Content.Sockets.SocketCategories.Count(); i++)
                 {
-                    if (Content.Sockets.SocketCategories.ElementAt(i).SocketCategoryHash == 4241085061)
+                    if (Content.Sockets.SocketCategories.ElementAt(i).SocketCategoryHash == 4241085061 ||
+                        Content.Sockets.SocketCategories.ElementAt(i).SocketCategoryHash == 3410521964)
                         for (int j = 0; j < Content.Sockets.SocketCategories.ElementAt(i).SocketIndexes.Count(); j++)
                             perkIndexes.Add(Convert.ToInt32(Content.Sockets.SocketCategories.ElementAt(i).SocketIndexes.ElementAt(j)));
                 }
@@ -63,9 +67,9 @@ namespace Levante.Util
                     return null;
 
                 if (Content.Sockets.SocketEntries.ElementAt(perkIndexes[Column - 1]).RandomizedPlugSetHash == null)
-                    return new PlugSet((long)Content.Sockets.SocketEntries.ElementAt(perkIndexes[Column - 1]).ReusablePlugSetHash);
+                    return new PlugSet((long)Content.Sockets.SocketEntries.ElementAt(perkIndexes[Column - 1]).ReusablePlugSetHash, IsCraftable);
                 else
-                    return new PlugSet((long)Content.Sockets.SocketEntries.ElementAt(perkIndexes[Column - 1]).RandomizedPlugSetHash);
+                    return new PlugSet((long)Content.Sockets.SocketEntries.ElementAt(perkIndexes[Column - 1]).RandomizedPlugSetHash, IsCraftable);
             }
             catch
             {
@@ -132,40 +136,85 @@ namespace Levante.Util
                 x.Name = $"> Information";
                 x.Value = $"{GetDamageType()} {GetSpecificItemType()}\n" +
                     $"*{GetFlavorText()}*\n";
-                x.Value += $"{DestinyEmote.Pattern}Craftable?: {(Content.Inventory.RecipeItemHash != null ? "Yes" : "No")}";
+                x.Value += $"{DestinyEmote.Pattern}Craftable?: {(IsCraftable ? "Yes" : "No")}";
                 x.IsInline = false;
-            })
-            .AddField(x =>
+            }).AddField(x =>
             {
                 x.Name = $"> Perks";
-                x.Value = $"*List of perks for this weapon, per column.*\n" +
-                    $"Intrinsic: {GetIntrinsic().GetName()}\n";
+                x.Value = $"*List of perks for this weapon, per column.*";
                 x.IsInline = false;
-            })
-            .AddField(x =>
-            {
-                x.Name = $"Column 1";
-                x.Value = $"{(GetRandomPerks(1) == null ? "No perks." : GetRandomPerks(1).BuildStringList())}";
-                x.IsInline = true;
-            })
-            .AddField(x =>
-            {
-                x.Name = $"Column 2";
-                x.Value = $"{(GetRandomPerks(2) == null ? "No perks." : GetRandomPerks(2).BuildStringList())}";
-                x.IsInline = true;
-            }).AddField("\u200b", '\u200b')
-            .AddField(x =>
-            {
-                x.Name = $"Column 3";
-                x.Value = $"{(GetRandomPerks(3) == null ? "No perks." : GetRandomPerks(3).BuildStringList())}";
-                x.IsInline = true;
-            })
-            .AddField(x =>
-            {
-                x.Name = $"Column 4";
-                x.Value = $"{(GetRandomPerks(4) == null ? "No perks." : GetRandomPerks(4).BuildStringList())}";
-                x.IsInline = true;
             });
+
+            if (IsCraftable)
+            {
+                var recipeDef = new Weapon((long)Content.Inventory.RecipeItemHash);
+                var plug1 = recipeDef.GetRandomPerks(1);
+                var plug2 = recipeDef.GetRandomPerks(2);
+                var plug3 = recipeDef.GetRandomPerks(3);
+                var plug4 = recipeDef.GetRandomPerks(4);
+                var plug5 = recipeDef.GetRandomPerks(5);
+
+                embed.AddField(x =>
+                {
+                    x.Name = "Intrinsic";
+                    x.Value = $"{(plug1 == null ? "No intrinsic." : plug1.BuildStringList())}";
+                    x.IsInline = false;
+                }).AddField(x =>
+                {
+                    x.Name = $"Column 1";
+                    x.Value = $"{(plug2 == null ? "No perks." : plug2.BuildStringList())}";
+                    x.IsInline = true;
+                }).AddField(x =>
+                {
+                    x.Name = $"Column 2";
+                    x.Value = $"{(plug3 == null ? "No perks." : plug3.BuildStringList())}";
+                    x.IsInline = true;
+                }).AddField("\u200b", '\u200b').AddField(x =>
+                {
+                    x.Name = $"Column 3";
+                    x.Value = $"{(plug4 == null ? "No perks." : plug4.BuildStringList())}";
+                    x.IsInline = true;
+                }).AddField(x =>
+                {
+                    x.Name = $"Column 4";
+                    x.Value = $"{(plug5 == null ? "No perks." : plug5.BuildStringList())}";
+                    x.IsInline = true;
+                });
+            }
+            else
+            {
+                var plug1 = GetRandomPerks(1);
+                var plug2 = GetRandomPerks(2);
+                var plug3 = GetRandomPerks(3);
+                var plug4 = GetRandomPerks(4);
+
+                embed.AddField(x =>
+                {
+                    x.Name = "Intrinsic";
+                    x.Value = $"{GetIntrinsic().GetName()}";
+                    x.IsInline = false;
+                }).AddField(x =>
+                {
+                    x.Name = $"Column 1";
+                    x.Value = $"{(GetRandomPerks(1) == null ? "No perks." : GetRandomPerks(1).BuildStringList())}";
+                    x.IsInline = true;
+                }).AddField(x =>
+                {
+                    x.Name = $"Column 2";
+                    x.Value = $"{(GetRandomPerks(2) == null ? "No perks." : GetRandomPerks(2).BuildStringList())}";
+                    x.IsInline = true;
+                }).AddField("\u200b", '\u200b').AddField(x =>
+                {
+                    x.Name = $"Column 3";
+                    x.Value = $"{(GetRandomPerks(3) == null ? "No perks." : GetRandomPerks(3).BuildStringList())}";
+                    x.IsInline = true;
+                }).AddField(x =>
+                {
+                    x.Name = $"Column 4";
+                    x.Value = $"{(GetRandomPerks(4) == null ? "No perks." : GetRandomPerks(4).BuildStringList())}";
+                    x.IsInline = true;
+                });
+            }
 
             if (GetFoundryPerks() != null)
             {

@@ -1,4 +1,5 @@
 ﻿using APIHelper;
+using BungieSharper.Entities.Destiny.Definitions;
 using Discord;
 using Levante.Helpers;
 using System;
@@ -17,7 +18,9 @@ namespace Levante.Util
             Content = ManifestConnection.GetInventoryItemById(unchecked((int)hashCode));
         }
 
-        public bool IsEnhanced() => Content.ItemTypeDisplayName.Contains("Enhanced"); 
+        public bool IsEnhanced() => Content.ItemTypeDisplayName.Contains("Enhanced");
+
+        public IEnumerable<DestinyItemPerkEntryDefinition> GetSandboxPerks() => Content.Perks;
 
         public override EmbedBuilder GetEmbed()
         {

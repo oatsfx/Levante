@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using BungieSharper.Entities.Destiny.Definitions;
+using BungieSharper.Entities.Destiny;
 
 namespace Levante.Util
 {
@@ -26,7 +27,9 @@ namespace Levante.Util
 
         public string GetIconUrl() => "https://www.bungie.net" + Content.DisplayProperties.Icon;
 
-        public string GetItemType() => Content.ItemTypeDisplayName;
+        public string GetItemTypeDisplayName() => Content.ItemTypeDisplayName;
+
+        public DestinyItemType GetItemType() => Content.ItemType;
 
         public string GetSpecificItemType() => Content.ItemTypeAndTierDisplayName;
 

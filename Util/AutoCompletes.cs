@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 
 namespace Levante.Util
@@ -127,15 +128,15 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < LostSectorRotation.LostSectorCount; i++)
+                for (int i = 0; i < LostSectorRotation.LostSectors.Count; i++)
                 {
-                    results.Add(new AutocompleteResult(LostSectorRotation.GetLostSectorString((LostSector)i), (LostSector)i));
+                    results.Add(new AutocompleteResult(LostSectorRotation.LostSectors[i].Name, i));
                 }
             else
-                for (int i = 0; i < LostSectorRotation.LostSectorCount; i++)
+                for (int i = 0; i < LostSectorRotation.LostSectors.Count; i++)
                 {
-                    if (LostSectorRotation.GetLostSectorString((LostSector)i).Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult(LostSectorRotation.GetLostSectorString((LostSector)i), (LostSector)i));
+                    if (LostSectorRotation.LostSectors[i].Name.Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(LostSectorRotation.LostSectors[i].Name, i));
                 }
 
             // max - 25 suggestions at a time (API limit)
@@ -212,10 +213,10 @@ namespace Levante.Util
                 using (var client = new HttpClient())
                 {
                     client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    // Attempt to use post, but results in Error Code 30.
+                    //Attempt to use post, but results in Error Code 30.
                     //var values = new Dictionary<string, string>
                     //{
-                    //    { "displayNamePrefix", SearchQuery },
+                    //    { "displayNamePrefix", $"{SearchQuery}" }
                     //};
                     //var postContent = new FormUrlEncodedContent(values);
 

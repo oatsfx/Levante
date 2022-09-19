@@ -169,6 +169,16 @@ namespace Levante.Util
                 x.Value = $"[{GetEmblem().GetName()}]({GetEmblem().GetDECUrl()})";
                 x.IsInline = true;
             });
+            
+            if (item.Response.activities.data != null)
+            {
+                embed.AddField(x =>
+                {
+                    x.Name = "Activity";
+                    x.Value = $"{ManifestHelper.Activities[(long)item.Response.activities.data.currentActivityHash]}";
+                    x.IsInline = true;
+                });
+            }
 
             if (seal != null)
             {
@@ -211,6 +221,7 @@ namespace Levante.Util
             Steam,
             Blizzard, // Not Used
             Stadia,
+            EpicGames,
         }
     }
 }
