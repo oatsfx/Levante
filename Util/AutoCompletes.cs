@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 
 namespace Levante.Util
@@ -212,10 +213,10 @@ namespace Levante.Util
                 using (var client = new HttpClient())
                 {
                     client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    // Attempt to use post, but results in Error Code 30.
+                    //Attempt to use post, but results in Error Code 30.
                     //var values = new Dictionary<string, string>
                     //{
-                    //    { "displayNamePrefix", SearchQuery },
+                    //    { "displayNamePrefix", $"{SearchQuery}" }
                     //};
                     //var postContent = new FormUrlEncodedContent(values);
 

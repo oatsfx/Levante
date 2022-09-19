@@ -76,7 +76,7 @@ namespace Levante.Rotations
                 var token = JToken.Parse($"{item.Response.sales.data}");
                 var jObject = token.Value<JObject>();
                 List<string> keys = jObject.Properties().Select(p => p.Name).ToList();
-                //Console.Write(jObject);
+
                 CurrentRotations.Ada1Mods.Clear();
                 for (int i = 0; i < token.Count(); i++)
                 {

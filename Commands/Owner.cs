@@ -16,6 +16,9 @@ using System.Collections.Generic;
 using Discord.Interactions;
 using System.Diagnostics;
 using Levante.Util.Attributes;
+using BungieSharper.Entities.Forum;
+using System.Collections.Immutable;
+using System.Globalization;
 
 namespace Levante.Commands
 {
@@ -590,17 +593,186 @@ namespace Levante.Commands
         public async Task CheckManifest()
         {
             await DeferAsync();
-            if (!ManifestHelper.IsNewManifest())
+            if (ManifestHelper.IsNewManifest())
             {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"No new Manifest. Current Version: {ManifestHelper.DestinyManifestVersion}");
+                var oldVersion = ManifestHelper.DestinyManifestVersion;
+                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"New Manifest found! Updating the stuffs...");
+                await Task.Run(() => ManifestHelper.LoadManifestDictionaries());
+                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"Updated! {oldVersion} -> {ManifestHelper.DestinyManifestVersion}");
                 return;
             }
 
-            var oldVersion = ManifestHelper.DestinyManifestVersion;
-            await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"New Manifest found! Updating the stuffs...");
-            await Task.Run(() => ManifestHelper.LoadManifestDictionaries());
-            await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"Updated! {oldVersion} -> {ManifestHelper.DestinyManifestVersion}");
+            await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"No new Manifest. Current Version: {ManifestHelper.DestinyManifestVersion}");
             return;
+        }
+
+        [RequireBotStaff]
+        [SlashCommand("creations-stats", "[BOT STAFF]: Grab various statistics regarding Bungie's Community Creations page.")]
+        public async Task CreationsStats()
+        {
+            await DeferAsync();
+            Dictionary<KeyValuePair<string, string>, int> moderators = new();
+            DateTime oldest = DateTime.Now;
+            int totalIndexed = 0;
+            
+            using (var client = new HttpClient())
+            {
+                try
+                {
+                    // Name, Id, Amount Approved
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    int page = 0;
+                    bool hasMore = true;
+                    do
+                    {
+                        var response = client.GetAsync($"https://www.bungie.net/Platform/CommunityContent/Get/1/0/{page}/").Result;
+                        var content = response.Content.ReadAsStringAsync().Result;
+                        dynamic item = JsonConvert.DeserializeObject(content);
+                        totalIndexed += (int)item.Response.totalResults;
+                        hasMore = item.Response.hasMore;
+                        foreach (var creation in item.Response.results)
+                        {
+                            // Find Editor
+                            foreach (var author in item.Response.authors)
+                            {
+                                if ($"{author.membershipId}".Equals($"{creation.editorMembershipId}"))
+                                {
+                                    var editorNameId = new KeyValuePair<string, string>($"{author.displayName}", $"{author.membershipId}");
+                                    if (moderators.ContainsKey(editorNameId))
+                                    {
+                                        moderators[editorNameId]++;
+                                    }
+                                    else
+                                        moderators.Add(editorNameId, 1);
+                                }
+
+                                if (oldest > DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc))
+                                    oldest = DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc);
+                            }
+                        }
+                        page++;
+                    }
+                    while (hasMore);
+                }
+                catch (Exception x)
+                {
+                    Console.WriteLine($"{x}");
+                }
+            }
+
+            var sorted = moderators.OrderBy(x => x.Value).Reverse();
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Community Creations Stats",
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Powered by the Bungie API"
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = auth,
+                Footer = foot,
+                Timestamp = DateTime.Now,
+            };
+            embed.Description = $"Indexed {totalIndexed} Creations from {TimestampTag.FromDateTime(oldest)} to Now.";
+            foreach (var moderator in sorted)
+            {
+                embed.AddField(x =>
+                {
+                    x.Name = $"{moderator.Key.Key}";
+                    x.Value = $"{moderator.Value} ({(double)(moderator.Value / (double) totalIndexed)*100:0.00}%)";
+                    x.IsInline = true;
+                });
+            }
+            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
+        }
+
+        [RequireBotStaff]
+        [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
+        public async Task Testing()
+        {
+            //await RespondAsync($"Nothing found.");
+            await DeferAsync();
+            var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
+            DateTime oldest = DateTime.Now;
+            int totalIndexed = 0;
+
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Creations by {linkedUser.UniqueBungieName}",
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Powered by the Bungie API"
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Author = auth,
+                Footer = foot,
+                Timestamp = DateTime.Now,
+            };
+
+            using (var client = new HttpClient())
+            {
+                try
+                {
+                    // Name, Id, Amount Approved
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    int page = 0;
+                    bool hasMore = true;
+                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/{linkedUser.BungieMembershipType}/Profile/{linkedUser.BungieMembershipID}/LinkedProfiles/").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+                    string bngMemId = $"{item.Response.bnetMembership.membershipId}";
+
+                    do
+                    {
+                        response = client.GetAsync($"https://www.bungie.net/Platform/CommunityContent/Get/1/0/{page}/").Result;
+                        content = response.Content.ReadAsStringAsync().Result;
+                        item = JsonConvert.DeserializeObject(content);
+                        totalIndexed += (int)item.Response.totalResults;
+                        hasMore = item.Response.hasMore;
+                        bool pageHasAuthor = false;
+
+                        foreach (var author in item.Response.authors)
+                        {
+                            if ($"{author.membershipId}".Equals(bngMemId))
+                                pageHasAuthor = true;
+                        }
+
+                        foreach (var creation in item.Response.results)
+                        {
+                            // Find Editor
+                            if ($"{creation.authorMembershipId}".Equals(bngMemId))
+                            {
+                                embed.AddField(x =>
+                                {
+                                    x.Name = $"{creation.subject}";
+                                    x.Value = $"Upvotes: **{creation.upvotes}**\n" +
+                                        $"Uploaded: {TimestampTag.FromDateTime(DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc), TimestampTagStyles.ShortDate)}\n" +
+                                        $"Approved: {TimestampTag.FromDateTime(DateTime.SpecifyKind(DateTime.Parse($"{creation.lastModified}"), DateTimeKind.Utc), TimestampTagStyles.ShortDate)}\n" +
+                                        $"[LINK](https://www.bungie.net/en/Community/Detail?itemId={creation.postId})";
+                                    x.IsInline = true;
+                                });
+                            }
+
+                            if (oldest > DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc))
+                                oldest = DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc);
+                        }
+                        page++;
+                    }
+                    while (hasMore);
+                }
+                catch (Exception x)
+                {
+                    Console.WriteLine($"{x}");
+                }
+            }
+            embed.Description = $"Indexed {totalIndexed} Creations from {TimestampTag.FromDateTime(oldest)} to Now.";
+            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
         }
 
         public async Task SendToAllAnnounceChannels(EmbedBuilder embed)
@@ -638,7 +810,9 @@ namespace Levante.Commands
                     if (Link.RoleID != 0)
                     {
                         var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
-                        await channel.SendMessageAsync($"{role.Mention}", false, embed.Build()).Result.CrosspostAsync();
+                        var msg = await channel.SendMessageAsync($"{role.Mention}", false, embed.Build());
+                        if (channel is SocketNewsChannel)
+                            await msg.CrosspostAsync();
                     }
                     else
                     {

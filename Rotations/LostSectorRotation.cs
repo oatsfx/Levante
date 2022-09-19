@@ -405,7 +405,7 @@ namespace Levante.Rotations
             });
 
             embed.Title = $"{LostSector.Name}";
-
+            embed.ImageUrl = LostSector.PGCRImage;
             embed.ThumbnailUrl = "https://www.bungie.net/common/destiny2_content/icons/6a2761d2475623125d896d1a424a91f9.png";
 
             return embed;
@@ -476,8 +476,7 @@ namespace Levante.Rotations
 
         public static void UpdateJSON()
         {
-            var obj = new LostSectorRotation();
-            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
+            string output = JsonConvert.SerializeObject(LostSectorLinks, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
 
@@ -520,6 +519,7 @@ namespace Levante.Rotations
     {
         public string Name;
         public string Location;
+        public string PGCRImage;
         [JsonProperty("LegendActivityHash")]
         public long LegendActivityHash;
         [JsonProperty("MasterActivityHash")]

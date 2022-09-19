@@ -104,11 +104,11 @@ namespace Levante
             LogHelper.ConsoleLog($"[XP SESSIONS] Continued XP logging for {ActiveConfig.ActiveAFKUsers.Count} (+{ActiveConfig.PriorityActiveAFKUsers.Count}) Users.");
 
             if (DateTime.Now.Hour >= 10) // after daily reset
-                SetUpTimer(new DateTime(DateTime.Now.AddDays(1).Year, DateTime.Now.AddDays(1).Month, DateTime.Now.AddDays(1).Day, 10, 0, 0));
+                SetUpTimer(new DateTime(DateTime.Now.AddDays(1).Year, DateTime.Now.AddDays(1).Month, DateTime.Now.AddDays(1).Day, 10, 0, 5));
             else
-                SetUpTimer(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 10, 0, 0));
+                SetUpTimer(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 10, 0, 5));
 
-            //var oauthManager = new OAuthHelper();
+            var oauthManager = new OAuthHelper();
             var creationsManager = new CreationsHelper();
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordSocketClient>();
@@ -416,7 +416,7 @@ namespace Levante
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
                     }
-                    await Task.Delay(1500); // We dont want to spam APIs if we have a ton of XP Logging subscriptions.
+                    await Task.Delay(250);
                 }
 
                 // Add in users that joined mid-refresh.
@@ -545,15 +545,15 @@ namespace Levante
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
             await _interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
-            //_client.MessageReceived += HandleMessageAsync;
-
             _client.Ready += async () =>
             {
                 //397846250797662208
-                await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
+                //915020047154565220
+                //1011700865087852585
+                //await _interaction.RegisterCommandsToGuildAsync(915020047154565220);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                //await _interaction.RegisterCommandsGloballyAsync();
+                await _interaction.RegisterCommandsGloballyAsync();
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
 
                 foreach (var m in _interaction.Modules)
@@ -574,6 +574,7 @@ namespace Levante
             _interaction.SlashCommandExecuted += SlashCommandExecuted;
             _interaction.ComponentCommandExecuted += ComponentCommandExecuted;
             _client.SelectMenuExecuted += SelectMenuHandler;
+            //_client.MessageReceived += HandleMessageAsync;
             LevanteCordInstance.Client = _client;
         }
 
@@ -680,6 +681,17 @@ namespace Levante
                 await interaction.RespondAsync($"Removed your Empire Hunt tracking, you will not be notified when {EmpireHuntRotation.GetHuntBossString(EmpireHunt)} is available.", ephemeral: true);
                 return;
             }
+            else if (trackerType.Equals("featured-raid"))
+            {
+                if (FeaturedRaidRotation.GetUserTracking(interaction.User.Id, out var FeaturedRaid) == null)
+                {
+                    await interaction.RespondAsync($"No Featured Raid tracking enabled.", ephemeral: true);
+                    return;
+                }
+                FeaturedRaidRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Featured Raid tracking, you will not be notified when {FeaturedRaidRotation.GetRaidString(FeaturedRaid)} is available.", ephemeral: true);
+                return;
+            }
             else if (trackerType.Equals("gos-challenge"))
             {
                 if (GardenOfSalvationRotation.GetUserTracking(interaction.User.Id, out var GoSEncounter) == null)
@@ -689,6 +701,17 @@ namespace Levante
                 }
                 GardenOfSalvationRotation.RemoveUserTracking(interaction.User.Id);
                 await interaction.RespondAsync($"Removed your Garden of Salvation challenges tracking, you will not be notified when {GardenOfSalvationRotation.GetEncounterString(GoSEncounter)} ({GardenOfSalvationRotation.GetChallengeString(GoSEncounter)}) is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("kf-challenge"))
+            {
+                if (KingsFallRotation.GetUserTracking(interaction.User.Id, out var KFEncounter) == null)
+                {
+                    await interaction.RespondAsync($"No King's Fall challenges tracking enabled.", ephemeral: true);
+                    return;
+                }
+                KingsFallRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your King's Fall challenges tracking, you will not be notified when {KFEncounter} ({KingsFallRotation.GetChallengeString(KFEncounter)}) is available.", ephemeral: true);
                 return;
             }
             else if (trackerType.Equals("lw-challenge"))
@@ -795,19 +818,9 @@ namespace Levante
         //    var msg = arg as SocketUserMessage;
         //    if (msg == null) return;
 
-        //    if (msg.HasStringPrefix(BotConfig.DefaultCommandPrefix, ref argPos))
+        //    if (msg.MentionedUsers.Contains(_client.CurrentUser))
         //    {
-        //        if (arg.Channel.GetType() == typeof(SocketDMChannel) && !BotConfig.BotStaffDiscordIDs.Contains(arg.Author.Id)) // Send message if received via a DM
-        //        {
-        //            await arg.Channel.SendMessageAsync($"I do not accept commands through Direct Messages.");
-        //            return;
-        //        }
-
-        //        if (BotConfig.BotStaffDiscordIDs.Contains(arg.Author.Id))
-        //        {
-        //            var handled = await TryHandleCommandAsync(msg, argPos).ConfigureAwait(false);
-        //            if (handled) return;
-        //        }
+        //        Console.WriteLine("Ping!");
         //    }
         //}
 

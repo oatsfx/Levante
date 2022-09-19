@@ -160,7 +160,7 @@ namespace Levante.Commands
 
             [SlashCommand("featured-raid", "Be notified when a raid is featured.")]
             public async Task FeaturedRaid([Summary("raid", "Legacy raid activity to be alerted for."),
-                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3)] int ArgRaid)
+                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3), Choice("Vow of the Disciple", 4)] int ArgRaid)
             {
                 if (FeaturedRaidRotation.GetUserTracking(Context.User.Id, out var Raid) != null)
                 {
@@ -192,6 +192,25 @@ namespace Levante.Commands
 
                 GardenOfSalvationRotation.AddUserTracking(Context.User.Id, Encounter);
                 await RespondAsync($"I will remind you when {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                return;
+            }
+
+            [SlashCommand("kings-fall", "Be notified when a King's Fall challenge is active.")]
+            public async Task KingsFall([Summary("challenge", "King's Fall challenge to be alerted for."),
+                Choice("Basilica (The Grass Is Always Greener)", 0), Choice("Warpriest (Devious Thievery)", 1), Choice("Golgoroth (Gaze Amaze)", 2),
+                Choice("Daughters (Under Construction)", 3), Choice("Oryx (Hands Off)", 4)] int ArgEncounter)
+            {
+                if (KingsFallRotation.GetUserTracking(Context.User.Id, out var Encounter) != null)
+                {
+                    await RespondAsync($"You already have tracking for King's Fall challenges. I am watching for {Encounter} ({KingsFallRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                    return;
+                }
+                Encounter = (KingsFallEncounter)ArgEncounter;
+
+                var predictedDate = KingsFallRotation.DatePrediction(Encounter);
+
+                KingsFallRotation.AddUserTracking(Context.User.Id, Encounter);
+                await RespondAsync($"I will remind you when {Encounter} ({KingsFallRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 return;
             }
 
@@ -404,9 +423,15 @@ namespace Levante.Commands
 
                 if (EmpireHuntRotation.GetUserTracking(Context.User.Id, out var EmpireHunt) != null)
                     menuBuilder.AddOption("Empire Hunt", "empire-hunt", $"{EmpireHuntRotation.GetHuntBossString(EmpireHunt)}");
+                
+                if (FeaturedRaidRotation.GetUserTracking(Context.User.Id, out var FeaturedRaid) != null)
+                    menuBuilder.AddOption("Featured Raid", "featured-raid", $"{FeaturedRaidRotation.GetRaidString(FeaturedRaid)}");
 
                 if (GardenOfSalvationRotation.GetUserTracking(Context.User.Id, out var GoSEncounter) != null)
                     menuBuilder.AddOption("Garden of Salvation Challenge", "gos-challenge", $"{GardenOfSalvationRotation.GetEncounterString(GoSEncounter)} ({GardenOfSalvationRotation.GetChallengeString(GoSEncounter)})");
+
+                if (KingsFallRotation.GetUserTracking(Context.User.Id, out var KFEncounter) != null)
+                    menuBuilder.AddOption("King's Fall Challenge", "kf-challenge", $"{KFEncounter} ({KingsFallRotation.GetChallengeString(KFEncounter)})");
 
                 if (LastWishRotation.GetUserTracking(Context.User.Id, out var LWEncounter) != null)
                     menuBuilder.AddOption("Last Wish Challenge", "lw-challenge", $"{LastWishRotation.GetEncounterString(LWEncounter)} ({LastWishRotation.GetChallengeString(LWEncounter)})");
@@ -614,6 +639,28 @@ namespace Levante.Commands
                     embed.Description =
                         $"Next occurrance of {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) " +
                             $"is: {TimestampTag.FromDateTime(predictedFeaturedDate, TimestampTagStyles.ShortDate)}. Garden of Salvation will be the featured raid, making this challenge, and all others, available.";
+
+                await RespondAsync($"", embed: embed.Build());
+                return;
+            }
+
+            [SlashCommand("kings-fall", "Find out when a King's Fall challenge is active next.")]
+            public async Task KingsFall([Summary("challenge", "King's Fall challenge to predict its next appearance."),
+                Choice("Basilica (The Grass Is Always Greener)", 0), Choice("Warpriest (Devious Thievery)", 1), Choice("Golgoroth (Gaze Amaze)", 2),
+                Choice("Daughters (Under Construction)", 3), Choice("Oryx (Hands Off)", 4)] int ArgEncounter)
+            {
+                KingsFallEncounter Encounter = (KingsFallEncounter)ArgEncounter;
+
+                var predictedDate = KingsFallRotation.DatePrediction(Encounter);
+
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                };
+                embed.Title = "King's Fall";
+                embed.Description =
+                    $"Next occurrance of {Encounter} ({KingsFallRotation.GetChallengeString(Encounter)}) " +
+                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;

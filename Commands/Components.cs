@@ -95,7 +95,16 @@ namespace Levante.Commands
             ICategoryChannel cc = null;
             foreach (var categoryChan in guild.CategoryChannels)
                 if (categoryChan.Name.Contains($"XP Logging"))
-                    cc = categoryChan;
+                {
+                    if (categoryChan.Channels.Count >= 50)
+                    {
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"The \"{categoryChan.Name}\" category is full. You may have to invite me to another server and use this feature there if this continues to occur."; });
+                        return;
+                    }
+                    else
+                        cc = categoryChan;
+                }
+                    
 
             if (cc == null)
             {
@@ -288,17 +297,6 @@ namespace Levante.Commands
                 return;
             }
 
-            ICategoryChannel cc = null;
-            foreach (var categoryChan in guild.CategoryChannels)
-                if (categoryChan.Name.Contains($"XP Logging"))
-                    cc = categoryChan;
-
-            if (cc == null)
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No category by the name of \"XP Logging\" was found, cancelling operation. Let a server admin know!"; });
-                return;
-            }
-
             string uniqueName = dil.UniqueBungieName;
             var userLogChannel = Context.Channel as SocketTextChannel;
 
@@ -317,14 +315,7 @@ namespace Levante.Commands
 
             await userLogChannel.ModifyAsync(x =>
             {
-                x.CategoryId = cc.Id;
                 x.Topic = $"{uniqueName} (Starting Level: {newUser.StartLevel} [{String.Format("{0:n0}", newUser.StartLevelProgress)}/100,000 XP] | Starting Power Bonus: +{newUser.StartPowerBonus}) - Time Started: {TimestampTag.FromDateTime(newUser.TimeStarted)}";
-                x.PermissionOverwrites = new[]
-                {
-                        new Overwrite(user.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
-                        new Overwrite(Context.Client.CurrentUser.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
-                        new Overwrite(guild.Id, PermissionTarget.Role, new OverwritePermissions(viewChannel: PermValue.Deny)),
-                };
             }, options: new RequestOptions() { AuditLogReason = "XP Logging Session Channel Edit" });
 
             string privacy = "";

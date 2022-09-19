@@ -43,7 +43,7 @@ namespace Levante.Helpers
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
-                if (DestinyManifestVersion.Equals(item.Response.version))
+                if (DestinyManifestVersion.Equals($"{item.Response.version}"))
                     return false;
                 else
                     return true;
@@ -112,7 +112,6 @@ namespace Levante.Helpers
                         if (String.IsNullOrEmpty(activity.Value.DisplayProperties.Name))
                             if (placeList.ContainsKey($"{activity.Value.PlaceHash}"))
                             {
-                                Console.WriteLine($"{placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name}");
                                 Activities.Add(activity.Value.Hash, placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name);
                                 continue;
                             }
@@ -140,6 +139,7 @@ namespace Levante.Helpers
                             if (index != -1)
                             {
                                 LostSectorRotation.LostSectors[index].Name = activity.Value.OriginalDisplayProperties.Name;
+                                LostSectorRotation.LostSectors[index].PGCRImage = "https://bungie.net" + activity.Value.PgcrImage;
                                 LostSectorRotation.LostSectors[index].Location = placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name;
                                 foreach (var mod in activity.Value.Modifiers)
                                 {

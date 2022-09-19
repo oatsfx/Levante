@@ -51,7 +51,7 @@ namespace Levante.Configs
         public static string DefaultCommandPrefix { get; set; } = "l!";
 
         [JsonProperty("Note")]
-        public static List<string> Notes { get; set; } = new List<string>();
+        public static List<string> Notes { get; set; } = new();
 
         [JsonProperty("DurationToWaitForNextMessage")]
         public static int DurationToWaitForNextMessage { get; set; } = 20;
@@ -60,19 +60,23 @@ namespace Levante.Configs
         public static ulong DevServerID { get; set; } = 0;
 
         [JsonProperty("BotStaff")]
-        public static List<ulong> BotStaffDiscordIDs { get; set; } = new List<ulong>();
+        public static List<ulong> BotStaffDiscordIDs { get; set; } = new();
 
         [JsonProperty("BotSupporters")]
-        public static List<ulong> BotSupportersDiscordIDs { get; set; } = new List<ulong>();
+        public static List<ulong> BotSupportersDiscordIDs { get; set; } = new();
 
         [JsonProperty("EmbedColor")]
-        public static EmbedColorGroup EmbedColor { get; set; } = new EmbedColorGroup();
+        public static EmbedColorGroup EmbedColor { get; set; } = new();
 
         [JsonProperty("UniversalCodes")]
-        public static List<UniversalCode> UniversalCodes { get; set; } = new List<UniversalCode>();
+        public static List<UniversalCode> UniversalCodes { get; set; } = new();
 
         [JsonProperty("Hashes")]
-        public static HashesList Hashes { get; set; } = new HashesList();
+        public static HashesList Hashes { get; set; } = new();
+
+        // <Hash, Name>
+        [JsonProperty("SeasonalCurrencyHashes")]
+        public static Dictionary<long, string> SeasonalCurrencyHashes { get; set; } = new();
 
         public class EmbedColorGroup
         {

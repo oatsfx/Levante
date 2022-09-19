@@ -12,6 +12,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using BungieSharper.Entities.Forum;
+using Newtonsoft.Json.Linq;
+using Discord.WebSocket;
+using System.Threading.Channels;
 
 namespace Levante.Helpers
 {
@@ -37,6 +40,7 @@ namespace Levante.Helpers
                 Console.WriteLine($"No creationsConfig.json file detected. A new one has been created, no action needed.");
             }
             CommunityCreationsTimer = new Timer(CheckCommunityCreationsCallback, null, 5000, 60000*2);
+            LogHelper.ConsoleLog("[CREATIONS] Creations Module Loaded.");
         }
         private async void CheckCommunityCreationsCallback(Object o) => await CheckCreations().ConfigureAwait(false);
 
@@ -51,9 +55,12 @@ namespace Levante.Helpers
                 dynamic item = JsonConvert.DeserializeObject(content);
 
                 bool isNewCreations = false;
-                foreach (var creation in item.Response.results)
+                List<string> newCreations = new();
+                var results = ((JArray)(item.Response.results)).Reverse();
+                foreach (var creation in (dynamic)results)
                 {
                     // Find Author
+                    newCreations.Add($"{creation.postId}");
                     string authorName = "";
                     string authorAvatarUrl = "https://bungie.net";
                     foreach (var author in item.Response.authors)
@@ -77,9 +84,6 @@ namespace Levante.Helpers
                     }
                     if (!CreationsPosts.Contains($"{creation.postId}"))
                     {
-                        Console.WriteLine($"New Community Creation Found: {creation.subject} ({creation.postId})");
-                        CreationsPosts.Add($"{creation.postId}");
-
                         var auth = new EmbedAuthorBuilder()
                         {
                             Name = $"A new Community Creation has been approved!",
@@ -106,13 +110,13 @@ namespace Levante.Helpers
                         embed.AddField(x =>
                         {
                             x.Name = "Submitted";
-                            x.Value = $"{TimestampTag.FromDateTime(DateTime.Parse($"{creation.creationDate}"))}\n" +
+                            x.Value = $"{TimestampTag.FromDateTime(DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc))}\n" +
                                 $"by {authorName}";
                             x.IsInline = true;
                         }).AddField(x =>
                         {
                             x.Name = "Approved";
-                            x.Value = $"{TimestampTag.FromDateTime(DateTime.Parse($"{creation.lastModified}"))}\n" +
+                            x.Value = $"{TimestampTag.FromDateTime(DateTime.SpecifyKind(DateTime.Parse($"{creation.lastModified}"), DateTimeKind.Utc))}\n" +
                                 $"by {editorName}";
                             x.IsInline = true;
                         }).AddField(x =>
@@ -121,18 +125,18 @@ namespace Levante.Helpers
                             x.Value = $"{creation.upvotes}";
                             x.IsInline = false;
                         });
-                        await BotConfig.CreationsLogChannel.SendMessageAsync(embed: embed.Build());
+
+                        var msg = await BotConfig.CreationsLogChannel.SendMessageAsync(embed: embed.Build());
+                        if (BotConfig.CreationsLogChannel is SocketNewsChannel)
+                            await msg.CrosspostAsync();
 
                         isNewCreations = true;
                     }
                 }
 
-                if (!isNewCreations)
+                if (isNewCreations)
                 {
-                    Console.WriteLine($"No new Community Creations Found. :(");
-                }
-                else
-                {
+                    CreationsPosts = newCreations;
                     File.WriteAllText(FilePath, JsonConvert.SerializeObject(CreationsPosts, Formatting.Indented));
                 }
             }

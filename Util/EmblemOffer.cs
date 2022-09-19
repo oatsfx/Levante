@@ -77,12 +77,15 @@ namespace Levante.Util
             // Final line logic.
             string end = EndDate != null ? $"End{(EndDate > DateTime.Now ? "s" : "ed")} {TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.Relative)}." : "There is no apparent end to this offer.";
             end = !IsActive ? $"Starts {TimestampTag.FromDateTime(StartDate, TimestampTagStyles.Relative)}." : end;
-            embed.Description =
-                $"__How to get this emblem:__\n" +
-                $"{Description} {(SpecialUrl != null ? $"\n[LINK]({SpecialUrl})" : "")}\n";
+            
             embed.ThumbnailUrl = OfferedEmblem.GetIconUrl();
             embed.ImageUrl = ImageUrl;
             embed.AddField(x =>
+            {
+                x.Name = "How To Obtain";
+                x.Value = $"{Description} {(SpecialUrl != null ? $"\n[LINK]({SpecialUrl})" : "")}";
+                x.IsInline = false;
+            }).AddField(x =>
             {
                 x.Name = "Offer Type";
                 x.Value = GetOfferTypeString(OfferType);

@@ -52,6 +52,9 @@ namespace Levante.Rotations
         [JsonProperty("VowChallengeEncounter")]
         public static VowOfTheDiscipleEncounter VowChallengeEncounter = VowOfTheDiscipleEncounter.Acquisition;
 
+        [JsonProperty("KFChallengeEncounter")]
+        public static KingsFallEncounter KFChallengeEncounter = KingsFallEncounter.Basilica;
+
         [JsonProperty("FeaturedRaid")]
         public static Raid FeaturedRaid = Raid.LastWish;
 
@@ -98,6 +101,7 @@ namespace Levante.Rotations
             GoSChallengeEncounter = GoSChallengeEncounter == GardenOfSalvationEncounter.SanctifiedMind ? GardenOfSalvationEncounter.Evade : GoSChallengeEncounter + 1;
             VoGChallengeEncounter = VoGChallengeEncounter == VaultOfGlassEncounter.Atheon ? VaultOfGlassEncounter.Confluxes : VoGChallengeEncounter + 1;
             VowChallengeEncounter = VowChallengeEncounter == VowOfTheDiscipleEncounter.Rhulk ? VowOfTheDiscipleEncounter.Acquisition : VowChallengeEncounter + 1;
+            KFChallengeEncounter = KFChallengeEncounter == KingsFallEncounter.Oryx ? KingsFallEncounter.Basilica : KFChallengeEncounter + 1;
             FeaturedRaid = FeaturedRaid == Raid.VowOfTheDisciple ? Raid.LastWish : FeaturedRaid + 1;
             CurseWeek = CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : CurseWeek + 1;
             AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? AscendantChallenge.AgonarchAbyss : AscendantChallenge + 1;
@@ -128,6 +132,7 @@ namespace Levante.Rotations
                 EmpireHuntRotation.EmpireHuntLinks.Count +
                 FeaturedRaidRotation.FeaturedRaidLinks.Count +
                 GardenOfSalvationRotation.GardenOfSalvationLinks.Count +
+                KingsFallRotation.KingsFallLinks.Count +
                 LastWishRotation.LastWishLinks.Count +
                 LostSectorRotation.LostSectorLinks.Count +
                 NightfallRotation.NightfallLinks.Count +
@@ -166,6 +171,7 @@ namespace Levante.Rotations
             EmpireHuntRotation.CreateJSON();
             FeaturedRaidRotation.CreateJSON();
             GardenOfSalvationRotation.CreateJSON();
+            KingsFallRotation.CreateJSON();
             LastWishRotation.CreateJSON();
             LostSectorRotation.CreateJSON();
             NightfallRotation.CreateJSON();
@@ -295,12 +301,12 @@ namespace Levante.Rotations
                 x.Value = $"{DestinyEmote.VowRaidChallenge} {(FeaturedRaid == Raid.VowOfTheDisciple ? "All challenges available." : $"{VowOfTheDiscipleRotation.GetEncounterString(VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(VowChallengeEncounter)})")}";
                 x.IsInline = true;
             })
-            /*.AddField(x =>
+            .AddField(x =>
             {
                 x.Name = $"King's Fall";
-                x.Value = $"{VowOfTheDiscipleRotation.GetEncounterString(VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(VowChallengeEncounter)})";
+                x.Value = $"{KFChallengeEncounter} ({KingsFallRotation.GetChallengeString(KFChallengeEncounter)})";
                 x.IsInline = true;
-            })*/
+            })
             /*.AddField(x =>
             {
                 x.Name = "> Nightfall: The Ordeal";
