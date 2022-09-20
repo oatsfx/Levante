@@ -84,7 +84,7 @@ namespace Levante.Util
             }
         }
 
-        public string BuildStringList()
+        public string BuildStringList(bool makeEmote = true)
         {
             string result = "";
             DestinyPlugSetDefinition item = JsonConvert.DeserializeObject<DestinyPlugSetDefinition>(Content);
@@ -100,13 +100,21 @@ namespace Levante.Util
             var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
             foreach (var Perk in perkList)
             {
-                if (!emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
+                if (makeEmote)
                 {
-                    var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
-                    Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                    if (!emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
+                    {
+                        var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
+                        Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                    }
+                    //emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}
+                    result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}";
                 }
-                //emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}
-                result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}";
+                else
+                {
+                    result += $"{Perk.GetName()}";
+                }
+
                 if (IsCrafting)
                     if (PerkLevels[Perk.GetName()].Value <= 0)
                         result += $" ({PerkLevels[Perk.GetName()].Key})\n";

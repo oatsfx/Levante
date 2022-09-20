@@ -599,7 +599,7 @@ namespace Levante.Commands
 
             [SlashCommand("featured-raid", "Find out when a raid is being featured next.")]
             public async Task FeaturedRaid([Summary("raid", "Legacy raid activity to predict its next appearance."),
-                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3)] int ArgRaid)
+                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3), Choice("Vow of the Disciple", 4)] int ArgRaid)
             {
                 Raid Raid = (Raid)ArgRaid;
 
