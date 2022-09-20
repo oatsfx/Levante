@@ -304,7 +304,7 @@ namespace Levante.Rotations
             .AddField(x =>
             {
                 x.Name = $"King's Fall";
-                x.Value = $"{KFChallengeEncounter} ({KingsFallRotation.GetChallengeString(KFChallengeEncounter)})";
+                x.Value = $"{DestinyEmote.KFRaidChallenge} {KFChallengeEncounter} ({KingsFallRotation.GetChallengeString(KFChallengeEncounter)})";
                 x.IsInline = true;
             })
             /*.AddField(x =>

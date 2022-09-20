@@ -96,6 +96,7 @@ namespace Levante.Util
         public static readonly string Enhanced = "<:Enhanced:1020834766397911080>";
         public static readonly string Gilded = "<:Gilded:994067890024235029>";
         public static readonly string GildedPurple = "<:GildedPurple:996604027867500574>";
+        public static readonly string KFRaidChallenge = "<:KFRaidChallenge:1021602526652534864>";
         public static readonly string Light = "<:LightLevel:844029708077367297>";
         public static readonly string LostSector = "<:LostSector:955004180618174475>";
         public static readonly string Nightfall = "<:Nightfall:934476602006458409>";

@@ -157,7 +157,7 @@ namespace Levante.Util
                 embed.AddField(x =>
                 {
                     x.Name = "Intrinsic";
-                    x.Value = $"{(plug1 == null ? "No intrinsic." : plug1.BuildStringList())}";
+                    x.Value = $"{(plug1 == null ? "No intrinsic." : plug1.BuildStringList(false))}";
                     x.IsInline = false;
                 }).AddField(x =>
                 {
