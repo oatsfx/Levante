@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using BungieSharper.Entities.Destiny;
+using System.Linq;
 
 namespace Levante.Util
 {
@@ -143,6 +144,32 @@ namespace Levante.Util
                 return (string)typeof(DestinyEmote).GetField(Query).GetValue(null);
             else
                 return Classified;
+        }
+
+        public static string MatchWeaponItemSubtypeToEmote(DestinyItemSubType subType, bool HeavyGLOverride = false)
+        {
+            if (HeavyGLOverride)
+                return HeavyGrenadeLauncher;
+
+            switch (subType)
+            {
+                case DestinyItemSubType.AutoRifle: return AutoRifle;
+                case DestinyItemSubType.Bow: return Bow;
+                case DestinyItemSubType.FusionRifle: return FusionRifle;
+                case DestinyItemSubType.GrenadeLauncher: return GrenadeLauncher;
+                case DestinyItemSubType.HandCannon: return HandCannon;
+                case DestinyItemSubType.FusionRifleLine: return LinearFusionRifle;
+                case DestinyItemSubType.Machinegun: return MachineGun;
+                case DestinyItemSubType.PulseRifle: return PulseRifle;
+                case DestinyItemSubType.RocketLauncher: return RocketLauncher;
+                case DestinyItemSubType.SubmachineGun: return SubmachineGun;
+                case DestinyItemSubType.ScoutRifle: return ScoutRifle;
+                case DestinyItemSubType.Shotgun: return Shotgun;
+                case DestinyItemSubType.Sidearm: return Sidearm;
+                case DestinyItemSubType.SniperRifle: return SniperRifle;
+                case DestinyItemSubType.Sword: return Sword;
+                default: return Classified;
+            }
         }
     }
 }

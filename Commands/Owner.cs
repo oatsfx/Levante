@@ -122,10 +122,26 @@ namespace Levante.Commands
             await RespondAsync($"Activity refreshed.");
         }
 
-        [RequireOwner]
+        [RequireBotStaff]
         [SlashCommand("supporter", "[OWNER]: Add or remove a bot supporter.")]
-        public async Task AddSupporter([Summary("discord-id", "Discord ID of the user to handle supporter status for.")] IUser User)
+        public async Task AddSupporter([Summary("discord-id", "Discord ID of the user to handle supporter status for.")] IUser User = null)
         {
+            if (User == null)
+            {
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                };
+                embed.Title = "Supporters";
+                string result = "";
+                foreach (var supporter in BotConfig.BotSupportersDiscordIDs)
+                    result += $"<@{supporter}>\n";
+
+                embed.Description = result;
+                await RespondAsync(embed: embed.Build());
+                return;
+            }
+
             if (BotConfig.BotSupportersDiscordIDs.Contains(User.Id))
             {
                 BotConfig.BotSupportersDiscordIDs.Remove(User.Id);
@@ -495,6 +511,7 @@ namespace Levante.Commands
         [SlashCommand("flush-tracking", "[OWNER]: Force send out rotation tracking reminders.")]
         public async Task FlushTracking()
         {
+            await DeferAsync();
             // Send reset embeds if applicable.
             if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
                 await DataConfig.PostWeeklyResetUpdate(Context.Client);
@@ -506,6 +523,7 @@ namespace Levante.Commands
                 await CurrentRotations.CheckUsersWeeklyTracking(Context.Client);
 
             await CurrentRotations.CheckUsersDailyTracking(Context.Client);
+            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Flushed tracking!"; });
         }
 
         [RequireBotStaff]

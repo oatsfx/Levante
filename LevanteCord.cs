@@ -80,6 +80,8 @@ namespace Levante
 
             EmblemOffer.LoadCurrentOffers();
             Ada1Rotation.GetAda1Inventory();
+            NightfallRotation.GetCurrentNightfall();
+            CurrentRotations.UpdateRotationsJSON();
 
             //Console.ForegroundColor = ConsoleColor.Magenta;
             //Console.WriteLine($"[ROTATIONS]");
@@ -550,7 +552,7 @@ namespace Levante
                 //397846250797662208
                 //915020047154565220
                 //1011700865087852585
-                //await _interaction.RegisterCommandsToGuildAsync(915020047154565220);
+                //await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
                 await _interaction.RegisterCommandsGloballyAsync();
@@ -754,11 +756,11 @@ namespace Levante
                 if (NF == null && NFWeapon == null)
                     await interaction.RespondAsync($"An error has occurred.", ephemeral: true);
                 else if (NF != null && NFWeapon == null)
-                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is available.", ephemeral: true);
+                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.Nightfalls[(int)NF]} is available.", ephemeral: true);
                 else if (NF == null && NFWeapon != null)
-                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.GetWeaponString((NightfallWeapon)NFWeapon)} is available.", ephemeral: true);
+                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.NightfallWeapons[(int)NFWeapon].Name} is available.", ephemeral: true);
                 else if (NF != null && NFWeapon != null)
-                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is dropping {NightfallRotation.GetWeaponString((NightfallWeapon)NFWeapon)}.", ephemeral: true);
+                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.Nightfalls[(int)NF]} is dropping {NightfallRotation.NightfallWeapons[(int)NFWeapon].Name}.", ephemeral: true);
                 return;
             }
             else if (trackerType.Equals("nightmare-hunt"))

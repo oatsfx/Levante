@@ -78,15 +78,15 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < NightfallRotation.NightfallStrikeCount; i++)
+                for (int i = 0; i < NightfallRotation.Nightfalls.Count; i++)
                 {
-                    results.Add(new AutocompleteResult(NightfallRotation.GetStrikeNameString((Nightfall)i), (Nightfall)i));
+                    results.Add(new AutocompleteResult(NightfallRotation.Nightfalls[i], i));
                 }
             else
-                for (int i = 0; i < NightfallRotation.NightfallStrikeCount; i++)
+                for (int i = 0; i < NightfallRotation.Nightfalls.Count; i++)
                 {
-                    if (NightfallRotation.GetStrikeNameString((Nightfall)i).Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult(NightfallRotation.GetStrikeNameString((Nightfall)i), (Nightfall)i));
+                    if (NightfallRotation.Nightfalls[i].Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(NightfallRotation.Nightfalls[i], i));
                 }
 
             // max - 25 suggestions at a time (API limit)
@@ -103,15 +103,15 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < NightfallRotation.NightfallWeaponCount; i++)
+                for (int i = 0; i < NightfallRotation.NightfallWeapons.Count; i++)
                 {
-                    results.Add(new AutocompleteResult(NightfallRotation.GetWeaponString((NightfallWeapon)i), (NightfallWeapon)i));
+                    results.Add(new AutocompleteResult(NightfallRotation.NightfallWeapons[i].Name, i));
                 }
             else
-                for (int i = 0; i < NightfallRotation.NightfallWeaponCount; i++)
+                for (int i = 0; i < NightfallRotation.NightfallWeapons.Count; i++)
                 {
-                    if (NightfallRotation.GetWeaponString((NightfallWeapon)i).Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult(NightfallRotation.GetWeaponString((NightfallWeapon)i), (NightfallWeapon)i));
+                    if (NightfallRotation.NightfallWeapons[i].Name.Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(NightfallRotation.NightfallWeapons[i].Name, i));
                 }
 
             // max - 25 suggestions at a time (API limit)

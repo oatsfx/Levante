@@ -15,6 +15,7 @@ namespace Levante.Commands
 {
     public class Components : InteractionModuleBase<SocketInteractionContext>
     {
+        [RequireOwner]
         [ComponentInteraction("dailyForce")]
         public async Task DailyForce()
         {
@@ -25,6 +26,7 @@ namespace Levante.Commands
             await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "Forced Daily Reset!"; });
         }
 
+        [RequireOwner]
         [ComponentInteraction("weeklyForce")]
         public async Task WeeklyForce()
         {

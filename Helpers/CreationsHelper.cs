@@ -127,8 +127,8 @@ namespace Levante.Helpers
                         });
 
                         var msg = await BotConfig.CreationsLogChannel.SendMessageAsync(embed: embed.Build());
-                        if (BotConfig.CreationsLogChannel is SocketNewsChannel)
-                            await msg.CrosspostAsync();
+                        //if (BotConfig.CreationsLogChannel is SocketNewsChannel)
+                            //await msg.CrosspostAsync();
 
                         isNewCreations = true;
                     }

@@ -14,6 +14,8 @@ using Levante.Rotations;
 using BungieSharper.Entities.Destiny.Definitions.ActivityModifiers;
 using System.Diagnostics;
 using BungieSharper.Entities.Destiny.Definitions.Lore;
+using BungieSharper.Entities.Destiny.Definitions.Presentation;
+using Levante.Util;
 
 namespace Levante.Helpers
 {
@@ -29,6 +31,8 @@ namespace Levante.Helpers
         // Seal Hash, Tracker Hash
         public static Dictionary<long, long> GildableSeals = new();
         public static Dictionary<long, string> Activities = new();
+        // Whatever Hash is found First, Nightfall Name
+        public static Dictionary<long, string> Nightfalls = new();
 
         private static Dictionary<string, int> SeasonIconURLs = new Dictionary<string, int>();
 
@@ -99,14 +103,49 @@ namespace Levante.Helpers
                 content = response.Content.ReadAsStringAsync().Result;
                 var modifierList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityModifierDefinition>>(content);
 
-                string loreListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyLoreDefinition"]}";
-                response = client.GetAsync(loreListUrl).Result;
+                string recordUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyRecordDefinition"]}";
+                response = client.GetAsync(recordUrl).Result;
                 content = response.Content.ReadAsStringAsync().Result;
-                var loreList = JsonConvert.DeserializeObject<Dictionary<string, DestinyLoreDefinition>>(content);
+                var recordList = JsonConvert.DeserializeObject<Dictionary<string, DestinyRecordDefinition>>(content);
+
+                string presentNodeUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyPresentationNodeDefinition"]}";
+                response = client.GetAsync(presentNodeUrl).Result;
+                content = response.Content.ReadAsStringAsync().Result;
+                var presentNodeList = JsonConvert.DeserializeObject<Dictionary<string, DestinyPresentationNodeDefinition>>(content);
 
                 LogHelper.ConsoleLog($"[MANIFEST] Populating Dictionaries...");
                 try
                 {
+                    foreach (var record in recordList)
+                    {
+                        if (record.Value.TitleInfo == null) continue;
+                        if (record.Value.TitleInfo.HasTitle)
+                        {
+                            Seals.Add(record.Value.Hash, $"{record.Value.TitleInfo.TitlesByGender.Values.FirstOrDefault()}");
+                            if (record.Value.TitleInfo.GildingTrackingRecordHash != null)
+                                GildableSeals.Add(record.Value.Hash, (long)record.Value.TitleInfo.GildingTrackingRecordHash);
+                        }
+                    }
+
+                    foreach (var node in presentNodeList)
+                    {
+                        if (node.Value.DisplayProperties == null) continue;
+                        if (node.Value.Children.Records.Count() == 0) continue;
+                        if (node.Value.CompletionRecordHash == null) continue;
+                        foreach (var child in node.Value.Children.Records)
+                        {
+                            if (GildableSeals.ContainsKey((long)node.Value.CompletionRecordHash) && recordList.ContainsKey(child.RecordHash.ToString()))
+                            {
+                                string recordName = recordList[child.RecordHash.ToString()].DisplayProperties.Name;
+                                if (recordName.Contains("Grandmaster:"))
+                                {
+                                    Console.WriteLine(recordName.Replace("Grandmaster: ", ""));
+                                    NightfallRotation.Nightfalls.Add(recordName.Replace("Grandmaster: ", ""));
+                                }
+                            }
+                        }
+                    }
+
                     foreach (var activity in activityList)
                     {
                         if (String.IsNullOrEmpty(activity.Value.DisplayProperties.Name))
@@ -115,7 +154,13 @@ namespace Levante.Helpers
                                 Activities.Add(activity.Value.Hash, placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name);
                                 continue;
                             }
+
                         Activities.Add(activity.Value.Hash, activity.Value.DisplayProperties.Name);
+                        if (NightfallRotation.Nightfalls.Contains(activity.Value.DisplayProperties.Description) && !Nightfalls.ContainsValue(activity.Value.DisplayProperties.Description))
+                        {
+                            Nightfalls.Add(activity.Value.Hash, activity.Value.DisplayProperties.Description);
+                            Console.WriteLine($"{activity.Value.Hash}: {activity.Value.DisplayProperties.Name} ({activity.Value.DisplayProperties.Description})");
+                        }
                         int index = LostSectorRotation.LostSectors.FindIndex(x => activity.Key.Equals($"{x.LegendActivityHash}"));
                         if (index != -1)
                         {
@@ -155,6 +200,8 @@ namespace Levante.Helpers
                                 }
                             }
                         }
+
+
                     }
                     foreach (var invItem in invItemList)
                     {
@@ -206,7 +253,14 @@ namespace Levante.Helpers
                                 else
                                     Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
                             }
-                                
+
+                            int index = NightfallRotation.NightfallWeapons.FindIndex(x => x.Hash == invItem.Value.Hash);
+                            if (index != -1)
+                            {
+                                NightfallRotation.NightfallWeapons[index].Name = invItem.Value.DisplayProperties.Name;
+                                bool isHeavyGL = invItem.Value.ItemSubType == DestinyItemSubType.GrenadeLauncher && invItem.Value.ItemCategoryHashes.Contains<uint>(4);
+                                NightfallRotation.NightfallWeapons[index].Emote = DestinyEmote.MatchWeaponItemSubtypeToEmote(invItem.Value.ItemSubType, isHeavyGL);
+                            }
                         }
                         
                         if (invItem.Value.ItemType == DestinyItemType.Mod && invItem.Value.ItemSubType == 0)
@@ -223,31 +277,6 @@ namespace Levante.Helpers
                                 continue;
                             Ada1ArmorMods.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
                         }
-                    }
-                }
-                catch (Exception x)
-                {
-                    Console.WriteLine($"{x}");
-                }
-
-                LogHelper.ConsoleLog($"[MANIFEST] Populating Title/Seal Dictionaries...");
-                string recordUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyRecordDefinition"]}";
-                var response2 = client.GetAsync(recordUrl).Result;
-                var content2 = response2.Content.ReadAsStringAsync().Result;
-                var recordList = JsonConvert.DeserializeObject<Dictionary<string, DestinyRecordDefinition>>(content2);
-
-                try
-                {
-                    foreach (var record in recordList)
-                    {
-                        if (record.Value.TitleInfo == null) continue;
-                        if (record.Value.TitleInfo.HasTitle)
-                        {
-                            Seals.Add(record.Value.Hash, $"{record.Value.TitleInfo.TitlesByGender.Values.FirstOrDefault()}");
-                            if (record.Value.TitleInfo.GildingTrackingRecordHash != null)
-                                GildableSeals.Add(record.Value.Hash, (long)record.Value.TitleInfo.GildingTrackingRecordHash);
-                        }
-                            
                     }
                 }
                 catch (Exception x)

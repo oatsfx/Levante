@@ -65,10 +65,10 @@ namespace Levante.Rotations
         public static AscendantChallenge AscendantChallenge = AscendantChallenge.AgonarchAbyss;
 
         [JsonProperty("Nightfall")]
-        public static Nightfall Nightfall = Nightfall.ProvingGrounds;
+        public static int Nightfall = 0;
 
         [JsonProperty("NightfallWeaponDrop")]
-        public static NightfallWeapon NightfallWeaponDrop = NightfallWeapon.DutyBound;
+        public static int NightfallWeaponDrop = 0;
 
         [JsonProperty("EmpireHunt")]
         public static EmpireHunt EmpireHunt = EmpireHunt.Warrior;
@@ -81,13 +81,13 @@ namespace Levante.Rotations
 
         public static void DailyRotation()
         {
-            LostSector = LostSector == LostSectorRotation.LostSectors.Count ? 0 : LostSector + 1;
+            Ada1Rotation.GetAda1Inventory();
+
+            LostSector = LostSector == LostSectorRotation.LostSectors.Count - 1 ? 0 : LostSector + 1;
             LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
 
             AltarWeapon = AltarWeapon == AltarsOfSorrow.Rocket ? AltarsOfSorrow.Shotgun : AltarWeapon + 1;
             Wellspring = Wellspring == Wellspring.Zeerik ? Wellspring.Golmag : Wellspring + 1;
-
-            Ada1Rotation.GetAda1Inventory();
 
             DailyResetTimestamp = DateTime.Now;
 
@@ -105,9 +105,9 @@ namespace Levante.Rotations
             FeaturedRaid = FeaturedRaid == Raid.VowOfTheDisciple ? Raid.LastWish : FeaturedRaid + 1;
             CurseWeek = CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : CurseWeek + 1;
             AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? AscendantChallenge.AgonarchAbyss : AscendantChallenge + 1;
-            Nightfall = Nightfall == Nightfall.TheArmsDealer ? Nightfall.ProvingGrounds : Nightfall + 1;
+            //Nightfall = Nightfall == NightfallRotation.Nightfalls.Count - 1 ? 0 : Nightfall + 1;
             // Missing data.
-            NightfallWeaponDrop = NightfallWeaponDrop == NightfallWeapon.PlugOne1 ? NightfallWeapon.SiliconNeuroma : NightfallWeaponDrop + 1;
+            NightfallWeaponDrop = NightfallWeaponDrop == NightfallRotation.NightfallWeapons.Count - 1 ? 0 : NightfallWeaponDrop + 1;
             EmpireHunt = EmpireHunt == EmpireHunt.DarkPriestess ? EmpireHunt.Warrior : EmpireHunt + 1;
 
             NightmareHunts[0] = NightmareHunts[0] >= NightmareHunt.Skolas ? NightmareHunts[0] - 5 : NightmareHunts[0] + 3;
@@ -307,24 +307,32 @@ namespace Levante.Rotations
                 x.Value = $"{DestinyEmote.KFRaidChallenge} {KFChallengeEncounter} ({KingsFallRotation.GetChallengeString(KFChallengeEncounter)})";
                 x.IsInline = true;
             })
-            /*.AddField(x =>
+            .AddField(x =>
             {
-                x.Name = "> Nightfall: The Ordeal";
+                x.Name = "> Nightfall";
                 x.Value = $"*Nightfall Strike and Weapon Rotation*";
                 x.IsInline = false;
             })
             .AddField(x =>
             {
-                x.Name = $"{NightfallRotation.GetStrikeNameString(Nightfall)}";
-                x.Value = $"{DestinyEmote.Nightfall} {NightfallRotation.GetStrikeBossString(Nightfall)}";
+                x.Name = $"Strike";
+                x.Value = $"{DestinyEmote.Nightfall} {NightfallRotation.Nightfalls[Nightfall]}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = "Weapon";
-                x.Value = $"{NightfallRotation.GetWeaponEmote(NightfallWeaponDrop)} {NightfallRotation.GetWeaponString(NightfallWeaponDrop)}";
+                if (NightfallRotation.NightfallWeapons.Count == 0)
+                {
+                    x.Value = $"Weapon Rotation Unknown";
+                }
+                else
+                {
+                    x.Value = $"{NightfallRotation.NightfallWeapons[NightfallWeaponDrop].Emote} {NightfallRotation.NightfallWeapons[NightfallWeaponDrop].Name}";
+                }
+                
                 x.IsInline = true;
-            })*/
+            })
             .AddField(x =>
             {
                 x.Name = "> Patrol";
@@ -626,11 +634,11 @@ namespace Levante.Rotations
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
 
                     if (Link.Nightfall == Nightfall || Link.WeaponDrop == null)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** (Requested) and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** today. I have removed your tracking, good luck!");
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.Nightfalls[Nightfall]}** (Requested) and is dropping **{NightfallRotation.NightfallWeapons[NightfallWeaponDrop].Name}** today. I have removed your tracking, good luck!");
                     else if (Link.Nightfall == null || Link.WeaponDrop == NightfallWeaponDrop)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** (Requested) today. I have removed your tracking, good luck!");
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.Nightfalls[Nightfall]}** and is dropping **{NightfallRotation.NightfallWeapons[NightfallWeaponDrop].Name}** (Requested) today. I have removed your tracking, good luck!");
                     else if (Link.Nightfall == Nightfall || Link.WeaponDrop == NightfallWeaponDrop)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.GetStrikeNameString(Nightfall)}** and is dropping **{NightfallRotation.GetWeaponString(NightfallWeaponDrop)}** today. I have removed your tracking, good luck!");
+                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.Nightfalls[Nightfall]}** and is dropping **{NightfallRotation.NightfallWeapons[NightfallWeaponDrop].Name}** today. I have removed your tracking, good luck!");
                     else
                         nfTemp.Add(Link);
                 }

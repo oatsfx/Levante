@@ -46,7 +46,10 @@ namespace Levante.Commands
                 $"- After linking is complete, you'll receive another DM from me to confirm.\n" +
                 $"- Experienced a name change? Relinking will update your name with our data.";
 
-            await RespondAsync(embed: embed.Build(), ephemeral: true);
+            var buttonBuilder = new ComponentBuilder()
+                .WithButton("Link with Levante", style: ButtonStyle.Link, url: $"https://www.bungie.net/en/OAuth/Authorize?client_id={BotConfig.BungieClientID}&response_type=code&state={state}", emote: Emote.Parse("<:LevanteLogo:941054754900041769>"), row: 0);
+
+            await RespondAsync(embed: embed.Build(), components: buttonBuilder.Build(), ephemeral: true);
         }
 
         [Group("notify", "Be notified when a specific rotation is active.")]
@@ -279,22 +282,23 @@ namespace Levante.Commands
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike to be alerted for."), Autocomplete(typeof(NightfallAutocomplete))] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike weapon drop to be alerted for."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int? ArgWeapon = null)
             {
-                await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
-                return;
+                //await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
+                //return;
+
                 if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var Weapon) != null)
                 {
                     if (NF == null && Weapon == null)
                         await RespondAsync($"An error has occurred.", ephemeral: true);
                     else if (NF != null && Weapon == null)
-                        await RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.GetStrikeNameString((Nightfall)NF)}.", ephemeral: true);
+                        await RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.Nightfalls[(int)NF]}.", ephemeral: true);
                     else if (NF == null && Weapon != null)
-                        await RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} weapon drops.", ephemeral: true);
+                        await RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.NightfallWeapons[(int)Weapon].Name} weapon drops.", ephemeral: true);
                     else if (NF != null && Weapon != null)
-                        await RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.GetStrikeNameString((Nightfall)NF)} with {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} weapon drops.", ephemeral: true);
+                        await RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.Nightfalls[(int)NF]} with {NightfallRotation.NightfallWeapons[(int)Weapon].Name} weapon drops.", ephemeral: true);
                     return;
                 }
-                NF = (Nightfall?)ArgNF;
-                Weapon = (NightfallWeapon?)ArgWeapon;
+                NF = ArgNF;
+                Weapon = ArgWeapon;
 
                 if (NF == null && Weapon == null)
                 {
@@ -310,14 +314,11 @@ namespace Levante.Commands
 
                 NightfallRotation.AddUserTracking(Context.User.Id, NF, Weapon);
                 if (NF != null && Weapon == null)
-                    await RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is in rotation, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    await RespondAsync($"I will remind you when {NightfallRotation.Nightfalls[(int)NF]} is in rotation, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (NF == null && Weapon != null)
-                    await RespondAsync($"I will remind you when {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)} is in rotation, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                    await RespondAsync($"I will remind you when {NightfallRotation.NightfallWeapons[(int)Weapon].Name} is in rotation, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (NF != null && Weapon != null)
-                    await RespondAsync($"I will remind you when {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                
-                //await RespondAsync($"Gathering data on new Nightfalls. Check back later!");
-                //return;
+                    await RespondAsync($"I will remind you when {NightfallRotation.Nightfalls[(int)NF]} is dropping {NightfallRotation.NightfallWeapons[(int)Weapon].Name}, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("nightmare-hunt", "Be notified when an Nightmare Hunt is active.")]
@@ -453,11 +454,11 @@ namespace Levante.Commands
                     if (NF == null && NFWeapon == null)
                         menuBuilder.AddOption("Nightfall", "remove-error", $"Nothing found");
                     else if (NF != null && NFWeapon == null)
-                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.GetStrikeNameString((Nightfall)NF)}");
+                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.Nightfalls[(int)NF]}");
                     else if (NF == null && NFWeapon != null)
-                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.GetWeaponString((NightfallWeapon)NFWeapon)} Drop");
+                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.NightfallWeapons[(int)Weapon].Name} Drop");
                     else if (NF != null && NFWeapon != null)
-                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.GetStrikeNameString((Nightfall)NF)} dropping {NightfallRotation.GetWeaponString((NightfallWeapon)NFWeapon)}");
+                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.Nightfalls[(int)NF]} dropping {NightfallRotation.NightfallWeapons[(int)Weapon].Name}");
                 }
 
                 if (NightmareHuntRotation.GetUserTracking(Context.User.Id, out var NightmareHunt) != null)
@@ -731,11 +732,11 @@ namespace Levante.Commands
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike to predict its next appearance."), Autocomplete(typeof(NightfallAutocomplete))] int? ArgNF = null,
                 [Summary("weapon", "Nightfall Strike Weapon drop."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int? ArgWeapon = null)
             {
-                await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
-                return;
+                //await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
+                //return;
 
-                Nightfall? NF = (Nightfall?)ArgNF;
-                NightfallWeapon? Weapon = (NightfallWeapon?)ArgWeapon;
+                int? NF = ArgNF;
+                int? Weapon = ArgWeapon;
 
                 var predictedDate = NightfallRotation.DatePrediction(NF, Weapon);
 
@@ -758,15 +759,15 @@ namespace Levante.Commands
                 embed.Title = "Nightfall";
                 if (NF != null && Weapon == null)
                     embed.Description =
-                        $"Next occurrance of {NightfallRotation.GetStrikeNameString((Nightfall)NF)} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                        $"Next occurrance of {NightfallRotation.Nightfalls[(int)NF]} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
                 else if (NF == null && Weapon != null)
                     embed.Description =
                         $"Next occurrance of Nightfalls" +
-                            $"{(Weapon != null ? $" dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                            $"{(Weapon != null ? $" dropping {NightfallRotation.NightfallWeapons[(int)Weapon].Name}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
                 else if (NF != null && Weapon != null)
                     embed.Description =
-                        $"Next occurrance of {NightfallRotation.GetStrikeNameString((Nightfall)NF)}" +
-                            $"{(Weapon != null ? $" dropping {NightfallRotation.GetWeaponString((NightfallWeapon)Weapon)}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}."; 
+                        $"Next occurrance of {NightfallRotation.Nightfalls[(int)NF]}" +
+                            $"{(Weapon != null ? $" dropping {NightfallRotation.NightfallWeapons[(int)Weapon].Name}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}."; 
 
                 await RespondAsync($"", embed: embed.Build());
                 //await RespondAsync($"Gathering data on new Nightfalls. Check back later!");

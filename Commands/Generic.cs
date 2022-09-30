@@ -159,7 +159,10 @@ namespace Levante.Commands
                 "Those extra perks are a way of saying thank you to all of our generous supporters.\n" +
                 "> You can support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/).";
 
-            await RespondAsync(embed: embed.Build());
+            var buttonBuilder = new ComponentBuilder()
+                .WithButton("Support Levante", style: ButtonStyle.Link, url: $"https://donate.levante.dev/", emote: Emote.Parse("<:KoFi:1025505673221525634>"), row: 0);
+
+            await RespondAsync(embed: embed.Build(), components: buttonBuilder.Build());
         }
     }
 }
