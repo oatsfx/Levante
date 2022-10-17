@@ -170,7 +170,7 @@ namespace Levante.Util
                 x.IsInline = true;
             });
             
-            if (item.Response.activities.data != null)
+            if (item.Response.activities.data != null && item.Response.activities.data.currentActivityHash != 0)
             {
                 embed.AddField(x =>
                 {

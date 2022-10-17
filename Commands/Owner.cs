@@ -19,6 +19,10 @@ using Levante.Util.Attributes;
 using BungieSharper.Entities.Forum;
 using System.Collections.Immutable;
 using System.Globalization;
+using Fergun.Interactive.Pagination;
+using System.Reflection;
+using Fergun.Interactive.Selection;
+using System.ComponentModel;
 
 namespace Levante.Commands
 {
@@ -708,10 +712,9 @@ namespace Levante.Commands
         }
 
         [RequireBotStaff]
-        [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
+        [SlashCommand("my-creations", "[BOT STAFF]: Find your Community Creation uploads.")]
         public async Task Testing()
         {
-            //await RespondAsync($"Nothing found.");
             await DeferAsync();
             var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
             DateTime oldest = DateTime.Now;
@@ -791,6 +794,34 @@ namespace Levante.Commands
             }
             embed.Description = $"Indexed {totalIndexed} Creations from {TimestampTag.FromDateTime(oldest)} to Now.";
             await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
+        }
+
+        [RequireBotStaff]
+        [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
+        public async Task PaginatorTest()
+        {
+            var paginator = new LazyPaginatorBuilder()
+                .AddUser(Context.User)
+                .WithPageFactory(GeneratePage)
+                .WithMaxPageIndex((int)Math.Ceiling(EmblemOffer.CurrentOffers.Count / (decimal)10) - 1)
+                .AddOption(new Emoji("◀"), PaginatorAction.Backward)
+                .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
+                .AddOption(new Emoji("▶"), PaginatorAction.Forward)
+                .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
+                .WithActionOnCancellation(ActionOnStop.DeleteInput)
+                .WithActionOnTimeout(ActionOnStop.DeleteInput)
+                .Build();
+
+            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+            static PageBuilder GeneratePage(int index)
+            {
+                var embed = EmblemOffer.GetOfferListEmbed(index);
+                return new PageBuilder()
+                    .WithAuthor(embed.Author)
+                    .WithDescription(embed.Description)
+                    .WithColor((Color)embed.Color);
+            }
         }
 
         public async Task SendToAllAnnounceChannels(EmbedBuilder embed)

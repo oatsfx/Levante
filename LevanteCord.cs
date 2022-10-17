@@ -191,7 +191,10 @@ namespace Levante
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/").Result;
+                var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotStaffDiscordIDs[0]);
+                devLinked = DataConfig.RefreshCode(devLinked);
+
+                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "?components=100,200").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 

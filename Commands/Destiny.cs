@@ -1,4 +1,4 @@
-using Discord;
+﻿using Discord;
 using Newtonsoft.Json;
 using System;
 using System.Net.Http;
@@ -16,6 +16,8 @@ using Levante.Util.Attributes;
 using System.Collections.Immutable;
 using System.Linq;
 using Levante.Helpers;
+using Fergun.Interactive.Pagination;
+using System.Reflection;
 
 namespace Levante.Commands
 {
@@ -162,7 +164,37 @@ namespace Levante.Commands
         {
             if (EmblemHash == null)
             {
-                await RespondAsync(embed: EmblemOffer.GetOfferListEmbed().Build());
+                if (EmblemOffer.CurrentOffers.Count > 10)
+                {
+                    var paginator = new LazyPaginatorBuilder()
+                        .AddUser(Context.User)
+                        .WithPageFactory(GeneratePage)
+                        .WithMaxPageIndex((int)Math.Ceiling(EmblemOffer.CurrentOffers.Count / (decimal)10) - 1)
+                        .AddOption(new Emoji("◀"), PaginatorAction.Backward)
+                        .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
+                        .AddOption(new Emoji("▶"), PaginatorAction.Forward)
+                        .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
+                        .WithActionOnCancellation(ActionOnStop.DeleteInput)
+                        .WithActionOnTimeout(ActionOnStop.DeleteInput)
+                        .Build();
+
+                    await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+                    static PageBuilder GeneratePage(int index)
+                    {
+                        var embed = EmblemOffer.GetOfferListEmbed(index);
+                        return new PageBuilder()
+                            .WithAuthor(embed.Author)
+                            .WithDescription(embed.Description)
+                            .WithColor((Discord.Color)embed.Color);
+                    }
+                }
+                else
+                {
+                    // No need to paginate because we should be able to fit all (less than 10) offers.
+                    await RespondAsync(embed: EmblemOffer.GetOfferListEmbed(0).Build());
+                }
+                
                 return;
             }
             long EmblemHashCode = long.Parse(EmblemHash);
@@ -961,7 +993,7 @@ namespace Levante.Commands
             {
                 using (Stream objWebStream = wrFileResponse.GetResponseStream())
                 {
-                    MemoryStream ms = new MemoryStream();
+                    MemoryStream ms = new();
                     objWebStream.CopyTo(ms, 8192);
                     return System.Drawing.Image.FromStream(ms);
                 }

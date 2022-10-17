@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Levante.Helpers;
+using System.Linq;
 
 namespace Levante.Util
 {
@@ -115,7 +116,7 @@ namespace Levante.Util
                 return null;
         }
 
-        public static EmbedBuilder GetOfferListEmbed()
+        public static EmbedBuilder GetOfferListEmbed(int Page = 0)
         {
             var auth = new EmbedAuthorBuilder()
             {
@@ -132,12 +133,12 @@ namespace Levante.Util
                 Footer = foot
             };
 
-            string desc = $"__Offers:__\n";
+            string desc = $"__Offers ({(10 * Page) + 1}/{((10 * Page) + 10 > CurrentOffers.Count ? CurrentOffers.Count : (10 * Page) + 10)}):__\n";
 
             if (CurrentOffers.Count != 0)
             {
-                foreach (var Offer in CurrentOffers)
-                    desc += $"> [{Offer.OfferedEmblem.GetName()}]({Offer.SpecialUrl}) ({Offer.OfferedEmblem.GetItemHash()}) ([IMAGE]({Offer.ImageUrl}))\n";
+                foreach (var Offer in CurrentOffers.GetRange(10*Page, (10 * Page) + 10 > CurrentOffers.Count ? CurrentOffers.Count - (10 * Page) : 10))
+                    desc += $"> [{Offer.OfferedEmblem.GetName()}]({Offer.SpecialUrl}) [[IMAGE]({Offer.ImageUrl})]\n";
                 desc += $"\n*Want specific details? Use the command \"/current-offers [EMBLEM NAME]\".*";
             }
             else
@@ -166,7 +167,7 @@ namespace Levante.Util
             CurrentOffers.Clear();
             string emblemOfferPath = @"Configs/EmblemOffers/";
 
-            foreach (string fileName in Directory.GetFiles(emblemOfferPath))
+            foreach (string fileName in Directory.GetFiles(emblemOfferPath).Where(x => x.EndsWith(".json")))
             {
                 string json = File.ReadAllText(fileName);
                 var offer = JsonConvert.DeserializeObject<EmblemOffer>(json);

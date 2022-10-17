@@ -498,7 +498,7 @@ namespace Levante.Rotations
             {
                 do
                 {
-                    iterationLS = iterationLS == LostSectors.Count ? 0 : iterationLS + 1;
+                    iterationLS = iterationLS == LostSectors.Count - 1 ? 0 : iterationLS + 1;
                     DaysUntil++;
                 } while (iterationLS != LS);
             }
@@ -507,7 +507,7 @@ namespace Levante.Rotations
                 do
                 {
                     iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
-                    iterationLS = iterationLS == LostSectors.Count ? 0 : iterationLS + 1;
+                    iterationLS = iterationLS == LostSectors.Count - 1 ? 0 : iterationLS + 1;
                     DaysUntil++;
                 } while (iterationEAT != ArmorType || iterationLS != LS);
             }
