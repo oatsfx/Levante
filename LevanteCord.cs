@@ -36,6 +36,7 @@ namespace Levante
         private Timer DailyResetTimer;
         private Timer _xpTimer;
         private Timer _leaderboardTimer;
+        private Timer CommunityCreationsTimer;
         private Timer CheckBungieAPI;
 
         public LevanteCord()
@@ -112,6 +113,7 @@ namespace Levante
 
             var oauthManager = new OAuthHelper();
             var creationsManager = new CreationsHelper();
+            CommunityCreationsTimer = new Timer(creationsManager.CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
@@ -132,6 +134,7 @@ namespace Levante
             await _xpTimer.DisposeAsync();
             await _leaderboardTimer.DisposeAsync();
             await DailyResetTimer.DisposeAsync();
+            await CommunityCreationsTimer.DisposeAsync();
         }
 
         private async Task UpdateBotActivity(int SetRNG = -1)

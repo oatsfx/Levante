@@ -20,8 +20,6 @@ namespace Levante.Helpers
 {
     public class CreationsHelper
     {
-        private Timer CommunityCreationsTimer;
-
         public static readonly string FilePath = @"Configs/creationsConfig.json";
 
         [JsonProperty("CreationsPosts")]
@@ -39,10 +37,9 @@ namespace Levante.Helpers
                 File.WriteAllText(FilePath, JsonConvert.SerializeObject(CreationsPosts, Formatting.Indented));
                 Console.WriteLine($"No creationsConfig.json file detected. A new one has been created, no action needed.");
             }
-            CommunityCreationsTimer = new Timer(CheckCommunityCreationsCallback, null, 5000, 60000*2);
             LogHelper.ConsoleLog("[CREATIONS] Creations Module Loaded.");
         }
-        private async void CheckCommunityCreationsCallback(Object o) => await CheckCreations().ConfigureAwait(false);
+        public async void CheckCommunityCreationsCallback(Object o) => await CheckCreations().ConfigureAwait(false);
 
         private async Task CheckCreations()
         {
