@@ -16,6 +16,8 @@ using System.Diagnostics;
 using BungieSharper.Entities.Destiny.Definitions.Lore;
 using BungieSharper.Entities.Destiny.Definitions.Presentation;
 using Levante.Util;
+using System.IO;
+using APIHelper;
 
 namespace Levante.Helpers
 {
@@ -56,6 +58,9 @@ namespace Levante.Helpers
 
         public static void LoadManifestDictionaries()
         {
+            if (!Directory.Exists("Data/Manifest/JSONs"))
+                Directory.CreateDirectory("Data/Manifest/JSONs");
+
             Emblems.Clear();
             EmblemsCollectible.Clear();
             Weapons.Clear();
@@ -64,7 +69,6 @@ namespace Levante.Helpers
             GildableSeals.Clear();
             Activities.Clear();
             SeasonIconURLs.Clear();
-            LogHelper.ConsoleLog($"[MANIFEST] Begin emblem and weapon Dictionary population.");
             using (var client = new HttpClient())
             {
                 var dimAiResponse = client.GetAsync($"https://raw.githubusercontent.com/DestinyItemManager/d2-additional-info/master/output/watermark-to-season.json").Result;
@@ -74,44 +78,171 @@ namespace Levante.Helpers
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
-                LogHelper.ConsoleLog($"[MANIFEST] Found v.{item.Response.version}. Pulling DestinyInventoryItemDefinition (EN)...");
                 DestinyManifestVersion = item.Response.version;
+                if (!File.Exists($"Data/Manifest/JSONs/{DestinyManifestVersion}.json"))
+                {
+                    LogHelper.ConsoleLog($"[MANIFEST] Found v.{DestinyManifestVersion}. Storing locally...");
+                    File.WriteAllText($"Data/Manifest/JSONs/{DestinyManifestVersion}.json", JsonConvert.SerializeObject(item, Formatting.Indented));
+                }
+                else
+                {
+                    LogHelper.ConsoleLog($"[MANIFEST] Found v.{DestinyManifestVersion}. No download needed.");
+                }
 
-                string invItemUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyInventoryItemDefinition"]}";
-                response = client.GetAsync(invItemUrl).Result;
-                content = response.Content.ReadAsStringAsync().Result;
-                var invItemList = JsonConvert.DeserializeObject<Dictionary<string, DestinyInventoryItemDefinition>>(content);
+                // Inventory Items
+                string path = item.Response.jsonWorldComponentContentPaths.en["DestinyInventoryItemDefinition"];
+                string fileName = path.Split('/').LastOrDefault();
+                Dictionary<string, DestinyInventoryItemDefinition> invItemList = new();
+                if (!Directory.Exists("Data/Manifest/JSONs/DestinyInventoryItemDefinition"))
+                    Directory.CreateDirectory("Data/Manifest/JSONs/DestinyInventoryItemDefinition");
+                if (!File.Exists($"Data/Manifest/JSONs/DestinyInventoryItemDefinition/{fileName}"))
+                {
+                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyInventoryItemDefinition locally...");
+                    string invItemUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyInventoryItemDefinition"]}";
+                    response = client.GetAsync(invItemUrl).Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    invItemList = JsonConvert.DeserializeObject<Dictionary<string, DestinyInventoryItemDefinition>>(content);
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinyInventoryItemDefinition/{fileName}", JsonConvert.SerializeObject(invItemList, Formatting.Indented));
+                }
+                else
+                {
+                    content = File.ReadAllText($"Data/Manifest/JSONs/DestinyInventoryItemDefinition/{fileName}");
+                    invItemList = JsonConvert.DeserializeObject<Dictionary<string, DestinyInventoryItemDefinition>>(content);
+                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyInventoryItemDefinition from local.");
+                }
 
-                string vendorListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyVendorDefinition"]}";
-                response = client.GetAsync(vendorListUrl).Result;
-                content = response.Content.ReadAsStringAsync().Result;
-                var vendorList = JsonConvert.DeserializeObject<Dictionary<string, DestinyVendorDefinition>>(content);
+                // Vendors
+                path = item.Response.jsonWorldComponentContentPaths.en["DestinyVendorDefinition"];
+                fileName = path.Split('/').LastOrDefault();
+                Dictionary<string, DestinyVendorDefinition> vendorList = new();
+                if (!Directory.Exists("Data/Manifest/JSONs/DestinyVendorDefinition"))
+                    Directory.CreateDirectory("Data/Manifest/JSONs/DestinyVendorDefinition");
+                if (!File.Exists($"Data/Manifest/JSONs/DestinyVendorDefinition/{fileName}"))
+                {
+                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyVendorDefinition locally...");
+                    string vendorListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyVendorDefinition"]}";
+                    response = client.GetAsync(vendorListUrl).Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    vendorList = JsonConvert.DeserializeObject<Dictionary<string, DestinyVendorDefinition>>(content);
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinyVendorDefinition/{fileName}", JsonConvert.SerializeObject(vendorList, Formatting.Indented));
+                }
+                else
+                {
+                    content = File.ReadAllText($"Data/Manifest/JSONs/DestinyVendorDefinition/{fileName}");
+                    vendorList = JsonConvert.DeserializeObject<Dictionary<string, DestinyVendorDefinition>>(content);
+                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyVendorDefinition from local.");
+                }
                 var ada1ItemList = vendorList["350061650"].ItemList.Select(x => x.ItemHash);
 
-                string activityListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyActivityDefinition"]}";
-                response = client.GetAsync(activityListUrl).Result;
-                content = response.Content.ReadAsStringAsync().Result;
-                var activityList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityDefinition>>(content);
+                // Activities
+                path = item.Response.jsonWorldComponentContentPaths.en["DestinyActivityDefinition"];
+                fileName = path.Split('/').LastOrDefault();
+                Dictionary<string, DestinyActivityDefinition> activityList = new();
+                if (!Directory.Exists("Data/Manifest/JSONs/DestinyActivityDefinition"))
+                    Directory.CreateDirectory("Data/Manifest/JSONs/DestinyActivityDefinition");
+                if (!File.Exists($"Data/Manifest/JSONs/DestinyActivityDefinition/{fileName}"))
+                {
+                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyActivityDefinition locally...");
+                    string activityListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyActivityDefinition"]}";
+                    response = client.GetAsync(activityListUrl).Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    activityList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityDefinition>>(content);
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinyActivityDefinition/{fileName}", JsonConvert.SerializeObject(activityList, Formatting.Indented));
+                }
+                else
+                {
+                    content = File.ReadAllText($"Data/Manifest/JSONs/DestinyActivityDefinition/{fileName}");
+                    activityList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityDefinition>>(content);
+                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyActivityDefinition from local.");
+                }
 
-                string placeListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyPlaceDefinition"]}";
-                response = client.GetAsync(placeListUrl).Result;
-                content = response.Content.ReadAsStringAsync().Result;
-                var placeList = JsonConvert.DeserializeObject<Dictionary<string, DestinyPlaceDefinition>>(content);
+                // Places
+                path = item.Response.jsonWorldComponentContentPaths.en["DestinyPlaceDefinition"];
+                fileName = path.Split('/').LastOrDefault();
+                Dictionary<string, DestinyPlaceDefinition> placeList = new();
+                if (!Directory.Exists("Data/Manifest/JSONs/DestinyPlaceDefinition"))
+                    Directory.CreateDirectory("Data/Manifest/JSONs/DestinyPlaceDefinition");
+                if (!File.Exists($"Data/Manifest/JSONs/DestinyPlaceDefinition/{fileName}"))
+                {
+                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyPlaceDefinition locally...");
+                    string placeListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyPlaceDefinition"]}";
+                    response = client.GetAsync(placeListUrl).Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    placeList = JsonConvert.DeserializeObject<Dictionary<string, DestinyPlaceDefinition>>(content);
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinyPlaceDefinition/{fileName}", JsonConvert.SerializeObject(placeList, Formatting.Indented));
+                }
+                else
+                {
+                    content = File.ReadAllText($"Data/Manifest/JSONs/DestinyPlaceDefinition/{fileName}");
+                    placeList = JsonConvert.DeserializeObject<Dictionary<string, DestinyPlaceDefinition>>(content);
+                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyPlaceDefinition from local.");
+                }
 
-                string modifierListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyActivityModifierDefinition"]}";
-                response = client.GetAsync(modifierListUrl).Result;
-                content = response.Content.ReadAsStringAsync().Result;
-                var modifierList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityModifierDefinition>>(content);
+                // Modifiers
+                path = item.Response.jsonWorldComponentContentPaths.en["DestinyActivityModifierDefinition"];
+                fileName = path.Split('/').LastOrDefault();
+                Dictionary<string, DestinyActivityModifierDefinition> modifierList = new();
+                if (!Directory.Exists("Data/Manifest/JSONs/DestinyActivityModifierDefinition"))
+                    Directory.CreateDirectory("Data/Manifest/JSONs/DestinyActivityModifierDefinition");
+                if (!File.Exists($"Data/Manifest/JSONs/DestinyActivityModifierDefinition/{fileName}"))
+                {
+                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyActivityModifierDefinition locally...");
+                    string modifierListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyActivityModifierDefinition"]}";
+                    response = client.GetAsync(modifierListUrl).Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    modifierList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityModifierDefinition>>(content);
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinyActivityModifierDefinition/{fileName}", JsonConvert.SerializeObject(modifierList, Formatting.Indented));
+                }
+                else
+                {
+                    content = File.ReadAllText($"Data/Manifest/JSONs/DestinyActivityModifierDefinition/{fileName}");
+                    modifierList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityModifierDefinition>>(content);
+                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyActivityModifierDefinition from local.");
+                }
 
-                string recordUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyRecordDefinition"]}";
-                response = client.GetAsync(recordUrl).Result;
-                content = response.Content.ReadAsStringAsync().Result;
-                var recordList = JsonConvert.DeserializeObject<Dictionary<string, DestinyRecordDefinition>>(content);
+                // Records/Triumph
+                path = item.Response.jsonWorldComponentContentPaths.en["DestinyRecordDefinition"];
+                fileName = path.Split('/').LastOrDefault();
+                Dictionary<string, DestinyRecordDefinition> recordList = new();
+                if (!Directory.Exists("Data/Manifest/JSONs/DestinyRecordDefinition"))
+                    Directory.CreateDirectory("Data/Manifest/JSONs/DestinyRecordDefinition");
+                if (!File.Exists($"Data/Manifest/JSONs/DestinyRecordDefinition/{fileName}"))
+                {
+                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyRecordDefinition locally...");
+                    string recordUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyRecordDefinition"]}";
+                    response = client.GetAsync(recordUrl).Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    recordList = JsonConvert.DeserializeObject<Dictionary<string, DestinyRecordDefinition>>(content);
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinyRecordDefinition/{fileName}", JsonConvert.SerializeObject(recordList, Formatting.Indented));
+                }
+                else
+                {
+                    content = File.ReadAllText($"Data/Manifest/JSONs/DestinyRecordDefinition/{fileName}");
+                    recordList = JsonConvert.DeserializeObject<Dictionary<string, DestinyRecordDefinition>>(content);
+                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyRecordDefinition from local.");
+                }
 
-                string presentNodeUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyPresentationNodeDefinition"]}";
-                response = client.GetAsync(presentNodeUrl).Result;
-                content = response.Content.ReadAsStringAsync().Result;
-                var presentNodeList = JsonConvert.DeserializeObject<Dictionary<string, DestinyPresentationNodeDefinition>>(content);
+                // Presentation Nodes
+                path = item.Response.jsonWorldComponentContentPaths.en["DestinyPresentationNodeDefinition"];
+                fileName = path.Split('/').LastOrDefault();
+                Dictionary<string, DestinyPresentationNodeDefinition> presentNodeList = new();
+                if (!Directory.Exists("Data/Manifest/JSONs/DestinyPresentationNodeDefinition"))
+                    Directory.CreateDirectory("Data/Manifest/JSONs/DestinyPresentationNodeDefinition");
+                if (!File.Exists($"Data/Manifest/JSONs/DestinyPresentationNodeDefinition/{fileName}"))
+                {
+                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyPresentationNodeDefinition locally...");
+                    string presentNodeUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyPresentationNodeDefinition"]}";
+                    response = client.GetAsync(presentNodeUrl).Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    presentNodeList = JsonConvert.DeserializeObject<Dictionary<string, DestinyPresentationNodeDefinition>>(content);
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinyPresentationNodeDefinition/{fileName}", JsonConvert.SerializeObject(presentNodeList, Formatting.Indented));
+                }
+                else
+                {
+                    content = File.ReadAllText($"Data/Manifest/JSONs/DestinyPresentationNodeDefinition/{fileName}");
+                    presentNodeList = JsonConvert.DeserializeObject<Dictionary<string, DestinyPresentationNodeDefinition>>(content);
+                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyPresentationNodeDefinition from local.");
+                }
 
                 LogHelper.ConsoleLog($"[MANIFEST] Populating Dictionaries...");
                 try
@@ -226,6 +357,11 @@ namespace Levante.Helpers
                         {
                             if (invItem.Value.DisplayProperties.Name == null)
                                 continue; 
+
+                            if (invItem.Value.Hash == 2261046232 || invItem.Value.Hash == 2603335652)
+                            {
+                                Console.WriteLine($"{invItem.Value.DisplayProperties.Name}");
+                            }
 
                             if (invItem.Value.Hash == 417164956) // Jötunn
                                 Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} (Jotunn)");

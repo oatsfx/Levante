@@ -866,12 +866,15 @@ namespace Levante.Commands
                     else
                     {
                         // Crosspost/Publish for news channels the bot posts into.
-                        await channel.SendMessageAsync("", false, embed.Build()).Result.CrosspostAsync();
+                        var msg = await channel.SendMessageAsync("", false, embed.Build());
+                        if (channel is SocketNewsChannel)
+                            await msg.CrosspostAsync();
                     }
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"[OFFERS] Could not send to channel {guildChannel.Id} in guild {guildChannel.Guild.Id}.");
+                    //LogHelper.ConsoleLog($"[OFFERS] Could not send to channel {guildChannel.Id} in guild {guildChannel.Guild.Id}.");
+                    Console.WriteLine($"[OFFERS] Could not send to channel {guildChannel.Id} in guild {guildChannel.Guild.Id}. Reason: {x}");
                 }
             }
         }
