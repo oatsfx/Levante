@@ -102,16 +102,17 @@ namespace Levante
             Console.ForegroundColor = ConsoleColor.Cyan;
 
             _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
-            _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 600000);
+            _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);
             LogHelper.ConsoleLog($"[XP SESSIONS] Continued XP logging for {ActiveConfig.ActiveAFKUsers.Count} (+{ActiveConfig.PriorityActiveAFKUsers.Count}) Users.");
 
-            if (DateTime.Now.Hour >= 10) // after daily reset
-                SetUpTimer(new DateTime(DateTime.Now.AddDays(1).Year, DateTime.Now.AddDays(1).Month, DateTime.Now.AddDays(1).Day, 10, 0, 5));
+            if (DateTime.Now.ToUniversalTime().Hour >= 17) // after daily reset
+                SetUpTimer(new DateTime(DateTime.Now.ToUniversalTime().AddDays(1).Year, DateTime.Now.ToUniversalTime().AddDays(1).Month, DateTime.Now.ToUniversalTime().AddDays(1).Day, 17, 0, 5));
             else
-                SetUpTimer(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 10, 0, 5));
+                SetUpTimer(new DateTime(DateTime.Now.ToUniversalTime().Year, DateTime.Now.ToUniversalTime().Month, DateTime.Now.ToUniversalTime().Day, 17, 0, 5));
 
-            var oauthManager = new OAuthHelper();
-            var creationsManager = new CreationsHelper();
+            //var oauthManager = new OAuthHelper();
+            //var creationsManager = new CreationsHelper();
+            //CommunityCreationsTimer = new Timer(creationsManager.CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
@@ -137,7 +138,7 @@ namespace Levante
         private async Task UpdateBotActivity(int SetRNG = -1)
         {
             int RNG = 0;
-            int RNGMax = 20;
+            int RNGMax = 35;
             Random rand = new Random();
             if (SetRNG != -1 && SetRNG < RNGMax)
                 RNG = SetRNG;
@@ -180,7 +181,8 @@ namespace Levante
         private void SetUpTimer(DateTime alertTime)
         {
             // this is called to get the timer set up to run at every daily reset
-            TimeSpan timeToGo = new TimeSpan(alertTime.Ticks - DateTime.Now.Ticks);
+            TimeSpan timeToGo = new TimeSpan(alertTime.Ticks - DateTime.Now.ToUniversalTime().Ticks);
+            Console.WriteLine($"Reset in: {timeToGo.TotalHours}");
             DailyResetTimer = new Timer(DailyResetChanges, null, (long)timeToGo.TotalMilliseconds, Timeout.Infinite);
         }
 
@@ -558,7 +560,7 @@ namespace Levante
                 //await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                await _interaction.RegisterCommandsGloballyAsync();
+                //await _interaction.RegisterCommandsGloballyAsync();
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
 
                 foreach (var m in _interaction.Modules)
