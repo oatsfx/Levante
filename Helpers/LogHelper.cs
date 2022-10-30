@@ -3,6 +3,10 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using Levante.Configs;
+using Serilog.Configuration;
+using Serilog.Core;
+using Serilog.Events;
+using Serilog;
 
 namespace Levante.Helpers
 {
@@ -62,9 +66,7 @@ namespace Levante.Helpers
 
         public static void ConsoleLog(string Message)
         {
-            Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:" +
-                $"{String.Format("{0:00}", DateTime.Now.Minute)}:" +
-                $"{String.Format("{0:00}", DateTime.Now.Second)}] {Message}");
+            Serilog.Log.Information("{Message}", Message);
 
             if (LevanteCordInstance.Client != null && BotConfig.LoggingChannel != null)
                 BotConfig.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}");
@@ -72,5 +74,42 @@ namespace Levante.Helpers
             
 
         private static TimestampTag GetTimePrefix() => TimestampTag.FromDateTime(DateTime.Now, TimestampTagStyles.LongTime);
+    }
+
+    public class DiscordLogSink : ILogEventSink
+    {
+        private readonly IFormatProvider _formatProvider;
+
+        public DiscordLogSink(IFormatProvider formatProvider)
+        {
+            _formatProvider = formatProvider;
+        }
+
+        public void Emit(LogEvent logEvent)
+        {
+            var message = logEvent.RenderMessage(_formatProvider).Replace("\"", "");
+            if (logEvent.Level >= LogEventLevel.Warning)
+            {
+                if (LevanteCordInstance.Client != null && BotConfig.LoggingChannel != null)
+                    BotConfig.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix(logEvent.Timestamp.DateTime)}]: {message}");
+            }
+        }
+
+        private TimestampTag GetTimePrefix(DateTime timestamp) => TimestampTag.FromDateTime(timestamp, TimestampTagStyles.LongTime);
+    }
+
+    public static class DiscordLogSinkExtenstions
+    {
+        public static LoggerConfiguration DiscordLogSink(
+                  this LoggerSinkConfiguration loggerConfiguration,
+                  IFormatProvider formatProvider = null)
+        {
+            return loggerConfiguration.Sink(new DiscordLogSink(formatProvider));
+        }
+    }
+
+    public enum LogType
+    {
+
     }
 }

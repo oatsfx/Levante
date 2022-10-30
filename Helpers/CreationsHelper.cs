@@ -42,7 +42,7 @@ namespace Levante.Helpers
             CommunityCreationsTimer = new Timer(CheckCommunityCreationsCallback, null, 5000, 60000*2);
             LogHelper.ConsoleLog("[CREATIONS] Creations Module Loaded.");
         }
-        private async void CheckCommunityCreationsCallback(Object o) => await CheckCreations().ConfigureAwait(false);
+        public async void CheckCommunityCreationsCallback(Object o) => await CheckCreations().ConfigureAwait(false);
 
         private async Task CheckCreations()
         {
@@ -119,11 +119,6 @@ namespace Levante.Helpers
                             x.Value = $"{TimestampTag.FromDateTime(DateTime.SpecifyKind(DateTime.Parse($"{creation.lastModified}"), DateTimeKind.Utc))}\n" +
                                 $"by {editorName}";
                             x.IsInline = true;
-                        }).AddField(x =>
-                        {
-                            x.Name = "Upvotes";
-                            x.Value = $"{creation.upvotes}";
-                            x.IsInline = false;
                         });
 
                         var msg = await BotConfig.CreationsLogChannel.SendMessageAsync(embed: embed.Build());

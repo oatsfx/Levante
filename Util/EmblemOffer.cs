@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using Levante.Helpers;
 using System.Linq;
+using Serilog;
 
 namespace Levante.Util
 {
@@ -173,7 +174,8 @@ namespace Levante.Util
                 var offer = JsonConvert.DeserializeObject<EmblemOffer>(json);
                 CurrentOffers.Add(offer);
             }
-            LogHelper.ConsoleLog($"[OFFERS] Loaded {CurrentOffers.Count} Emblem Offers.");
+            Log.Information("[{Type}] Loaded {count} Emblem Offers.",
+                "Offers", CurrentOffers.Count);
         }
 
         public static bool HasExistingOffer(long HashCode)

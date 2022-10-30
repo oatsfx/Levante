@@ -1,6 +1,9 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using static Levante.Configs.BotConfig;
 
 namespace Levante.Configs
 {
@@ -45,7 +48,7 @@ namespace Levante.Configs
         public static string BungieClientSecret { get; set; } = "[YOUR CLIENT SECRET HERE]";
 
         [JsonProperty("Version")]
-        public static double Version { get; set; } = 1.0;
+        public static string Version { get; set; } = "1.0.0";
 
         [JsonProperty("DefaultCommandPrefix")]
         public static string DefaultCommandPrefix { get; set; } = "l!";
@@ -77,6 +80,9 @@ namespace Levante.Configs
         // <Hash, Name>
         [JsonProperty("SeasonalCurrencyHashes")]
         public static Dictionary<long, string> SeasonalCurrencyHashes { get; set; } = new();
+
+        public static string BotLogoUrl = "https://www.levante.dev/images/Levante-Logo.png";
+        public static string BotAvatarUrl = "https://www.levante.dev/images/Levante-Avatar.png";
 
         public class EmbedColorGroup
         {

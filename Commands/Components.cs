@@ -57,7 +57,7 @@ namespace Levante.Commands
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                     Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version:0.00}" },
+                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
                 };
                 embed.Title = $"Max users reached! ({ActiveConfig.MaximumLoggingUsers})";
                 embed.Description = $"Want to bypass this limit? Support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/)!\n" +
@@ -117,7 +117,7 @@ namespace Levante.Commands
             string uniqueName = dil.UniqueBungieName;
             var userLogChannel = await guild.CreateTextChannelAsync($"{uniqueName.Split('#')[0]}", options: new RequestOptions(){ AuditLogReason = "XP Logging Session Create" });
 
-            ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
+            ActiveConfig.ActiveAFKUser newUser = new()
             {
                 DiscordID = user.Id,
                 UniqueBungieName = uniqueName,
@@ -224,7 +224,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var helpEmbed = new EmbedBuilder()
             {
@@ -262,7 +262,7 @@ namespace Levante.Commands
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                     Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version:0.00}" },
+                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
                 };
                 embed.Title = $"Max users reached! ({ActiveConfig.MaximumLoggingUsers})";
                 embed.Description = $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +

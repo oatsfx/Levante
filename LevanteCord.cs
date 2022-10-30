@@ -18,6 +18,11 @@ using Fergun.Interactive;
 using Discord.Interactions;
 using APIHelper;
 using Levante.Util.Attributes;
+using Serilog;
+using Serilog.Events;
+using Serilog.Core;
+using Serilog.Configuration;
+using Serilog.Sinks.SystemConsole.Themes;
 
 namespace Levante
 {
@@ -36,6 +41,7 @@ namespace Levante
         private Timer DailyResetTimer;
         private Timer _xpTimer;
         private Timer _leaderboardTimer;
+        private Timer CommunityCreationsTimer;
         private Timer CheckBungieAPI;
 
         public LevanteCord()
@@ -60,6 +66,14 @@ namespace Levante
 /____/\__/|___/\_,_/_//_/\__/\__/   dev. by @OatsFX
             ";
             Console.WriteLine(ASCIIName);
+            //create the logger and setup your sinks, filters and properties
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}", theme: AnsiConsoleTheme.Literate)
+                .WriteTo.DiscordLogSink()
+                .Enrich.FromLogContext()
+                .CreateLogger();
+
             new LevanteCord().StartAsync().GetAwaiter().GetResult();
         }
 
@@ -68,7 +82,7 @@ namespace Levante
             if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
 
-            await Task.Run(() => Console.Title = $"Levante v{BotConfig.Version:0.00}");
+            await Task.Run(() => Console.Title = $"Levante v{BotConfig.Version}");
 
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
@@ -99,16 +113,14 @@ namespace Levante
             //Console.WriteLine($"Empire Hunt: {EmpireHuntRotation.GetHuntNameString(CurrentRotations.EmpireHunt)}");
             //Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
             //Console.WriteLine();
-            Console.ForegroundColor = ConsoleColor.Cyan;
 
             _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
             _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);
-            LogHelper.ConsoleLog($"[XP SESSIONS] Continued XP logging for {ActiveConfig.ActiveAFKUsers.Count} (+{ActiveConfig.PriorityActiveAFKUsers.Count}) Users.");
+            Log.Information("[{Type}] Continued XP logging for {Count} (+{PriorityCount}) Users.",
+                "XP Sessions", ActiveConfig.ActiveAFKUsers.Count, ActiveConfig.PriorityActiveAFKUsers.Count);
 
-            if (DateTime.Now.ToUniversalTime().Hour >= 17) // after daily reset
-                SetUpTimer(new DateTime(DateTime.Now.ToUniversalTime().AddDays(1).Year, DateTime.Now.ToUniversalTime().AddDays(1).Month, DateTime.Now.ToUniversalTime().AddDays(1).Day, 17, 0, 5));
-            else
-                SetUpTimer(new DateTime(DateTime.Now.ToUniversalTime().Year, DateTime.Now.ToUniversalTime().Month, DateTime.Now.ToUniversalTime().Day, 17, 0, 5));
+            var currentTime = DateTime.UtcNow;
+            SetUpTimer(currentTime.Hour >= 17 ? new DateTime(currentTime.AddDays(1).Year, currentTime.AddDays(1).Month, currentTime.AddDays(1).Day, 17, 0, 5) : new DateTime(currentTime.Year, currentTime.Month, currentTime.Day, 17, 0, 5));
 
             //var oauthManager = new OAuthHelper();
             //var creationsManager = new CreationsHelper();
@@ -116,23 +128,35 @@ namespace Levante
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
-            client.Log += log =>
-            {
-                Console.WriteLine(log);
-                return Task.CompletedTask;
-            };
+
+            client.Log += LogAsync;
             
             await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
             await _client.StartAsync();
 
-            Console.WriteLine();
-            LogHelper.ConsoleLog($"[STARTUP] Bot successfully started! v{BotConfig.Version:0.00}");
-            Console.WriteLine();
+            Log.Information("[{Type}] Bot successfully started! v{@Version}",
+                "Startup", BotConfig.Version);
             await Task.Delay(-1);
 
             await _xpTimer.DisposeAsync();
             await _leaderboardTimer.DisposeAsync();
             await DailyResetTimer.DisposeAsync();
+            await CommunityCreationsTimer.DisposeAsync();
+        }
+        private static async Task LogAsync(LogMessage message)
+        {
+            var severity = message.Severity switch
+            {
+                LogSeverity.Critical => LogEventLevel.Fatal,
+                LogSeverity.Error => LogEventLevel.Error,
+                LogSeverity.Warning => LogEventLevel.Warning,
+                LogSeverity.Info => LogEventLevel.Information,
+                LogSeverity.Verbose => LogEventLevel.Verbose,
+                LogSeverity.Debug => LogEventLevel.Debug,
+                _ => LogEventLevel.Information
+            };
+            Log.Write(severity, message.Exception, "[{Source}] {Message}", message.Source, message.Message);
+            await Task.CompletedTask;
         }
 
         private async Task UpdateBotActivity(int SetRNG = -1)
@@ -154,17 +178,17 @@ namespace Levante
                 case 1:
                     await _client.SetActivityAsync(new Game($"{BotConfig.Notes[rand.Next(0, BotConfig.Notes.Count)]} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing)); break;
                 case 2:
-                    await _client.SetActivityAsync(new Game($"for /help | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"for /help | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 3:
-                    await _client.SetActivityAsync(new Game($"{_client.Guilds.Count} Servers | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{_client.Guilds.Count} Servers | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 4:
-                    await _client.SetActivityAsync(new Game($"{_client.Guilds.Sum(x => x.MemberCount):n0} Users | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{_client.Guilds.Sum(x => x.MemberCount):n0} Users | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 5:
-                    await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count} Linked Users | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count} Linked Users | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 6:
-                    await _client.SetActivityAsync(new Game($"{CurrentRotations.GetTotalLinks()} Rotation Trackers | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{CurrentRotations.GetTotalLinks()} Rotation Trackers | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 7:
-                    await _client.SetActivityAsync(new Game($"{BotConfig.Website} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{BotConfig.Website} | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 8:
                     await _client.SetActivityAsync(new Game($"{BotConfig.Twitter} on Twitter", ActivityType.Watching)); break;
                 case 9:
@@ -172,7 +196,7 @@ namespace Levante
                 case 10:
                     await _client.SetActivityAsync(new Game($"this ratio", ActivityType.Watching)); break;
                 case 11:
-                    await _client.SetActivityAsync(new Game($"for /support | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"for /support | v{BotConfig.Version}", ActivityType.Watching)); break;
                 default: break;
             }
             return;
@@ -557,7 +581,7 @@ namespace Levante
                 //397846250797662208
                 //915020047154565220
                 //1011700865087852585
-                //await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
+                await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
                 //await _interaction.RegisterCommandsGloballyAsync();
@@ -592,7 +616,9 @@ namespace Levante
                 switch (result.Error)
                 {
                     case InteractionCommandError.UnmetPrecondition:
-                        await context.Interaction.RespondAsync($"{result.ErrorReason}", ephemeral: true);
+                        var embed = Embeds.ErrorEmbed;
+                        embed.Description = $"{result.ErrorReason}";
+                        await context.Interaction.RespondAsync($"", ephemeral: true, embed: embed.Build());
                         break;
                     default:
                         break;

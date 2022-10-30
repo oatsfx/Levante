@@ -12,8 +12,7 @@ namespace Levante.Util.Attributes
         {
             if (!DataConfig.IsExistingLinkedUser(context.User.Id))
             {
-
-                return Task.FromResult(PreconditionResult.FromError("You don't have a Destiny 2 account linked, get started with the /link command."));
+                return Task.FromResult(PreconditionResult.FromError("You don't have a Destiny 2 account linked, I need this information to get your data from Bungie's API. Get started with the `/link` command."));
             }
             else
             {

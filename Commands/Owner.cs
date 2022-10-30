@@ -121,7 +121,7 @@ namespace Levante.Commands
         public async Task Refresh()
         {
             ConfigHelper.CheckAndLoadConfigFiles();
-            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Notes[0]} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing));
+            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Notes[0]} | v{BotConfig.Version}", ActivityType.Playing));
 
             await RespondAsync($"Activity refreshed.");
         }
@@ -564,7 +564,7 @@ namespace Levante.Commands
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version:0.00}" },
+                Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
             };
             embed.Title = "Metrics";
             embed.ThumbnailUrl = app.IconUrl;
@@ -800,28 +800,7 @@ namespace Levante.Commands
         [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
         public async Task PaginatorTest()
         {
-            var paginator = new LazyPaginatorBuilder()
-                .AddUser(Context.User)
-                .WithPageFactory(GeneratePage)
-                .WithMaxPageIndex((int)Math.Ceiling(EmblemOffer.CurrentOffers.Count / (decimal)10) - 1)
-                .AddOption(new Emoji("◀"), PaginatorAction.Backward)
-                .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
-                .AddOption(new Emoji("▶"), PaginatorAction.Forward)
-                .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
-                .WithActionOnCancellation(ActionOnStop.DeleteInput)
-                .WithActionOnTimeout(ActionOnStop.DeleteInput)
-                .Build();
-
-            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
-
-            static PageBuilder GeneratePage(int index)
-            {
-                var embed = EmblemOffer.GetOfferListEmbed(index);
-                return new PageBuilder()
-                    .WithAuthor(embed.Author)
-                    .WithDescription(embed.Description)
-                    .WithColor((Color)embed.Color);
-            }
+            await RespondAsync(embed: Embeds.ErrorEmbed.Build());
         }
 
         public async Task SendToAllAnnounceChannels(EmbedBuilder embed)
