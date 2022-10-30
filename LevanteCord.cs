@@ -106,10 +106,10 @@ namespace Levante
             _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 600000);
             LogHelper.ConsoleLog($"[XP SESSIONS] Continued XP logging for {ActiveConfig.ActiveAFKUsers.Count} (+{ActiveConfig.PriorityActiveAFKUsers.Count}) Users.");
 
-            if (DateTime.Now.Hour >= 10) // after daily reset
-                SetUpTimer(new DateTime(DateTime.Now.AddDays(1).Year, DateTime.Now.AddDays(1).Month, DateTime.Now.AddDays(1).Day, 10, 0, 5));
+            if (DateTime.UtcNow.Hour >= 17) // after daily reset
+                SetUpTimer(new DateTime(DateTime.UtcNow.AddDays(1).Year, DateTime.UtcNow.AddDays(1).Month, DateTime.UtcNow.AddDays(1).Day, 17, 0, 5));
             else
-                SetUpTimer(new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 10, 0, 5));
+                SetUpTimer(new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, DateTime.UtcNow.Day, 17, 0, 5));
 
             var oauthManager = new OAuthHelper();
             var creationsManager = new CreationsHelper();
@@ -243,7 +243,7 @@ namespace Levante
             await CurrentRotations.CheckUsersDailyTracking(_client);
 
             // Start the next timer.
-            SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 5));
+            SetUpTimer(new DateTime(DateTime.UtcNow.AddDays(1).Year, DateTime.UtcNow.AddDays(1).Month, DateTime.UtcNow.AddDays(1).Day, 17, 0, 5));
             Console.ForegroundColor = ConsoleColor.Cyan;
         }
 
