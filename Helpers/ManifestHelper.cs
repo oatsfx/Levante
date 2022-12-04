@@ -2,38 +2,32 @@
 using Levante.Configs;
 using Newtonsoft.Json;
 using System;
-using System.Data.SQLite;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 using BungieSharper.Entities.Destiny;
 using BungieSharper.Entities.Destiny.Definitions.Records;
 using Levante.Rotations;
 using BungieSharper.Entities.Destiny.Definitions.ActivityModifiers;
-using System.Diagnostics;
-using BungieSharper.Entities.Destiny.Definitions.Lore;
 using BungieSharper.Entities.Destiny.Definitions.Presentation;
 using Levante.Util;
 using System.IO;
-using APIHelper;
 using Serilog;
 
 namespace Levante.Helpers
 {
     public class ManifestHelper
     {
-        // Name, Hash
-        public static Dictionary<long, string> Emblems = new();
         // Inv Hash, Collectible Hash
         public static Dictionary<long, uint> EmblemsCollectible = new();
+        // Hash, Name
+        public static Dictionary<long, string> Emblems = new();
         public static Dictionary<long, string> Weapons = new();
         public static Dictionary<long, string> Seals = new();
         public static Dictionary<long, string> Ada1ArmorMods = new();
+        public static Dictionary<long, string> Activities = new();
         // Seal Hash, Tracker Hash
         public static Dictionary<long, long> GildableSeals = new();
-        public static Dictionary<long, string> Activities = new();
         // Whatever Hash is found First, Nightfall Name
         public static Dictionary<long, string> Nightfalls = new();
 

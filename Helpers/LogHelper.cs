@@ -71,7 +71,6 @@ namespace Levante.Helpers
             if (LevanteCordInstance.Client != null && BotConfig.LoggingChannel != null)
                 BotConfig.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}");
         }
-            
 
         private static TimestampTag GetTimePrefix() => TimestampTag.FromDateTime(DateTime.Now, TimestampTagStyles.LongTime);
     }
@@ -98,7 +97,7 @@ namespace Levante.Helpers
         private TimestampTag GetTimePrefix(DateTime timestamp) => TimestampTag.FromDateTime(timestamp, TimestampTagStyles.LongTime);
     }
 
-    public static class DiscordLogSinkExtenstions
+    public static class DiscordLogSinkExtensions
     {
         public static LoggerConfiguration DiscordLogSink(
                   this LoggerSinkConfiguration loggerConfiguration,
@@ -106,10 +105,5 @@ namespace Levante.Helpers
         {
             return loggerConfiguration.Sink(new DiscordLogSink(formatProvider));
         }
-    }
-
-    public enum LogType
-    {
-
     }
 }

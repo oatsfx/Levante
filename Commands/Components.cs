@@ -10,6 +10,7 @@ using Levante.Helpers;
 using Levante.Rotations;
 using Levante.Util;
 using Levante.Util.Attributes;
+using Serilog;
 
 namespace Levante.Commands
 {
@@ -170,7 +171,7 @@ namespace Levante.Commands
 
             await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Your logging channel has been successfully created! Access it here: {userLogChannel.Mention}!"; });
-            LogHelper.ConsoleLog($"[LOGGING] Started XP logging for {newUser.UniqueBungieName}.");
+            Log.Information("[{Type}] Started XP logging for {User}.", "XP Sessions", newUser.UniqueBungieName);
         }
 
         [ComponentInteraction("stopXPAFK")]
@@ -210,7 +211,7 @@ namespace Levante.Commands
             string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
             await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
             await RespondAsync($"Stopped XP logging for {aau.UniqueBungieName}.", ephemeral: true);
-            LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {aau.UniqueBungieName} via user request.");
+            Log.Information("[{Type}] Stopped XP logging for {User} via user request.", "XP Sessions", aau.UniqueBungieName);
         }
 
         [ComponentInteraction("viewXPHelp")]
@@ -348,7 +349,7 @@ namespace Levante.Commands
 
             await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Your logging has been successfully restarted! Reminder that the previous session did not continue; a new session was created without making a new channel!"; });
-            LogHelper.ConsoleLog($"[LOGGING] Started XP logging for {newUser.UniqueBungieName}.");
+            Log.Information("[{Type}] Started XP logging for {User}.", "XP Sessions", newUser.UniqueBungieName);
         }
     }
 }

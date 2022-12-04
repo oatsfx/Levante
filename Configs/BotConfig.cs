@@ -1,9 +1,8 @@
-﻿using Discord;
-using Discord.WebSocket;
+﻿using Discord.WebSocket;
 using Newtonsoft.Json;
-using System;
+using Serilog.Sinks.SystemConsole.Themes;
 using System.Collections.Generic;
-using static Levante.Configs.BotConfig;
+using System.Linq;
 
 namespace Levante.Configs
 {
@@ -62,6 +61,9 @@ namespace Levante.Configs
         [JsonProperty("DevServerID")]
         public static ulong DevServerID { get; set; } = 0;
 
+        [JsonProperty("BotDevs")]
+        public static List<ulong> BotDevDiscordIDs { get; set; } = new();
+
         [JsonProperty("BotStaff")]
         public static List<ulong> BotStaffDiscordIDs { get; set; } = new();
 
@@ -83,6 +85,29 @@ namespace Levante.Configs
 
         public static string BotLogoUrl = "https://www.levante.dev/images/Levante-Logo.png";
         public static string BotAvatarUrl = "https://www.levante.dev/images/Levante-Avatar.png";
+
+        public static bool IsDebug = false;
+
+        public static AnsiConsoleTheme LevanteTheme { get; } = new AnsiConsoleTheme(
+            new Dictionary<ConsoleThemeStyle, string>
+            {
+                [ConsoleThemeStyle.Text] = "\x1b[38;5;0015m",
+                [ConsoleThemeStyle.SecondaryText] = "\x1b[38;5;0007m",
+                [ConsoleThemeStyle.TertiaryText] = "\x1b[38;5;0008m",
+                [ConsoleThemeStyle.Invalid] = "\x1b[38;5;0011m",
+                [ConsoleThemeStyle.Null] = "\x1b[38;5;0027m",
+                [ConsoleThemeStyle.Name] = "\x1b[38;5;0007m",
+                [ConsoleThemeStyle.String] = "\x1b[38;2;128;204;191m",
+                [ConsoleThemeStyle.Number] = "\u001b[38;2;207;111;125m",
+                [ConsoleThemeStyle.Boolean] = "\x1b[38;5;0027m",
+                [ConsoleThemeStyle.Scalar] = "\x1b[38;5;0085m",
+                [ConsoleThemeStyle.LevelVerbose] = "\x1b[38;5;0007m",
+                [ConsoleThemeStyle.LevelDebug] = "\x1b[32;49m",
+                [ConsoleThemeStyle.LevelInformation] = "\x1b[38;5;0015m",
+                [ConsoleThemeStyle.LevelWarning] = "\x1b[38;5;0011m",
+                [ConsoleThemeStyle.LevelError] = "\x1b[38;5;0015m\x1b[48;5;0196m",
+                [ConsoleThemeStyle.LevelFatal] = "\x1b[38;5;0015m\x1b[48;5;0196m",
+            });
 
         public class EmbedColorGroup
         {
@@ -118,5 +143,15 @@ namespace Levante.Configs
         }
 
         public static bool IsSupporter(ulong DiscordID) => BotSupportersDiscordIDs.Contains(DiscordID);
+
+        public static bool IsSupporter(string BungieTag) => BotSupportersDiscordIDs.Contains(DataConfig.DiscordIDLinks.FirstOrDefault(x => x.UniqueBungieName == BungieTag).DiscordID);
+
+        public static bool IsStaff(ulong DiscordID) => BotStaffDiscordIDs.Contains(DiscordID);
+
+        public static bool IsStaff(string BungieTag) => BotStaffDiscordIDs.Contains(DataConfig.DiscordIDLinks.FirstOrDefault(x => x.UniqueBungieName == BungieTag).DiscordID);
+
+        public static bool IsDeveloper(ulong DiscordID) => BotDevDiscordIDs.Contains(DiscordID);
+
+        public static bool IsDeveloper(string BungieTag) => BotDevDiscordIDs.Contains(DataConfig.DiscordIDLinks.FirstOrDefault(x => x.UniqueBungieName == BungieTag).DiscordID);
     }
 }

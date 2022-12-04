@@ -23,6 +23,9 @@ using Fergun.Interactive.Pagination;
 using System.Reflection;
 using Fergun.Interactive.Selection;
 using System.ComponentModel;
+using Serilog.Data;
+using Serilog;
+using BungieSharper.Entities.Destiny.Responses;
 
 namespace Levante.Commands
 {
@@ -798,9 +801,9 @@ namespace Levante.Commands
 
         [RequireBotStaff]
         [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
-        public async Task PaginatorTest()
+        public async Task Test()
         {
-            await RespondAsync(embed: Embeds.ErrorEmbed.Build());
+            await DeferAsync();
         }
 
         public async Task SendToAllAnnounceChannels(EmbedBuilder embed)

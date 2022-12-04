@@ -20,9 +20,6 @@ using APIHelper;
 using Levante.Util.Attributes;
 using Serilog;
 using Serilog.Events;
-using Serilog.Core;
-using Serilog.Configuration;
-using Serilog.Sinks.SystemConsole.Themes;
 
 namespace Levante
 {
@@ -46,7 +43,12 @@ namespace Levante
 
         public LevanteCord()
         {
-            _client = new DiscordSocketClient();
+            var config = new DiscordSocketConfig
+            {
+                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
+            };
+
+            _client = new DiscordSocketClient(config);
             _commands = new CommandService();
             _interaction = new InteractionService(_client);
             _services = new ServiceCollection()
@@ -58,7 +60,6 @@ namespace Levante
 
         static void Main(string[] args)
         {
-            Console.ForegroundColor = ConsoleColor.Cyan;
             string ASCIIName = @"
    __                      __     
   / /  ___ _  _____ ____  / /____ 
@@ -69,7 +70,7 @@ namespace Levante
             //create the logger and setup your sinks, filters and properties
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Verbose()
-                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}", theme: AnsiConsoleTheme.Literate)
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}", theme: BotConfig.LevanteTheme)
                 .WriteTo.DiscordLogSink()
                 .Enrich.FromLogContext()
                 .CreateLogger();
@@ -114,17 +115,18 @@ namespace Levante
             //Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
             //Console.WriteLine();
 
-            _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
-            _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);
-            Log.Information("[{Type}] Continued XP logging for {Count} (+{PriorityCount}) Users.",
-                "XP Sessions", ActiveConfig.ActiveAFKUsers.Count, ActiveConfig.PriorityActiveAFKUsers.Count);
-
             var currentTime = DateTime.UtcNow;
             SetUpTimer(currentTime.Hour >= 17 ? new DateTime(currentTime.AddDays(1).Year, currentTime.AddDays(1).Month, currentTime.AddDays(1).Day, 17, 0, 5) : new DateTime(currentTime.Year, currentTime.Month, currentTime.Day, 17, 0, 5));
 
-            //var oauthManager = new OAuthHelper();
-            //var creationsManager = new CreationsHelper();
-            //CommunityCreationsTimer = new Timer(creationsManager.CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
+            if (!BotConfig.IsDebug)
+            {
+                var oauthManager = new OAuthHelper();
+            }
+            else
+            {
+                Log.Debug("[{Type}] Debugging.", "Startup");
+            }
+
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordSocketClient>();
             var commands = _services.GetRequiredService<InteractionService>();
@@ -133,6 +135,14 @@ namespace Levante
             
             await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
             await _client.StartAsync();
+
+            _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
+            _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);
+            Log.Information("[{Type}] Continued XP logging for {Count} (+{PriorityCount}) Users.",
+                "XP Sessions", ActiveConfig.ActiveAFKUsers.Count, ActiveConfig.PriorityActiveAFKUsers.Count);
+
+            var creationsManager = new CreationsHelper();
+            CommunityCreationsTimer = new Timer(creationsManager.CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
 
             Log.Information("[{Type}] Bot successfully started! v{@Version}",
                 "Startup", BotConfig.Version);
@@ -143,6 +153,7 @@ namespace Levante
             await DailyResetTimer.DisposeAsync();
             await CommunityCreationsTimer.DisposeAsync();
         }
+
         private static async Task LogAsync(LogMessage message)
         {
             var severity = message.Severity switch
@@ -155,7 +166,7 @@ namespace Levante
                 LogSeverity.Debug => LogEventLevel.Debug,
                 _ => LogEventLevel.Information
             };
-            Log.Write(severity, message.Exception, "[{Source}] {Message}", message.Source, message.Message);
+            Log.Write(severity, message.Exception,"[{Source}] " + message.Message, message.Source);
             await Task.CompletedTask;
         }
 
@@ -163,7 +174,7 @@ namespace Levante
         {
             int RNG = 0;
             int RNGMax = 35;
-            Random rand = new Random();
+            Random rand = new();
             if (SetRNG != -1 && SetRNG < RNGMax)
                 RNG = SetRNG;
             else
@@ -205,14 +216,13 @@ namespace Levante
         private void SetUpTimer(DateTime alertTime)
         {
             // this is called to get the timer set up to run at every daily reset
-            TimeSpan timeToGo = new TimeSpan(alertTime.Ticks - DateTime.Now.ToUniversalTime().Ticks);
-            Console.WriteLine($"Reset in: {timeToGo.TotalHours}");
+            TimeSpan timeToGo = new(alertTime.Ticks - DateTime.UtcNow.Ticks);
+            Log.Debug("Reset in: {Time}.", $"{timeToGo.Hours}:{timeToGo.Minutes}:{timeToGo.Seconds}");
             DailyResetTimer = new Timer(DailyResetChanges, null, (long)timeToGo.TotalMilliseconds, Timeout.Infinite);
         }
 
         public async void DailyResetChanges(Object o = null)
         {
-            Console.ForegroundColor = ConsoleColor.Green;
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
@@ -227,8 +237,7 @@ namespace Levante
                 if (item.ErrorCode != 1)
                 {
                     CheckBungieAPI = new Timer(DailyResetChanges, null, 60000, Timeout.Infinite);
-                    Console.WriteLine($"Reset Delayed; Reason: {item.ErrorStatus}");
-                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Log.Warning("[{Type}] Reset Delayed. Reason: {ErrorStatus}.", "Reset", item.ErrorStatus);
                     return;
                 }
             }
@@ -237,19 +246,18 @@ namespace Levante
                 if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
                 {
                     CurrentRotations.WeeklyRotation();
-                    Console.WriteLine("Weekly Reset Occurred.");
+                    Log.Information("[{Type}] Weekly Reset Occurred.", "Reset");
                 }
                 else
                 {
                     CurrentRotations.DailyRotation();
-                    Console.WriteLine("Daily Reset Occurred.");
+                    Log.Information("[{Type}] Daily Reset Occurred.", "Reset");
                 }
             }
             catch (Exception x)
             {
                 CheckBungieAPI = new Timer(DailyResetChanges, null, 60000, Timeout.Infinite);
-                Console.WriteLine($"Reset Delayed; Reason: {x}");
-                Console.ForegroundColor = ConsoleColor.Cyan;
+                Log.Warning("[{Type}] Reset Delayed. Reason: {Exception}.", "Reset", x);
                 return;
             }
 
@@ -266,8 +274,7 @@ namespace Levante
             await CurrentRotations.CheckUsersDailyTracking(_client);
 
             // Start the next timer.
-            SetUpTimer(new DateTime(DateTime.Today.AddDays(1).Year, DateTime.Today.AddDays(1).Month, DateTime.Today.AddDays(1).Day, 10, 0, 5));
-            Console.ForegroundColor = ConsoleColor.Cyan;
+            SetUpTimer(new DateTime(DateTime.UtcNow.AddDays(1).Year, DateTime.UtcNow.AddDays(1).Month, DateTime.UtcNow.AddDays(1).Day, 17, 0, 5));
         }
 
         private async void XPTimerCallback(Object o) => await RefreshBungieAPI().ConfigureAwait(false);
@@ -279,7 +286,7 @@ namespace Levante
         {
             if (ActiveConfig.ActiveAFKUsers.Count <= 0 && ActiveConfig.PriorityActiveAFKUsers.Count <= 0)
             {
-                LogHelper.ConsoleLog($"[XP SESSIONS] Skipping refresh, no active logging users...");
+                Log.Information("[{Type}] Skipping refresh, no active logging users...", "XP Sessions");
                 return;
             }
 
@@ -290,7 +297,7 @@ namespace Levante
             //List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
             try // XP Logs
             {
-                LogHelper.ConsoleLog($"[XP SESSIONS] Refreshing XP Logging Users...");
+                Log.Information("[{Type}] Refreshing XP Logging Users...", "XP Sessions");
                 var combinedAFKUsers = ActiveConfig.PriorityActiveAFKUsers.Concat(ActiveConfig.ActiveAFKUsers);
                 foreach (ActiveConfig.ActiveAFKUser aau in combinedAFKUsers.ToList())
                 {
@@ -301,7 +308,7 @@ namespace Levante
                         ActiveConfig.PriorityActiveAFKUsers.Exists(x => x.DiscordChannelID == tempAau.DiscordChannelID)))
                         continue;
 
-                    LogHelper.ConsoleLog($"[XP SESSIONS] Checking {tempAau.UniqueBungieName}.");
+                    Log.Information("[{Type}] Checking {User}.", "XP Sessions", tempAau.UniqueBungieName);
                     var actualUser = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
                     if (actualUser == null)
                     {
@@ -315,7 +322,7 @@ namespace Levante
                         user = await _rClient.GetUserAsync(tempAau.DiscordID);
                     }
 
-                    var logChannel = _client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel;
+                    var logChannel = await _client.GetChannelAsync(tempAau.DiscordChannelID) as ITextChannel;
                     var dmChannel = user.CreateDMChannelAsync().Result;
 
                     if (logChannel == null)
@@ -323,7 +330,7 @@ namespace Levante
                         await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: LoggingChannelNotFound. Logging will be terminated for {tempAau.UniqueBungieName}.");
                         await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
-                        LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
+                        Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
 
                         ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
                         //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
@@ -344,7 +351,7 @@ namespace Levante
                             //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Logging will be terminated for {uniqueName}.");
                             await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
-                            LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
+                            Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                             //listOfRemovals.Add(tempAau);
                             // ***Change to remove it from list because file update is called at end of method.***
                             ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
@@ -355,7 +362,7 @@ namespace Levante
                         {
                             actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
                             await LogHelper.Log(logChannel, $"Refresh unsuccessful. Reason: {errorStatus}. Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
-                            LogHelper.ConsoleLog($"[XP SESSIONS] Refresh unsuccessful for {tempAau.UniqueBungieName}. Reason: {errorStatus}.");
+                            Log.Information("[{Type}] Refresh unsuccessful for {User}. Reason: {Reason}", "XP Sessions", tempAau.UniqueBungieName, errorStatus);
                             // Move onto the next user so everyone gets the message.
                             //newList.Add(tempAau);
                         }
@@ -420,7 +427,7 @@ namespace Levante
                             //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
                             await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
 
-                            LogHelper.ConsoleLog($"[XP SESSIONS] Stopped logging for {tempAau.UniqueBungieName} via automation.");
+                            Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                             //listOfRemovals.Add(tempAau);
                             // ***Change to remove it from list because file update is called at end of method.***
                             ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
@@ -463,11 +470,11 @@ namespace Levante
                 ActiveConfig.UpdateActiveAFKUsersConfig();
 
                 _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, ActiveConfig.TimeBetweenRefresh * 60000);
-                LogHelper.ConsoleLog($"[XP SESSIONS] Bungie API Refreshed! Next refresh in: {ActiveConfig.TimeBetweenRefresh} minute(s).");
+                Log.Information("[{Type}] Bungie API Refreshed! Next refresh in: {Time} minute(s).", "XP Sessions", ActiveConfig.TimeBetweenRefresh);
             }
             catch (Exception x)
             {
-                LogHelper.ConsoleLog($"[XP SESSIONS] Refresh failed, trying again! Reason: {x.Message} ({x.StackTrace})");
+                Log.Warning("[{Type}] Refresh failed, trying again! Reason: {Message} ({StackTrace})", "XP Sessions", x.Message, x.StackTrace);
                 await Task.Delay(8000);
                 await RefreshBungieAPI().ConfigureAwait(false);
                 return;
@@ -477,7 +484,7 @@ namespace Levante
 
         private async Task LoadLeaderboards()
         {
-            LogHelper.ConsoleLog($"[LEADERBOARDS] Pulling data for leaderboards...");
+            Log.Information("[{Type}] Pulling data for leaderboards...", "Leaderboards");
             try
             {
                 var tempPowerLevelData = new PowerLevelData();
@@ -506,7 +513,6 @@ namespace Levante
                             string nameCode = int.Parse($"{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode}").ToString().PadLeft(4, '0');
                             if (!link.UniqueBungieName.Equals($"{name}#{nameCode}"))
                             {
-                                LogHelper.ConsoleLog($"[LEADERBOARDS] Name change detected: {link.UniqueBungieName} -> {name}#{nameCode}");
                                 DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == link.DiscordID).UniqueBungieName = $"{name}#{nameCode}";
                                 nameChange = true;
                             }
@@ -549,8 +555,8 @@ namespace Levante
                         catch
                         {
                             // Continue with the rest of the linked users. Don't want to stop the populating for one problematic account.
-                            LogHelper.ConsoleLog($"[LEADERBOARDS] Error while pulling data for user: {_client.GetUserAsync(link.DiscordID).Result.Username}#{_client.GetUserAsync(link.DiscordID).Result.Discriminator} linked with {link.UniqueBungieName}. " +
-                                $"Reason: {errorReason}. Privacy: {item.Response.profile.privacy}/{item.Response.characters.privacy}/{item.Response.characterProgressions.privacy}");
+                            string discordTag = $"{(await _client.GetUserAsync(link.DiscordID)).Username}#{(await _client.GetUserAsync(link.DiscordID)).Discriminator}";
+                            Log.Warning("[{Type}] Error while pulling data for user: {DiscordTag} linked with {BungieTag}. Reason: {Reason}.", "Leaderboards", discordTag, link.UniqueBungieName, errorReason);
                             await Task.Delay(250);
                             continue;
                         }
@@ -561,11 +567,11 @@ namespace Levante
 
                 tempLevelData.UpdateEntriesConfig();
                 tempPowerLevelData.UpdateEntriesConfig();
-                LogHelper.ConsoleLog($"[LEADERBOARDS] Data pulling complete!");
+                Log.Information("[{Type}] Data pulling complete!", "Leaderboards");
             }
             catch (Exception x)
             {
-                LogHelper.ConsoleLog($"[LEADERBOARDS] Error while updating leaderboards, trying again at next refresh. {x}");
+                Log.Information("[{Type}] Error while updating leaderboards, trying again at next refresh. {Exception}", "Leaderboards", x);
             }
         }
 
@@ -578,14 +584,21 @@ namespace Levante
 
             _client.Ready += async () =>
             {
-                //397846250797662208
-                //915020047154565220
-                //1011700865087852585
-                await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
-                //await _interaction.RegisterCommandsGloballyAsync();
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
+
+                if (BotConfig.IsDebug)
+                {
+                    //397846250797662208
+                    //915020047154565220
+                    //1011700865087852585
+                    await _interaction.RegisterCommandsToGuildAsync(915020047154565220);
+                }
+                else
+                {
+                    await _interaction.RegisterCommandsGloballyAsync();
+                }
 
                 foreach (var m in _interaction.Modules)
                 {
@@ -616,12 +629,24 @@ namespace Levante
                 switch (result.Error)
                 {
                     case InteractionCommandError.UnmetPrecondition:
-                        var embed = Embeds.ErrorEmbed;
-                        embed.Description = $"{result.ErrorReason}";
-                        await context.Interaction.RespondAsync($"", ephemeral: true, embed: embed.Build());
-                        break;
+                        {
+                            var embed = Embeds.ErrorEmbed;
+                            embed.Description = $"{result.ErrorReason}";
+                            await context.Interaction.RespondAsync($"", ephemeral: true, embed: embed.Build());
+                            break;
+                        }
                     default:
-                        break;
+                        {
+                            var embed = Embeds.ErrorEmbed;
+                            var interData = (context.Interaction as SocketSlashCommand).Data;
+                            embed.AddField(x =>
+                            {
+                                x.Name = "Error";
+                                x.Value = $"`{result.Error}: {result.ErrorReason}`";
+                            });
+                            await context.Interaction.RespondAsync($"", ephemeral: true, embed: embed.Build());
+                            break;
+                        }
                 }
             }
             await UpdateBotActivity();
@@ -635,7 +660,9 @@ namespace Levante
                 switch (result.Error)
                 {
                     case InteractionCommandError.UnmetPrecondition:
-                        await context.Interaction.RespondAsync($"{result.ErrorReason}", ephemeral: true);
+                        var embed = Embeds.ErrorEmbed;
+                        embed.Description = $"{result.ErrorReason}";
+                        await context.Interaction.RespondAsync($"", ephemeral: true, embed: embed.Build());
                         break;
                     default:
                         break;

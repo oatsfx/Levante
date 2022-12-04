@@ -31,7 +31,6 @@ namespace Levante.Util
         [JsonProperty("Description")]
         public readonly string Description;
 
-        [JsonProperty("ImageUrl")]
         public readonly string ImageUrl;
 
         [JsonProperty("SpecialUrl")]
@@ -40,7 +39,7 @@ namespace Levante.Util
         public readonly bool IsActive;
 
         [JsonConstructor]
-        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime? endDate, string description, string imageUrl, string specialUrl = null)
+        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime? endDate, string description, string specialUrl = null)
         {
             EmblemHashCode = emblemHashCode;
             OfferedEmblem = new Emblem(EmblemHashCode);
@@ -48,7 +47,7 @@ namespace Levante.Util
             StartDate = startDate;
             EndDate = endDate;
             Description = description;
-            ImageUrl = imageUrl;
+            ImageUrl = OfferedEmblem.GetBackgroundUrl();
             SpecialUrl = specialUrl;
             if (DateTime.Now < startDate)
                 IsActive = false;
