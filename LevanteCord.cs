@@ -45,7 +45,7 @@ namespace Levante
         {
             var config = new DiscordSocketConfig
             {
-                GatewayIntents = GatewayIntents.None
+                GatewayIntents = GatewayIntents.AllUnprivileged
             };
 
             // TODO: Implement a sharded client.
@@ -142,9 +142,6 @@ namespace Levante
             _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);
             Log.Information("[{Type}] Continued XP logging for {Count} (+{PriorityCount}) Users.",
                 "XP Sessions", ActiveConfig.ActiveAFKUsers.Count, ActiveConfig.PriorityActiveAFKUsers.Count);
-
-            var creationsManager = new CreationsHelper();
-            CommunityCreationsTimer = new Timer(creationsManager.CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
 
             Log.Information("[{Type}] Bot successfully started! v{@Version}",
                 "Startup", BotConfig.Version);
@@ -626,7 +623,11 @@ namespace Levante
                     }
                 }
                 BotConfig.LoggingChannel = _client.GetChannel(BotConfig.LogChannel) as SocketTextChannel;
+
                 BotConfig.CreationsLogChannel = _client.GetChannel(BotConfig.CommunityCreationsLogChannel) as SocketTextChannel;
+                var creationsManager = new CreationsHelper();
+                CommunityCreationsTimer = new Timer(creationsManager.CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
+
                 await UpdateBotActivity(1);
             };
 
