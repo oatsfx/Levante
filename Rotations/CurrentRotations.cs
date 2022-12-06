@@ -497,7 +497,7 @@ namespace Levante.Rotations
                     else
                         curseTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
                     Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
