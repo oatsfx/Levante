@@ -159,7 +159,7 @@ namespace Levante.Util
 
             string output = JsonConvert.SerializeObject(this, Formatting.Indented);
             File.WriteAllText(emblemOfferPath, output);
-            LogHelper.ConsoleLog($"[OFFERS] Created Emblem Offer for emblem: {OfferedEmblem.GetName()} ({EmblemHashCode}).");
+            Log.Information("[{Type}] Created Emblem Offer for emblem: {Name} ({Hash}).", "Offers", OfferedEmblem.GetName(), EmblemHashCode);
         }
 
         public static void LoadCurrentOffers()
@@ -173,8 +173,7 @@ namespace Levante.Util
                 var offer = JsonConvert.DeserializeObject<EmblemOffer>(json);
                 CurrentOffers.Add(offer);
             }
-            Log.Information("[{Type}] Loaded {count} Emblem Offers.",
-                "Offers", CurrentOffers.Count);
+            Log.Information("[{Type}] Loaded {count} Emblem Offers.", "Offers", CurrentOffers.Count);
         }
 
         public static bool HasExistingOffer(long HashCode)
@@ -198,7 +197,7 @@ namespace Levante.Util
             string emblemOfferPath = @"Configs/EmblemOffers/";
             CurrentOffers.Remove(offerToDelete);
             File.Delete(emblemOfferPath + @"/" + offerToDelete.EmblemHashCode + @".json");
-            LogHelper.ConsoleLog($"[OFFERS] Deleted Emblem Offer for emblem: {offerToDelete.OfferedEmblem.GetName()} ({offerToDelete.EmblemHashCode}).");
+            Log.Information("[{Type}] Deleted Emblem Offer for emblem: {Name} ({Hash}).", "Offers", offerToDelete.OfferedEmblem.GetName(), offerToDelete.EmblemHashCode);
         }
 
         public static string GetOfferTypeString(EmblemOfferType OfferType)

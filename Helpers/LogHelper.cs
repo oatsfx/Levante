@@ -19,9 +19,9 @@ namespace Levante.Helpers
             {
                 await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}");
             }
-            catch
+            catch (Exception x)
             {
-                ConsoleLog("Unable to send message.");
+                Serilog.Log.Warning("[{Type}] Unable to send message. {Exception}.", x);
             }
         }
 
@@ -32,9 +32,9 @@ namespace Levante.Helpers
             {
                 await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", components: CB.Build());
             }
-            catch
+            catch (Exception x)
             {
-                ConsoleLog("Unable to send message.");
+                Serilog.Log.Warning("[{Type}] Unable to send message. {Exception}.", x);
             }
         }
 
@@ -45,9 +45,9 @@ namespace Levante.Helpers
             {
                 await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", embed: Embed.Build());
             }
-            catch
+            catch (Exception x)
             {
-                ConsoleLog("Unable to send message.");
+                Serilog.Log.Warning("[{Type}] Unable to send message. {Exception}.", x);
             }
         }
 
@@ -58,18 +58,10 @@ namespace Levante.Helpers
             {
                 await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", embed: Embed.Build(), components: CB.Build());
             }
-            catch
+            catch (Exception x)
             {
-                ConsoleLog("Unable to send message.");
+                Serilog.Log.Warning("[{Type}] Unable to send message. {Exception}.", x);
             }
-        }
-
-        public static void ConsoleLog(string Message)
-        {
-            Serilog.Log.Information("{Message}", Message);
-
-            if (LevanteCordInstance.Client != null && BotConfig.LoggingChannel != null)
-                BotConfig.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}");
         }
 
         private static TimestampTag GetTimePrefix() => TimestampTag.FromDateTime(DateTime.Now, TimestampTagStyles.LongTime);

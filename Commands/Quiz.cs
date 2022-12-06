@@ -66,6 +66,7 @@ namespace Levante.Commands
             Log.Information("Quiz added: {Id}", quiz.MessageId);
             QuizInstance.ActiveEmblemQuizzes.Add(quiz);
 
+            // Wait to end the quiz. I'm sure there is a better way to handle this.
             await Task.Delay(BotConfig.DurationToWaitForNextMessage * 1000);
 
             await quiz.HandleEnd(Context);
@@ -148,42 +149,42 @@ namespace Levante.Commands
         {
             if (VotedUsers.ContainsKey(context.User.Id))
             {
-                await context.Interaction.FollowupAsync($"You've already voted!", ephemeral: true);
+                await context.Interaction.FollowupAsync($"You've already voted!", ephemeral: true).ConfigureAwait(false);
                 return;
             }
 
             if (Hash == Options[0].Hash)
             {
                 Options[0].Votes++;
-                await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[0].Hash]}!", ephemeral: true);
+                await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[0].Hash]}!", ephemeral: true).ConfigureAwait(false);
                 VotedUsers.Add(context.Interaction.User.Id, Options[0].Hash);
                 Log.Debug($"{context.Interaction.User.Username} voted for {ManifestHelper.Emblems[Options[0].Hash]}.");
             }
             else if (Hash == Options[1].Hash)
             {
                 Options[1].Votes++;
-                await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[1].Hash]}!", ephemeral: true);
+                await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[1].Hash]}!", ephemeral: true).ConfigureAwait(false);
                 VotedUsers.Add(context.Interaction.User.Id, Options[1].Hash);
                 Log.Debug($"{context.Interaction.User.Username} voted for {ManifestHelper.Emblems[Options[1].Hash]}.");
             }
             else if (Hash == Options[2].Hash)
             {
                 Options[2].Votes++;
-                await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[2].Hash]}!", ephemeral: true);
+                await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[2].Hash]}!", ephemeral: true).ConfigureAwait(false);
                 VotedUsers.Add(context.Interaction.User.Id, Options[2].Hash);
                 Log.Debug($"{context.Interaction.User.Username} voted for {ManifestHelper.Emblems[Options[2].Hash]}.");
             }
             else if (Hash == Options[3].Hash)
             {
                 Options[3].Votes++;
-                await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[3].Hash]}!", ephemeral: true);
+                await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[3].Hash]}!", ephemeral: true).ConfigureAwait(false);
                 VotedUsers.Add(context.Interaction.User.Id, Options[3].Hash);
                 Log.Debug($"{context.Interaction.User.Username} voted for {ManifestHelper.Emblems[Options[3].Hash]}.");
             }
             else if (Hash == Options[4].Hash)
             {
                 Options[4].Votes++;
-                await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[4].Hash]}!", ephemeral: true);
+                await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[4].Hash]}!", ephemeral: true).ConfigureAwait(false);
                 VotedUsers.Add(context.Interaction.User.Id, Options[4].Hash);
                 Log.Debug($"{context.Interaction.User.Username} voted for {ManifestHelper.Emblems[Options[4].Hash]}.");
             }

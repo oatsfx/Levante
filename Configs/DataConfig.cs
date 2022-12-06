@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Levante.Util;
 using Levante.Helpers;
 using System.Linq;
+using Serilog;
 
 namespace Levante.Configs
 {
@@ -165,7 +166,7 @@ namespace Levante.Configs
 
                 if (item.refresh_token == null || item.access_token == null)
                 {
-                    LogHelper.ConsoleLog($"Received null tokens from refresh; keep all tokens the same as before.");
+                    Log.Information("[{Type}] Received null tokens from refresh; keep all tokens the same as before.", "Data");
                     return DIL;
                 }
                 DIL.RefreshToken = item.refresh_token;
@@ -532,7 +533,7 @@ namespace Levante.Configs
                     var guildChannel = Client.GetChannel(ChannelID) as SocketGuildChannel;
                     if (channel == null)
                     {
-                        LogHelper.ConsoleLog($"Could not find channel {ChannelID}. Removing this element.");
+                        Log.Information("[{Type}] Could not find channel {Id}. Removing this element.", "Data", ChannelID);
                         DeleteChannelFromRotationConfig(ChannelID, true);
                         continue;
                     }
@@ -547,16 +548,16 @@ namespace Levante.Configs
                     {
                         if (IsExistingLinkedChannel(chan.Id, true) && ChannelID != chan.Id && guildsWithKeptChannel.Contains(chan.Guild.Id) && !keptChannels.Contains(chan.Id))
                         {
-                            LogHelper.ConsoleLog($"Duplicate channel detected. Removing: {chan.Id}");
+                            Log.Information("[{Type}] Duplicate channel detected. Removing: {Id}", "Data", chan.Id);
                             DeleteChannelFromRotationConfig(chan.Id, true);
                         }
                     }
 
                     await channel.SendMessageAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Error on Channel ID: {ChannelID}");
+                    Log.Warning("[{Type}] Reset Error on Channel: {Id}. {Exception}", "Data", ChannelID, x);
                 }
             }
         }
@@ -573,7 +574,7 @@ namespace Levante.Configs
                     var guildChannel = Client.GetChannel(ChannelID) as SocketGuildChannel;
                     if (channel == null)
                     {
-                        LogHelper.ConsoleLog($"Could not find channel {ChannelID}. Removing this element.");
+                        Log.Information("[{Type}] Could not find channel {Id}. Removing this element.", "Data", ChannelID);
                         DeleteChannelFromRotationConfig(ChannelID, false);
                         continue;
                     }
@@ -588,16 +589,16 @@ namespace Levante.Configs
                     {
                         if (IsExistingLinkedChannel(chan.Id, false) && ChannelID != chan.Id && guildsWithKeptChannel.Contains(chan.Guild.Id) && !keptChannels.Contains(chan.Id))
                         {
-                            LogHelper.ConsoleLog($"Duplicate channel detected. Removing: {chan.Id}");
+                            Log.Information("[{Type}] Duplicate channel detected. Removing: {Id}", "Data", chan.Id);
                             DeleteChannelFromRotationConfig(chan.Id, false);
                         }
                     }
 
                     await channel.SendMessageAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Error on Channel ID: {ChannelID}");
+                    Log.Warning("[{Type}] Reset Error on Channel: {Id}. {Exception}", "Data", ChannelID, x);
                 }
             }
         }

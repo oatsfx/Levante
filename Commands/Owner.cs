@@ -570,7 +570,7 @@ namespace Levante.Commands
                 Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
             };
             embed.Title = "Metrics";
-            embed.ThumbnailUrl = app.IconUrl;
+            embed.ThumbnailUrl = BotConfig.BotLogoUrl;
 
             var process = Process.GetCurrentProcess();
             var uptime = DateTime.Now - process.StartTime;
@@ -818,7 +818,7 @@ namespace Levante.Commands
                 {
                     if (channel == null || guildChannel == null)
                     {
-                        LogHelper.ConsoleLog($"[OFFERS] Could not find channel {Link.ChannelID}. Removing this element.");
+                        Log.Information("[{Type}] Could not find channel {Id}. Removing this element.", "Offers", Link.ChannelID);
                         DataConfig.DeleteEmblemChannel(Link.ChannelID);
                         continue;
                     }
@@ -833,7 +833,7 @@ namespace Levante.Commands
                     {
                         if (DataConfig.IsExistingEmblemLinkedChannel(chan.Id) && Link.ChannelID != chan.Id && guildsWithKeptChannel.Contains(chan.Guild.Id) && !keptChannels.Contains(chan.Id))
                         {
-                            LogHelper.ConsoleLog($"[OFFERS] Duplicate channel detected. Removing: {chan.Id}");
+                            Log.Information("[{Type}] Duplicate channel detected. Removing: {Id}", "Offers", chan.Id);
                             DataConfig.DeleteEmblemChannel(chan.Id);
                         }
                     }
@@ -842,14 +842,14 @@ namespace Levante.Commands
                     {
                         var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
                         var msg = await channel.SendMessageAsync($"{role.Mention}", false, embed.Build());
-                        if (channel is SocketNewsChannel)
+                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.DevServerID)
                             await msg.CrosspostAsync();
                     }
                     else
                     {
                         // Crosspost/Publish for news channels the bot posts into.
                         var msg = await channel.SendMessageAsync("", false, embed.Build());
-                        if (channel is SocketNewsChannel)
+                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.DevServerID)
                             await msg.CrosspostAsync();
                     }
                 }

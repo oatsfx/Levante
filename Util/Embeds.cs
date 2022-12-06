@@ -10,7 +10,7 @@ namespace Levante.Util
 {
     public static class Embeds
     {
-        public static EmbedBuilder ErrorEmbed = new()
+        public static readonly EmbedBuilder ErrorEmbed = new()
         {
             Title = "Uh oh!",
             Description = "An error has occurred.",

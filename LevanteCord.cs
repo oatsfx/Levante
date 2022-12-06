@@ -48,6 +48,8 @@ namespace Levante
                 GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
             };
 
+            // TODO: Implement a sharded client.
+
             _client = new DiscordSocketClient(config);
             _commands = new CommandService();
             _interaction = new InteractionService(_client);
@@ -187,11 +189,11 @@ namespace Levante
                     string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
                     await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching)); break;
                 case 1:
-                    await _client.SetActivityAsync(new Game($"{BotConfig.Notes[rand.Next(0, BotConfig.Notes.Count)]} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing)); break;
+                    await _client.SetActivityAsync(new Game($"{BotConfig.Notes[rand.Next(0, BotConfig.Notes.Count)]} | v{BotConfig.Version}", ActivityType.Playing)); break;
                 case 2:
                     await _client.SetActivityAsync(new Game($"for /help | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 3:
-                    await _client.SetActivityAsync(new Game($"{_client.Guilds.Count} Servers | v{BotConfig.Version}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{_client.Guilds.Count:n0} Servers | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 4:
                     await _client.SetActivityAsync(new Game($"{_client.Guilds.Sum(x => x.MemberCount):n0} Users | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 5:
@@ -234,6 +236,20 @@ namespace Levante
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
+                if (item.ErrorCode != 1)
+                {
+                    CheckBungieAPI = new Timer(DailyResetChanges, null, 60000, Timeout.Infinite);
+                    Log.Warning("[{Type}] Reset Delayed. Reason: {ErrorStatus}.", "Reset", item.ErrorStatus);
+                    return;
+                }
+
+                string charId = $"{item.Response.profile.data.characterIds[0]}";
+
+                response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "/Character/" + charId + "/Vendors/350061650/?components=400,402").Result;
+                content = response.Content.ReadAsStringAsync().Result;
+                item = JsonConvert.DeserializeObject(content);
+
+                // Check Vendors
                 if (item.ErrorCode != 1)
                 {
                     CheckBungieAPI = new Timer(DailyResetChanges, null, 60000, Timeout.Infinite);

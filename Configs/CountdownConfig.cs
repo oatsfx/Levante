@@ -1,5 +1,6 @@
 ﻿using Levante.Helpers;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,6 +13,7 @@ namespace Levante.Configs
     public class CountdownConfig : IConfig
     {
         public static string FilePath { get; } = @"Configs/countdownConfig.json";
+        // TODO: Automate the countdown removal process.
 
         // <Name, Start Time>
         [JsonProperty("Countdowns")]
@@ -24,7 +26,7 @@ namespace Levante.Configs
 
             File.WriteAllText(FilePath, JsonConvert.SerializeObject(new CountdownConfig(), Formatting.Indented));
 
-            LogHelper.ConsoleLog($"[COUNTDOWNS] New countdown created: {Name}.");
+            Log.Information("[{Type}] New countdown created: {Name}", "Countdowns", Name);
         }
 
         public static void RemoveCountdown(string Name)
@@ -32,7 +34,7 @@ namespace Levante.Configs
             Countdowns.Remove(Name);
             File.WriteAllText(FilePath, JsonConvert.SerializeObject(new CountdownConfig(), Formatting.Indented));
 
-            LogHelper.ConsoleLog($"[COUNTDOWNS] Countdown removed: {Name}.");
+            Log.Information("[{Type}] Countdown removed: {Name}", "Countdowns", Name);
         }
     }
 }
