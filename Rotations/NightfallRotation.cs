@@ -9,6 +9,7 @@ using Levante.Helpers;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 using System.Net.Http;
+using Serilog;
 
 namespace Levante.Rotations
 {
@@ -37,7 +38,7 @@ namespace Levante.Rotations
 
         public static void GetCurrentNightfall()
         {
-            var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotStaffDiscordIDs[0]);
+            var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotDevDiscordIDs[0]);
             devLinked = DataConfig.RefreshCode(devLinked);
             using (var client = new HttpClient())
             {
@@ -61,7 +62,7 @@ namespace Levante.Rotations
                     if (ManifestHelper.Nightfalls.ContainsKey((long)availActivities[i].activityHash))
                     {
                         CurrentRotations.Nightfall = Nightfalls.IndexOf(ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
-                        Console.WriteLine($">> Nightfall is {ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]}");
+                        Log.Debug("Nightfall is {Nightfall}.", ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
                     }
                 }
             }

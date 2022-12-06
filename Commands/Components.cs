@@ -10,6 +10,7 @@ using Levante.Helpers;
 using Levante.Rotations;
 using Levante.Util;
 using Levante.Util.Attributes;
+using Serilog;
 
 namespace Levante.Commands
 {
@@ -57,7 +58,7 @@ namespace Levante.Commands
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                     Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version:0.00}" },
+                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
                 };
                 embed.Title = $"Max users reached! ({ActiveConfig.MaximumLoggingUsers})";
                 embed.Description = $"Want to bypass this limit? Support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/)!\n" +
@@ -117,7 +118,7 @@ namespace Levante.Commands
             string uniqueName = dil.UniqueBungieName;
             var userLogChannel = await guild.CreateTextChannelAsync($"{uniqueName.Split('#')[0]}", options: new RequestOptions(){ AuditLogReason = "XP Logging Session Create" });
 
-            ActiveConfig.ActiveAFKUser newUser = new ActiveConfig.ActiveAFKUser
+            ActiveConfig.ActiveAFKUser newUser = new()
             {
                 DiscordID = user.Id,
                 UniqueBungieName = uniqueName,
@@ -170,7 +171,7 @@ namespace Levante.Commands
 
             await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Your logging channel has been successfully created! Access it here: {userLogChannel.Mention}!"; });
-            LogHelper.ConsoleLog($"[LOGGING] Started XP logging for {newUser.UniqueBungieName}.");
+            Log.Information("[{Type}] Started XP logging for {User}.", "XP Sessions", newUser.UniqueBungieName);
         }
 
         [ComponentInteraction("stopXPAFK")]
@@ -210,7 +211,7 @@ namespace Levante.Commands
             string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
             await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
             await RespondAsync($"Stopped XP logging for {aau.UniqueBungieName}.", ephemeral: true);
-            LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {aau.UniqueBungieName} via user request.");
+            Log.Information("[{Type}] Stopped XP logging for {User} via user request.", "XP Sessions", aau.UniqueBungieName);
         }
 
         [ComponentInteraction("viewXPHelp")]
@@ -224,7 +225,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var helpEmbed = new EmbedBuilder()
             {
@@ -262,7 +263,7 @@ namespace Levante.Commands
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                     Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version:0.00}" },
+                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
                 };
                 embed.Title = $"Max users reached! ({ActiveConfig.MaximumLoggingUsers})";
                 embed.Description = $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +
@@ -348,7 +349,7 @@ namespace Levante.Commands
 
             await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Your logging has been successfully restarted! Reminder that the previous session did not continue; a new session was created without making a new channel!"; });
-            LogHelper.ConsoleLog($"[LOGGING] Started XP logging for {newUser.UniqueBungieName}.");
+            Log.Information("[{Type}] Started XP logging for {User}.", "XP Sessions", newUser.UniqueBungieName);
         }
     }
 }

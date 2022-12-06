@@ -56,7 +56,7 @@ namespace Levante.Rotations
 
         public static void GetAda1Inventory()
         {
-            var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotStaffDiscordIDs[0]);
+            var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotDevDiscordIDs[0]);
             devLinked = DataConfig.RefreshCode(devLinked);
             using (var client = new HttpClient())
             {

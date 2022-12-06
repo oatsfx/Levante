@@ -1,6 +1,7 @@
 ﻿using Levante.Configs;
 using Newtonsoft.Json;
 using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace Levante.Helpers
@@ -30,6 +31,9 @@ namespace Levante.Helpers
                 Console.WriteLine($"No botConfig.json file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.");
                 closeProgram = true;
             }
+
+            if (Debugger.IsAttached)
+                BotConfig.IsDebug = true;
 
             if (File.Exists(DataConfig.FilePath))
             {

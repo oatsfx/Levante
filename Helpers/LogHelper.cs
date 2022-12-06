@@ -3,6 +3,10 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using Levante.Configs;
+using Serilog.Configuration;
+using Serilog.Core;
+using Serilog.Events;
+using Serilog;
 
 namespace Levante.Helpers
 {
@@ -15,9 +19,9 @@ namespace Levante.Helpers
             {
                 await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}");
             }
-            catch
+            catch (Exception x)
             {
-                ConsoleLog("Unable to send message.");
+                Serilog.Log.Warning("[{Type}] Unable to send message. {Exception}.", x);
             }
         }
 
@@ -28,9 +32,9 @@ namespace Levante.Helpers
             {
                 await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", components: CB.Build());
             }
-            catch
+            catch (Exception x)
             {
-                ConsoleLog("Unable to send message.");
+                Serilog.Log.Warning("[{Type}] Unable to send message. {Exception}.", x);
             }
         }
 
@@ -41,9 +45,9 @@ namespace Levante.Helpers
             {
                 await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", embed: Embed.Build());
             }
-            catch
+            catch (Exception x)
             {
-                ConsoleLog("Unable to send message.");
+                Serilog.Log.Warning("[{Type}] Unable to send message. {Exception}.", x);
             }
         }
 
@@ -54,23 +58,44 @@ namespace Levante.Helpers
             {
                 await Channel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}", embed: Embed.Build(), components: CB.Build());
             }
-            catch
+            catch (Exception x)
             {
-                ConsoleLog("Unable to send message.");
+                Serilog.Log.Warning("[{Type}] Unable to send message. {Exception}.", x);
             }
         }
 
-        public static void ConsoleLog(string Message)
-        {
-            Console.WriteLine($"[{String.Format("{0:00}", DateTime.Now.Hour)}:" +
-                $"{String.Format("{0:00}", DateTime.Now.Minute)}:" +
-                $"{String.Format("{0:00}", DateTime.Now.Second)}] {Message}");
-
-            if (LevanteCordInstance.Client != null && BotConfig.LoggingChannel != null)
-                BotConfig.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix()}]: {Message}");
-        }
-            
-
         private static TimestampTag GetTimePrefix() => TimestampTag.FromDateTime(DateTime.Now, TimestampTagStyles.LongTime);
+    }
+
+    public class DiscordLogSink : ILogEventSink
+    {
+        private readonly IFormatProvider _formatProvider;
+
+        public DiscordLogSink(IFormatProvider formatProvider)
+        {
+            _formatProvider = formatProvider;
+        }
+
+        public void Emit(LogEvent logEvent)
+        {
+            var message = logEvent.RenderMessage(_formatProvider).Replace("\"", "");
+            if (logEvent.Level >= LogEventLevel.Warning)
+            {
+                if (LevanteCordInstance.Client != null && BotConfig.LoggingChannel != null)
+                    BotConfig.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix(logEvent.Timestamp.DateTime)}]: {message}");
+            }
+        }
+
+        private TimestampTag GetTimePrefix(DateTime timestamp) => TimestampTag.FromDateTime(timestamp, TimestampTagStyles.LongTime);
+    }
+
+    public static class DiscordLogSinkExtensions
+    {
+        public static LoggerConfiguration DiscordLogSink(
+                  this LoggerSinkConfiguration loggerConfiguration,
+                  IFormatProvider formatProvider = null)
+        {
+            return loggerConfiguration.Sink(new DiscordLogSink(formatProvider));
+        }
     }
 }

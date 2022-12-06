@@ -1,16 +1,14 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using Discord;
 using Levante.Configs;
 using Levante.Util;
-using APIHelper.Structs;
+using Serilog;
 
 namespace Levante.Helpers
 {
@@ -25,7 +23,7 @@ namespace Levante.Helpers
             _listener.Prefixes.Add("http://*:8080/");
             _listener.Start();
             _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
-            LogHelper.ConsoleLog("[OAUTH] Listening...");
+            Log.Information("[{Type}] Listening...", "OAuth");
         }
 
         public async void GetToken(IAsyncResult ar)
@@ -34,7 +32,7 @@ namespace Levante.Helpers
             {
                 if (!HttpListener.IsSupported)
                 {
-                    LogHelper.ConsoleLog("[OAUTH] HttpListener is not supported.");
+                    Log.Error("[{Type}] HttpListener is not supported.", "OAuth");
                     return;
                 }
 
@@ -59,7 +57,7 @@ namespace Levante.Helpers
                     }
                     else if (!string.IsNullOrEmpty(query["error"]))
                     {
-                        LogHelper.ConsoleLog($"[OAUTH] Error occurred: {query["error_description"]}.");
+                        Log.Error("[{Type}] Error occurred: {Error}.", "OAuth", query["error_description"]);
                         _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
                         return;
                     }
@@ -104,7 +102,7 @@ namespace Levante.Helpers
                 {
                     //LogHelper.ConsoleLog("[OAUTH] Unable to send response write data.");
                 }
-                LogHelper.ConsoleLog("[OAUTH] Flow completed. Listening...");
+                Log.Information("[{Type}] Flow completed. Listening...", "OAuth");
             }
             catch (Exception x)
             {
@@ -274,7 +272,7 @@ namespace Levante.Helpers
                 memType = memItem.Response.profiles[goodProfile].membershipType;
                 memId = memItem.Response.profiles[goodProfile].membershipId;
 
-                LogHelper.ConsoleLog($"[OAUTH] Received tokens for {memItem.Response.bnetMembership.supplementalDisplayName} on platform {memType}.");
+                Log.Information("[{Type}] Received tokens for {BungieTag} on platform {Platform}.", "OAuth", memItem.Response.bnetMembership.supplementalDisplayName, memType);
 
                 MembershipID = $"{memId}";
                 string bungieTagCode = $"{memItem.Response.bnetMembership.bungieGlobalDisplayNameCode}".PadLeft(4, '0');

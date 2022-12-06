@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Levante.Helpers;
+using Serilog;
 
 namespace Levante.Rotations
 {
@@ -382,9 +383,9 @@ namespace Levante.Rotations
                     else
                         ada1Temp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -405,9 +406,9 @@ namespace Levante.Rotations
                     else
                         altarTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -447,9 +448,9 @@ namespace Levante.Rotations
                     else
                         wellspringTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -473,9 +474,9 @@ namespace Levante.Rotations
                     else
                         chalTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -496,9 +497,9 @@ namespace Levante.Rotations
                     else
                         curseTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -521,9 +522,9 @@ namespace Levante.Rotations
                     else
                         dscTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -544,9 +545,9 @@ namespace Levante.Rotations
                     else
                         ehuntTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -567,9 +568,9 @@ namespace Levante.Rotations
                     else
                         frTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -592,9 +593,9 @@ namespace Levante.Rotations
                     else
                         gosTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -617,9 +618,9 @@ namespace Levante.Rotations
                     else
                         lwTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -644,9 +645,9 @@ namespace Levante.Rotations
                     else
                         nfTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -671,9 +672,9 @@ namespace Levante.Rotations
                     else
                         nhuntTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -696,9 +697,9 @@ namespace Levante.Rotations
                     else
                         vogTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }
@@ -721,9 +722,9 @@ namespace Levante.Rotations
                     else
                         vowTemp.Add(Link);
                 }
-                catch
+                catch (Exception x)
                 {
-                    LogHelper.ConsoleLog($"Unable to send message to user: {Link.DiscordID}.");
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
                     continue;
                 }
             }

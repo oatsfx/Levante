@@ -23,6 +23,9 @@ using Fergun.Interactive.Pagination;
 using System.Reflection;
 using Fergun.Interactive.Selection;
 using System.ComponentModel;
+using Serilog.Data;
+using Serilog;
+using BungieSharper.Entities.Destiny.Responses;
 
 namespace Levante.Commands
 {
@@ -121,7 +124,7 @@ namespace Levante.Commands
         public async Task Refresh()
         {
             ConfigHelper.CheckAndLoadConfigFiles();
-            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Notes[0]} | v{String.Format("{0:0.00#}", BotConfig.Version)}", ActivityType.Playing));
+            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Notes[0]} | v{BotConfig.Version}", ActivityType.Playing));
 
             await RespondAsync($"Activity refreshed.");
         }
@@ -564,10 +567,10 @@ namespace Levante.Commands
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version:0.00}" },
+                Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
             };
             embed.Title = "Metrics";
-            embed.ThumbnailUrl = app.IconUrl;
+            embed.ThumbnailUrl = BotConfig.BotLogoUrl;
 
             var process = Process.GetCurrentProcess();
             var uptime = DateTime.Now - process.StartTime;
@@ -798,30 +801,9 @@ namespace Levante.Commands
 
         [RequireBotStaff]
         [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
-        public async Task PaginatorTest()
+        public async Task Test()
         {
-            var paginator = new LazyPaginatorBuilder()
-                .AddUser(Context.User)
-                .WithPageFactory(GeneratePage)
-                .WithMaxPageIndex((int)Math.Ceiling(EmblemOffer.CurrentOffers.Count / (decimal)10) - 1)
-                .AddOption(new Emoji("◀"), PaginatorAction.Backward)
-                .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
-                .AddOption(new Emoji("▶"), PaginatorAction.Forward)
-                .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
-                .WithActionOnCancellation(ActionOnStop.DeleteInput)
-                .WithActionOnTimeout(ActionOnStop.DeleteInput)
-                .Build();
-
-            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
-
-            static PageBuilder GeneratePage(int index)
-            {
-                var embed = EmblemOffer.GetOfferListEmbed(index);
-                return new PageBuilder()
-                    .WithAuthor(embed.Author)
-                    .WithDescription(embed.Description)
-                    .WithColor((Color)embed.Color);
-            }
+            await DeferAsync();
         }
 
         public async Task SendToAllAnnounceChannels(EmbedBuilder embed)
@@ -836,7 +818,7 @@ namespace Levante.Commands
                 {
                     if (channel == null || guildChannel == null)
                     {
-                        LogHelper.ConsoleLog($"[OFFERS] Could not find channel {Link.ChannelID}. Removing this element.");
+                        Log.Information("[{Type}] Could not find channel {Id}. Removing this element.", "Offers", Link.ChannelID);
                         DataConfig.DeleteEmblemChannel(Link.ChannelID);
                         continue;
                     }
@@ -851,7 +833,7 @@ namespace Levante.Commands
                     {
                         if (DataConfig.IsExistingEmblemLinkedChannel(chan.Id) && Link.ChannelID != chan.Id && guildsWithKeptChannel.Contains(chan.Guild.Id) && !keptChannels.Contains(chan.Id))
                         {
-                            LogHelper.ConsoleLog($"[OFFERS] Duplicate channel detected. Removing: {chan.Id}");
+                            Log.Information("[{Type}] Duplicate channel detected. Removing: {Id}", "Offers", chan.Id);
                             DataConfig.DeleteEmblemChannel(chan.Id);
                         }
                     }
@@ -860,14 +842,14 @@ namespace Levante.Commands
                     {
                         var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
                         var msg = await channel.SendMessageAsync($"{role.Mention}", false, embed.Build());
-                        if (channel is SocketNewsChannel)
+                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.DevServerID)
                             await msg.CrosspostAsync();
                     }
                     else
                     {
                         // Crosspost/Publish for news channels the bot posts into.
                         var msg = await channel.SendMessageAsync("", false, embed.Build());
-                        if (channel is SocketNewsChannel)
+                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.DevServerID)
                             await msg.CrosspostAsync();
                     }
                 }

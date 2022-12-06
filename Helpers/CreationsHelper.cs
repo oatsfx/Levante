@@ -1,5 +1,4 @@
-﻿using BungieSharper.Entities.Trending;
-using Discord;
+﻿using Discord;
 using Levante.Configs;
 using Newtonsoft.Json;
 using System;
@@ -7,14 +6,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection.Emit;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using BungieSharper.Entities.Forum;
 using Newtonsoft.Json.Linq;
-using Discord.WebSocket;
-using System.Threading.Channels;
+using Serilog;
 
 namespace Levante.Helpers
 {
@@ -37,12 +33,14 @@ namespace Levante.Helpers
                 File.WriteAllText(FilePath, JsonConvert.SerializeObject(CreationsPosts, Formatting.Indented));
                 Console.WriteLine($"No creationsConfig.json file detected. A new one has been created, no action needed.");
             }
-            LogHelper.ConsoleLog("[CREATIONS] Creations Module Loaded.");
+            Log.Information("[{Type}] Creations Module Loaded.", "Creations");
         }
+
         public async void CheckCommunityCreationsCallback(Object o) => await CheckCreations().ConfigureAwait(false);
 
         private async Task CheckCreations()
         {
+            Log.Information("[{Type}] Pulling recent Creations...", "Creations");
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
@@ -53,7 +51,7 @@ namespace Levante.Helpers
 
                 bool isNewCreations = false;
                 List<string> newCreations = new();
-                var results = ((JArray)(item.Response.results)).Reverse();
+                var results = ((JArray)item.Response.results).Reverse();
                 foreach (var creation in (dynamic)results)
                 {
                     // Find Author
@@ -79,6 +77,7 @@ namespace Levante.Helpers
                             break;
                         }
                     }
+                    // Build Embed
                     if (!CreationsPosts.Contains($"{creation.postId}"))
                     {
                         var auth = new EmbedAuthorBuilder()
@@ -116,11 +115,6 @@ namespace Levante.Helpers
                             x.Value = $"{TimestampTag.FromDateTime(DateTime.SpecifyKind(DateTime.Parse($"{creation.lastModified}"), DateTimeKind.Utc))}\n" +
                                 $"by {editorName}";
                             x.IsInline = true;
-                        }).AddField(x =>
-                        {
-                            x.Name = "Upvotes";
-                            x.Value = $"{creation.upvotes}";
-                            x.IsInline = false;
                         });
 
                         var msg = await BotConfig.CreationsLogChannel.SendMessageAsync(embed: embed.Build());
@@ -135,6 +129,10 @@ namespace Levante.Helpers
                 {
                     CreationsPosts = newCreations;
                     File.WriteAllText(FilePath, JsonConvert.SerializeObject(CreationsPosts, Formatting.Indented));
+                }
+                else
+                {
+                    Log.Information("[{Type}] No new Creations found.", "Creations");
                 }
             }
         }

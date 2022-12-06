@@ -7,18 +7,13 @@ using Levante.Configs;
 using System.Drawing;
 using System.IO;
 using Levante.Util;
-using System.Net;
 using System.Collections.Generic;
 using Fergun.Interactive;
 using Discord.Interactions;
 using Levante.Rotations;
 using Levante.Util.Attributes;
-using System.Collections.Immutable;
 using System.Linq;
-using Levante.Helpers;
 using Fergun.Interactive.Pagination;
-using System.Reflection;
-
 namespace Levante.Commands
 {
     public class Destiny : InteractionModuleBase<SocketInteractionContext>
@@ -816,7 +811,9 @@ namespace Levante.Commands
 
             if (!long.TryParse(SearchQuery, out long HashCode))
             {
-                await RespondAsync($"Invalid search, please try again. Make sure to choose one of the autocomplete options!", ephemeral: true);
+                var errEmbed = Embeds.ErrorEmbed;
+                errEmbed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
+                await RespondAsync($"", embed: errEmbed.Build(), ephemeral: true);
                 return;
             }
 
@@ -825,7 +822,9 @@ namespace Levante.Commands
             try
             {
                 emblem = new Emblem(HashCode);
-                bitmap = (Bitmap)GetImageFromPicPath(emblem.GetBackgroundUrl()); //load the image file
+                var byteArray = new HttpClient().GetByteArrayAsync(emblem.GetBackgroundUrl()).Result;
+                MemoryStream ms = new(byteArray);
+                bitmap = (Bitmap)System.Drawing.Image.FromStream(ms); //load the image file
             }
             catch (Exception)
             {
@@ -837,12 +836,12 @@ namespace Levante.Commands
 
             using (Graphics graphics = Graphics.FromImage(bitmap))
             {
-                using (Font font = new Font("Neue Haas Grotesk Display Pro", 18, FontStyle.Bold))
+                using (Font font = new("Neue Haas Grotesk Display Pro", 18, FontStyle.Bold))
                 {
                     graphics.DrawString(name, font, Brushes.White, new PointF(83f, 7f));
                 }
 
-                using (Font font = new Font("Neue Haas Grotesk Display Pro", 14))
+                using (Font font = new("Neue Haas Grotesk Display Pro", 14))
                 {
                     graphics.DrawString($"Levante Bot{(BotConfig.IsSupporter(Context.User.Id) ? " Supporter" : "")} {(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", font, new SolidBrush(System.Drawing.Color.FromArgb(128, System.Drawing.Color.White)), new PointF(84f, 37f));
                 }
@@ -884,20 +883,14 @@ namespace Levante.Commands
         [Group("view", "Get details on in-game items.")]
         public class View : InteractionModuleBase<SocketInteractionContext>
         {
-            public InteractiveService Interactive { get; set; }
-
             [SlashCommand("emblem", "Get details on an emblem via its Hash Code found via Bungie's API.")]
             public async Task ViewEmblem([Summary("name", "Name of the emblem you want details for."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
             {
-                if (string.IsNullOrWhiteSpace(SearchQuery))
-                {
-                    await RespondAsync($"Invalid search, please try again.", ephemeral: true);
-                    return;
-                }
-
                 if (!long.TryParse(SearchQuery, out long HashCode))
                 {
-                    await RespondAsync($"Invalid search, please try again. Make sure to choose one of the autocomplete options!", ephemeral: true);
+                    var errEmbed = Embeds.ErrorEmbed;
+                    errEmbed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
+                    await RespondAsync($"", embed: errEmbed.Build(), ephemeral: true);
                     return;
                 }
 
@@ -925,15 +918,11 @@ namespace Levante.Commands
             [SlashCommand("weapon", "Get details on a weapon via its Hash Code found via Bungie's API.")]
             public async Task ViewWeapon([Summary("name", "Name of the weapon you want details for."), Autocomplete(typeof(WeaponAutocomplete))] string SearchQuery)
             {
-                if (string.IsNullOrWhiteSpace(SearchQuery))
-                {
-                    await RespondAsync($"Invalid search, please try again.", ephemeral: true);
-                    return;
-                }
-
                 if (!long.TryParse(SearchQuery, out long HashCode))
                 {
-                    await RespondAsync($"Invalid search, please try again. Make sure to choose one of the autocomplete options!", ephemeral: true);
+                    var errEmbed = Embeds.ErrorEmbed;
+                    errEmbed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
+                    await RespondAsync($"", embed: errEmbed.Build(), ephemeral: true);
                     return;
                 }
 
@@ -945,7 +934,9 @@ namespace Levante.Commands
                 }
                 catch (Exception)
                 {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No weapon found for Hash Code: {HashCode}.";});
+                    var errEmbed = Embeds.ErrorEmbed;
+                    errEmbed.Description = $"No weapon found for Hash Code: {HashCode}.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errEmbed.Build(); });
                     return;
                 }
 
@@ -984,19 +975,6 @@ namespace Levante.Commands
 
                 SeasonNumber = item1.Response.seasonNumber;
                 return $"{item1.Response.displayProperties.name}";
-            }
-        }
-
-        public static System.Drawing.Image GetImageFromPicPath(string strUrl)
-        {
-            using (WebResponse wrFileResponse = WebRequest.Create(strUrl).GetResponse())
-            {
-                using (Stream objWebStream = wrFileResponse.GetResponseStream())
-                {
-                    MemoryStream ms = new();
-                    objWebStream.CopyTo(ms, 8192);
-                    return System.Drawing.Image.FromStream(ms);
-                }
             }
         }
     }

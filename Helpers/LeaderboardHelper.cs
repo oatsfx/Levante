@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Levante.Util;
+using Fergun.Interactive;
 
 namespace Levante.Helpers
 {
@@ -37,13 +39,22 @@ namespace Levante.Helpers
             {
                 for (int i = 0; i < 10; i++)
                 {
+                    string badge = "";
+
+                    if (BotConfig.IsDeveloper(SortedList[i].UniqueBungieName))
+                        badge = $" {Emotes.Dev}";
+                    else if (BotConfig.IsStaff(SortedList[i].UniqueBungieName))
+                        badge = $" {Emotes.Staff}";
+                    else if (BotConfig.IsSupporter(SortedList[i].UniqueBungieName))
+                        badge = $" {Emotes.Supporter}";
+
                     if (DataConfig.IsExistingLinkedUser(User.Id) && SortedList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
                     {
-                        embedDesc += $"{i + 1}) **{SortedList[i].UniqueBungieName}** ({GetValueString(SortedList[i])})\n";
+                        embedDesc += $"{i + 1}) **{SortedList[i].UniqueBungieName}**{badge} ({GetValueString(SortedList[i])})\n";
                         isTop10 = true;
                     }
                     else
-                        embedDesc += $"{i + 1}) {SortedList[i].UniqueBungieName} ({GetValueString(SortedList[i])})\n";
+                        embedDesc += $"{i + 1}) {SortedList[i].UniqueBungieName}{badge} ({GetValueString(SortedList[i])})\n";
                 }
 
                 if (!isTop10 && SortedList.Exists(x => x.UniqueBungieName == DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
@@ -52,7 +63,18 @@ namespace Levante.Helpers
                     for (int i = 10; i < SortedList.Count; i++)
                     {
                         if (SortedList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
-                            embedDesc += $"{i + 1}) **{SortedList[i].UniqueBungieName}** ({GetValueString(SortedList[i])})";
+                        {
+                            string badge = "";
+
+                            if (BotConfig.IsDeveloper(SortedList[i].UniqueBungieName))
+                                badge = $" {Emotes.Dev}";
+                            else if (BotConfig.IsStaff(SortedList[i].UniqueBungieName))
+                                badge = $" {Emotes.Staff}";
+                            else if (BotConfig.IsSupporter(SortedList[i].UniqueBungieName))
+                                badge = $" {Emotes.Supporter}";
+
+                            embedDesc += $"{i + 1}) **{SortedList[i].UniqueBungieName}**{badge} ({GetValueString(SortedList[i])})";
+                        }
                     }
                 }
             }
@@ -60,10 +82,19 @@ namespace Levante.Helpers
             {
                 for (int i = 0; i < SortedList.Count; i++)
                 {
+                    string badge = "";
+
+                    if (BotConfig.IsDeveloper(SortedList[i].UniqueBungieName))
+                        badge = $" {Emotes.Dev}";
+                    else if (BotConfig.IsStaff(SortedList[i].UniqueBungieName))
+                        badge = $" {Emotes.Staff}";
+                    else if (BotConfig.IsSupporter(SortedList[i].UniqueBungieName))
+                        badge = $" {Emotes.Supporter}";
+
                     if (DataConfig.IsExistingLinkedUser(User.Id) && SortedList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
-                        embedDesc += $"{i + 1}) **{SortedList[i].UniqueBungieName}** ({GetValueString(SortedList[i])})\n";
+                        embedDesc += $"{i + 1}) **{SortedList[i].UniqueBungieName}**{badge} ({GetValueString(SortedList[i])})\n";
                     else
-                        embedDesc += $"{i + 1}) {SortedList[i].UniqueBungieName} ({GetValueString(SortedList[i])})\n";
+                        embedDesc += $"{i + 1}) {SortedList[i].UniqueBungieName}{badge} ({GetValueString(SortedList[i])})\n";
                 }
             }
 

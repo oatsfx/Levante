@@ -2,37 +2,32 @@
 using Levante.Configs;
 using Newtonsoft.Json;
 using System;
-using System.Data.SQLite;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
-using System.Threading.Tasks;
 using BungieSharper.Entities.Destiny;
 using BungieSharper.Entities.Destiny.Definitions.Records;
 using Levante.Rotations;
 using BungieSharper.Entities.Destiny.Definitions.ActivityModifiers;
-using System.Diagnostics;
-using BungieSharper.Entities.Destiny.Definitions.Lore;
 using BungieSharper.Entities.Destiny.Definitions.Presentation;
 using Levante.Util;
 using System.IO;
-using APIHelper;
+using Serilog;
 
 namespace Levante.Helpers
 {
     public class ManifestHelper
     {
-        // Name, Hash
-        public static Dictionary<long, string> Emblems = new();
         // Inv Hash, Collectible Hash
         public static Dictionary<long, uint> EmblemsCollectible = new();
+        // Hash, Name
+        public static Dictionary<long, string> Emblems = new();
         public static Dictionary<long, string> Weapons = new();
         public static Dictionary<long, string> Seals = new();
         public static Dictionary<long, string> Ada1ArmorMods = new();
+        public static Dictionary<long, string> Activities = new();
         // Seal Hash, Tracker Hash
         public static Dictionary<long, long> GildableSeals = new();
-        public static Dictionary<long, string> Activities = new();
         // Whatever Hash is found First, Nightfall Name
         public static Dictionary<long, string> Nightfalls = new();
 
@@ -81,12 +76,14 @@ namespace Levante.Helpers
                 DestinyManifestVersion = item.Response.version;
                 if (!File.Exists($"Data/Manifest/JSONs/{DestinyManifestVersion}.json"))
                 {
-                    LogHelper.ConsoleLog($"[MANIFEST] Found v.{DestinyManifestVersion}. Storing locally...");
+                    Log.Information("[{Type}] Found v.{ManifestVersion}. Downloading and storing locally...",
+                        "Manifest", DestinyManifestVersion);
                     File.WriteAllText($"Data/Manifest/JSONs/{DestinyManifestVersion}.json", JsonConvert.SerializeObject(item, Formatting.Indented));
                 }
                 else
                 {
-                    LogHelper.ConsoleLog($"[MANIFEST] Found v.{DestinyManifestVersion}. No download needed.");
+                    Log.Information("[{Type}] Found v.{ManifestVersion}. No download needed.",
+                       "Manifest", DestinyManifestVersion);
                 }
 
                 // Inventory Items
@@ -97,7 +94,8 @@ namespace Levante.Helpers
                     Directory.CreateDirectory("Data/Manifest/JSONs/DestinyInventoryItemDefinition");
                 if (!File.Exists($"Data/Manifest/JSONs/DestinyInventoryItemDefinition/{fileName}"))
                 {
-                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyInventoryItemDefinition locally...");
+                    Log.Information("[{Type}] Storing {def} locally...",
+                        "Manifest", "DestinyInventoryItemDefinition");
                     string invItemUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyInventoryItemDefinition"]}";
                     response = client.GetAsync(invItemUrl).Result;
                     content = response.Content.ReadAsStringAsync().Result;
@@ -108,7 +106,8 @@ namespace Levante.Helpers
                 {
                     content = File.ReadAllText($"Data/Manifest/JSONs/DestinyInventoryItemDefinition/{fileName}");
                     invItemList = JsonConvert.DeserializeObject<Dictionary<string, DestinyInventoryItemDefinition>>(content);
-                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyInventoryItemDefinition from local.");
+                    Log.Information("[{Type}] Loaded {def} from local.",
+                        "Manifest", "DestinyInventoryItemDefinition");
                 }
 
                 // Vendors
@@ -119,7 +118,8 @@ namespace Levante.Helpers
                     Directory.CreateDirectory("Data/Manifest/JSONs/DestinyVendorDefinition");
                 if (!File.Exists($"Data/Manifest/JSONs/DestinyVendorDefinition/{fileName}"))
                 {
-                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyVendorDefinition locally...");
+                    Log.Information("[{Type}] Storing {def} locally...",
+                        "Manifest", "DestinyVendorDefinition");
                     string vendorListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyVendorDefinition"]}";
                     response = client.GetAsync(vendorListUrl).Result;
                     content = response.Content.ReadAsStringAsync().Result;
@@ -130,7 +130,8 @@ namespace Levante.Helpers
                 {
                     content = File.ReadAllText($"Data/Manifest/JSONs/DestinyVendorDefinition/{fileName}");
                     vendorList = JsonConvert.DeserializeObject<Dictionary<string, DestinyVendorDefinition>>(content);
-                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyVendorDefinition from local.");
+                    Log.Information("[{Type}] Loaded {def} from local.",
+                        "Manifest", "DestinyVendorDefinition");
                 }
                 var ada1ItemList = vendorList["350061650"].ItemList.Select(x => x.ItemHash);
 
@@ -142,7 +143,8 @@ namespace Levante.Helpers
                     Directory.CreateDirectory("Data/Manifest/JSONs/DestinyActivityDefinition");
                 if (!File.Exists($"Data/Manifest/JSONs/DestinyActivityDefinition/{fileName}"))
                 {
-                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyActivityDefinition locally...");
+                    Log.Information("[{Type}] Storing {def} locally...",
+                        "Manifest", "DestinyActivityDefinition");
                     string activityListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyActivityDefinition"]}";
                     response = client.GetAsync(activityListUrl).Result;
                     content = response.Content.ReadAsStringAsync().Result;
@@ -153,7 +155,8 @@ namespace Levante.Helpers
                 {
                     content = File.ReadAllText($"Data/Manifest/JSONs/DestinyActivityDefinition/{fileName}");
                     activityList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityDefinition>>(content);
-                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyActivityDefinition from local.");
+                    Log.Information("[{Type}] Loaded {def} from local.",
+                        "Manifest", "DestinyActivityDefinition");
                 }
 
                 // Places
@@ -164,7 +167,8 @@ namespace Levante.Helpers
                     Directory.CreateDirectory("Data/Manifest/JSONs/DestinyPlaceDefinition");
                 if (!File.Exists($"Data/Manifest/JSONs/DestinyPlaceDefinition/{fileName}"))
                 {
-                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyPlaceDefinition locally...");
+                    Log.Information("[{Type}] Storing {def} locally...",
+                        "Manifest", "DestinyPlaceDefinition");
                     string placeListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyPlaceDefinition"]}";
                     response = client.GetAsync(placeListUrl).Result;
                     content = response.Content.ReadAsStringAsync().Result;
@@ -175,7 +179,8 @@ namespace Levante.Helpers
                 {
                     content = File.ReadAllText($"Data/Manifest/JSONs/DestinyPlaceDefinition/{fileName}");
                     placeList = JsonConvert.DeserializeObject<Dictionary<string, DestinyPlaceDefinition>>(content);
-                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyPlaceDefinition from local.");
+                    Log.Information("[{Type}] Loaded {def} from local.",
+                        "Manifest", "DestinyPlaceDefinition");
                 }
 
                 // Modifiers
@@ -186,7 +191,8 @@ namespace Levante.Helpers
                     Directory.CreateDirectory("Data/Manifest/JSONs/DestinyActivityModifierDefinition");
                 if (!File.Exists($"Data/Manifest/JSONs/DestinyActivityModifierDefinition/{fileName}"))
                 {
-                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyActivityModifierDefinition locally...");
+                    Log.Information("[{Type}] Storing {def} locally...",
+                        "Manifest", "DestinyActivityModifierDefinition");
                     string modifierListUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyActivityModifierDefinition"]}";
                     response = client.GetAsync(modifierListUrl).Result;
                     content = response.Content.ReadAsStringAsync().Result;
@@ -197,7 +203,8 @@ namespace Levante.Helpers
                 {
                     content = File.ReadAllText($"Data/Manifest/JSONs/DestinyActivityModifierDefinition/{fileName}");
                     modifierList = JsonConvert.DeserializeObject<Dictionary<string, DestinyActivityModifierDefinition>>(content);
-                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyActivityModifierDefinition from local.");
+                    Log.Information("[{Type}] Loaded {def} from local.",
+                        "Manifest", "DestinyActivityModifierDefinition");
                 }
 
                 // Records/Triumph
@@ -208,7 +215,8 @@ namespace Levante.Helpers
                     Directory.CreateDirectory("Data/Manifest/JSONs/DestinyRecordDefinition");
                 if (!File.Exists($"Data/Manifest/JSONs/DestinyRecordDefinition/{fileName}"))
                 {
-                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyRecordDefinition locally...");
+                    Log.Information("[{Type}] Storing {def} locally...",
+                        "Manifest", "DestinyRecordDefinition");
                     string recordUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyRecordDefinition"]}";
                     response = client.GetAsync(recordUrl).Result;
                     content = response.Content.ReadAsStringAsync().Result;
@@ -219,7 +227,8 @@ namespace Levante.Helpers
                 {
                     content = File.ReadAllText($"Data/Manifest/JSONs/DestinyRecordDefinition/{fileName}");
                     recordList = JsonConvert.DeserializeObject<Dictionary<string, DestinyRecordDefinition>>(content);
-                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyRecordDefinition from local.");
+                    Log.Information("[{Type}] Loaded {def} from local.",
+                        "Manifest", "DestinyRecordDefinition");
                 }
 
                 // Presentation Nodes
@@ -230,7 +239,8 @@ namespace Levante.Helpers
                     Directory.CreateDirectory("Data/Manifest/JSONs/DestinyPresentationNodeDefinition");
                 if (!File.Exists($"Data/Manifest/JSONs/DestinyPresentationNodeDefinition/{fileName}"))
                 {
-                    LogHelper.ConsoleLog($"[MANIFEST] Storing DestinyPresentationNodeDefinition locally...");
+                    Log.Information("[{Type}] Storing {def} locally...",
+                        "Manifest", "DestinyPresentationNodeDefinition");
                     string presentNodeUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyPresentationNodeDefinition"]}";
                     response = client.GetAsync(presentNodeUrl).Result;
                     content = response.Content.ReadAsStringAsync().Result;
@@ -241,10 +251,12 @@ namespace Levante.Helpers
                 {
                     content = File.ReadAllText($"Data/Manifest/JSONs/DestinyPresentationNodeDefinition/{fileName}");
                     presentNodeList = JsonConvert.DeserializeObject<Dictionary<string, DestinyPresentationNodeDefinition>>(content);
-                    LogHelper.ConsoleLog($"[MANIFEST] Loaded DestinyPresentationNodeDefinition from local.");
+                    Log.Information("[{Type}] Loaded {def} from local.",
+                        "Manifest", "DestinyPresentationNodeDefinition");
                 }
 
-                LogHelper.ConsoleLog($"[MANIFEST] Populating Dictionaries...");
+                Log.Information("[{Type}] Populating Dictionaries...",
+                        "Manifest");
                 try
                 {
                     foreach (var record in recordList)
@@ -261,6 +273,7 @@ namespace Levante.Helpers
                     foreach (var node in presentNodeList)
                     {
                         if (node.Value.DisplayProperties == null) continue;
+                        if (node.Value.Children == null) continue;
                         if (node.Value.Children.Records.Count() == 0) continue;
                         if (node.Value.CompletionRecordHash == null) continue;
                         foreach (var child in node.Value.Children.Records)
@@ -270,7 +283,7 @@ namespace Levante.Helpers
                                 string recordName = recordList[child.RecordHash.ToString()].DisplayProperties.Name;
                                 if (recordName.Contains("Grandmaster:"))
                                 {
-                                    Console.WriteLine(recordName.Replace("Grandmaster: ", ""));
+                                    //Console.WriteLine(recordName.Replace("Grandmaster: ", ""));
                                     NightfallRotation.Nightfalls.Add(recordName.Replace("Grandmaster: ", ""));
                                 }
                             }
@@ -290,7 +303,7 @@ namespace Levante.Helpers
                         if (NightfallRotation.Nightfalls.Contains(activity.Value.DisplayProperties.Description) && !Nightfalls.ContainsValue(activity.Value.DisplayProperties.Description))
                         {
                             Nightfalls.Add(activity.Value.Hash, activity.Value.DisplayProperties.Description);
-                            Console.WriteLine($"{activity.Value.Hash}: {activity.Value.DisplayProperties.Name} ({activity.Value.DisplayProperties.Description})");
+                            //Console.WriteLine($"{activity.Value.Hash}: {activity.Value.DisplayProperties.Name} ({activity.Value.DisplayProperties.Description})");
                         }
                         int index = LostSectorRotation.LostSectors.FindIndex(x => activity.Key.Equals($"{x.LegendActivityHash}"));
                         if (index != -1)
@@ -360,7 +373,7 @@ namespace Levante.Helpers
 
                             if (invItem.Value.Hash == 2261046232 || invItem.Value.Hash == 2603335652)
                             {
-                                Console.WriteLine($"{invItem.Value.DisplayProperties.Name}");
+                                Log.Debug("{weapon}", invItem.Value.DisplayProperties.Name);
                             }
 
                             if (invItem.Value.Hash == 417164956) // Jötunn
@@ -417,10 +430,13 @@ namespace Levante.Helpers
                 }
                 catch (Exception x)
                 {
-                    Console.WriteLine($"{x}");
+                    Log.Fatal("[{Type}] Population error. {exception}",
+                        "Manifest", x);
                 }
             }
-            LogHelper.ConsoleLog($"[MANIFEST] Dictionary population complete.");
+
+            Log.Information("[{Type}] Dictionary population complete.",
+                "Manifest");
         }
     }
 }

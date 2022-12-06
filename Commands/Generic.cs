@@ -5,6 +5,7 @@ using Fergun.Interactive;
 using Discord.Interactions;
 using System.Linq;
 using System;
+using Levante.Util;
 
 namespace Levante.Commands
 {
@@ -43,7 +44,7 @@ namespace Levante.Commands
             var embed = new EmbedBuilder();
             embed.WithColor(new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
 
-            embed.ThumbnailUrl = app.IconUrl;
+            embed.ThumbnailUrl = BotConfig.BotLogoUrl;
 
             embed.Title = "Bot Information";
             embed.Description =
@@ -53,19 +54,19 @@ namespace Levante.Commands
             embed.AddField(x =>
             {
                 x.Name = "Guild Count";
-                x.Value = $"{Context.Client.Guilds.Count} Guilds";
+                x.Value = $"{Context.Client.Guilds.Count:n0} Guilds";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = "User Count";
-                x.Value = $"{Context.Client.Guilds.Sum(x => x.MemberCount)} Users";
+                x.Value = $"{Context.Client.Guilds.Sum(x => x.MemberCount):n0} Users";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = "Bot Version";
-                x.Value = $"v{String.Format("{0:0.00#}", BotConfig.Version)}";
+                x.Value = $"v{BotConfig.Version}";
                 x.IsInline = true;
             })
             .AddField(x =>
@@ -87,11 +88,10 @@ namespace Levante.Commands
         [SlashCommand("invite", "Gives an invite link for the bot.")]
         public async Task Invite()
         {
-            var app = await Context.Client.GetApplicationInfoAsync();
             var embed = new EmbedBuilder();
 
             embed.WithColor(new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
-            embed.ThumbnailUrl = app.IconUrl;
+            embed.ThumbnailUrl = BotConfig.BotLogoUrl;
             embed.Title = "Invite Link";
             embed.Description =
                 "__**Invite me to your server!**__" +
@@ -125,12 +125,11 @@ namespace Levante.Commands
                 colors[2] = 69;
             }
 
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
                 Color = new Discord.Color(colors[0], colors[1], colors[2]),
+                Description = $"Pong! ({latency} ms)"
             };
-            embed.Description =
-                $"Pong! ({latency} ms)";
 
             await RespondAsync(embed: embed.Build());
         }
@@ -141,7 +140,7 @@ namespace Levante.Commands
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
-                IconUrl = app.IconUrl,
+                IconUrl = BotConfig.BotAvatarUrl,
             };
             var embed = new EmbedBuilder()
             {
@@ -149,7 +148,7 @@ namespace Levante.Commands
             };
             embed.WithColor(new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
 
-            embed.ThumbnailUrl = app.IconUrl;
+            embed.ThumbnailUrl = BotConfig.BotLogoUrl;
 
             embed.Title = "Support Levante";
             embed.Url = "https://donate.levante.dev/";
@@ -160,7 +159,7 @@ namespace Levante.Commands
                 "> You can support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/).";
 
             var buttonBuilder = new ComponentBuilder()
-                .WithButton("Support Levante", style: ButtonStyle.Link, url: $"https://donate.levante.dev/", emote: Emote.Parse("<:KoFi:1025505673221525634>"), row: 0);
+                .WithButton("Support Levante", style: ButtonStyle.Link, url: $"https://donate.levante.dev/", emote: Emote.Parse(Emotes.KoFi), row: 0);
 
             await RespondAsync(embed: embed.Build(), components: buttonBuilder.Build());
         }
