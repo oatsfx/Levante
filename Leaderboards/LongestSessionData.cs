@@ -10,7 +10,8 @@ namespace Levante.Leaderboards
         public static readonly string FilePathS15 = @"Data/S15/longestSessionData.json";
         public static readonly string FilePathS16 = @"Data/S16/longestSessionData.json";
         public static readonly string FilePathS17 = @"Data/S17/longestSessionData.json";
-        public static readonly string FilePath = @"Data/S18/longestSessionData.json";
+        public static readonly string FilePathS18 = @"Data/S18/longestSessionData.json";
+        public static readonly string FilePath = @"Data/S19/longestSessionData.json";
 
         [JsonProperty("LongestSessionEntries")]
         public List<LongestSessionEntry> LongestSessionEntries { get; set; } = new List<LongestSessionEntry>();
