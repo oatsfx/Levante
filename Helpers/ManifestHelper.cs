@@ -273,6 +273,7 @@ namespace Levante.Helpers
                     foreach (var node in presentNodeList)
                     {
                         if (node.Value.DisplayProperties == null) continue;
+                        if (node.Value.Children == null) continue;
                         if (node.Value.Children.Records.Count() == 0) continue;
                         if (node.Value.CompletionRecordHash == null) continue;
                         foreach (var child in node.Value.Children.Records)

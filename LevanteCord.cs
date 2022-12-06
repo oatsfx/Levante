@@ -45,7 +45,7 @@ namespace Levante
         {
             var config = new DiscordSocketConfig
             {
-                GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
+                GatewayIntents = GatewayIntents.None
             };
 
             // TODO: Implement a sharded client.
