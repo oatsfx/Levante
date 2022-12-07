@@ -37,7 +37,10 @@ namespace Levante.Util
                 var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Manifest/DestinyCollectibleDefinition/" + GetCollectableHash()).Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
-                return item.Response.sourceString;
+                if ($"{item.Response.displayProperties.name}".Equals("Classified"))
+                    return "Source: Classified. Keep it secret. Keep it safe.";
+                else
+                    return item.Response.sourceString;
             }
         }
 
