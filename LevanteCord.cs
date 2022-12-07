@@ -607,7 +607,7 @@ namespace Levante
                     //397846250797662208
                     //915020047154565220
                     //1011700865087852585
-                    await _interaction.RegisterCommandsToGuildAsync(915020047154565220);
+                    await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
                 }
                 else
                 {
@@ -648,14 +648,14 @@ namespace Levante
                 {
                     case InteractionCommandError.UnmetPrecondition:
                         {
-                            var embed = Embeds.ErrorEmbed;
+                            var embed = Embeds.GetErrorEmbed();
                             embed.Description = $"{result.ErrorReason}";
                             await context.Interaction.RespondAsync($"", ephemeral: true, embed: embed.Build());
                             break;
                         }
                     default:
                         {
-                            var embed = Embeds.ErrorEmbed;
+                            var embed = Embeds.GetErrorEmbed();
                             var interData = (context.Interaction as SocketSlashCommand).Data;
                             embed.AddField(x =>
                             {
@@ -678,7 +678,7 @@ namespace Levante
                 switch (result.Error)
                 {
                     case InteractionCommandError.UnmetPrecondition:
-                        var embed = Embeds.ErrorEmbed;
+                        var embed = Embeds.GetErrorEmbed();
                         embed.Description = $"{result.ErrorReason}";
                         await context.Interaction.RespondAsync($"", ephemeral: true, embed: embed.Build());
                         break;

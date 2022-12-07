@@ -37,7 +37,7 @@ namespace Levante.Commands
                 await Emblem();
             else
             {
-                var embed = Embeds.ErrorEmbed;
+                var embed = Embeds.GetErrorEmbed();
                 embed.Description = $"Insufficient Permissions. Only the user who ran the original command can use this button.\n" +
                     $"Use the `/quiz emblem` command to start a quiz yourself!";
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
@@ -64,7 +64,7 @@ namespace Levante.Commands
 
             if (QuizInstance.ActiveEmblemQuizzes.Any(x => x.ChannelId == Context.Interaction.Channel.Id))
             {
-                var embed = Embeds.ErrorEmbed;
+                var embed = Embeds.GetErrorEmbed();
                 embed.Description = $"There is an active quiz in this channel! Wait for the quiz to end before starting a new one!";
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
