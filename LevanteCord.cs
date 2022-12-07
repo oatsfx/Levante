@@ -226,7 +226,7 @@ namespace Levante
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
-                var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotStaffDiscordIDs[0]);
+                var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotDevDiscordIDs[0]);
                 devLinked = DataConfig.RefreshCode(devLinked);
 
                 var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "?components=100,200").Result;
@@ -241,6 +241,7 @@ namespace Levante
                 }
 
                 string charId = $"{item.Response.profile.data.characterIds[0]}";
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {devLinked.AccessToken}");
 
                 response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "/Character/" + charId + "/Vendors/350061650/?components=400,402").Result;
                 content = response.Content.ReadAsStringAsync().Result;
