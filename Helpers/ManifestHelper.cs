@@ -380,7 +380,7 @@ namespace Levante.Helpers
                                 Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} (Jotunn)");
                             else
                             {
-                                var dupeWeapons = Weapons.Where(x => x.Value.Contains(invItem.Value.DisplayProperties.Name));
+                                var dupeWeapons = Weapons.Where(x => x.Value.Split('[')[0].Equals(invItem.Value.DisplayProperties.Name));
                                 if (dupeWeapons.Count() > 0)
                                 {
                                     foreach (var weapon in dupeWeapons.ToList())
@@ -430,13 +430,11 @@ namespace Levante.Helpers
                 }
                 catch (Exception x)
                 {
-                    Log.Fatal("[{Type}] Population error. {exception}",
-                        "Manifest", x);
+                    Log.Fatal("[{Type}] Population error. {exception}", "Manifest", x);
                 }
             }
 
-            Log.Information("[{Type}] Dictionary population complete.",
-                "Manifest");
+            Log.Information("[{Type}] Dictionary population complete.", "Manifest");
         }
     }
 }

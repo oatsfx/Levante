@@ -49,7 +49,10 @@ namespace Levante.Util
                     var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Manifest/DestinyCollectibleDefinition/" + GetCollectableHash()).Result;
                     var content = response.Content.ReadAsStringAsync().Result;
                     dynamic item = JsonConvert.DeserializeObject(content);
-                    return item.Response.sourceString;
+                    if ($"{item.Response.displayProperties.name}".Equals("Classified"))
+                        return "Source: Classified. Keep it secret. Keep it safe.";
+                    else
+                        return item.Response.sourceString;
                 }
             }
             catch
@@ -117,7 +120,8 @@ namespace Levante.Util
                     offerStr = $"This emblem is available via a code: {uniCode.Code}.\nRedeem it [here](https://www.bungie.net/7/en/Codes/Redeem).";
                 }
 
-                embed.Description = (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) + "\n";
+                var sourceStr = GetSourceString();
+                embed.Description = (sourceStr.Equals("") ? "No source data provided." : sourceStr) + "\n";
                 embed.ImageUrl = GetBackgroundUrl();
                 embed.ThumbnailUrl = GetIconUrl();
 
