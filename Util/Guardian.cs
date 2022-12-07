@@ -111,6 +111,15 @@ namespace Levante.Util
 
         public EmbedBuilder GetGuardianEmbed()
         {
+            string badge = "";
+
+            if (BotConfig.IsDeveloper(UniqueBungieName))
+                badge = $"\n{Emotes.Dev} {BotConfig.AppName} Developer";
+            else if (BotConfig.IsStaff(UniqueBungieName))
+                badge = $" {Emotes.Staff} {BotConfig.AppName} Staff";
+            else if (BotConfig.IsSupporter(UniqueBungieName))
+                badge = $" {Emotes.Supporter} {BotConfig.AppName} Supporter";
+
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"{UniqueBungieName}: {GetClass()}",
@@ -123,14 +132,14 @@ namespace Levante.Util
             int[] emblemRGB = GetEmblem().GetRGBAsIntArray();
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(emblemRGB[0], emblemRGB[1], emblemRGB[2]),
+                Color = new Color(emblemRGB[0], emblemRGB[1], emblemRGB[2]),
                 Author = auth,
                 Footer = foot
             };
             var seal = GetSeal();
             embed.Description =
                 $"{GetClassEmote()} **{GetRace()} {GetGender()} {GetClass()}** {GetClassEmote()}\n" +
-                $"{DestinyEmote.Light}{GetLightLevel()}";
+                $"{DestinyEmote.Light}{GetLightLevel()}{badge}";
             embed.ThumbnailUrl = GetEmblem().GetIconUrl();
 
             dynamic item = JsonConvert.DeserializeObject(GuardianContent);

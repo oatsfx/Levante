@@ -811,7 +811,7 @@ namespace Levante.Commands
 
             if (!long.TryParse(SearchQuery, out long HashCode))
             {
-                var errEmbed = Embeds.ErrorEmbed;
+                var errEmbed = Embeds.GetErrorEmbed();
                 errEmbed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
                 await RespondAsync($"", embed: errEmbed.Build(), ephemeral: true);
                 return;
@@ -888,7 +888,7 @@ namespace Levante.Commands
             {
                 if (!long.TryParse(SearchQuery, out long HashCode))
                 {
-                    var errEmbed = Embeds.ErrorEmbed;
+                    var errEmbed = Embeds.GetErrorEmbed();
                     errEmbed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
                     await RespondAsync($"", embed: errEmbed.Build(), ephemeral: true);
                     return;
@@ -920,7 +920,7 @@ namespace Levante.Commands
             {
                 if (!long.TryParse(SearchQuery, out long HashCode))
                 {
-                    var errEmbed = Embeds.ErrorEmbed;
+                    var errEmbed = Embeds.GetErrorEmbed();
                     errEmbed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
                     await RespondAsync($"", embed: errEmbed.Build(), ephemeral: true);
                     return;
@@ -934,7 +934,7 @@ namespace Levante.Commands
                 }
                 catch (Exception)
                 {
-                    var errEmbed = Embeds.ErrorEmbed;
+                    var errEmbed = Embeds.GetErrorEmbed();
                     errEmbed.Description = $"No weapon found for Hash Code: {HashCode}.";
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errEmbed.Build(); });
                     return;
