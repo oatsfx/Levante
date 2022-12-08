@@ -58,7 +58,7 @@ namespace Levante.Commands
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                     Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
+                    Footer = new EmbedFooterBuilder() { Text = $"{BotConfig.AppName} v{BotConfig.Version}" },
                 };
                 embed.Title = $"Max users reached! ({ActiveConfig.MaximumLoggingUsers})";
                 embed.Description = $"Want to bypass this limit? Support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/)!\n" +
@@ -263,7 +263,7 @@ namespace Levante.Commands
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                     Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
+                    Footer = new EmbedFooterBuilder() { Text = $"{BotConfig.AppName} v{BotConfig.Version}" },
                 };
                 embed.Title = $"Max users reached! ({ActiveConfig.MaximumLoggingUsers})";
                 embed.Description = $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +

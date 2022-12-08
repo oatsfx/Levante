@@ -16,7 +16,7 @@ namespace Levante.Util
                 Footer = new()
                 {
                     IconUrl = BotConfig.BotAvatarUrl,
-                    Text = $"Levante v{BotConfig.Version}",
+                    Text = $"{BotConfig.AppName} v{BotConfig.Version}",
                 }
             };
 

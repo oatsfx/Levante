@@ -843,7 +843,7 @@ namespace Levante.Commands
 
                 using (Font font = new("Neue Haas Grotesk Display Pro", 14))
                 {
-                    graphics.DrawString($"Levante Bot{(BotConfig.IsSupporter(Context.User.Id) ? " Supporter" : "")} {(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", font, new SolidBrush(System.Drawing.Color.FromArgb(128, System.Drawing.Color.White)), new PointF(84f, 37f));
+                    graphics.DrawString($"{BotConfig.AppName} Bot{(BotConfig.IsSupporter(Context.User.Id) ? " Supporter" : "")} {(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", font, new SolidBrush(System.Drawing.Color.FromArgb(128, System.Drawing.Color.White)), new PointF(84f, 37f));
                 }
             }
 

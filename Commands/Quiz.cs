@@ -30,11 +30,11 @@ namespace Levante.Commands
     {
         public InteractiveService Interactive { get; set; }
 
-        [ComponentInteraction("playEmblemQuizAgain:*", ignoreGroupNames: true)]
-        public async Task PlayEmblemAgain(ulong DiscordID)
+        [ComponentInteraction("playEmblemQuizAgain:*:*", ignoreGroupNames: true)]
+        public async Task PlayEmblemAgain(ulong DiscordID, bool hideVotes = false)
         {
             if (Context.Interaction.User.Id == DiscordID)
-                await Emblem();
+                await Emblem(hideVotes);
             else
             {
                 var embed = Embeds.GetErrorEmbed();
@@ -58,7 +58,7 @@ namespace Levante.Commands
         }
 
         [SlashCommand("emblem", "Think you know all the emblems? Test your emblem knowledge.")]
-        public async Task Emblem()
+        public async Task Emblem(bool hideVotes = false)
         {
             await DeferAsync();
 
@@ -70,7 +70,7 @@ namespace Levante.Commands
                 return;
             }
 
-            var quiz = new QuizEntry(Context);
+            var quiz = new QuizEntry(Context, hideVotes);
             Log.Information("Quiz added: {Id}", quiz.MessageId);
             QuizInstance.ActiveEmblemQuizzes.Add(quiz);
 
@@ -91,14 +91,18 @@ namespace Levante.Commands
         public int Answer;
         public Emblem _Emblem;
 
+        public bool HideVotes;
+
         public EmbedBuilder Embed;
         public ComponentBuilder Buttons;
         public RestFollowupMessage Message;
 
         public List<OptionEntry> Options = new();
 
-        public QuizEntry(SocketInteractionContext<SocketInteraction> context)
+        public QuizEntry(SocketInteractionContext<SocketInteraction> context, bool hideVotes)
         {
+            HideVotes = hideVotes;
+
             var rand = new Random();
             Buttons = new ComponentBuilder();
 
@@ -121,7 +125,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by the Bungie API and Levante v{BotConfig.Version}"
+                Text = $"Powered by the Bungie API and {BotConfig.AppName} v{BotConfig.Version}"
             };
             Embed = new EmbedBuilder()
             {
@@ -136,11 +140,13 @@ namespace Levante.Commands
             Embed.ThumbnailUrl = _Emblem.GetIconUrl();
 
             string builder = "";
-            for (int i = 0; i < 5; i++)
-            {
-                builder += $"{ManifestHelper.Emblems[Options[i].Hash]}: **{Options[i].Votes}**\n";
-            }
+            if (!HideVotes)
+                for (int i = 0; i < 5; i++)
+                    builder += $"{ManifestHelper.Emblems[Options[i].Hash]}: **{Options[i].Votes}**\n";
+            else
+                builder = "*Hidden*";
 
+            Embed.Fields.Clear();
             Embed.AddField(x =>
             {
                 x.Name = "Votes";
@@ -199,10 +205,12 @@ namespace Levante.Commands
 
             var sorted = Options.OrderBy(x => x.Votes).Reverse().ToList();
             string builder = "";
-            for (int i = 0; i < 5; i++)
-            {
-                builder += $"{ManifestHelper.Emblems[sorted[i].Hash]}: **{sorted[i].Votes}**\n";
-            }
+            if (!HideVotes)
+                for (int i = 0; i < 5; i++)
+                    builder += $"{ManifestHelper.Emblems[sorted[i].Hash]}: **{sorted[i].Votes}**\n";
+            else
+                builder = "*Hidden*";
+
             Embed.Fields.Clear();
             Embed.AddField(x =>
             {
@@ -210,12 +218,30 @@ namespace Levante.Commands
                 x.Value = $"{builder}";
                 x.IsInline = true;
             });
+
             await context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = Embed.Build(); });
         }
 
         public async Task HandleEnd(SocketInteractionContext<SocketInteraction> context)
         {
             Embed.Description = $"This emblem is **[{ManifestHelper.Emblems[Options[Answer].Hash]}]({_Emblem.GetDECUrl()})**!";
+
+            if (HideVotes)
+            {
+                var sorted = Options.OrderBy(x => x.Votes).Reverse().ToList();
+                string builder = "";
+                for (int i = 0; i < 5; i++)
+                    builder += $"{ManifestHelper.Emblems[sorted[i].Hash]}: **{sorted[i].Votes}**\n";
+
+                Embed.Fields.Clear();
+                Embed.AddField(x =>
+                {
+                    x.Name = "Votes";
+                    x.Value = $"{builder}";
+                    x.IsInline = true;
+                });
+            }
+
             var topWinners = VotedUsers.Where(x => x.Value == Options[Answer].Hash).Take(5);
             if (topWinners.Any())
             {
@@ -230,7 +256,7 @@ namespace Levante.Commands
                 });
             }
             var playAgainBuilder = new ComponentBuilder()
-                .WithButton($"Play Again", customId: $"playEmblemQuizAgain:{context.User.Id}", ButtonStyle.Success, row: 0);
+                .WithButton($"Play Again", customId: $"playEmblemQuizAgain:{context.User.Id}:{HideVotes}", ButtonStyle.Success, row: 0);
             await Message.ModifyAsync(message => { message.Components = playAgainBuilder.Build(); message.Embed = Embed.Build(); });
         }
     }

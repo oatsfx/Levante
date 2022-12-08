@@ -85,7 +85,7 @@ namespace Levante
             if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
 
-            await Task.Run(() => Console.Title = $"Levante v{BotConfig.Version}");
+            await Task.Run(() => Console.Title = $"{BotConfig.AppName} v{BotConfig.Version}");
 
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
