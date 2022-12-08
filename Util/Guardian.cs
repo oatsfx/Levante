@@ -116,9 +116,9 @@ namespace Levante.Util
             if (BotConfig.IsDeveloper(UniqueBungieName))
                 badge = $"\n{Emotes.Dev} {BotConfig.AppName} Developer";
             else if (BotConfig.IsStaff(UniqueBungieName))
-                badge = $" {Emotes.Staff} {BotConfig.AppName} Staff";
+                badge = $"\n{Emotes.Staff} {BotConfig.AppName} Staff";
             else if (BotConfig.IsSupporter(UniqueBungieName))
-                badge = $" {Emotes.Supporter} {BotConfig.AppName} Supporter";
+                badge = $"\n{Emotes.Supporter} {BotConfig.AppName} Supporter";
 
             var auth = new EmbedAuthorBuilder()
             {

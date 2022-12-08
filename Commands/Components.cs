@@ -52,19 +52,10 @@ namespace Levante.Commands
 
             if (!BotConfig.IsSupporter(Context.User.Id) && ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
-                var app = await Context.Client.GetApplicationInfoAsync();
-
-                var embed = new EmbedBuilder()
-                {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
-                };
-                embed.Title = $"Max users reached! ({ActiveConfig.MaximumLoggingUsers})";
-                embed.Description = $"Want to bypass this limit? Support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/)!\n" +
-                    $"Use the '/support' command for more info!";
-
-                embed.ThumbnailUrl = app.IconUrl;
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"Unfortunately, we've it the maximum amount of users ({ActiveConfig.MaximumLoggingUsers}) we are allowing to log XP. You'll have to wait for the list to get smaller.\n" +
+                    $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +
+                    $"Use the `/support` command for more info!";
 
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
@@ -257,19 +248,10 @@ namespace Levante.Commands
 
             if (!BotConfig.IsSupporter(Context.User.Id) && ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
-                var app = await Context.Client.GetApplicationInfoAsync();
-
-                var embed = new EmbedBuilder()
-                {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                    Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                    Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
-                };
-                embed.Title = $"Max users reached! ({ActiveConfig.MaximumLoggingUsers})";
-                embed.Description = $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +
-                    $"Use the '/support' command for more info!";
-
-                embed.ThumbnailUrl = app.IconUrl;
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"Unfortunately, we've it the maximum amount of users ({ActiveConfig.MaximumLoggingUsers}) we are allowing to log XP. You'll have to wait for the list to get smaller.\n" +
+                    $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +
+                    $"Use the `/support` command for more info!";
 
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;

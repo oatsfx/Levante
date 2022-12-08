@@ -85,7 +85,7 @@ namespace Levante
             if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
 
-            await Task.Run(() => Console.Title = $"Levante v{BotConfig.Version}");
+            await Task.Run(() => Console.Title = $"{BotConfig.AppName} v{BotConfig.Version}");
 
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
                 return;
@@ -468,7 +468,7 @@ namespace Levante
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
                     }
-                    await Task.Delay(250);
+                    await Task.Delay(75);
                 }
 
                 // Add in users that joined mid-refresh.

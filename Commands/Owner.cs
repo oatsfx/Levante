@@ -130,7 +130,7 @@ namespace Levante.Commands
         }
 
         [RequireBotStaff]
-        [SlashCommand("supporter", "[OWNER]: Add or remove a bot supporter.")]
+        [SlashCommand("supporter", "[BOT STAFF]: Add or remove a bot supporter.")]
         public async Task AddSupporter([Summary("discord-id", "Discord ID of the user to handle supporter status for.")] IUser User = null)
         {
             if (User == null)
@@ -567,7 +567,7 @@ namespace Levante.Commands
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                Footer = new EmbedFooterBuilder() { Text = $"Levante v{BotConfig.Version}" },
+                Footer = new EmbedFooterBuilder() { Text = $"{BotConfig.AppName} v{BotConfig.Version}" },
             };
             embed.Title = "Metrics";
             embed.ThumbnailUrl = BotConfig.BotLogoUrl;
