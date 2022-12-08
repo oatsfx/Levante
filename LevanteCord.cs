@@ -468,7 +468,7 @@ namespace Levante
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
                     }
-                    await Task.Delay(250);
+                    await Task.Delay(75);
                 }
 
                 // Add in users that joined mid-refresh.

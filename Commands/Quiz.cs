@@ -17,6 +17,8 @@ using Discord.Rest;
 using System.Data;
 using Levante.Rotations;
 using APIHelper.Structs;
+using APIHelper;
+using System.Reactive;
 
 namespace Levante.Commands
 {
@@ -31,7 +33,7 @@ namespace Levante.Commands
         public InteractiveService Interactive { get; set; }
 
         [ComponentInteraction("playEmblemQuizAgain:*:*", ignoreGroupNames: true)]
-        public async Task PlayEmblemAgain(ulong DiscordID, bool hideVotes = false)
+        public async Task PlayEmblemAgain(ulong DiscordID, bool hideVotes)
         {
             if (Context.Interaction.User.Id == DiscordID)
                 await Emblem(hideVotes);
@@ -42,6 +44,28 @@ namespace Levante.Commands
                     $"Use the `/quiz emblem` command to start a quiz yourself!";
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
             }
+        }
+
+        [ComponentInteraction("endEmblemQuiz:*", ignoreGroupNames: true)]
+        public async Task EndQuizEarly(ulong DiscordID)
+        {
+            if (Context.Interaction.User.Id != DiscordID)
+            {
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"Insufficient Permissions. You can't end a quiz you didn't start, only the user who started the quiz can end it.\n" +
+                    $"Use the `/quiz emblem` command to start a quiz yourself!";
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
+            }
+
+            await DeferAsync();
+            var quiz = QuizInstance.ActiveEmblemQuizzes.FirstOrDefault(x => x.MessageId == Context.Interaction.GetOriginalResponseAsync().Result.Id);
+            if (quiz == null)
+            {
+                Log.Warning("Quiz not found. {Id}", Context.Interaction.GetOriginalResponseAsync().Result.Id);
+                return;
+            }
+            await quiz.HandleEnd(Context);
+            QuizInstance.ActiveEmblemQuizzes.Remove(quiz);
         }
 
         [ComponentInteraction("quizEmblem:*", ignoreGroupNames: true)]
@@ -60,8 +84,6 @@ namespace Levante.Commands
         [SlashCommand("emblem", "Think you know all the emblems? Test your emblem knowledge.")]
         public async Task Emblem(bool hideVotes = false)
         {
-            await DeferAsync();
-
             if (QuizInstance.ActiveEmblemQuizzes.Any(x => x.ChannelId == Context.Interaction.Channel.Id))
             {
                 var embed = Embeds.GetErrorEmbed();
@@ -70,6 +92,8 @@ namespace Levante.Commands
                 return;
             }
 
+            await DeferAsync();
+
             var quiz = new QuizEntry(Context, hideVotes);
             Log.Information("Quiz added: {Id}", quiz.MessageId);
             QuizInstance.ActiveEmblemQuizzes.Add(quiz);
@@ -77,8 +101,13 @@ namespace Levante.Commands
             // Wait to end the quiz. I'm sure there is a better way to handle this.
             await Task.Delay(BotConfig.DurationToWaitForNextMessage * 1000);
 
-            await quiz.HandleEnd(Context);
-            QuizInstance.ActiveEmblemQuizzes.Remove(quiz);
+            // Find the quiz (just in case it was ended early).
+            quiz = QuizInstance.ActiveEmblemQuizzes.FirstOrDefault(x => x.MessageId == Context.Interaction.GetOriginalResponseAsync().Result.Id);
+            if (quiz != null)
+            {
+                await quiz.HandleEnd(Context);
+                QuizInstance.ActiveEmblemQuizzes.Remove(quiz);
+            }
         }
     }
 
@@ -86,10 +115,13 @@ namespace Levante.Commands
     {
         public ulong MessageId;
         public ulong ChannelId;
-        public Dictionary<ulong, long> VotedUsers = new();
+        // <Discord ID, <Option #, Time Elapsed>>
+        public Dictionary<ulong, KeyValuePair<int, double>> VotedUsers = new();
         //public DateTime Timeout;
         public int Answer;
         public Emblem _Emblem;
+        // TODO: Add times of when users voted to show on the leaderboard at the end.
+        public DateTime TimeStarted;
 
         public bool HideVotes;
 
@@ -115,6 +147,7 @@ namespace Levante.Commands
                     Buttons.WithButton($"{ManifestHelper.Emblems.ElementAt(val).Value}", customId: $"quizEmblem:{ManifestHelper.Emblems.ElementAt(val).Key}", ButtonStyle.Secondary, row: 0);
                 }
             }
+            Buttons.WithButton($"End Quiz", customId: $"endEmblemQuiz:{context.User.Id}", ButtonStyle.Danger, row: 1);
 
             Answer = rand.Next(0, 4);
             _Emblem = new Emblem(Options[Answer].Hash);
@@ -157,6 +190,7 @@ namespace Levante.Commands
             Message = context.Interaction.FollowupAsync(embed: Embed.Build(), components: Buttons.Build()).Result;
             MessageId = Message.Id;
             ChannelId = context.Channel.Id;
+            TimeStarted = DateTime.Now;
         }
 
         public async Task HandleVote(SocketInteractionContext<SocketInteraction> context, long Hash)
@@ -171,45 +205,45 @@ namespace Levante.Commands
             {
                 Options[0].Votes++;
                 await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[0].Hash]}!", ephemeral: true).ConfigureAwait(false);
-                VotedUsers.Add(context.Interaction.User.Id, Options[0].Hash);
+                VotedUsers.Add(context.Interaction.User.Id, new(0, (DateTime.Now - TimeStarted).TotalSeconds));
                 //Log.Debug($"{context.Interaction.User.Username} voted for {ManifestHelper.Emblems[Options[0].Hash]}.");
             }
             else if (Hash == Options[1].Hash)
             {
                 Options[1].Votes++;
                 await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[1].Hash]}!", ephemeral: true).ConfigureAwait(false);
-                VotedUsers.Add(context.Interaction.User.Id, Options[1].Hash);
+                VotedUsers.Add(context.Interaction.User.Id, new(1, (DateTime.Now - TimeStarted).TotalSeconds));
                 //Log.Debug($"{context.Interaction.User.Username} voted for {ManifestHelper.Emblems[Options[1].Hash]}.");
             }
             else if (Hash == Options[2].Hash)
             {
                 Options[2].Votes++;
                 await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[2].Hash]}!", ephemeral: true).ConfigureAwait(false);
-                VotedUsers.Add(context.Interaction.User.Id, Options[2].Hash);
+                VotedUsers.Add(context.Interaction.User.Id, new(2, (DateTime.Now - TimeStarted).TotalSeconds));
                 //Log.Debug($"{context.Interaction.User.Username} voted for {ManifestHelper.Emblems[Options[2].Hash]}.");
             }
             else if (Hash == Options[3].Hash)
             {
                 Options[3].Votes++;
                 await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[3].Hash]}!", ephemeral: true).ConfigureAwait(false);
-                VotedUsers.Add(context.Interaction.User.Id, Options[3].Hash);
+                VotedUsers.Add(context.Interaction.User.Id, new(3, (DateTime.Now - TimeStarted).TotalSeconds));
                 //Log.Debug($"{context.Interaction.User.Username} voted for {ManifestHelper.Emblems[Options[3].Hash]}.");
             }
             else if (Hash == Options[4].Hash)
             {
                 Options[4].Votes++;
                 await context.Interaction.FollowupAsync($"You voted for {ManifestHelper.Emblems[Options[4].Hash]}!", ephemeral: true).ConfigureAwait(false);
-                VotedUsers.Add(context.Interaction.User.Id, Options[4].Hash);
+                VotedUsers.Add(context.Interaction.User.Id, new(4, (DateTime.Now - TimeStarted).TotalSeconds));
                 //Log.Debug($"{context.Interaction.User.Username} voted for {ManifestHelper.Emblems[Options[4].Hash]}.");
             }
 
+            if (HideVotes)
+                return;
+
             var sorted = Options.OrderBy(x => x.Votes).Reverse().ToList();
             string builder = "";
-            if (!HideVotes)
-                for (int i = 0; i < 5; i++)
-                    builder += $"{ManifestHelper.Emblems[sorted[i].Hash]}: **{sorted[i].Votes}**\n";
-            else
-                builder = "*Hidden*";
+            for (int i = 0; i < 5; i++)
+                builder += $"{ManifestHelper.Emblems[sorted[i].Hash]}: **{sorted[i].Votes}**\n";
 
             Embed.Fields.Clear();
             Embed.AddField(x =>
@@ -242,12 +276,12 @@ namespace Levante.Commands
                 });
             }
 
-            var topWinners = VotedUsers.Where(x => x.Value == Options[Answer].Hash).Take(5);
+            var topWinners = VotedUsers.Where(x => x.Value.Key == Answer).Take(5);
             if (topWinners.Any())
             {
                 string winBuild = "";
                 foreach (var winner in topWinners)
-                    winBuild += $"<@{winner.Key}>\n";
+                    winBuild += $"- <@{winner.Key}> ({winner.Value.Value:0.00}s)\n";
                 Embed.AddField(x =>
                 {
                     x.Name = $"Top {topWinners.Count()}";

@@ -130,7 +130,7 @@ namespace Levante.Commands
         }
 
         [RequireBotStaff]
-        [SlashCommand("supporter", "[OWNER]: Add or remove a bot supporter.")]
+        [SlashCommand("supporter", "[BOT STAFF]: Add or remove a bot supporter.")]
         public async Task AddSupporter([Summary("discord-id", "Discord ID of the user to handle supporter status for.")] IUser User = null)
         {
             if (User == null)
