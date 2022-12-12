@@ -371,33 +371,39 @@ namespace Levante.Helpers
                             if (invItem.Value.DisplayProperties.Name == null)
                                 continue; 
 
-                            if (invItem.Value.Hash == 2261046232 || invItem.Value.Hash == 2603335652)
-                            {
-                                Log.Debug("{weapon}", invItem.Value.DisplayProperties.Name);
-                            }
-
                             if (invItem.Value.Hash == 417164956) // Jötunn
                                 Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} (Jotunn)");
                             else
                             {
                                 var dupeWeapons = Weapons.Where(x => x.Value.Split('[')[0].Equals(invItem.Value.DisplayProperties.Name));
-                                if (dupeWeapons.Count() > 0)
+                                if (dupeWeapons.Any())
                                 {
+                                    int dupeCount = dupeWeapons.Count();
                                     foreach (var weapon in dupeWeapons.ToList())
                                     {
-                                        if (!weapon.Value.Contains("[S"))
+                                        if (!weapon.Value.Contains("[S") && !weapon.Value.Contains("[V"))
                                         {
                                             Weapons.Remove(weapon.Key);
                                             if (invItemList[$"{weapon.Key}"].IconWatermark == null)
                                                 Weapons.Add(weapon.Key, $"{weapon.Value} [S1]");
                                             else if (SeasonIconURLs.ContainsKey(invItem.Value.IconWatermark))
                                                 Weapons.Add(weapon.Key, $"{weapon.Value} [S{SeasonIconURLs[$"{invItemList[$"{weapon.Key}"].IconWatermark}"]}]");
+                                            else // This handles event weapons because their icon does not have the season one. Lazy implementation that does not take into account whether or not the weapon is the more recent version.
+                                            {
+                                                //Log.Debug("Added: {Name} [V{Count}]", weapon.Value, dupeCount + 1);
+                                                Weapons.Add(weapon.Key, $"{weapon.Value} [V{dupeCount + 1}]");
+                                            }
                                         }
                                     }
                                     if (invItem.Value.IconWatermark == null)
                                         Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} [S1]");
                                     else if (SeasonIconURLs.ContainsKey(invItem.Value.IconWatermark))
                                         Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} [S{SeasonIconURLs[$"{invItem.Value.IconWatermark}"]}]");
+                                    else
+                                    {
+                                        //Log.Debug("Added: {Name} [V{Count}]", invItem.Value.DisplayProperties.Name, 1);
+                                        Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} [V1]");
+                                    }
                                 }
                                 else
                                     Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
