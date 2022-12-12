@@ -38,33 +38,40 @@ namespace Levante.Rotations
 
         public static void GetCurrentNightfall()
         {
-            var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotDevDiscordIDs[0]);
-            devLinked = DataConfig.RefreshCode(devLinked);
-            using (var client = new HttpClient())
+            try
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {devLinked.AccessToken}");
-
-                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "?components=100,200").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                string charId = $"{item.Response.profile.data.characterIds[0]}";
-
-                response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "/Character/" + charId + "/?components=204").Result;
-                content = response.Content.ReadAsStringAsync().Result;
-                item = JsonConvert.DeserializeObject(content);
-
-                var availActivities = item.Response.activities.data.availableActivities;
-
-                for (int i = 0; i < availActivities.Count; i++)
+                var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotDevDiscordIDs[0]);
+                devLinked = DataConfig.RefreshCode(devLinked);
+                using (var client = new HttpClient())
                 {
-                    if (ManifestHelper.Nightfalls.ContainsKey((long)availActivities[i].activityHash))
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {devLinked.AccessToken}");
+
+                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "?components=100,200").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+
+                    string charId = $"{item.Response.profile.data.characterIds[0]}";
+
+                    response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "/Character/" + charId + "/?components=204").Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    item = JsonConvert.DeserializeObject(content);
+
+                    var availActivities = item.Response.activities.data.availableActivities;
+
+                    for (int i = 0; i < availActivities.Count; i++)
                     {
-                        CurrentRotations.Nightfall = Nightfalls.IndexOf(ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
-                        Log.Debug("Nightfall is {Nightfall}.", ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
+                        if (ManifestHelper.Nightfalls.ContainsKey((long)availActivities[i].activityHash))
+                        {
+                            CurrentRotations.Nightfall = Nightfalls.IndexOf(ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
+                            Log.Debug("Nightfall is {Nightfall}.", ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
+                        }
                     }
                 }
+            }
+            catch (Exception x)
+            {
+                Log.Warning("[{Type}] Nightfall Activity Unavailable.", "Rotations");
             }
         }
 
