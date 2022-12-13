@@ -107,9 +107,13 @@ namespace Levante.Util
                 {
                     var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
                     Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                    result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}";
                 }
-
-                result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}";
+                else
+                {
+                    result += $"{Perk.GetName()}";
+                }
+                
 
                 if (IsCrafting)
                     if (PerkLevels[Perk.GetName()].Value <= 0)
