@@ -103,14 +103,21 @@ namespace Levante.Util
             var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
             foreach (var Perk in perkList)
             {
-                if (makeEmote && !emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
+                if (makeEmote)
                 {
-                    var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
-                    Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                    if (!emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
+                    {
+                        var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
+                        Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                    }
                     result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}";
                 }
                 else
                 {
+                    if (emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
+                    {
+                        result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}";
+                    }
                     result += $"{Perk.GetName()}";
                 }
                 
