@@ -96,24 +96,24 @@ namespace Levante.Util
             foreach (WeaponPerk perk in WeaponPerks.Where(perk => !perk.IsEnhanced()))
                 perkList.Add(perk);
 
+            // Don't want to make emotes on Debug.
+            makeEmote = !BotConfig.IsDebug;
+
             string json = File.ReadAllText(EmoteConfig.FilePath);
             var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
             foreach (var Perk in perkList)
             {
-                if (makeEmote)
+                if (makeEmote && !emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
                 {
-                    if (!emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
-                    {
-                        var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
-                        Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
-                    }
-                    //emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}
+                    var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
+                    Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
                     result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}";
                 }
                 else
                 {
                     result += $"{Perk.GetName()}";
                 }
+                
 
                 if (IsCrafting)
                     if (PerkLevels[Perk.GetName()].Value <= 0)

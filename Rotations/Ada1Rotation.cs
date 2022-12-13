@@ -2,6 +2,7 @@
 using Levante.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -56,36 +57,43 @@ namespace Levante.Rotations
 
         public static void GetAda1Inventory()
         {
-            var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotDevDiscordIDs[0]);
-            devLinked = DataConfig.RefreshCode(devLinked);
-            using (var client = new HttpClient())
+            try
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {devLinked.AccessToken}");
-
-                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "?components=100,200").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                string charId = $"{item.Response.profile.data.characterIds[0]}";
-
-                response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "/Character/" + charId + "/Vendors/350061650/?components=400,402").Result;
-                content = response.Content.ReadAsStringAsync().Result;
-                item = JsonConvert.DeserializeObject(content);
-
-                var token = JToken.Parse($"{item.Response.sales.data}");
-                var jObject = token.Value<JObject>();
-                List<string> keys = jObject.Properties().Select(p => p.Name).ToList();
-
-                CurrentRotations.Ada1Mods.Clear();
-                for (int i = 0; i < token.Count(); i++)
+                var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotDevDiscordIDs[0]);
+                devLinked = DataConfig.RefreshCode(devLinked);
+                using (var client = new HttpClient())
                 {
-                    long hash = long.Parse($"{item.Response.sales.data[keys[i]].itemHash}");
-                    if (ManifestHelper.Ada1ArmorMods.ContainsKey(hash))
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {devLinked.AccessToken}");
+
+                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "?components=100,200").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+
+                    string charId = $"{item.Response.profile.data.characterIds[0]}";
+
+                    response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "/Character/" + charId + "/Vendors/350061650/?components=400,402").Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    item = JsonConvert.DeserializeObject(content);
+
+                    var token = JToken.Parse($"{item.Response.sales.data}");
+                    var jObject = token.Value<JObject>();
+                    List<string> keys = jObject.Properties().Select(p => p.Name).ToList();
+
+                    CurrentRotations.Ada1Mods.Clear();
+                    for (int i = 0; i < token.Count(); i++)
                     {
-                        CurrentRotations.Ada1Mods.Add(hash, ManifestHelper.Ada1ArmorMods[hash]);
+                        long hash = long.Parse($"{item.Response.sales.data[keys[i]].itemHash}");
+                        if (ManifestHelper.Ada1ArmorMods.ContainsKey(hash))
+                        {
+                            CurrentRotations.Ada1Mods.Add(hash, ManifestHelper.Ada1ArmorMods[hash]);
+                        }
                     }
                 }
+            }
+            catch (Exception x)
+            {
+                Log.Warning("[{Type}] Ada-1 Inventory Unavailable.", "Rotations");
             }
         }
 
