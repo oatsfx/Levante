@@ -42,6 +42,7 @@ namespace Levante.Util
 
                 for (int i = 0; i < item.Response.reusablePlugItems.Count; i++)
                 {
+                   
                     var perk = new WeaponPerk((long)item.Response.reusablePlugItems[i].plugItemHash);
                     // For duplicates and retired perks.
                     if (WeaponPerks.Count == 0 || ((bool)item.Response.reusablePlugItems[i].currentlyCanRoll == true && !WeaponPerks.Any(x => x.GetItemHash() == (long)item.Response.reusablePlugItems[i].plugItemHash)))
@@ -56,8 +57,11 @@ namespace Levante.Util
                     {
                         if (item.Response.reusablePlugItems[i].craftingRequirements.requiredLevel != null)
                             reqLevel = item.Response.reusablePlugItems[i].craftingRequirements.requiredLevel;
+
+                        // Override IsCrafting if it is false and crafting levels are found.
+                        if (!IsCrafting) IsCrafting = true;
                     }
-                    
+
                     if (perk.IsEnhanced())
                     {
                         if (!PerkLevels.ContainsKey(perk.GetName().Replace(" Enhanced", "")))
