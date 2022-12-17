@@ -125,8 +125,7 @@ namespace Levante.Util
             };
             try
             {
-                embed.Description = (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) + "\n" +
-                        $"Hash Code: {GetItemHash()}\n";
+                embed.Description = (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) + $"\n*{GetFlavorText()}*\n";
                 embed.ThumbnailUrl = GetIconUrl();
             }
             catch
@@ -138,8 +137,7 @@ namespace Levante.Util
             {
                 x.Name = $"> Information";
                 x.Value = $"{GetDamageType()} {GetSpecificItemType()}\n" +
-                    $"*{GetFlavorText()}*\n";
-                x.Value += $"{DestinyEmote.Pattern}Craftable?: {(IsCraftable ? "Yes" : "No")}";
+                    $"{DestinyEmote.Pattern}Craftable?: {(IsCraftable ? Emotes.Yes : Emotes.No)}\n";
                 x.IsInline = false;
             }).AddField(x =>
             {
