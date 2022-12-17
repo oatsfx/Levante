@@ -101,23 +101,31 @@ namespace Levante.Util
                 perkList.Add(perk);
 
             // Don't want to make emotes on Debug.
-            makeEmote = !BotConfig.IsDebug;
+            if (makeEmote)
+                makeEmote = !BotConfig.IsDebug;
 
             string json = File.ReadAllText(EmoteConfig.FilePath);
             var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
             foreach (var Perk in perkList)
             {
-                if (makeEmote && !emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
+                if (makeEmote)
                 {
-                    var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
-                    Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                    if (!emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
+                    {
+                        var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
+                        Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                    }
                     result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}";
                 }
                 else
                 {
+                    if (emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
+                    {
+                        result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}";
+                    }
                     result += $"{Perk.GetName()}";
                 }
-                
+
 
                 if (IsCrafting)
                     if (PerkLevels[Perk.GetName()].Value <= 0)
