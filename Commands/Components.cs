@@ -14,7 +14,7 @@ using Serilog;
 
 namespace Levante.Commands
 {
-    public class Components : InteractionModuleBase<SocketInteractionContext>
+    public class Components : InteractionModuleBase<ShardedInteractionContext>
     {
         [RequireOwner]
         [ComponentInteraction("dailyForce")]
@@ -53,7 +53,7 @@ namespace Levante.Commands
             if (!BotConfig.IsSupporter(Context.User.Id) && ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
                 var embed = Embeds.GetErrorEmbed();
-                embed.Description = $"Unfortunately, we've hit the maximum amount of users ({ActiveConfig.MaximumLoggingUsers}) we are allowing to log XP. You'll have to wait for the list to get smaller.\n" +
+                embed.Description = $"Unfortunately, we've hit the maximum amount of users ({ActiveConfig.MaximumLoggingUsers}) we are allowing to log XP. You'll have to wait for the amount of users to drop.\n" +
                     $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +
                     $"Use the `/support` command for more info!";
 
@@ -78,7 +78,7 @@ namespace Levante.Commands
 
             string memId = dil.BungieMembershipID;
             string memType = dil.BungieMembershipType;
-            int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out int powerBonus, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus);
+            int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out int powerBonus, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus, out long activityHash);
 
             if (!errorStatus.Equals("Success"))
             {
@@ -120,6 +120,7 @@ namespace Levante.Commands
                 LastLevel = userLevel,
                 LastLevelProgress = lvlProg,
                 LastPowerBonus = powerBonus,
+                ActivityHash = activityHash,
             };
 
             await userLogChannel.ModifyAsync(x =>
@@ -183,8 +184,8 @@ namespace Levante.Commands
 
             var aau = ActiveConfig.GetActiveAFKUser(user.Id);
 
-            var channel = Context.Client.GetChannelAsync(aau.DiscordChannelID);
-            if (channel.Result == null)
+            var channel = Context.Client.GetChannel(aau.DiscordChannelID);
+            if (channel == null)
             {
                 await RespondAsync($"I could not find your logging channel, did it get deleted? I have removed you from my logging feature.", ephemeral: true);
                 ActiveConfig.DeleteActiveUserFromConfig(user.Id);
@@ -192,8 +193,8 @@ namespace Levante.Commands
                 return;
             }
 
-            await LogHelper.Log(Context.Client.GetChannelAsync(aau.DiscordChannelID).Result as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: XPLoggingHelper.GenerateSessionSummary(aau, Context.Client.CurrentUser.GetAvatarUrl()), CB: XPLoggingHelper.GenerateChannelButtons(aau.DiscordID));
-            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(aau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(aau, Context.Client.CurrentUser.GetAvatarUrl()));
+            await LogHelper.Log(Context.Client.GetChannel(aau.DiscordChannelID) as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: XPLoggingHelper.GenerateSessionSummary(aau), CB: XPLoggingHelper.GenerateChannelButtons(aau.DiscordID));
+            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(aau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(aau));
 
             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(aau));
             ActiveConfig.DeleteActiveUserFromConfig(user.Id);
@@ -249,7 +250,7 @@ namespace Levante.Commands
             if (!BotConfig.IsSupporter(Context.User.Id) && ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
                 var embed = Embeds.GetErrorEmbed();
-                embed.Description = $"Unfortunately, we've hit the maximum amount of users ({ActiveConfig.MaximumLoggingUsers}) we are allowing to log XP. You'll have to wait for the list to get smaller.\n" +
+                embed.Description = $"Unfortunately, we've hit the maximum amount of users ({ActiveConfig.MaximumLoggingUsers}) we are allowing to log XP. You'll have to wait for the amount of users to drop.\n" +
                     $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +
                     $"Use the `/support` command for more info!";
 
@@ -274,7 +275,7 @@ namespace Levante.Commands
 
             string memId = dil.BungieMembershipID;
             string memType = dil.BungieMembershipType;
-            int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out int powerBonus, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus);
+            int userLevel = DataConfig.GetAFKValues(user.Id, out int lvlProg, out int powerBonus, out PrivacySetting fireteamPrivacy, out string CharacterId, out string errorStatus, out long activityHash);
 
             if (!errorStatus.Equals("Success"))
             {
@@ -296,6 +297,7 @@ namespace Levante.Commands
                 LastLevel = userLevel,
                 LastLevelProgress = lvlProg,
                 LastPowerBonus = powerBonus,
+                ActivityHash = activityHash,
             };
 
             await userLogChannel.ModifyAsync(x =>

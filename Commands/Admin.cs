@@ -6,7 +6,7 @@ using System;
 
 namespace Levante.Commands
 {
-    public class Admin : InteractionModuleBase<SocketInteractionContext>
+    public class Admin : InteractionModuleBase<ShardedInteractionContext>
     {
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
         [Group("alert", "Set up announcements for Daily/Weekly Reset and Emblem Offers.")]

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using System.Net.Http;
 using System.Collections.Generic;
 using Levante.Helpers;
+using System;
 
 namespace Levante.Util
 {
@@ -184,7 +185,8 @@ namespace Levante.Util
                 embed.AddField(x =>
                 {
                     x.Name = "Activity";
-                    x.Value = $"{ManifestHelper.Activities[(long)item.Response.activities.data.currentActivityHash]}";
+                    x.Value = $"{ManifestHelper.Activities[(long)item.Response.activities.data.currentActivityHash]}\n" +
+                        $"Started {TimestampTag.FromDateTime(DateTime.SpecifyKind(DateTime.Parse($"{item.Response.activities.data.dateActivityStarted}"), DateTimeKind.Utc), TimestampTagStyles.Relative)}.";
                     x.IsInline = true;
                 });
             }

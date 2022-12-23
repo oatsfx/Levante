@@ -31,7 +31,7 @@ namespace Levante.Commands
 {
     [DontAutoRegister]
     [DevGuildOnly]
-    public class Owner : InteractionModuleBase<SocketInteractionContext>
+    public class Owner : InteractionModuleBase<ShardedInteractionContext>
     {
         public InteractiveService Interactive { get; set; }
 

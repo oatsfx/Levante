@@ -16,7 +16,7 @@ using System.Linq;
 using Fergun.Interactive.Pagination;
 namespace Levante.Commands
 {
-    public class Destiny : InteractionModuleBase<SocketInteractionContext>
+    public class Destiny : InteractionModuleBase<ShardedInteractionContext>
     {
         public InteractiveService Interactive { get; set; }
 
@@ -238,7 +238,7 @@ namespace Levante.Commands
         }
 
         [Group("guardian", "Display Guardian information.")]
-        public class Guardians : InteractionModuleBase<SocketInteractionContext>
+        public class Guardians : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("linked-user", "Get Guardian information of a Linked User.")]
             public async Task LinkedUser([Summary("user", "User to get Guardian information for.")] IUser User,
@@ -881,9 +881,9 @@ namespace Levante.Commands
         }
 
         [Group("view", "Get details on in-game items.")]
-        public class View : InteractionModuleBase<SocketInteractionContext>
+        public class View : InteractionModuleBase<ShardedInteractionContext>
         {
-            [SlashCommand("emblem", "Get details on an emblem via its Hash Code found via Bungie's API.")]
+            [SlashCommand("emblem", "Get details on an emblem via found via Bungie's API.")]
             public async Task ViewEmblem([Summary("name", "Name of the emblem you want details for."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
             {
                 if (!long.TryParse(SearchQuery, out long HashCode))
@@ -915,7 +915,35 @@ namespace Levante.Commands
                 await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
 
-            [SlashCommand("weapon", "Get details on a weapon via its Hash Code found via Bungie's API.")]
+            [SlashCommand("perk", "Get details on a weapon perk found via Bungie's API.")]
+            public async Task ViewPerk([Summary("name", "Name of the perk you want details for."), Autocomplete(typeof(WeaponPerkAutocomplete))] string SearchQuery)
+            {
+                if (!long.TryParse(SearchQuery, out long HashCode))
+                {
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
+                    await RespondAsync($"", embed: errEmbed.Build(), ephemeral: true);
+                    return;
+                }
+
+                await DeferAsync();
+                WeaponPerk perk;
+                try
+                {
+                    perk = new WeaponPerk(HashCode);
+                }
+                catch (Exception)
+                {
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = $"No perk found for Hash Code: {HashCode}.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errEmbed.Build(); });
+                    return;
+                }
+
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = perk.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
+            }
+
+            [SlashCommand("weapon", "Get details on a weapon found via Bungie's API.")]
             public async Task ViewWeapon([Summary("name", "Name of the weapon you want details for."), Autocomplete(typeof(WeaponAutocomplete))] string SearchQuery)
             {
                 if (!long.TryParse(SearchQuery, out long HashCode))

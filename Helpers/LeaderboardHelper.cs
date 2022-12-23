@@ -31,6 +31,9 @@ namespace Levante.Helpers
             bool isTop10 = false;
             string embedDesc = "";
 
+            var linkedUser = DataConfig.GetLinkedUser(User.Id);
+            SortedList = SortedList.Where(x => DataConfig.DiscordIDLinks.FirstOrDefault(y => y.UniqueBungieName == x.UniqueBungieName).ShowOnLeaderboards == true).ToList();
+
             if (SortedList.Count <= 0)
             {
                 embedDesc = "No data.";
@@ -48,7 +51,7 @@ namespace Levante.Helpers
                     else if (BotConfig.IsSupporter(SortedList[i].UniqueBungieName))
                         badge = $" {Emotes.Supporter}";
 
-                    if (DataConfig.IsExistingLinkedUser(User.Id) && SortedList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
+                    if (DataConfig.IsExistingLinkedUser(User.Id) && SortedList[i].UniqueBungieName.Equals(linkedUser.UniqueBungieName))
                     {
                         embedDesc += $"{i + 1}) **{SortedList[i].UniqueBungieName}**{badge} ({GetValueString(SortedList[i])})\n";
                         isTop10 = true;
@@ -57,12 +60,12 @@ namespace Levante.Helpers
                         embedDesc += $"{i + 1}) {SortedList[i].UniqueBungieName}{badge} ({GetValueString(SortedList[i])})\n";
                 }
 
-                if (!isTop10 && SortedList.Exists(x => x.UniqueBungieName == DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
+                if (!isTop10 && SortedList.Exists(x => x.UniqueBungieName == linkedUser.UniqueBungieName))
                 {
                     embedDesc += "...\n";
                     for (int i = 10; i < SortedList.Count; i++)
                     {
-                        if (SortedList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
+                        if (SortedList[i].UniqueBungieName.Equals(linkedUser.UniqueBungieName))
                         {
                             string badge = "";
 
@@ -234,37 +237,41 @@ namespace Levante.Helpers
 
         public static void CheckLeaderboardData(ActiveConfig.ActiveAFKUser AAU)
         {
+            var user = DataConfig.GetLinkedUser(AAU.DiscordID);
             // Generate a Leaderboard entry, and overwrite if the existing one is worse.
-            if (XPPerHourData.IsExistingLinkedEntry(AAU.UniqueBungieName))
+            if (DateTime.Now - AAU.TimeStarted > TimeSpan.FromHours(1)) // Ignore entries that are less than one hour.
             {
-                var entry = XPPerHourData.GetExistingLinkedEntry(AAU.UniqueBungieName);
-
-                int xpPerHour = 0;
-                if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
-                    xpPerHour = (int)Math.Floor((((AAU.LastLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
-
-                // Only add back if the entry is better than their previous.
-                if (xpPerHour > entry.XPPerHour)
+                if (XPPerHourData.IsExistingLinkedEntry(AAU.UniqueBungieName))
                 {
-                    XPPerHourData.DeleteEntryFromConfig(AAU.UniqueBungieName);
+                    var entry = XPPerHourData.GetExistingLinkedEntry(AAU.UniqueBungieName);
+
+                    int xpPerHour = 0;
+                    if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
+                        xpPerHour = (int)Math.Floor((((AAU.LastLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+
+                    // Only add back if the entry is better than their previous.
+                    if (xpPerHour > entry.XPPerHour)
+                    {
+                        XPPerHourData.DeleteEntryFromConfig(AAU.UniqueBungieName);
+                        XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
+                        {
+                            XPPerHour = xpPerHour,
+                            UniqueBungieName = AAU.UniqueBungieName
+                        });
+                    }
+                }
+                else
+                {
+                    int xpPerHour = 0;
+                    if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
+                        xpPerHour = (int)Math.Floor((((AAU.LastLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+
                     XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
                     {
                         XPPerHour = xpPerHour,
                         UniqueBungieName = AAU.UniqueBungieName
                     });
                 }
-            }
-            else
-            {
-                int xpPerHour = 0;
-                if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
-                    xpPerHour = (int)Math.Floor((((AAU.LastLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
-
-                XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
-                {
-                    XPPerHour = xpPerHour,
-                    UniqueBungieName = AAU.UniqueBungieName
-                });
             }
 
             if (LongestSessionData.IsExistingLinkedEntry(AAU.UniqueBungieName))

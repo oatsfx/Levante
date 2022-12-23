@@ -264,4 +264,31 @@ namespace Levante.Util
             return AutocompletionResult.FromSuccess(results.Take(25));
         }
     }
+
+    public class WeaponPerkAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            var random = new Random();
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < 7; i++)
+                {
+                    var perk = ManifestHelper.Perks.ElementAt(random.Next(0, ManifestHelper.Perks.Count));
+                    results.Add(new AutocompleteResult(perk.Value, $"{perk.Key}"));
+                }
+            else
+                foreach (var Perk in ManifestHelper.Perks)
+                    if (Perk.Value.ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(Perk.Value, $"{Perk.Key}"));
+
+            results = results.OrderBy(x => x.Name).ToList();
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
 }

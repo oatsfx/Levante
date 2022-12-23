@@ -31,7 +31,16 @@ namespace Levante.Helpers
         // Whatever Hash is found First, Nightfall Name
         public static Dictionary<long, string> Nightfalls = new();
 
+        public static Dictionary<long, string> Perks = new();
+        public static Dictionary<long, string> WeaponPerkClarityDescriptions = new();
+        public static Dictionary<long, string> EnhancedPerks = new();
+
+        public static Dictionary<long, string> ClarityDescriptions = new();
+
         private static Dictionary<string, int> SeasonIconURLs = new Dictionary<string, int>();
+
+        private const string DIM_WATERMARK_TO_SEASON_LINK = "https://raw.githubusercontent.com/DestinyItemManager/d2-additional-info/master/output/watermark-to-season.json";
+        private const string CLARITY_INFO_LINK = "https://raw.githubusercontent.com/Database-Clarity/Live-Clarity-Database/live/descriptions/crayon.json";
 
         public static string DestinyManifestVersion { get; internal set; } = "[VERSION]";
 
@@ -64,15 +73,26 @@ namespace Levante.Helpers
             GildableSeals.Clear();
             Activities.Clear();
             SeasonIconURLs.Clear();
+            Perks.Clear();
+            EnhancedPerks.Clear();
+            WeaponPerkClarityDescriptions.Clear();
             using (var client = new HttpClient())
             {
-                var dimAiResponse = client.GetAsync($"https://raw.githubusercontent.com/DestinyItemManager/d2-additional-info/master/output/watermark-to-season.json").Result;
+                // DIM Watermark to Season
+                var dimAiResponse = client.GetAsync(DIM_WATERMARK_TO_SEASON_LINK).Result;
                 SeasonIconURLs = JsonConvert.DeserializeObject<Dictionary<string, int>>(dimAiResponse.Content.ReadAsStringAsync().Result);
+
+                // Clarity
+                var clarityResponse = client.GetAsync(CLARITY_INFO_LINK).Result;
+                Dictionary<long, Clarity> clarity = JsonConvert.DeserializeObject<Dictionary<long, Clarity>>(ClarityClean(clarityResponse.Content.ReadAsStringAsync().Result));
+
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
+
+                // Update Manifest Version String
                 DestinyManifestVersion = item.Response.version;
                 if (!File.Exists($"Data/Manifest/JSONs/{DestinyManifestVersion}.json"))
                 {
@@ -255,6 +275,30 @@ namespace Levante.Helpers
                         "Manifest", "DestinyPresentationNodeDefinition");
                 }
 
+                // Sandbox Perks
+                path = item.Response.jsonWorldComponentContentPaths.en["DestinySandboxPerkDefinition"];
+                fileName = path.Split('/').LastOrDefault();
+                Dictionary<string, DestinySandboxPerkDefinition> sandboxPerkList = new();
+                if (!Directory.Exists("Data/Manifest/JSONs/DestinySandboxPerkDefinition"))
+                    Directory.CreateDirectory("Data/Manifest/JSONs/DestinySandboxPerkDefinition");
+                if (!File.Exists($"Data/Manifest/JSONs/DestinySandboxPerkDefinition/{fileName}"))
+                {
+                    Log.Information("[{Type}] Storing {def} locally...",
+                        "Manifest", "DestinySandboxPerkDefinition");
+                    string sandboxPerkUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinySandboxPerkDefinition"]}";
+                    response = client.GetAsync(sandboxPerkUrl).Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    sandboxPerkList = JsonConvert.DeserializeObject<Dictionary<string, DestinySandboxPerkDefinition>>(content);
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinySandboxPerkDefinition/{fileName}", JsonConvert.SerializeObject(presentNodeList, Formatting.Indented));
+                }
+                else
+                {
+                    content = File.ReadAllText($"Data/Manifest/JSONs/DestinySandboxPerkDefinition/{fileName}");
+                    sandboxPerkList = JsonConvert.DeserializeObject<Dictionary<string, DestinySandboxPerkDefinition>>(content);
+                    Log.Information("[{Type}] Loaded {def} from local.",
+                        "Manifest", "DestinySandboxPerkDefinition");
+                }
+
                 Log.Information("[{Type}] Populating Dictionaries...",
                         "Manifest");
                 try
@@ -347,6 +391,7 @@ namespace Levante.Helpers
 
 
                     }
+
                     foreach (var invItem in invItemList)
                     {
                         if (invItem.Value == null ||
@@ -428,11 +473,48 @@ namespace Levante.Helpers
                             //if (!invItem.Value.ItemCategoryHashes.Contains(4104513227))
                             //    continue;
 
-                            if (!ada1ItemList.Contains(invItem.Value.Hash))
-                                continue;
-                            Ada1ArmorMods.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
+                            if (ada1ItemList.Contains(invItem.Value.Hash))
+                                Ada1ArmorMods.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
+
+                            if (invItem.Value.ItemTypeDisplayName.Contains("Trait") && !invItem.Value.ItemCategoryHashes.Contains(4104513227) /*Exclude Armor Mods*/)
+                            {
+                                //Log.Debug("Perk: {PerkName} {IsEnhanced}", invItem.Value.DisplayProperties.Name, invItem.Value.ItemTypeDisplayName.Contains("Enhanced"));
+                                if (invItem.Value.ItemTypeDisplayName.Contains("Enhanced"))
+                                {
+                                    if (EnhancedPerks.ContainsValue(invItem.Value.DisplayProperties.Name)) continue;
+                                    EnhancedPerks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
+                                } 
+                                else
+                                {
+                                    if (Perks.ContainsValue(invItem.Value.DisplayProperties.Name)) continue;
+                                    Perks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
+
+                                    if (clarity.ContainsKey(invItem.Value.Hash))
+                                        ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
+                                    else
+                                        ClarityDescriptions.Add(invItem.Value.Hash, "[NO DATA]");
+
+                                }
+                                    
+                            }
+                        }
+
+                        if (invItem.Value.ItemType == DestinyItemType.None)
+                        {
+                            // Find those Enhanced Perks that aren't labeled as mods!
+                            if (invItem.Value.ItemTypeDisplayName.Contains("Enhanced Trait"))
+                            {
+                                Log.Debug("Perk: {PerkName} {IsEnhanced}", invItem.Value.DisplayProperties.Name, invItem.Value.ItemTypeDisplayName.Contains("Enhanced"));
+                                EnhancedPerks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
+                            }
+                                
                         }
                     }
+
+                    /*foreach (var perk in sandboxPerkList)
+                    {
+                        Log.Debug("Perk: {PerkName}", perk.Value.DisplayProperties.Name);
+                    }*/
                 }
                 catch (Exception x)
                 {
@@ -441,6 +523,13 @@ namespace Levante.Helpers
             }
 
             Log.Information("[{Type}] Dictionary population complete.", "Manifest");
+        }
+
+        private static string ClarityClean(string input)
+        {
+            string output = input.Replace("🡅", DestinyEmote.Enhanced);
+
+            return output;
         }
     }
 }

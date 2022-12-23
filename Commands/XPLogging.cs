@@ -8,7 +8,7 @@ using Levante.Helpers;
 
 namespace Levante.Commands
 {
-    public class XPLogging : InteractionModuleBase<SocketInteractionContext>
+    public class XPLogging : InteractionModuleBase<ShardedInteractionContext>
     {
         [SlashCommand("active-logging", "Gets the amount of users logging their XP.")]
         public async Task ActiveAFK()
@@ -64,7 +64,7 @@ namespace Levante.Commands
             }
 
             var aau = ActiveConfig.GetActiveAFKUser(User.Id);
-            await RespondAsync(embed: XPLoggingHelper.GenerateSessionSummary(aau, Context.Client.CurrentUser.GetAvatarUrl()).Build());
+            await RespondAsync(embed: XPLoggingHelper.GenerateSessionSummary(aau).Build());
         }
     }
 }

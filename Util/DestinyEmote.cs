@@ -42,6 +42,7 @@ namespace Levante.Util
         public static readonly string ScorchedEarth = "<:ScorchedEarth:935381186136641546>";
         public static readonly string Shocker = "<:Shocker:900142114426486844>";
         public static readonly string SolarBurn = "<:SolarBurn:900142136996020224>";
+        public static readonly string StasisBurn = "<:StasisBurn:1054796594190500040>";
         public static readonly string SubtleFoes = "<:SubtleFoes:951000792465285120>";
         public static readonly string ThaviksImplant = "<:ThaviksImplant:935381584159342642>";
         public static readonly string Togetherness = "<:Togetherness:937513440933740584>";

@@ -20,17 +20,18 @@ using APIHelper;
 using Levante.Util.Attributes;
 using Serilog;
 using Serilog.Events;
+using BungieSharper.Entities.Destiny.Advanced;
 
 namespace Levante
 {
     public static class LevanteCordInstance
     {
-        public static DiscordSocketClient Client;
+        public static DiscordShardedClient Client;
     }
 
     public sealed class LevanteCord
     {
-        private readonly DiscordSocketClient _client;
+        private readonly DiscordShardedClient _client;
         private readonly CommandService _commands;
         private readonly InteractionService _interaction;
         private readonly IServiceProvider _services;
@@ -45,12 +46,11 @@ namespace Levante
         {
             var config = new DiscordSocketConfig
             {
+                TotalShards = BotConfig.DiscordShards,
                 GatewayIntents = GatewayIntents.AllUnprivileged
             };
 
-            // TODO: Implement a sharded client.
-
-            _client = new DiscordSocketClient(config);
+            _client = new DiscordShardedClient(config);
             _commands = new CommandService();
             _interaction = new InteractionService(_client);
             _services = new ServiceCollection()
@@ -69,6 +69,8 @@ namespace Levante
 /____/\__/|___/\_,_/_//_/\__/\__/   dev. by @OatsFX
             ";
             Console.WriteLine(ASCIIName);
+            if (!ConfigHelper.CheckAndLoadConfigFiles())
+                return;
             //create the logger and setup your sinks, filters and properties
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Verbose()
@@ -82,9 +84,6 @@ namespace Levante
 
         public async Task StartAsync()
         {
-            if (!ConfigHelper.CheckAndLoadConfigFiles())
-                return;
-
             await Task.Run(() => Console.Title = $"{BotConfig.AppName} v{BotConfig.Version}");
 
             if (!LeaderboardHelper.CheckAndLoadDataFiles())
@@ -130,18 +129,13 @@ namespace Levante
             }
 
             await InitializeListeners();
-            var client = _services.GetRequiredService<DiscordSocketClient>();
+            var client = _services.GetRequiredService<DiscordShardedClient>();
             var commands = _services.GetRequiredService<InteractionService>();
 
             client.Log += LogAsync;
             
             await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
             await _client.StartAsync();
-
-            _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
-            _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);
-            Log.Information("[{Type}] Continued XP logging for {Count} (+{PriorityCount}) Users.",
-                "XP Sessions", ActiveConfig.ActiveAFKUsers.Count, ActiveConfig.PriorityActiveAFKUsers.Count);
 
             Log.Information("[{Type}] Bot successfully started! v{@Version}",
                 "Startup", BotConfig.Version);
@@ -207,6 +201,8 @@ namespace Levante
                     await _client.SetActivityAsync(new Game($"this ratio", ActivityType.Watching)); break;
                 case 11:
                     await _client.SetActivityAsync(new Game($"for /support | v{BotConfig.Version}", ActivityType.Watching)); break;
+                case 12:
+                    await _client.SetActivityAsync(new Game($"{_client.Shards.Count} Shards | v{BotConfig.Version}")); break;
                 default: break;
             }
             return;
@@ -293,7 +289,7 @@ namespace Levante
 
         private async void XPTimerCallback(Object o) => await RefreshBungieAPI().ConfigureAwait(false);
 
-        private async void LeaderboardTimerCallback(Object o) => await LoadLeaderboards().ConfigureAwait(false);
+        private async void LeaderboardTimerCallback(Object o) => await Task.Run(() => LoadLeaderboards()).ConfigureAwait(false);
 
         #region XPLogging
         private async Task RefreshBungieAPI()
@@ -324,10 +320,7 @@ namespace Levante
 
                     Log.Information("[{Type}] Checking {User}.", "XP Sessions", tempAau.UniqueBungieName);
                     var actualUser = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
-                    if (actualUser == null)
-                    {
-                        actualUser = ActiveConfig.PriorityActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
-                    }
+                    actualUser ??= ActiveConfig.PriorityActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
 
                     IUser user = _client.GetUser(tempAau.DiscordID);
                     if (user == null)
@@ -336,13 +329,13 @@ namespace Levante
                         user = await _rClient.GetUserAsync(tempAau.DiscordID);
                     }
 
-                    var logChannel = await _client.GetChannelAsync(tempAau.DiscordChannelID) as ITextChannel;
+                    var logChannel = _client.GetChannel(tempAau.DiscordChannelID) as ITextChannel;
                     var dmChannel = user.CreateDMChannelAsync().Result;
 
                     if (logChannel == null)
                     {
                         await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: LoggingChannelNotFound. Logging will be terminated for {tempAau.UniqueBungieName}.");
-                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
+                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                         Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
 
@@ -351,7 +344,7 @@ namespace Levante
                         await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                     }
 
-                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out int powerBonus, out string errorStatus);
+                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out int powerBonus, out string errorStatus, out long activityHash);
 
                     if (!errorStatus.Equals("Success"))
                     {
@@ -360,10 +353,10 @@ namespace Levante
                             string uniqueName = tempAau.UniqueBungieName;
 
                             await LogHelper.Log(logChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
-                            await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
+                            await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
                             //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Logging will be terminated for {uniqueName}.");
-                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
+                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                             Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                             //listOfRemovals.Add(tempAau);
@@ -385,7 +378,7 @@ namespace Levante
 
                     if (powerBonus > tempAau.LastPowerBonus)
                     {
-                        await LogHelper.Log(logChannel, $"Power bonus increase detected: {tempAau.LastPowerBonus} -> {powerBonus} (Start: {tempAau.StartPowerBonus}).");
+                        await LogHelper.Log(logChannel, $"Power bonus increase!: {tempAau.LastPowerBonus} -> {powerBonus} (Start: {tempAau.StartPowerBonus}).");
 
                         actualUser.LastPowerBonus = powerBonus;
                     }
@@ -417,10 +410,23 @@ namespace Levante
                         await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                     }
                     else */
-                    if (updatedLevel > tempAau.LastLevel)
+                    if (activityHash != tempAau.ActivityHash)
                     {
-                        await LogHelper.Log(logChannel, $"Level up detected: {tempAau.LastLevel} -> {updatedLevel}. " +
-                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP). Now: {updatedLevel} ({String.Format("{0:n0}", updatedProgression)}/100,000 XP).");
+                        string uniqueName = tempAau.UniqueBungieName;
+
+                        await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player activity has changed. Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
+
+                        //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
+                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
+
+                        Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
+                        ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
+                        await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
+                    }
+                    else if (updatedLevel > tempAau.LastLevel)
+                    {
+                        await LogHelper.Log(logChannel, $"Level up!: {tempAau.LastLevel} -> {updatedLevel} ({String.Format("{0:n0}", updatedProgression)}/100,000 XP). " +
+                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP).");
 
                         actualUser.LastLevel = updatedLevel;
                         actualUser.LastLevelProgress = updatedProgression;
@@ -436,17 +442,17 @@ namespace Levante
                         {
                             string uniqueName = tempAau.UniqueBungieName;
 
-                            await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
+                            await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
                             //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
-                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
+                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                             Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                             //listOfRemovals.Add(tempAau);
                             // ***Change to remove it from list because file update is called at end of method.***
                             ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
                             //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
-                            await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
+                            await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
                         }
                         else
                         {
@@ -458,7 +464,9 @@ namespace Levante
                     }
                     else
                     {
-                        await LogHelper.Log(logChannel, $"Refreshed! Progress for {tempAau.UniqueBungieName} (Level: {updatedLevel} | Power Bonus: +{powerBonus}): {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP.");
+                        int levelsGained = aau.LastLevel - aau.StartLevel;
+                        long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
+                        await LogHelper.Log(logChannel, $"Refreshed: {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP. Level: {updatedLevel} | Power Bonus: +{powerBonus} | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours):n0} XP/Hour");
 
                         actualUser.LastLevel = updatedLevel;
                         actualUser.LastLevelProgress = updatedProgression;
@@ -468,19 +476,7 @@ namespace Levante
                         //tempAau.NoXPGainRefreshes = 0;
                         //newList.Add(tempAau);
                     }
-                    await Task.Delay(75);
                 }
-
-                // Add in users that joined mid-refresh.
-                /*foreach (var User in ActiveConfig.ActiveAFKUsers)
-                {
-                    bool isBeingRemoved = listOfRemovals.FirstOrDefault(x => x.DiscordID == User.DiscordID) != null;
-                    bool isNotInNewList = newList.FirstOrDefault(x => x.DiscordID == User.DiscordID) == null;
-                    if (!isBeingRemoved && isNotInNewList) // They weren't removed (prevents adding users that have been removed in this refresh), and they aren't in the newList.
-                        newList.Add(User);
-                }*/
-
-                //ActiveConfig.ActiveAFKUsers = newList;
                 ActiveConfig.UpdateActiveAFKUsersConfig();
 
                 _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, ActiveConfig.TimeBetweenRefresh * 60000);
@@ -564,14 +560,12 @@ namespace Levante
                                 Level = Level,
                                 UniqueBungieName = link.UniqueBungieName,
                             });
-                            await Task.Delay(250);
                         }
                         catch
                         {
                             // Continue with the rest of the linked users. Don't want to stop the populating for one problematic account.
-                            string discordTag = $"{(await _client.GetUserAsync(link.DiscordID)).Username}#{(await _client.GetUserAsync(link.DiscordID)).Discriminator}";
+                            string discordTag = $"{(_client.GetUser(link.DiscordID)).Username}#{(_client.GetUser(link.DiscordID)).Discriminator}";
                             Log.Warning("[{Type}] Error while pulling data for user: {DiscordTag} linked with {BungieTag}. Reason: {Reason}.", "Leaderboards", discordTag, link.UniqueBungieName, errorReason);
-                            await Task.Delay(250);
                             continue;
                         }
                     }
@@ -596,40 +590,56 @@ namespace Levante
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
             await _interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
-            _client.Ready += async () =>
+            int readyShards = 0;
+            _client.ShardReady += async (DiscordSocketClient shard) =>
             {
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
                 //await _client.Rest.DeleteAllGlobalCommandsAsync();
 
-                if (BotConfig.IsDebug)
+                shard.Ready += async () =>
                 {
-                    //397846250797662208
-                    //915020047154565220
-                    //1011700865087852585
-                    await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
-                }
-                else
-                {
-                    await _interaction.RegisterCommandsGloballyAsync();
-                }
+                    Log.Information("[{Type}] Shard {ShardID} connected and ready.", "Discord", shard.ShardId);
+                };
 
-                foreach (var m in _interaction.Modules)
+                readyShards++;
+                if (readyShards == _client.Shards.Count)
                 {
-                    foreach (var a in m.Attributes)
+                    if (BotConfig.IsDebug)
                     {
-                        if (a is not DevGuildOnlyAttribute support) continue;
-                        await _interaction.AddModulesToGuildAsync(_client.GetGuild(BotConfig.DevServerID), true, m);
-                        break;
+                        //397846250797662208
+                        //915020047154565220
+                        //1011700865087852585
+                        await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
                     }
+                    else
+                    {
+                        await _interaction.RegisterCommandsGloballyAsync();
+                    }
+
+                    foreach (var m in _interaction.Modules)
+                    {
+                        foreach (var a in m.Attributes)
+                        {
+                            if (a is not DevGuildOnlyAttribute support) continue;
+                            await _interaction.AddModulesToGuildAsync(_client.GetGuild(BotConfig.DevServerID), true, m);
+                            break;
+                        }
+                    }
+
+                    BotConfig.LoggingChannel = _client.GetChannel(BotConfig.LogChannel) as SocketTextChannel;
+
+                    BotConfig.CreationsLogChannel = _client.GetChannel(BotConfig.CommunityCreationsLogChannel) as SocketTextChannel;
+                    var creationsManager = new CreationsHelper();
+                    CommunityCreationsTimer = new Timer(creationsManager.CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
+
+                    _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
+                    _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);
+                    Log.Information("[{Type}] Continued XP logging for {Count} (+{PriorityCount}) Users.",
+                        "XP Sessions", ActiveConfig.ActiveAFKUsers.Count, ActiveConfig.PriorityActiveAFKUsers.Count);
+
+                    await UpdateBotActivity(12);
                 }
-                BotConfig.LoggingChannel = _client.GetChannel(BotConfig.LogChannel) as SocketTextChannel;
-
-                BotConfig.CreationsLogChannel = _client.GetChannel(BotConfig.CommunityCreationsLogChannel) as SocketTextChannel;
-                var creationsManager = new CreationsHelper();
-                CommunityCreationsTimer = new Timer(creationsManager.CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
-
-                await UpdateBotActivity(1);
             };
 
             _client.InteractionCreated += HandleInteraction;
@@ -649,7 +659,11 @@ namespace Levante
                     case InteractionCommandError.UnmetPrecondition:
                         {
                             var embed = Embeds.GetErrorEmbed();
-                            embed.Description = $"{result.ErrorReason}";
+                            embed.AddField(x =>
+                            {
+                                x.Name = "Error";
+                                x.Value = $"`{result.Error}: {result.ErrorReason}`";
+                            });
                             await context.Interaction.RespondAsync($"", ephemeral: true, embed: embed.Build());
                             break;
                         }
@@ -907,7 +921,7 @@ namespace Levante
             try
             {
                 // Create an execution context that matches the generic type parameter of your InteractionModuleBase<T> modules
-                var ctx = new SocketInteractionContext(_client, arg);
+                var ctx = new ShardedInteractionContext(_client, arg);
                 await _interaction.ExecuteCommandAsync(ctx, _services);
             }
             catch (Exception ex)
@@ -916,7 +930,7 @@ namespace Levante
 
                 // If a Slash Command execution fails it is most likely that the original interaction acknowledgement will persist. It is a good idea to delete the original
                 // response, or at least let the user know that something went wrong during the command execution.
-                var ctx = new SocketInteractionContext(_client, arg);
+                var ctx = new ShardedInteractionContext(_client, arg);
                 if (arg.Type == InteractionType.ApplicationCommand)
                     await arg.GetOriginalResponseAsync().ContinueWith(async (msg) => await msg.Result.DeleteAsync());
             }

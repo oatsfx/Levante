@@ -10,10 +10,11 @@ using Newtonsoft.Json;
 using System.Linq;
 using BungieSharper.Entities.Destiny.Definitions;
 using BungieSharper.Entities.Destiny;
+using Levante.Util;
 
 namespace Levante.Commands
 {
-    public class Fun : InteractionModuleBase<SocketInteractionContext>
+    public class Fun : InteractionModuleBase<ShardedInteractionContext>
     {
         [SlashCommand("ratio", "Get ratioed.")]
         public async Task Ratio()
@@ -60,6 +61,13 @@ namespace Levante.Commands
             else
             {
                 var dil = DataConfig.GetLinkedUser(Context.User.Id);
+                if (dil == null)
+                {
+                    var embed = Embeds.GetErrorEmbed();
+                    embed.Description = $"There was an error with your linked account. Try relinking with the `/link` command.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                    return;
+                }
                 using (var client = new HttpClient())
                 {
                     client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);

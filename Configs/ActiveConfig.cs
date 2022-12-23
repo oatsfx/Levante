@@ -70,6 +70,9 @@ namespace Levante.Configs
 
             [JsonProperty("NoXPGainRefreshes")]
             public int NoXPGainRefreshes { get; set; } = 0;
+
+            [JsonProperty("ActivityHash")]
+            public long ActivityHash { get; set; } = 0;
         }
 
         public static ActiveAFKUser GetActiveAFKUser(ulong DiscordID)

@@ -14,10 +14,11 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using Levante.Util.Attributes;
+using System.Xml.Linq;
 
 namespace Levante.Commands
 {
-    public class Utility : InteractionModuleBase<SocketInteractionContext>
+    public class Utility : InteractionModuleBase<ShardedInteractionContext>
     {
         [SlashCommand("link", "Link your Bungie account to your Discord account.")]
         public async Task Link()
@@ -53,7 +54,7 @@ namespace Levante.Commands
         }
 
         [Group("notify", "Be notified when a specific rotation is active.")]
-        public class Notify : InteractionModuleBase<SocketInteractionContext>
+        public class Notify : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("ada-1", "Be notified when an armor mod is for sale at Ada-1.")]
             public async Task Ada1([Summary("mod-name", "Armor mod to be alerted for."), Autocomplete(typeof(ArmorModsAutocomplete))] string ArmorModHash)
@@ -488,7 +489,7 @@ namespace Levante.Commands
         }
 
         [Group("next", "Be notified when a specific rotation is active.")]
-        public class Next : InteractionModuleBase<SocketInteractionContext>
+        public class Next : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("altars-of-sorrow", "Find out when an Altars of Sorrow weapon is active next.")]
             public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to predict its next appearance."),
@@ -877,7 +878,7 @@ namespace Levante.Commands
         {
             Leaderboard LeaderboardType = (Leaderboard)ArgLeaderboard;
 
-            EmbedBuilder embed = new EmbedBuilder();
+            EmbedBuilder embed = new();
             switch (LeaderboardType)
             {
                 case Leaderboard.Level:
@@ -972,7 +973,7 @@ namespace Levante.Commands
 
         [RequireBungieOauth]
         [SlashCommand("unlink", "Unlink your Bungie tag from your Discord account.")]
-        public async Task Unlink([Summary("delete-leaderboards", "Delete your leaderboard stats when you unlink. This is true by default.")]bool RemoveLeaderboard = true)
+        public async Task Unlink([Summary("delete-leaderboards", "Delete your leaderboard stats when you unlink. This is true by default.")] bool RemoveLeaderboard = true)
         {
             var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
             DataConfig.DeleteUserFromConfig(Context.User.Id);
@@ -988,6 +989,27 @@ namespace Levante.Commands
             }
 
             await RespondAsync($"Your Bungie account: {linkedUser.UniqueBungieName} has been unlinked. Use the command \"/link\" if you want to re-link!", ephemeral: true);
+        }
+
+        [Group("settings", "User settings.")]
+        public class Settings : InteractionModuleBase<ShardedInteractionContext>
+        {
+            [RequireBungieOauth]
+            [SlashCommand("leaderboard", "Determine if you want to be displayed on leaderboards.")]
+            public async Task Leaderboard([Summary("show-on-leaderboard", "Set to true to be shown on leaderboards or false otherwise.")] bool showOnLeaderboards)
+            {
+                var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
+
+                // Don't update if they are the same.
+                if (linkedUser.ShowOnLeaderboards != showOnLeaderboards)
+                {
+                    DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == linkedUser.DiscordID).ShowOnLeaderboards = showOnLeaderboards;
+                    DataConfig.UpdateConfig();
+                }
+
+                await RespondAsync(showOnLeaderboards ? "Your data will now appear on leaderboards." : "Your data will no longer appear on leaderboards.", ephemeral: true);
+                return;
+            }
         }
 
         // Attempt to add Autocomplete to /next and /notify. Ran into issue with activities that have 2 rotations, like Lost Sectors and Nightfalls.
@@ -1047,7 +1069,7 @@ namespace Levante.Commands
         //    {
         //        await Task.Delay(0);
         //        // Create a collection with suggestions for autocomplete
-                
+
         //        List<AutocompleteResult> results = new();
         //        string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
 

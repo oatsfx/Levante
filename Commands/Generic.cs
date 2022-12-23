@@ -9,7 +9,7 @@ using Levante.Util;
 
 namespace Levante.Commands
 {
-    public class Generic : InteractionModuleBase<SocketInteractionContext>
+    public class Generic : InteractionModuleBase<ShardedInteractionContext>
     {
         public InteractiveService Interactive { get; set; }
 
@@ -30,7 +30,8 @@ namespace Levante.Commands
 
             string desc = "For in-depth explanations for all commands and features, visit [this page](https://www.levante.dev/features/).\n" +
                 "__Commands:__\n";
-            foreach (var cmd in Context.Client.GetGlobalApplicationCommandsAsync().Result.OrderBy(cmd => cmd.Name))
+            // TODO: Figure out if this works.
+            foreach (var cmd in Context.Client.Shards.FirstOrDefault().GetGlobalApplicationCommandsAsync().Result.OrderBy(cmd => cmd.Name))
                 desc += $"/{cmd.Name}\n";
             embed.Description = desc;
 
@@ -56,26 +57,27 @@ namespace Levante.Commands
                 x.Name = "Guild Count";
                 x.Value = $"{Context.Client.Guilds.Count:n0} Guilds";
                 x.IsInline = true;
-            })
-            .AddField(x =>
+            }).AddField(x =>
             {
                 x.Name = "User Count";
                 x.Value = $"{Context.Client.Guilds.Sum(x => x.MemberCount):n0} Users";
                 x.IsInline = true;
-            })
-            .AddField(x =>
+            }).AddField(x =>
+            {
+                x.Name = "Shard Count";
+                x.Value = $"{Context.Client.Shards.Count} Shards";
+                x.IsInline = true;
+            }).AddField(x =>
             {
                 x.Name = "Bot Version";
                 x.Value = $"v{BotConfig.Version}";
                 x.IsInline = true;
-            })
-            .AddField(x =>
+            }).AddField(x =>
             {
                 x.Name = "Website";
                 x.Value = $"https://{BotConfig.Website}/";
                 x.IsInline = true;
-            })
-            .AddField(x =>
+            }).AddField(x =>
             {
                 x.Name = "Support Server";
                 x.Value = $"https://discord.gg/{BotConfig.SupportServer}";
@@ -103,9 +105,36 @@ namespace Levante.Commands
         [SlashCommand("ping", "Replies with latency in milliseconds.")]
         public async Task PingAsync()
         {
-            int[] colors = new int[3];
-            int latency = Context.Client.Latency;
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+            };
+            var embed = new EmbedBuilder
+            {
+                Footer = foot
+            };
 
+            int latency = 0;
+            foreach (var shard in Context.Client.Shards)
+            {
+                latency += shard.Latency;
+                embed.AddField(x =>
+                {
+                    x.Name = $"Shard {shard.ShardId}{(shard.ShardId == Context.Client.GetShardFor(Context.Guild).ShardId ? " ★" : "")}";
+                    if (shard.Latency >= 0 && shard.Latency < 110)
+                        x.Value = $"🟢";
+                    else if (shard.Latency >= 110 && shard.Latency < 300)
+                        x.Value = $"🟡";
+                    else
+                        x.Value = $"🔴";
+
+                    x.Value += $" {shard.Latency} ms";
+                    x.IsInline = true;
+                });
+            }
+            latency /= Context.Client.Shards.Count;
+
+            int[] colors = new int[3];
             if (latency >= 0 && latency < 110)
             {
                 colors[0] = 123;
@@ -125,11 +154,8 @@ namespace Levante.Commands
                 colors[2] = 69;
             }
 
-            var embed = new EmbedBuilder
-            {
-                Color = new Discord.Color(colors[0], colors[1], colors[2]),
-                Description = $"Pong! ({latency} ms)"
-            };
+            embed.Description = $"Pong! (Shard Average: {latency} ms)";
+            embed.WithColor(new Discord.Color(colors[0], colors[1], colors[2]));
 
             await RespondAsync(embed: embed.Build());
         }

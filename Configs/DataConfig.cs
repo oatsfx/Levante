@@ -16,6 +16,8 @@ namespace Levante.Configs
 {
     public class DataConfig : IConfig
     {
+        // TODO: Rework this entire configuration because this one file is getting pretty large...
+
         public static string FilePath { get; } = @"Configs/dataConfig.json";
 
         [JsonProperty("DiscordIDLinks")]
@@ -55,6 +57,9 @@ namespace Levante.Configs
 
             [JsonProperty("RefreshExpiration")]
             public DateTime RefreshExpiration { get; set; } = DateTime.Now;
+
+            [JsonProperty("ShowOnLeaderboards")]
+            public bool ShowOnLeaderboards { get; set; } = true;
         }
 
         public class EmblemAnnounceLink
@@ -371,7 +376,7 @@ namespace Levante.Configs
             return false;
         }
 
-        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out int PowerBonus, out PrivacySetting FireteamPrivacy, out string CharacterId, out string ErrorStatus)
+        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out int PowerBonus, out PrivacySetting FireteamPrivacy, out string CharacterId, out string ErrorStatus, out long ActivityHash)
         {
             ErrorStatus = $"ResponseError";
             try
@@ -394,6 +399,7 @@ namespace Levante.Configs
                         PowerBonus = -1;
                         FireteamPrivacy = PrivacySetting.Open;
                         CharacterId = null;
+                        ActivityHash = 0;
                         return -1;
                     }
 
@@ -404,11 +410,13 @@ namespace Levante.Configs
                         PowerBonus = -1;
                         FireteamPrivacy = PrivacySetting.Open;
                         CharacterId = null;
+                        ActivityHash = 0;
                         return -1;
                     }
 
                     CharacterId = "";
-                    DateTime mostRecentDate = new DateTime();
+                    ActivityHash = 0;
+                    DateTime mostRecentDate = new();
                     for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
                     {
                         string charId = item.Response.profile.data.characterIds[i];
@@ -418,6 +426,7 @@ namespace Levante.Configs
                         {
                             mostRecentDate = activityTime;
                             CharacterId = $"{charId}";
+                            ActivityHash = item.Response.characterActivities.data[$"{charId}"].currentActivityHash;
                         }
                     }
 
@@ -449,11 +458,12 @@ namespace Levante.Configs
                 PowerBonus = -1;
                 FireteamPrivacy = PrivacySetting.Open;
                 CharacterId = null;
+                ActivityHash = 0;
                 return -1;
             }
         }
 
-        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out int PowerBonus, out string ErrorStatus)
+        public static int GetAFKValues(ulong DiscordID, out int XPProgress, out int PowerBonus, out string ErrorStatus, out long ActivityHash)
         {
             ErrorStatus = $"ResponseError";
             try
@@ -474,6 +484,7 @@ namespace Levante.Configs
                     {
                         XPProgress = -1;
                         PowerBonus = -1;
+                        ActivityHash = 0;
                         return -1;
                     }
 
@@ -482,6 +493,7 @@ namespace Levante.Configs
                         ErrorStatus = $"PlayerNotOnline";
                         XPProgress = -1;
                         PowerBonus = -1;
+                        ActivityHash = 0;
                         return -1;
                     }
 
@@ -490,6 +502,7 @@ namespace Levante.Configs
                         ErrorStatus = $"PlayerProgressionPrivate";
                         XPProgress = -1;
                         PowerBonus = -1;
+                        ActivityHash = 0;
                         return -1;
                     }
 
@@ -508,6 +521,21 @@ namespace Levante.Configs
                         XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].progressToNextLevel;
                     }
 
+                    // Figure out which character is most recent.
+                    ActivityHash = 0;
+                    DateTime mostRecentDate = new();
+                    for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                    {
+                        string charId = item.Response.profile.data.characterIds[i];
+                        var activityTime = DateTime.Parse($"{item.Response.characterActivities.data[$"{charId}"].dateActivityStarted}");
+                        //ulong activityHash = item.Response.characterActivities.data[$"{charId}"].currentActivityHash;
+                        if (activityTime > mostRecentDate)
+                        {
+                            mostRecentDate = activityTime;
+                            ActivityHash = item.Response.characterActivities.data[$"{charId}"].currentActivityHash;
+                        }
+                    }
+
                     PowerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
 
                     return Level;
@@ -517,11 +545,12 @@ namespace Levante.Configs
             {
                 XPProgress = -1;
                 PowerBonus = -1;
+                ActivityHash = 0;
                 return -1;
             }
         }
 
-        public static async Task PostDailyResetUpdate(DiscordSocketClient Client)
+        public static async Task PostDailyResetUpdate(DiscordShardedClient Client)
         { 
             List<ulong> guildsWithKeptChannel = new List<ulong>();
             List<ulong> keptChannels = new List<ulong>();
@@ -562,10 +591,10 @@ namespace Levante.Configs
             }
         }
 
-        public static async Task PostWeeklyResetUpdate(DiscordSocketClient Client)
+        public static async Task PostWeeklyResetUpdate(DiscordShardedClient Client)
         {
-            List<ulong> guildsWithKeptChannel = new List<ulong>();
-            List<ulong> keptChannels = new List<ulong>();
+            List<ulong> guildsWithKeptChannel = new();
+            List<ulong> keptChannels = new();
             foreach (ulong ChannelID in AnnounceWeeklyLinks.ToList())
             {
                 try

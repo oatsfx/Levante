@@ -367,7 +367,7 @@ namespace Levante.Rotations
             return embed;
         }
 
-        public static async Task CheckUsersDailyTracking(DiscordSocketClient Client)
+        public static async Task CheckUsersDailyTracking(DiscordShardedClient Client)
         {
             var ada1Temp = new List<Ada1Rotation.Ada1ModLink>();
             foreach (var Link in Ada1Rotation.Ada1ModLinks)
@@ -458,7 +458,7 @@ namespace Levante.Rotations
             WellspringRotation.UpdateJSON();
         }
 
-        public static async Task CheckUsersWeeklyTracking(DiscordSocketClient Client)
+        public static async Task CheckUsersWeeklyTracking(DiscordShardedClient Client)
         {
             var chalTemp = new List<AscendantChallengeRotation.AscendantChallengeLink>();
             foreach (var Link in AscendantChallengeRotation.AscendantChallengeLinks)

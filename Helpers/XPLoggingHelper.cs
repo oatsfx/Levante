@@ -18,12 +18,12 @@ namespace Levante.Helpers
             return buttonBuilder;
         }
 
-        public static EmbedBuilder GenerateSessionSummary(ActiveConfig.ActiveAFKUser aau, string AuthorAvatarURL)
+        public static EmbedBuilder GenerateSessionSummary(ActiveConfig.ActiveAFKUser aau)
         {
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Session Summary: {aau.UniqueBungieName}",
-                IconUrl = AuthorAvatarURL,
+                IconUrl = BotConfig.BotAvatarUrl,
             };
             var foot = new EmbedFooterBuilder()
             {
@@ -42,9 +42,7 @@ namespace Levante.Helpers
             string timeString = $"{(Math.Floor(timeSpan.TotalHours) > 0 ? $"{Math.Floor(timeSpan.TotalHours)}h " : "")}" +
                     $"{(timeSpan.Minutes > 0 ? $"{timeSpan.Minutes:00}m " : "")}" +
                     $"{timeSpan.Seconds:00}s";
-            int xpPerHour = 0;
-            if ((DateTime.Now - aau.TimeStarted).TotalHours >= 1)
-                xpPerHour = (int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours);
+            int xpPerHour = (int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours);
             embed.WithCurrentTimestamp();
             embed.Description = $"Time Logged: {timeString}\n";
 
