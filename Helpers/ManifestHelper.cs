@@ -37,6 +37,10 @@ namespace Levante.Helpers
 
         public static Dictionary<long, string> ClarityDescriptions = new();
 
+        // List per Week, <Hash, Record>.
+        public static List<Dictionary<long, DestinyRecordDefinition>> SeasonalChallenges = new();
+        public static string SeasonIcon;
+
         private static Dictionary<string, int> SeasonIconURLs = new Dictionary<string, int>();
 
         private const string DIM_WATERMARK_TO_SEASON_LINK = "https://raw.githubusercontent.com/DestinyItemManager/d2-additional-info/master/output/watermark-to-season.json";
@@ -318,7 +322,31 @@ namespace Levante.Helpers
                     {
                         if (node.Value.DisplayProperties == null) continue;
                         if (node.Value.Children == null) continue;
-                        if (node.Value.Children.Records.Count() == 0) continue;
+                        if (!node.Value.Children.PresentationNodes.Any()) continue;
+
+                        if (node.Value.DisplayProperties.Name == "Seasonal Challenges")
+                            SeasonIcon = $"https://bungie.net/{node.Value.DisplayProperties.Icon}";
+
+                        if (node.Value.DisplayProperties.Name == "Weekly")
+                        {
+                            foreach (var child in node.Value.Children.PresentationNodes)
+                            {
+                                var childNode = presentNodeList[$"{child.PresentationNodeHash}"];
+                                if (childNode.DisplayProperties.Name.Contains("Week"))
+                                {
+                                    var challenges = new Dictionary<long, DestinyRecordDefinition>();
+                                    foreach (var record in childNode.Children.Records)
+                                    {
+                                        challenges.Add(record.RecordHash, recordList[$"{record.RecordHash}"]);
+                                        Log.Debug("Added {Record} from {Week}.", recordList[$"{record.RecordHash}"].DisplayProperties.Name, childNode.DisplayProperties.Name);
+                                    }
+                                    SeasonalChallenges.Add(challenges);
+                                }
+                            }
+                            
+                        }
+
+                        if (!node.Value.Children.Records.Any()) continue;
                         if (node.Value.CompletionRecordHash == null) continue;
                         foreach (var child in node.Value.Children.Records)
                         {

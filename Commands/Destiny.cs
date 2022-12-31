@@ -14,6 +14,8 @@ using Levante.Rotations;
 using Levante.Util.Attributes;
 using System.Linq;
 using Fergun.Interactive.Pagination;
+using Levante.Helpers;
+
 namespace Levante.Commands
 {
     public class Destiny : InteractionModuleBase<ShardedInteractionContext>
@@ -682,7 +684,6 @@ namespace Levante.Commands
 
                 ResonantElement += int.Parse($"{item.Response.profileStringVariables.data.integerValuesByHash["2747150405"]}");
 
-                var app = await Context.Client.GetApplicationInfoAsync();
                 var auth = new EmbedAuthorBuilder()
                 {
                     Name = $"{dil.UniqueBungieName} Material and Currency Count",
@@ -698,7 +699,6 @@ namespace Levante.Commands
                     Author = auth,
                     Footer = foot,
                 };
-                embed.Description = $"";
 
                 embed.AddField(x =>
                 {
@@ -798,6 +798,79 @@ namespace Levante.Commands
         //    await RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
         //    return;
         //}
+
+        [SlashCommand("seasonals", "View the current season's challenges, even ones not available.")]
+        public async Task Seasonals()
+        {
+            var User = Context.User;
+            var dil = DataConfig.GetLinkedUser(Context.User.Id);
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
+
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,900,1200").Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                dynamic item = JsonConvert.DeserializeObject(content);
+                string charId = $"{item.Response.profile.data.characterIds[0]}";
+
+                var paginator = new LazyPaginatorBuilder()
+                    .AddUser(Context.User)
+                    .WithPageFactory(GeneratePage)
+                    .WithMaxPageIndex(ManifestHelper.SeasonalChallenges.Count - 1)
+                    .AddOption(new Emoji("◀"), PaginatorAction.Backward)
+                    .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
+                    .AddOption(new Emoji("▶"), PaginatorAction.Forward)
+                    .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
+                    .WithActionOnCancellation(ActionOnStop.DeleteInput)
+                    .WithActionOnTimeout(ActionOnStop.DeleteInput)
+                    .Build();
+
+                await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+
+                PageBuilder GeneratePage(int index)
+                {
+                    var auth = new EmbedAuthorBuilder()
+                    {
+                        Name = $"Seasonal Challenges Week {index + 1}",
+                        IconUrl = ManifestHelper.SeasonIcon,
+                    };
+                    var foot = new EmbedFooterBuilder()
+                    {
+                        Text = $"Powered by the Bungie API"
+                    };
+                    var embed = new EmbedBuilder()
+                    {
+                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                        Author = auth,
+                        Footer = foot,
+                    };
+
+                    foreach (var challenges in ManifestHelper.SeasonalChallenges[index])
+                    {
+                        string progress = "";
+                        if (challenges.Value.DisplayProperties.Name != "Classified")
+                        {
+                            progress = $" ({item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[0].progress}/{item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[0].completionValue})";
+                        }
+                        embed.AddField(x =>
+                        {
+                            x.Name = $"{challenges.Value.DisplayProperties.Name}{progress}";
+                            x.Value = challenges.Value.DisplayProperties.Description;
+                            x.IsInline = false;
+                        });
+                    }
+
+                    return new PageBuilder()
+                        .WithAuthor(embed.Author)
+                        .WithDescription(embed.Description)
+                        .WithFields(embed.Fields)
+                        .WithFooter(embed.Footer)
+                        .WithColor((Discord.Color)embed.Color);
+                }
+            }
+        }
 
         [SlashCommand("try-on", "Try on any emblem in the Bungie API.")]
         public async Task TryOut([Summary("emblem-name", "Emblem name of the Emblem you want to try on."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
