@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,7 +30,7 @@ namespace Levante.Util
         public Stats? Stats { get; set; }
 
         [JsonProperty("type")]
-        public ClarityType Type { get; set; }
+        public string Type { get; set; }
 
         [JsonProperty("uploadedBy")]
         public string UploadedBy { get; set; }
@@ -92,9 +93,10 @@ namespace Levante.Util
         public List<double>? Multiplier { get; set; }
     }
 
+    // Not used at the moment. JSON converter gets angry
     public enum ClarityType
     {
-        Grenade,
+        SubclassGrenade,
         ArmorExotic,
         WeaponPerk,
         WeaponPerkEnhanced,

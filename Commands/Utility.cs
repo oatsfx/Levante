@@ -991,27 +991,6 @@ namespace Levante.Commands
             await RespondAsync($"Your Bungie account: {linkedUser.UniqueBungieName} has been unlinked. Use the command \"/link\" if you want to re-link!", ephemeral: true);
         }
 
-        [Group("settings", "User settings.")]
-        public class Settings : InteractionModuleBase<ShardedInteractionContext>
-        {
-            [RequireBungieOauth]
-            [SlashCommand("leaderboard", "Determine if you want to be displayed on leaderboards.")]
-            public async Task Leaderboard([Summary("show-on-leaderboard", "Set to true to be shown on leaderboards or false otherwise.")] bool showOnLeaderboards)
-            {
-                var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
-
-                // Don't update if they are the same.
-                if (linkedUser.ShowOnLeaderboards != showOnLeaderboards)
-                {
-                    DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == linkedUser.DiscordID).ShowOnLeaderboards = showOnLeaderboards;
-                    DataConfig.UpdateConfig();
-                }
-
-                await RespondAsync(showOnLeaderboards ? "Your data will now appear on leaderboards." : "Your data will no longer appear on leaderboards.", ephemeral: true);
-                return;
-            }
-        }
-
         // Attempt to add Autocomplete to /next and /notify. Ran into issue with activities that have 2 rotations, like Lost Sectors and Nightfalls.
 
         //[SlashCommand("notify-test", "Display a Destiny 2 leaderboard of choice.")]

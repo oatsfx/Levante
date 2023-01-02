@@ -57,9 +57,6 @@ namespace Levante.Configs
 
             [JsonProperty("RefreshExpiration")]
             public DateTime RefreshExpiration { get; set; } = DateTime.Now;
-
-            [JsonProperty("ShowOnLeaderboards")]
-            public bool ShowOnLeaderboards { get; set; } = true;
         }
 
         public class EmblemAnnounceLink

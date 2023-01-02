@@ -1,4 +1,5 @@
 ﻿using Discord.WebSocket;
+using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Serilog.Sinks.SystemConsole.Themes;
 using System.Collections.Generic;
@@ -147,14 +148,26 @@ namespace Levante.Configs
 
         public static bool IsSupporter(ulong DiscordID) => BotSupportersDiscordIDs.Contains(DiscordID);
 
-        public static bool IsSupporter(string BungieTag) => BotSupportersDiscordIDs.Contains(DataConfig.DiscordIDLinks.FirstOrDefault(x => x.UniqueBungieName == BungieTag).DiscordID);
+        public static bool IsSupporter(string BungieTag)
+        {
+            var user = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.UniqueBungieName == BungieTag);
+            return user == null ? false : BotSupportersDiscordIDs.Contains(user.DiscordID);
+        }
 
         public static bool IsStaff(ulong DiscordID) => BotStaffDiscordIDs.Contains(DiscordID);
 
-        public static bool IsStaff(string BungieTag) => BotStaffDiscordIDs.Contains(DataConfig.DiscordIDLinks.FirstOrDefault(x => x.UniqueBungieName == BungieTag).DiscordID);
+        public static bool IsStaff(string BungieTag)
+        {
+            var user = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.UniqueBungieName == BungieTag);
+            return user == null ? false : BotStaffDiscordIDs.Contains(user.DiscordID);
+        }
 
         public static bool IsDeveloper(ulong DiscordID) => BotDevDiscordIDs.Contains(DiscordID);
 
-        public static bool IsDeveloper(string BungieTag) => BotDevDiscordIDs.Contains(DataConfig.DiscordIDLinks.FirstOrDefault(x => x.UniqueBungieName == BungieTag).DiscordID);
+        public static bool IsDeveloper(string BungieTag)
+        {
+            var user = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.UniqueBungieName == BungieTag);
+            return user == null ? false : BotDevDiscordIDs.Contains(user.DiscordID);
+        }
     }
 }

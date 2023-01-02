@@ -32,7 +32,6 @@ namespace Levante.Helpers
             string embedDesc = "";
 
             var linkedUser = DataConfig.GetLinkedUser(User.Id);
-            SortedList = SortedList.Where(x => DataConfig.DiscordIDLinks.FirstOrDefault(y => y.UniqueBungieName == x.UniqueBungieName).ShowOnLeaderboards == true).ToList();
 
             if (SortedList.Count <= 0)
             {
