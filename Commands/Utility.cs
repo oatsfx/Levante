@@ -697,11 +697,13 @@ namespace Levante.Commands
 
             [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
             public async Task LostSector([Summary("lost-sector", "Lost Sector to predict its next appearance."), Autocomplete(typeof(LostSectorAutocomplete))] int ArgLS = -1,
-                [Summary("armor-drop", "Lost Sector Exotic armor drop to predict its next appearance.")] ExoticArmorType? ArgEAT = null)
+                [Summary("armor-drop", "Lost Sector Exotic armor drop to predict its next appearance.")] ExoticArmorType? ArgEAT = null,
+                [Summary("show-next", "Number of next occurrances to show.")] int show = 1)
             {
                 //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
                 //return;
 
+                // TODO: Implement a way to show the next X lost sectors. Requires modification of the DatePrediction method.
                 int LS = ArgLS;
                 ExoticArmorType? EAT = ArgEAT;
 

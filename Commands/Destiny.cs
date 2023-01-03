@@ -800,11 +800,17 @@ namespace Levante.Commands
         //}
 
         [SlashCommand("seasonals", "View the current season's challenges, even ones not available.")]
-        public async Task Seasonals()
+        public async Task Seasonals([Summary("week", "Start at a specified week. Numbers outside of the bounds will default accordingly.")] int week = 1)
         {
+            if (week > ManifestHelper.SeasonalChallenges.Count)
+                week = ManifestHelper.SeasonalChallenges.Count;
+            else if (week < 1)
+                week = 1;
+
             var User = Context.User;
             var dil = DataConfig.GetLinkedUser(Context.User.Id);
 
+            await DeferAsync();
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
@@ -817,6 +823,7 @@ namespace Levante.Commands
 
                 var paginator = new LazyPaginatorBuilder()
                     .AddUser(Context.User)
+                    .WithStartPageIndex(week - 1)
                     .WithPageFactory(GeneratePage)
                     .WithMaxPageIndex(ManifestHelper.SeasonalChallenges.Count - 1)
                     .AddOption(new Emoji("◀"), PaginatorAction.Backward)
@@ -825,42 +832,57 @@ namespace Levante.Commands
                     .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
                     .WithActionOnCancellation(ActionOnStop.DeleteInput)
                     .WithActionOnTimeout(ActionOnStop.DeleteInput)
+                    .WithFooter(PaginatorFooter.None)
                     .Build();
 
-                await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+                await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
 
                 PageBuilder GeneratePage(int index)
                 {
                     var auth = new EmbedAuthorBuilder()
                     {
-                        Name = $"Seasonal Challenges Week {index + 1}",
+                        Name = $"Seasonal Challenges Week {index + 1} of {ManifestHelper.SeasonalChallenges.Count}",
                         IconUrl = ManifestHelper.SeasonIcon,
                     };
-                    var foot = new EmbedFooterBuilder()
-                    {
-                        Text = $"Powered by the Bungie API"
-                    };
+                    
                     var embed = new EmbedBuilder()
                     {
                         Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                         Author = auth,
-                        Footer = foot,
                     };
 
+                    int classifiedCount = 0;
                     foreach (var challenges in ManifestHelper.SeasonalChallenges[index])
                     {
-                        string progress = "";
-                        if (challenges.Value.DisplayProperties.Name != "Classified")
+                        if (challenges.Value.Redacted)
                         {
-                            progress = $" ({item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[0].progress}/{item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[0].completionValue})";
+                            classifiedCount++;
+                            continue;
+                        }
+
+                        string progress = "";
+                        for (int i = 0; i < item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives.Count; i++)
+                        {
+                            long hash = (long)item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].objectiveHash;
+                            int progressValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].progress;
+                            int completionValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].completionValue;
+                            if (!ManifestHelper.SeasonalObjectives.ContainsKey(hash)) continue;
+                            progress += $"> {ManifestHelper.SeasonalObjectives[hash]}:" +
+                                $" {progressValue}/{completionValue} {(progressValue >= completionValue ? Emotes.Yes : "")}\n";
                         }
                         embed.AddField(x =>
                         {
-                            x.Name = $"{challenges.Value.DisplayProperties.Name}{progress}";
-                            x.Value = challenges.Value.DisplayProperties.Description;
+                            x.Name = challenges.Value.DisplayProperties.Name;
+                            x.Value = $"{challenges.Value.DisplayProperties.Description}\n{progress}";
                             x.IsInline = false;
                         });
                     }
+
+                    var foot = new EmbedFooterBuilder()
+                    {
+                        Text = $"Powered by the Bungie API | Week {index + 1}/{ManifestHelper.SeasonalChallenges.Count}{(classifiedCount > 0 ? $" | Classified Records ({classifiedCount}/{ManifestHelper.SeasonalChallenges[index].Count}) are Hidden" : "")}"
+                    };
+                    embed.WithFooter(foot);
 
                     return new PageBuilder()
                         .WithAuthor(embed.Author)

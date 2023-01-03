@@ -40,6 +40,7 @@ namespace Levante.Helpers
         // List per Week, <Hash, Record>.
         public static List<Dictionary<long, DestinyRecordDefinition>> SeasonalChallenges = new();
         public static string SeasonIcon;
+        public static Dictionary<long, string> SeasonalObjectives = new();
 
         private static Dictionary<string, int> SeasonIconURLs = new Dictionary<string, int>();
 
@@ -255,6 +256,30 @@ namespace Levante.Helpers
                         "Manifest", "DestinyRecordDefinition");
                 }
 
+                // Objectives
+                path = item.Response.jsonWorldComponentContentPaths.en["DestinyObjectiveDefinition"];
+                fileName = path.Split('/').LastOrDefault();
+                Dictionary<string, DestinyObjectiveDefinition> objectiveList = new();
+                if (!Directory.Exists("Data/Manifest/JSONs/DestinyObjectiveDefinition"))
+                    Directory.CreateDirectory("Data/Manifest/JSONs/DestinyObjectiveDefinition");
+                if (!File.Exists($"Data/Manifest/JSONs/DestinyObjectiveDefinition/{fileName}"))
+                {
+                    Log.Information("[{Type}] Storing {def} locally...",
+                        "Manifest", "DestinyObjectiveDefinition");
+                    string recordUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinyObjectiveDefinition"]}";
+                    response = client.GetAsync(recordUrl).Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    objectiveList = JsonConvert.DeserializeObject<Dictionary<string, DestinyObjectiveDefinition>>(content);
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinyObjectiveDefinition/{fileName}", JsonConvert.SerializeObject(objectiveList, Formatting.Indented));
+                }
+                else
+                {
+                    content = File.ReadAllText($"Data/Manifest/JSONs/DestinyObjectiveDefinition/{fileName}");
+                    objectiveList = JsonConvert.DeserializeObject<Dictionary<string, DestinyObjectiveDefinition>>(content);
+                    Log.Information("[{Type}] Loaded {def} from local.",
+                        "Manifest", "DestinyObjectiveDefinition");
+                }
+
                 // Presentation Nodes
                 path = item.Response.jsonWorldComponentContentPaths.en["DestinyPresentationNodeDefinition"];
                 fileName = path.Split('/').LastOrDefault();
@@ -338,6 +363,12 @@ namespace Levante.Helpers
                                     foreach (var record in childNode.Children.Records)
                                     {
                                         challenges.Add(record.RecordHash, recordList[$"{record.RecordHash}"]);
+                                        if (recordList[$"{record.RecordHash}"].ObjectiveHashes != null)
+                                            foreach (var obj in recordList[$"{record.RecordHash}"].ObjectiveHashes)
+                                            {
+                                                if (!String.IsNullOrEmpty(objectiveList[$"{obj}"].ProgressDescription))
+                                                    SeasonalObjectives.Add(obj, objectiveList[$"{obj}"].ProgressDescription);
+                                            }
                                         Log.Debug("Added {Record} from {Week}.", recordList[$"{record.RecordHash}"].DisplayProperties.Name, childNode.DisplayProperties.Name);
                                     }
                                     SeasonalChallenges.Add(challenges);
@@ -532,7 +563,7 @@ namespace Levante.Helpers
                             // Find those Enhanced Perks that aren't labeled as mods!
                             if (invItem.Value.ItemTypeDisplayName.Contains("Enhanced Trait"))
                             {
-                                Log.Debug("Perk: {PerkName} {IsEnhanced}", invItem.Value.DisplayProperties.Name, invItem.Value.ItemTypeDisplayName.Contains("Enhanced"));
+                                //Log.Debug("Perk: {PerkName} {IsEnhanced}", invItem.Value.DisplayProperties.Name, invItem.Value.ItemTypeDisplayName.Contains("Enhanced"));
                                 EnhancedPerks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
                             }
                                 
