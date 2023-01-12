@@ -1,4 +1,5 @@
 ﻿using BungieSharper.Entities.Destiny;
+using Serilog;
 using System.Linq;
 
 namespace Levante.Util
@@ -59,11 +60,13 @@ namespace Levante.Util
         public static readonly string AutoRifle = "<:AR:933969813909418047>";
         public static readonly string Bow = "<:Bow:947292944677896202>";
         public static readonly string FusionRifle = "<:Fusion:933969813615829012>";
+        public static readonly string Glaive = "<:Glaive:1062967521336098816>";
         public static readonly string GrenadeLauncher = "<:GL:933969813720682496>";
         public static readonly string HandCannon = "<:HC:933969813657776178>";
         public static readonly string HeavyGrenadeLauncher = "<:HeavyGL:933969813770997841>";
         public static readonly string LinearFusionRifle = "<:LFR:933969813674545162>";
         public static readonly string MachineGun = "<:LMG:933969813817151529>";
+        public static readonly string Melee = "<:Melee:1062972320483913818>";
         public static readonly string PulseRifle = "<:Pulse:933969813745836042>";
         public static readonly string RocketLauncher = "<:Rocket:933969813733265488>";
         public static readonly string SubmachineGun = "<:SMG:933969813922009118>";
@@ -72,6 +75,7 @@ namespace Levante.Util
         public static readonly string Sidearm = "<:Sidearm:933969813678743572>";
         public static readonly string SniperRifle = "<:Sniper:933969813322203198>";
         public static readonly string Sword = "<:Sword:933969814379196456>";
+        public static readonly string TraceRifle = "<:TraceRifle:1062970952213868614>";
 
         // Armor Types
         public static readonly string Helmet = "<:Helmet:926269144406577173>";
@@ -98,6 +102,7 @@ namespace Levante.Util
         public static readonly string Enhanced = "<:Enhanced:1020834766397911080>";
         public static readonly string Gilded = "<:Gilded:994067890024235029>";
         public static readonly string GildedPurple = "<:GildedPurple:996604027867500574>";
+        public static readonly string Headshot = "<:Headshot:1062970942369824828>";
         public static readonly string KFRaidChallenge = "<:KFRaidChallenge:1021602526652534864>";
         public static readonly string Light = "<:LightLevel:844029708077367297>";
         public static readonly string LostSector = "<:LostSector:955004180618174475>";
@@ -145,6 +150,22 @@ namespace Levante.Util
                 return (string)typeof(DestinyEmote).GetField(Query).GetValue(null);
             else
                 return Classified;
+        }
+
+        // Parses Bungie's "Emotes" ("[Glaive]") into our app's Discord emotes.
+        public static string ParseBungieText(string Text)
+        {
+            if (!Text.Contains('[')) return Text;
+            int replacements = Text.Count(x => x == '[');
+            for (int i = 0; i < replacements; i++)
+            {
+                int leftIndex = Text.IndexOf('[') + 1;
+                int rightIndex = Text.IndexOf(']');
+
+                string inBetween = Text[leftIndex..rightIndex];
+                Text = Text.Replace($"[{inBetween}]", MatchEmote(inBetween));
+            }
+            return Text;
         }
 
         public static string MatchWeaponItemSubtypeToEmote(DestinyItemSubType subType, bool HeavyGLOverride = false)

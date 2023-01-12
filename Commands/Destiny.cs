@@ -175,7 +175,7 @@ namespace Levante.Commands
                         .WithActionOnTimeout(ActionOnStop.DeleteInput)
                         .Build();
 
-                    await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+                    await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator));
 
                     static PageBuilder GeneratePage(int index)
                     {
@@ -253,9 +253,11 @@ namespace Levante.Commands
 
                 await DeferAsync();
 
-                if (!DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
+                if (LinkedUser == null || !DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
                 {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"User is not linked; tell them to link using '/link'."; });
+                    var embed = Embeds.GetErrorEmbed();
+                    embed.Description = $"User is not linked; tell them to link using '/link' or the Bungie tag variant of this command.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                     return;
                 }
 
@@ -269,13 +271,17 @@ namespace Levante.Commands
 
                     if (DataConfig.IsBungieAPIDown(content))
                     {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Bungie API is temporary down, try again later."; });
+                        var embed = Embeds.GetErrorEmbed();
+                        embed.Description = $"Bungie API is temporary down, try again later.";
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                         return;
                     }
 
                     if (item.ErrorCode != 1)
                     {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"An error occured with that account. Is there a connected Destiny 2 account?"; });
+                        var embed = Embeds.GetErrorEmbed();
+                        embed.Description = $"An error occured with that account. Is there a connected Destiny 2 account?";
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                         return;
                     }
 
@@ -296,7 +302,9 @@ namespace Levante.Commands
 
                     if (userGuardians.Count == 0)
                     {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No guardian found."; });
+                        var embed = Embeds.GetErrorEmbed();
+                        embed.Description = $"No guardians found for user.";
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                         return;
                     }
 
@@ -835,7 +843,7 @@ namespace Levante.Commands
                     .WithFooter(PaginatorFooter.None)
                     .Build();
 
-                await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
+                await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
 
                 PageBuilder GeneratePage(int index)
                 {

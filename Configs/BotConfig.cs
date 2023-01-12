@@ -62,6 +62,9 @@ namespace Levante.Configs
         [JsonProperty("DurationToWaitForNextMessage")]
         public static int DurationToWaitForNextMessage { get; set; } = 20;
 
+        [JsonProperty("DurationToWaitForPaginator")]
+        public static int DurationToWaitForPaginator { get; set; } = 75;
+
         [JsonProperty("DevServerID")]
         public static ulong DevServerID { get; set; } = 0;
 

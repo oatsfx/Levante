@@ -30,6 +30,7 @@ namespace Levante.Commands
         public static List<WeaponPerkQuiz> ActiveWeaponPerkQuizzes = new();
     }
 
+    // TODO: Let users determine quiz timer.
     [Group("quiz", "Test your knowledge on various Destiny 2 entities.")]
     public class Quiz : InteractionModuleBase<ShardedInteractionContext>
     {

@@ -367,9 +367,9 @@ namespace Levante.Helpers
                                             foreach (var obj in recordList[$"{record.RecordHash}"].ObjectiveHashes)
                                             {
                                                 if (!String.IsNullOrEmpty(objectiveList[$"{obj}"].ProgressDescription))
-                                                    SeasonalObjectives.Add(obj, objectiveList[$"{obj}"].ProgressDescription);
+                                                    SeasonalObjectives.Add(obj, DestinyEmote.ParseBungieText(objectiveList[$"{obj}"].ProgressDescription));
                                             }
-                                        Log.Debug("Added {Record} from {Week}.", recordList[$"{record.RecordHash}"].DisplayProperties.Name, childNode.DisplayProperties.Name);
+                                        //Log.Debug("Added {Record} from {Week}.", recordList[$"{record.RecordHash}"].DisplayProperties.Name, childNode.DisplayProperties.Name);
                                     }
                                     SeasonalChallenges.Add(challenges);
                                 }
@@ -479,7 +479,7 @@ namespace Levante.Helpers
                                 Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} (Jotunn)");
                             else
                             {
-                                var dupeWeapons = Weapons.Where(x => x.Value.Split('[')[0].Equals(invItem.Value.DisplayProperties.Name));
+                                var dupeWeapons = Weapons.Where(x => x.Value.Split(" [")[0].Equals(invItem.Value.DisplayProperties.Name));
                                 if (dupeWeapons.Any())
                                 {
                                     int dupeCount = dupeWeapons.Count();
