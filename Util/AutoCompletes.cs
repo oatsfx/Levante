@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Interactions;
+using Levante.Commands;
 using Levante.Configs;
 using Levante.Helpers;
 using Levante.Rotations;
@@ -23,11 +24,15 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < 7; i++)
+            {
+                while (results.Count() < 7)
                 {
                     var weapon = ManifestHelper.Weapons.ElementAt(random.Next(0, ManifestHelper.Weapons.Count));
-                    results.Add(new AutocompleteResult(weapon.Value, $"{weapon.Key}"));
+                    if (!results.Exists(x => x.Value.Equals(weapon.Key)))
+                        results.Add(new AutocompleteResult(weapon.Value, $"{weapon.Key}"));
                 }
+            }
+                
             else
                 foreach (var Weapon in ManifestHelper.Weapons)
                     if (Weapon.Value.Split('[')[0].ToLower().Contains(SearchQuery.ToLower()))
@@ -51,10 +56,11 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < 7; i++)
+                while (results.Count() < 7)
                 {
                     var mod = ManifestHelper.Ada1ArmorMods.ElementAt(random.Next(0, ManifestHelper.Ada1ArmorMods.Count));
-                    results.Add(new AutocompleteResult(mod.Value, $"{mod.Key}"));
+                    if (!results.Exists(x => x.Value.Equals(mod.Key)))
+                        results.Add(new AutocompleteResult(mod.Value, $"{mod.Key}"));
                 }
             else
                 foreach (var Mod in ManifestHelper.Ada1ArmorMods)
@@ -248,10 +254,11 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < 7; i++)
+                while (results.Count() < 7)
                 {
                     var emblem = ManifestHelper.Emblems.ElementAt(random.Next(0, ManifestHelper.Emblems.Count));
-                    results.Add(new AutocompleteResult(emblem.Value, $"{emblem.Key}"));
+                    if (!results.Exists(x => x.Value.Equals(emblem.Key)))
+                        results.Add(new AutocompleteResult(emblem.Value, $"{emblem.Key}"));
                 }
             else
                 foreach (var Emblem in ManifestHelper.Emblems)

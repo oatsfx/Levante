@@ -65,12 +65,15 @@ namespace Levante.Util
                     });
                 }
 
-                embed.AddField(x =>
+                if (ManifestHelper.ClarityDescriptions.ContainsKey(HashCode))
                 {
-                    x.Name = "Community Insight";
-                    x.Value = $"[Clarity](https://www.d2clarity.com/):\n{ManifestHelper.ClarityDescriptions[HashCode]}";
-                    x.IsInline = false;
-                });
+                    embed.AddField(x =>
+                    {
+                        x.Name = "Community Insight";
+                        x.Value = $"[Clarity](https://www.d2clarity.com/):\n{ManifestHelper.ClarityDescriptions[HashCode]}";
+                        x.IsInline = false;
+                    });
+                }
             }
             catch
             {

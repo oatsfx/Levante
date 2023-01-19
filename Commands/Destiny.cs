@@ -807,7 +807,7 @@ namespace Levante.Commands
         //    return;
         //}
 
-        [SlashCommand("seasonals", "View the current season's challenges, even ones not available.")]
+        [SlashCommand("seasonals", "View the current season's challenges, even ones not available yet.")]
         public async Task Seasonals([Summary("week", "Start at a specified week. Numbers outside of the bounds will default accordingly.")] int week = 1)
         {
             if (week > ManifestHelper.SeasonalChallenges.Count)
@@ -818,16 +818,26 @@ namespace Levante.Commands
             var User = Context.User;
             var dil = DataConfig.GetLinkedUser(Context.User.Id);
 
+            bool showProgress = false;
+            if (dil != null)
+                showProgress = true;
+
             await DeferAsync();
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
+                dynamic item = "";
+                string charId = "";
 
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,900,1200").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-                string charId = $"{item.Response.profile.data.characterIds[0]}";
+                if (showProgress)
+                {
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
+
+                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,900,1200").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    item = JsonConvert.DeserializeObject(content);
+                    charId = $"{item.Response.profile.data.characterIds[0]}";
+                }
 
                 var paginator = new LazyPaginatorBuilder()
                     .AddUser(Context.User)
@@ -869,15 +879,19 @@ namespace Levante.Commands
                         }
 
                         string progress = "";
-                        for (int i = 0; i < item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives.Count; i++)
+                        if (showProgress)
                         {
-                            long hash = (long)item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].objectiveHash;
-                            int progressValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].progress;
-                            int completionValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].completionValue;
-                            if (!ManifestHelper.SeasonalObjectives.ContainsKey(hash)) continue;
-                            progress += $"> {ManifestHelper.SeasonalObjectives[hash]}:" +
-                                $" {progressValue}/{completionValue} {(progressValue >= completionValue ? Emotes.Yes : "")}\n";
+                            for (int i = 0; i < item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives.Count; i++)
+                            {
+                                long hash = (long)item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].objectiveHash;
+                                int progressValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].progress;
+                                int completionValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].completionValue;
+                                if (!ManifestHelper.SeasonalObjectives.ContainsKey(hash)) continue;
+                                progress += $"> {ManifestHelper.SeasonalObjectives[hash]}:" +
+                                    $" {progressValue}/{completionValue} {(progressValue >= completionValue ? Emotes.Yes : "")}\n";
+                            }
                         }
+
                         embed.AddField(x =>
                         {
                             x.Name = challenges.Value.DisplayProperties.Name;
