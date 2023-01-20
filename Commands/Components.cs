@@ -63,13 +63,19 @@ namespace Levante.Commands
 
             if (!DataConfig.IsExistingLinkedUser(user.Id))
             {
-                await RespondAsync($"You are not linked! Use \"/link\" to begin the linking process.", ephemeral: true);
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"You are not linked! Use the `/link` command to begin the linking process.";
+
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
             if (ActiveConfig.IsExistingActiveUser(user.Id))
             {
-                await RespondAsync($"You are already actively using my logging feature.", ephemeral: true);
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"You are already actively using my logging feature.";
+
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
@@ -172,13 +178,19 @@ namespace Levante.Commands
             var user = Context.User;
             if (!DataConfig.IsExistingLinkedUser(user.Id))
             {
-                await RespondAsync($"You are not linked! Use \"/link\" to begin the linking process.", ephemeral: true);
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"You are not linked! Use the `/link` command to begin the linking process.";
+
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
-            if (!ActiveConfig.IsExistingActiveUser(user.Id))
+            if (ActiveConfig.IsExistingActiveUser(user.Id))
             {
-                await RespondAsync($"You are not actively using my logging feature.", ephemeral: true);
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"You are already actively using my logging feature.";
+
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
@@ -187,7 +199,10 @@ namespace Levante.Commands
             var channel = Context.Client.GetChannel(aau.DiscordChannelID);
             if (channel == null)
             {
-                await RespondAsync($"I could not find your logging channel, did it get deleted? I have removed you from my logging feature.", ephemeral: true);
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"I could not find your logging channel, did it get deleted? I have removed you from my logging feature.";
+
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
                 ActiveConfig.DeleteActiveUserFromConfig(user.Id);
                 ActiveConfig.UpdateActiveAFKUsersConfig();
                 return;
@@ -219,17 +234,17 @@ namespace Levante.Commands
             {
                 Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
-            var helpEmbed = new EmbedBuilder()
+            var helpEmbed = new EmbedBuilder
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = auth,
                 Footer = foot,
+                Description =
+                    $"__Steps:__\n" +
+                    $"1) Launch Destiny 2.\n" +
+                    $"2) Hit the \"Ready\" button and start getting those XP gains in.\n" +
+                    $"3) I will keep track of your gains in a personalized channel for you.",
             };
-            helpEmbed.Description =
-                $"__Steps:__\n" +
-                $"1) Launch Destiny 2.\n" +
-                $"2) Hit the \"Ready\" button and start getting those XP gains in.\n" +
-                $"3) I will keep track of your gains in a personalized channel for you.";
 
             await RespondAsync($"", embed: helpEmbed.Build(), ephemeral: true);
         }
@@ -260,13 +275,19 @@ namespace Levante.Commands
 
             if (!DataConfig.IsExistingLinkedUser(user.Id))
             {
-                await RespondAsync($"You are not linked! Use \"/link\" to begin the linking process.", ephemeral: true);
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"You are not linked! Use the `/link` command to begin the linking process.";
+
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 
             if (ActiveConfig.IsExistingActiveUser(user.Id))
             {
-                await RespondAsync($"You are already actively using my logging feature.", ephemeral: true);
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"You are already actively using my logging feature.";
+
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 

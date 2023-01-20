@@ -226,7 +226,6 @@ namespace Levante.Commands
                 Author = auth,
                 Footer = foot,
             };
-            embed.Title = "";
             foreach (var emblem in BotConfig.UniversalCodes)
             {
                 embed.Description +=
@@ -363,7 +362,9 @@ namespace Levante.Commands
 
                 if (MembershipType == null || MembershipID == null)
                 {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"An error occurred when retrieving that player's Guardians. Run the command again and specify their platform."; });
+                    var embed = Embeds.GetErrorEmbed();
+                    embed.Description = $"An error occurred when retrieving that player's Guardians. Run the command again and specify their platform.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                     return;
                 }
 
@@ -377,13 +378,17 @@ namespace Levante.Commands
 
                     if (DataConfig.IsBungieAPIDown(content))
                     {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Bungie API is temporary down, try again later."; });
+                        var embed = Embeds.GetErrorEmbed();
+                        embed.Description = $"Bungie API is temporary down, try again later.";
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                         return;
                     }
 
                     if (item.ErrorCode != 1)
                     {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"An error occured with that account. Is there a connected Destiny 2 account?"; });
+                        var embed = Embeds.GetErrorEmbed();
+                        embed.Description = $"An error occured with that account. Is there a connected Destiny 2 account?";
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                         return;
                     }
 
@@ -422,8 +427,7 @@ namespace Levante.Commands
         [SlashCommand("level", "Gets your Destiny 2 Season Pass Rank.")]
         public async Task GetLevel([Summary("user", "User you want the Season Pass rank of. Leave empty for your own.")] IUser User = null)
         {
-            if (User == null)
-                User = Context.User;
+            User ??= Context.User;
 
             if (!DataConfig.IsExistingLinkedUser(User.Id))
             {
@@ -480,17 +484,16 @@ namespace Levante.Commands
                 {
                     Text = $"Powered by the Bungie API"
                 };
-                var embed = new EmbedBuilder()
+                var embed = new EmbedBuilder
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                     Author = auth,
                     Footer = foot,
+                    Description =
+                        $"Player: **{dil.UniqueBungieName}**\n" +
+                        $"Level: **{Level}**\n" +
+                        $"Progress to Next Level: **{XPProgress:n0}/100,000**",
                 };
-
-                embed.Description =
-                    $"Player: **{dil.UniqueBungieName}**\n" +
-                    $"Level: **{Level}**\n" +
-                    $"Progress to Next Level: **{XPProgress:n0}/100,000**";
 
                 int powerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
                 int totalXP = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.currentProgress;
@@ -561,7 +564,9 @@ namespace Levante.Commands
             var dil = DataConfig.GetLinkedUser(User.Id);
             if (dil == null)
             {
-                await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = $"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again."; });
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again.";
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                 return;
             }
 

@@ -188,17 +188,17 @@ namespace Levante
                 case 4:
                     await _client.SetActivityAsync(new Game($"{_client.Guilds.Sum(x => x.MemberCount):n0} Users | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 5:
-                    await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count} Linked Users | v{BotConfig.Version}", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count:n0} Linked Users | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 6:
                     await _client.SetActivityAsync(new Game($"{CurrentRotations.GetTotalLinks()} Rotation Trackers | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 7:
                     await _client.SetActivityAsync(new Game($"{BotConfig.Website} | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 8:
-                    await _client.SetActivityAsync(new Game($"{BotConfig.Twitter} on Twitter", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"{BotConfig.Twitter} on Twitter | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 9:
                     await _client.SetActivityAsync(new Game($"{EmblemOffer.CurrentOffers.Count} Available Emblems", ActivityType.Watching)); break;
                 case 10:
-                    await _client.SetActivityAsync(new Game($"this ratio", ActivityType.Watching)); break;
+                    await _client.SetActivityAsync(new Game($"this ratio | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 11:
                     await _client.SetActivityAsync(new Game($"for /support | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 12:
@@ -576,6 +576,7 @@ namespace Levante
                 tempLevelData.UpdateEntriesConfig();
                 tempPowerLevelData.UpdateEntriesConfig();
                 Log.Information("[{Type}] Data pulling complete!", "Leaderboards");
+                await Task.Delay(0);
             }
             catch (Exception x)
             {
@@ -610,7 +611,7 @@ namespace Levante
                         //397846250797662208
                         //915020047154565220
                         //1011700865087852585
-                        await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
+                        await _interaction.RegisterCommandsToGuildAsync(915020047154565220);
                     }
                     else
                     {

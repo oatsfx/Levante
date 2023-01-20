@@ -61,7 +61,10 @@ namespace Levante.Commands
             {
                 if (!long.TryParse(ArmorModHash, out long ModHashArg))
                 {
-                    await RespondAsync($"Invalid search, please try again. Make sure to choose one of the autocomplete options!", ephemeral: true);
+                    var embed = Embeds.GetErrorEmbed();
+                    embed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
+
+                    await RespondAsync(embed: embed.Build(), ephemeral: true);
                     return;
                 }
 

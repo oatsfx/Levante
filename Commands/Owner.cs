@@ -842,14 +842,14 @@ namespace Levante.Commands
                     {
                         var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
                         var msg = await channel.SendMessageAsync($"{role.Mention}", false, embed.Build());
-                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.DevServerID)
+                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
                             await msg.CrosspostAsync();
                     }
                     else
                     {
                         // Crosspost/Publish for news channels the bot posts into.
                         var msg = await channel.SendMessageAsync("", false, embed.Build());
-                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.DevServerID)
+                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
                             await msg.CrosspostAsync();
                     }
                 }

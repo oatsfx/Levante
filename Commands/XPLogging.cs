@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Levante.Configs;
 using Discord.Interactions;
 using Levante.Helpers;
+using Levante.Util;
 
 namespace Levante.Commands
 {
@@ -44,26 +45,18 @@ namespace Levante.Commands
         }
 
         [SlashCommand("current-session", "Pulls stats of a current XP session.")]
-        public async Task SessionStats([Summary("user", "User you want the current XP Session stats for. Leave empty for your own.")] IUser User = null)
+        public async Task SessionStats()
         {
-            if (User == null)
-                User = Context.User as SocketGuildUser;
-
-            if (!ActiveConfig.IsExistingActiveUser(User.Id))
+            if (!ActiveConfig.IsExistingActiveUser(Context.User.Id))
             {
-                if (Context.User.Id == User.Id)
-                {
-                    await RespondAsync("You are not using my logging feature.", ephemeral: true);
-                    return;
-                }
-                else
-                {
-                    await RespondAsync($"{User.Username} is not using my logging feature.", ephemeral: true);
-                    return;
-                }
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"You are not using my logging feature. Look for an \"#xp-hub\" channel in a Discord I am in to get started.";
+
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
+                return;
             }
 
-            var aau = ActiveConfig.GetActiveAFKUser(User.Id);
+            var aau = ActiveConfig.GetActiveAFKUser(Context.User.Id);
             await RespondAsync(embed: XPLoggingHelper.GenerateSessionSummary(aau).Build());
         }
     }

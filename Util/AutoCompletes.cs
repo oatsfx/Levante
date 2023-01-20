@@ -282,10 +282,11 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < 7; i++)
+                while (results.Count() < 7)
                 {
                     var perk = ManifestHelper.Perks.ElementAt(random.Next(0, ManifestHelper.Perks.Count));
-                    results.Add(new AutocompleteResult(perk.Value, $"{perk.Key}"));
+                    if (!results.Exists(x => x.Value.Equals(perk.Key)))
+                        results.Add(new AutocompleteResult(perk.Value, $"{perk.Key}"));
                 }
             else
                 foreach (var Perk in ManifestHelper.Perks)

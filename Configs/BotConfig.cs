@@ -68,6 +68,9 @@ namespace Levante.Configs
         [JsonProperty("DevServerID")]
         public static ulong DevServerID { get; set; } = 0;
 
+        [JsonProperty("SupportServerID")]
+        public static ulong SupportServerID { get; set; } = 0;
+
         [JsonProperty("BotDevs")]
         public static List<ulong> BotDevDiscordIDs { get; set; } = new();
 

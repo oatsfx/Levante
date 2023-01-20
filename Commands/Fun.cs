@@ -22,21 +22,28 @@ namespace Levante.Commands
             await DeferAsync();
             string[] ratioMsgs =
             {
+                "Ratio",
                 "Counter",
                 "L",
                 "You fell off",
                 "Skill issue",
                 "GG",
+                "EZ",
                 "Ice cold",
                 "Bozo",
                 "Ok and?",
                 "Who asked?",
+                "Didn't ask",
                 "💀 x7",
                 "Cope",
+                "Caught in 4K",
+                "Rolled",
+                "I own you",
+                "You're mad",
             };
 
             var random = new Random();
-            int numOfMsgs = random.Next(1, 4);
+            int numOfMsgs = random.Next(1, 5);
             List<string> msgs = new List<string>();
             
             for (int i = 0; i < numOfMsgs; i++)
@@ -98,7 +105,7 @@ namespace Levante.Commands
                     }
                 }
             }
-            Emoji thumbsUp = new Emoji("👍");
+            Emoji thumbsUp = new("👍");
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = result; }).Result.AddReactionAsync(thumbsUp);
         }
     }
