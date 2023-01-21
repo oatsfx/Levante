@@ -541,12 +541,12 @@ namespace Levante.Helpers
                                 if (invItem.Value.ItemTypeDisplayName.Contains("Enhanced"))
                                 {
                                     if (EnhancedPerks.ContainsValue(invItem.Value.DisplayProperties.Name)) continue;
-                                    EnhancedPerks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
+                                    EnhancedPerks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace('ä', 'a').Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
                                 } 
                                 else
                                 {
                                     if (Perks.ContainsValue(invItem.Value.DisplayProperties.Name)) continue;
-                                    Perks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
+                                    Perks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace('ä', 'a').Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
 
                                     if (clarity.ContainsKey(invItem.Value.Hash))
                                         ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
