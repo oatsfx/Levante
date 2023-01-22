@@ -54,6 +54,8 @@ namespace Levante.Util
                     x.IsInline = false;
                 });
 
+                var insightHash = HashCode;
+
                 if (ManifestHelper.EnhancedPerks.ContainsValue(GetName()))
                 {
                     var enhanced = new WeaponPerk(ManifestHelper.EnhancedPerks.FirstOrDefault(x => x.Value.Equals(GetName())).Key);
@@ -63,9 +65,11 @@ namespace Levante.Util
                         x.Value = $"{enhanced.GetDescription()}";
                         x.IsInline = false;
                     });
+
+                    insightHash = enhanced.HashCode;
                 }
 
-                if (ManifestHelper.ClarityDescriptions.ContainsKey(HashCode))
+                if (ManifestHelper.ClarityDescriptions.ContainsKey(insightHash))
                 {
                     embed.AddField(x =>
                     {
