@@ -74,7 +74,7 @@ namespace Levante.Util
                     embed.AddField(x =>
                     {
                         x.Name = "Community Insight";
-                        x.Value = $"[Clarity](https://www.d2clarity.com/):\n{ManifestHelper.ClarityDescriptions[HashCode]}";
+                        x.Value = $"[Clarity](https://www.d2clarity.com/):\n{ManifestHelper.ClarityDescriptions[insightHash]}";
                         x.IsInline = false;
                     });
                 }

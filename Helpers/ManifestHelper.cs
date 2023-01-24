@@ -347,12 +347,11 @@ namespace Levante.Helpers
                     {
                         if (node.Value.DisplayProperties == null) continue;
                         if (node.Value.Children == null) continue;
-                        if (!node.Value.Children.PresentationNodes.Any()) continue;
 
                         if (node.Value.DisplayProperties.Name == "Seasonal Challenges")
                             SeasonIcon = $"https://bungie.net/{node.Value.DisplayProperties.Icon}";
 
-                        if (node.Value.DisplayProperties.Name == "Weekly")
+                        if (node.Value.DisplayProperties.Name == "Weekly" && node.Value.Children.PresentationNodes.Any())
                         {
                             foreach (var child in node.Value.Children.PresentationNodes)
                             {
@@ -374,7 +373,6 @@ namespace Levante.Helpers
                                     SeasonalChallenges.Add(challenges);
                                 }
                             }
-                            
                         }
 
                         if (!node.Value.Children.Records.Any()) continue;
@@ -386,7 +384,6 @@ namespace Levante.Helpers
                                 string recordName = recordList[child.RecordHash.ToString()].DisplayProperties.Name;
                                 if (recordName.Contains("Grandmaster:"))
                                 {
-                                    //Console.WriteLine(recordName.Replace("Grandmaster: ", ""));
                                     NightfallRotation.Nightfalls.Add(recordName.Replace("Grandmaster: ", ""));
                                 }
                             }
@@ -521,7 +518,7 @@ namespace Levante.Helpers
                                 NightfallRotation.NightfallWeapons[index].Emote = DestinyEmote.MatchWeaponItemSubtypeToEmote(invItem.Value.ItemSubType, isHeavyGL);
                             }
                         }
-                        
+
                         if (invItem.Value.ItemType == DestinyItemType.Mod && invItem.Value.ItemSubType == 0)
                         {
                             //if (invItem.Value.DisplayProperties.Name == null || 
@@ -542,6 +539,9 @@ namespace Levante.Helpers
                                 {
                                     if (EnhancedPerks.ContainsValue(invItem.Value.DisplayProperties.Name)) continue;
                                     EnhancedPerks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace('ä', 'a').Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
+
+                                    if (clarity.ContainsKey(invItem.Value.Hash))
+                                        ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
                                 } 
                                 else
                                 {
@@ -550,9 +550,6 @@ namespace Levante.Helpers
 
                                     if (clarity.ContainsKey(invItem.Value.Hash))
                                         ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
-                                    else
-                                        ClarityDescriptions.Add(invItem.Value.Hash, "[NO DATA]");
-
                                 }
                                     
                             }
@@ -565,6 +562,9 @@ namespace Levante.Helpers
                             {
                                 //Log.Debug("Perk: {PerkName} {IsEnhanced}", invItem.Value.DisplayProperties.Name, invItem.Value.ItemTypeDisplayName.Contains("Enhanced"));
                                 EnhancedPerks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
+
+                                if (clarity.ContainsKey(invItem.Value.Hash))
+                                    ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
                             }
                                 
                         }
@@ -586,7 +586,7 @@ namespace Levante.Helpers
 
         private static string ClarityClean(string input)
         {
-            string output = input.Replace("🡅", DestinyEmote.Enhanced);
+            string output = input.Replace("🠅", DestinyEmote.Enhanced);
 
             return output;
         }
