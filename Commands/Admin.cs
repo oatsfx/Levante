@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Levante.Configs;
 using Discord.Interactions;
 using System;
+using Levante.Util;
 
 namespace Levante.Commands
 {
@@ -10,7 +11,7 @@ namespace Levante.Commands
     {
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
         [Group("alert", "Set up announcements for Daily/Weekly Reset and Emblem Offers.")]
-        public class Alert : InteractionModuleBase<SocketInteractionContext>
+        public class Alert : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("emblem-offers", "Set up announcements for Emblem Offers. Use this in the channel you want this set up in.")]
             public async Task EmblemOffers([Summary("role", "Add a role to be pinged when a new Emblem Offer is posted.")] IRole RoleToPing = null)
@@ -78,7 +79,9 @@ namespace Levante.Commands
         {
             if (Context.Channel.GetChannelType() == ChannelType.DM)
             {
-                await RespondAsync($"Cannot make channels in Direct Messages!", ephemeral: true);
+                var errEmbed = Embeds.GetErrorEmbed();
+                errEmbed.Description = $"Cannot make channels in Direct Messages!";
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errEmbed.Build(); });
                 return;
             }
 
@@ -157,7 +160,9 @@ namespace Levante.Commands
         {
             if (Context.Channel.GetChannelType() == ChannelType.DM)
             {
-                await RespondAsync($"Cannot get server information in Direct Messages!", ephemeral: true);
+                var errEmbed = Embeds.GetErrorEmbed();
+                errEmbed.Description = $"Cannot get server information in Direct Messages!";
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errEmbed.Build(); });
                 return;
             }
 
@@ -170,14 +175,13 @@ namespace Levante.Commands
             {
                 Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}",
             };
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = auth,
                 Footer = foot,
+                Description = $"\n",
             };
-            embed.Description =
-                $"\n";
 
             ulong emblemAnnounceId = 0,
                 emblemAnnounceRoleId = 0,
