@@ -32,7 +32,6 @@ namespace Levante.Helpers
         public static Dictionary<long, string> Nightfalls = new();
 
         public static Dictionary<long, string> Perks = new();
-        public static Dictionary<long, string> WeaponPerkClarityDescriptions = new();
         public static Dictionary<long, string> EnhancedPerks = new();
 
         public static Dictionary<long, string> ClarityDescriptions = new();
@@ -80,7 +79,7 @@ namespace Levante.Helpers
             SeasonIconURLs.Clear();
             Perks.Clear();
             EnhancedPerks.Clear();
-            WeaponPerkClarityDescriptions.Clear();
+            ClarityDescriptions.Clear();
             using (var client = new HttpClient())
             {
                 // DIM Watermark to Season
@@ -540,7 +539,7 @@ namespace Levante.Helpers
                                     if (EnhancedPerks.ContainsValue(invItem.Value.DisplayProperties.Name)) continue;
                                     EnhancedPerks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace('ä', 'a').Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
 
-                                    if (clarity.ContainsKey(invItem.Value.Hash))
+                                    if (clarity.ContainsKey(invItem.Value.Hash) && clarity[invItem.Value.Hash].Descriptions != null && clarity[invItem.Value.Hash].Descriptions.ContainsKey("en"))
                                         ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
                                 } 
                                 else
@@ -548,7 +547,7 @@ namespace Levante.Helpers
                                     if (Perks.ContainsValue(invItem.Value.DisplayProperties.Name)) continue;
                                     Perks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace('ä', 'a').Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
 
-                                    if (clarity.ContainsKey(invItem.Value.Hash))
+                                    if (clarity.ContainsKey(invItem.Value.Hash) && clarity[invItem.Value.Hash].Descriptions != null && clarity[invItem.Value.Hash].Descriptions.ContainsKey("en"))
                                         ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
                                 }
                                     
