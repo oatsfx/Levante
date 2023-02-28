@@ -879,7 +879,7 @@ namespace Levante.Commands
             Choice("Total XP Logging Time", 3), Choice("Equipped Power Level", 4)] int ArgLeaderboard,
             [Summary("season", "Season of the specific leaderboard. Defaults to the current season."),
             Choice("Season of the Lost", 15), Choice("Season of the Risen", 16), Choice("Season of the Haunted", 17),
-            Choice("Season of Plunder", 18), Choice("Season of the Seraph", 19)] int Season = 19)
+            Choice("Season of Plunder", 18), Choice("Season of the Seraph", 19), Choice("Season of Defiance", 20)] int Season = 20)
         {
             Leaderboard LeaderboardType = (Leaderboard)ArgLeaderboard;
 
@@ -895,7 +895,8 @@ namespace Levante.Commands
                             case 16: json = File.ReadAllText(LevelData.FilePathS16); break;
                             case 17: json = File.ReadAllText(LevelData.FilePathS17); break;
                             case 18: json = File.ReadAllText(LevelData.FilePathS18); break;
-                            case 19: json = File.ReadAllText(LevelData.FilePath); break;
+                            case 19: json = File.ReadAllText(LevelData.FilePathS19); break;
+                            case 20: json = File.ReadAllText(LevelData.FilePath); break;
                             default: await RespondAsync($"Issue with Season number argument."); return;
                         }
                         LevelData ld = JsonConvert.DeserializeObject<LevelData>(json);
@@ -912,7 +913,8 @@ namespace Levante.Commands
                             case 16: json = File.ReadAllText(LongestSessionData.FilePathS16); break;
                             case 17: json = File.ReadAllText(LongestSessionData.FilePathS17); break;
                             case 18: json = File.ReadAllText(LongestSessionData.FilePathS18); break;
-                            case 19: json = File.ReadAllText(LongestSessionData.FilePath); break;
+                            case 19: json = File.ReadAllText(LongestSessionData.FilePathS19); break;
+                            case 20: json = File.ReadAllText(LongestSessionData.FilePath); break;
                             default: await RespondAsync($"Issue with Season number argument."); return;
                         }
                         LongestSessionData lsd = JsonConvert.DeserializeObject<LongestSessionData>(json);
@@ -929,7 +931,8 @@ namespace Levante.Commands
                             case 16: json = File.ReadAllText(XPPerHourData.FilePathS16); break;
                             case 17: json = File.ReadAllText(XPPerHourData.FilePathS17); break;
                             case 18: json = File.ReadAllText(XPPerHourData.FilePathS18); break;
-                            case 19: json = File.ReadAllText(XPPerHourData.FilePath); break;
+                            case 19: json = File.ReadAllText(XPPerHourData.FilePathS19); break;
+                            case 20: json = File.ReadAllText(XPPerHourData.FilePath); break;
                             default: await RespondAsync($"Issue with Season number argument."); return;
                         }
                         XPPerHourData xph = JsonConvert.DeserializeObject<XPPerHourData>(json);
@@ -946,7 +949,8 @@ namespace Levante.Commands
                             case 16: json = File.ReadAllText(MostXPLoggingTimeData.FilePathS16); break;
                             case 17: json = File.ReadAllText(MostXPLoggingTimeData.FilePathS17); break;
                             case 18: json = File.ReadAllText(MostXPLoggingTimeData.FilePathS18); break;
-                            case 19: json = File.ReadAllText(MostXPLoggingTimeData.FilePath); break;
+                            case 19: json = File.ReadAllText(MostXPLoggingTimeData.FilePathS19); break;
+                            case 20: json = File.ReadAllText(MostXPLoggingTimeData.FilePath); break;
                             default: await RespondAsync($"Issue with Season number argument."); return;
                         }
                         MostXPLoggingTimeData mttd = JsonConvert.DeserializeObject<MostXPLoggingTimeData>(json);
@@ -963,7 +967,8 @@ namespace Levante.Commands
                             case 16: json = File.ReadAllText(PowerLevelData.FilePathS16); break;
                             case 17: json = File.ReadAllText(PowerLevelData.FilePathS17); break;
                             case 18: json = File.ReadAllText(PowerLevelData.FilePathS18); break;
-                            case 19: json = File.ReadAllText(PowerLevelData.FilePath); break;
+                            case 19: json = File.ReadAllText(PowerLevelData.FilePathS19); break;
+                            case 20: json = File.ReadAllText(PowerLevelData.FilePath); break;
                             default: await RespondAsync($"Issue with Season number argument."); return;
                         }
                         PowerLevelData pld = JsonConvert.DeserializeObject<PowerLevelData>(json);

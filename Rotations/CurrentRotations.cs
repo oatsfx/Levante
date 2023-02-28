@@ -82,7 +82,7 @@ namespace Levante.Rotations
 
         public static void DailyRotation()
         {
-            Ada1Rotation.GetAda1Inventory();
+            //Ada1Rotation.GetAda1Inventory();
 
             LostSector = LostSector == LostSectorRotation.LostSectors.Count - 1 ? 0 : LostSector + 1;
             LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
@@ -105,7 +105,7 @@ namespace Levante.Rotations
             VoGChallengeEncounter = VoGChallengeEncounter == VaultOfGlassEncounter.Atheon ? VaultOfGlassEncounter.Confluxes : VoGChallengeEncounter + 1;
             VowChallengeEncounter = VowChallengeEncounter == VowOfTheDiscipleEncounter.Rhulk ? VowOfTheDiscipleEncounter.Acquisition : VowChallengeEncounter + 1;
             KFChallengeEncounter = KFChallengeEncounter == KingsFallEncounter.Oryx ? KingsFallEncounter.Basilica : KFChallengeEncounter + 1;
-            FeaturedRaid = FeaturedRaid == Raid.VowOfTheDisciple ? Raid.LastWish : FeaturedRaid + 1;
+            FeaturedRaid = FeaturedRaid == Raid.KingsFall ? Raid.LastWish : FeaturedRaid + 1;
             CurseWeek = CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : CurseWeek + 1;
             AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? AscendantChallenge.AgonarchAbyss : AscendantChallenge + 1;
             //Nightfall = Nightfall == NightfallRotation.Nightfalls.Count - 1 ? 0 : Nightfall + 1;
@@ -243,13 +243,13 @@ namespace Levante.Rotations
                     $"{AltarsOfSorrowRotation.GetWeaponEmote(AltarWeapon)} {AltarsOfSorrowRotation.GetWeaponNameString(AltarWeapon)}\n" +
                     $"{DestinyEmote.Luna} {AltarsOfSorrowRotation.GetAltarBossString(AltarWeapon)}";
                 x.IsInline = true;
-            }).AddField(x =>
+            })/*.AddField(x =>
             {
                 x.Name = $"{DestinyEmote.Ada1}Ada-1 Mod Sales";
                 x.Value =
                     $"{adaMods}";
                 x.IsInline = true;
-            });
+            })*/;
 
             return embed;
         }

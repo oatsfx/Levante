@@ -411,6 +411,9 @@ namespace Levante.Helpers
                             LostSectorRotation.LostSectors[index].Location = placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name;
                             foreach (var mod in activity.Value.Modifiers)
                             {
+                                if (!modifierList.ContainsKey($"{mod.ActivityModifierHash}"))
+                                    continue;
+
                                 if (String.IsNullOrEmpty(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name) ||
                                     modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Champion") ||
                                     modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Shielded") ||
@@ -431,6 +434,9 @@ namespace Levante.Helpers
                                 LostSectorRotation.LostSectors[index].Location = placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name;
                                 foreach (var mod in activity.Value.Modifiers)
                                 {
+                                    if (!modifierList.ContainsKey($"{mod.ActivityModifierHash}"))
+                                        continue;
+
                                     // Don't want champion modifier(s) because we have those.
                                     if (String.IsNullOrEmpty(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name) ||
                                             modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Champion") ||
@@ -487,7 +493,7 @@ namespace Levante.Helpers
                                             if (invItemList[$"{weapon.Key}"].IconWatermark == null)
                                                 Weapons.Add(weapon.Key, $"{weapon.Value} [S1]");
                                             else if (SeasonIconURLs.ContainsKey(invItem.Value.IconWatermark))
-                                                Weapons.Add(weapon.Key, $"{weapon.Value} [S{SeasonIconURLs[$"{invItemList[$"{weapon.Key}"].IconWatermark}"]}]");
+                                                Weapons.Add(weapon.Key, $"{weapon.Value} [S{SeasonIconURLs[$"{invItem.Value.IconWatermark}"]}]");
                                             else // This handles event weapons because their icon does not have the season one. Lazy implementation that does not take into account whether or not the weapon is the more recent version.
                                             {
                                                 //Log.Debug("Added: {Name} [V{Count}]", weapon.Value, dupeCount + 1);

@@ -34,6 +34,7 @@ namespace Levante.Rotations
                 case Raid.DeepStoneCrypt: return "Deep Stone Crypt";
                 case Raid.VaultOfGlass: return "Vault of Glass";
                 case Raid.VowOfTheDisciple: return "Vow of the Disciple";
+                case Raid.KingsFall: return "King's Fall";
                 default: return "Raid String";
             }
         }
@@ -106,5 +107,6 @@ namespace Levante.Rotations
         DeepStoneCrypt, // Prophecy
         VaultOfGlass, // Grasp of Avarice
         VowOfTheDisciple,
+        KingsFall,
     }
 }
