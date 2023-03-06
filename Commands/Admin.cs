@@ -4,18 +4,28 @@ using Levante.Configs;
 using Discord.Interactions;
 using System;
 using Levante.Util;
+using Levante.Rotations;
 
 namespace Levante.Commands
 {
     public class Admin : InteractionModuleBase<ShardedInteractionContext>
     {
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
+        [RequireBotPermission(GuildPermission.ManageChannels)]
         [Group("alert", "Set up announcements for Daily/Weekly Reset and Emblem Offers.")]
         public class Alert : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("emblem-offers", "Set up announcements for Emblem Offers. Use this in the channel you want this set up in.")]
             public async Task EmblemOffers([Summary("role", "Add a role to be pinged when a new Emblem Offer is posted.")] IRole RoleToPing = null)
             {
+                if (Context.Channel.GetChannelType() == ChannelType.DM)
+                {
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = $"I only allow alerts like these to be made in servers!";
+                    await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
+                    return;
+                }
+
                 if (DataConfig.IsExistingEmblemLinkedChannel(Context.Channel.Id))
                 {
                     DataConfig.DeleteEmblemChannel(Context.Channel.Id);
@@ -34,6 +44,18 @@ namespace Levante.Commands
                         }
                     }
 
+                    try
+                    {
+                        await Context.Channel.SendMessageAsync(embed: EmblemOffer.GetRandomOfferEmbed().Build());
+                    }
+                    catch
+                    {
+                        var errEmbed = Embeds.GetErrorEmbed();
+                        errEmbed.Description = $"Something went wrong when trying to send an emblem offer post, do I have permissions to send messages into this channel?";
+                        await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
+                        return;
+                    }
+
                     DataConfig.AddEmblemChannel(Context.Channel.Id, RoleToPing);
 
                     await RespondAsync($"This channel is now successfully subscribed to Emblem Offer posts. Run this command again to remove this type of alert!", ephemeral: true);
@@ -45,6 +67,14 @@ namespace Levante.Commands
             public async Task Resets([Summary("reset-type", "Choose between Daily or Weekly Reset."),
                 Choice("Daily", 0), Choice("Weekly", 1)] int ResetType)
             {
+                if (Context.Channel.GetChannelType() == ChannelType.DM)
+                {
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = $"I only allow alerts like these to be made in servers!";
+                    await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
+                    return;
+                }
+
                 bool IsDaily = ResetType == 0;
 
                 if (DataConfig.IsExistingLinkedChannel(Context.Channel.Id, IsDaily))
@@ -65,6 +95,18 @@ namespace Levante.Commands
                         }
                     }
 
+                    try
+                    {
+                        await Context.Channel.SendMessageAsync(embed: IsDaily ? CurrentRotations.DailyResetEmbed().Build() : CurrentRotations.WeeklyResetEmbed().Build());
+                    }
+                    catch
+                    {
+                        var errEmbed = Embeds.GetErrorEmbed();
+                        errEmbed.Description = $"Something went wrong when trying to post the reset embed, do I have permissions to send messages into this channel?";
+                        await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
+                        return;
+                    }
+
                     DataConfig.AddChannelToRotationConfig(Context.Channel.Id, IsDaily);
 
                     await RespondAsync($"This channel is now successfully subscribed to {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command again to remove this type of alert!", ephemeral: true);
@@ -74,6 +116,7 @@ namespace Levante.Commands
         }
 
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
+        [RequireBotPermission(GuildPermission.ManageChannels)]
         [SlashCommand("create-hub", "Creates a post with buttons so people can start their XP logs.")]
         public async Task CreateHub()
         {
@@ -81,7 +124,7 @@ namespace Levante.Commands
             {
                 var errEmbed = Embeds.GetErrorEmbed();
                 errEmbed.Description = $"Cannot make channels in Direct Messages!";
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errEmbed.Build(); });
+                await RespondAsync(embed: errEmbed.Build());
                 return;
             }
 
@@ -155,6 +198,7 @@ namespace Levante.Commands
         }
 
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
+        [RequireBotPermission(GuildPermission.ManageChannels)]
         [SlashCommand("server-info", "Gets general information about a server/guild along with Levante integrations.")]
         public async Task ServerInfo()
         {
@@ -162,7 +206,7 @@ namespace Levante.Commands
             {
                 var errEmbed = Embeds.GetErrorEmbed();
                 errEmbed.Description = $"Cannot get server information in Direct Messages!";
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errEmbed.Build(); });
+                await RespondAsync(embed: errEmbed.Build());
                 return;
             }
 

@@ -22,10 +22,10 @@ namespace Levante.Configs
 
         // Supporter AFK Users. Used in order to maintain without a limit.
         [JsonProperty("PriorityActiveAFKUsers")]
-        public static List<ActiveAFKUser> PriorityActiveAFKUsers { get; set; } = new List<ActiveAFKUser>();
+        public static List<ActiveAFKUser> PriorityActiveAFKUsers { get; set; } = new();
 
         [JsonProperty("ActiveAFKUsers")]
-        public static List<ActiveAFKUser> ActiveAFKUsers { get; set; } = new List<ActiveAFKUser>();
+        public static List<ActiveAFKUser> ActiveAFKUsers { get; set; } = new();
 
         [JsonProperty("MaximumLoggingUsers")]
         public static int MaximumLoggingUsers = 20;
@@ -35,6 +35,9 @@ namespace Levante.Configs
 
         [JsonProperty("TimeBetweenRefresh")]
         public static int TimeBetweenRefresh = 2;
+
+        [JsonProperty("RefreshScaling")]
+        public static double RefreshScaling = 0.30;
 
         public partial class ActiveAFKUser
         {

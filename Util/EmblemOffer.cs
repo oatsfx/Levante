@@ -130,11 +130,10 @@ namespace Levante.Util
             {
                 Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = auth,
-                Footer = foot
+                Footer = foot,
             };
 
-            string desc = $"__Offers ({(10 * Page) + 1}/{((10 * Page) + 10 > CurrentOffers.Count ? CurrentOffers.Count : (10 * Page) + 10)}):__\n";
-
+            string desc = $"__Offers ({(10 * Page) + 1}-{((10 * Page) + 10 > CurrentOffers.Count ? CurrentOffers.Count : (10 * Page) + 10)})__\n";
             if (CurrentOffers.Count != 0)
             {
                 foreach (var Offer in CurrentOffers.GetRange(10*Page, (10 * Page) + 10 > CurrentOffers.Count ? CurrentOffers.Count - (10 * Page) : 10))

@@ -479,7 +479,18 @@ namespace Levante
                 }
                 ActiveConfig.UpdateActiveAFKUsersConfig();
 
-                _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, ActiveConfig.TimeBetweenRefresh * 60000);
+                // In place if the experimental function decides to break!
+                if (ActiveConfig.RefreshScaling >= 0)
+                {
+                    int msTilNext = (int)Math.Floor(-(Math.Sqrt(ActiveConfig.ActiveAFKUsers.Count + ActiveConfig.PriorityActiveAFKUsers.Count) * ActiveConfig.RefreshScaling) + ActiveConfig.TimeBetweenRefresh);
+                    int minutesTilNext = (int)Math.Floor((double)msTilNext * 60000);
+                    _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, minutesTilNext < 0 ? 0 : minutesTilNext);
+                    Log.Debug("Refreshing in {Time} ms.", msTilNext);
+                }
+                else
+                {
+                    _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, ActiveConfig.TimeBetweenRefresh * 60000);
+                }
                 Log.Information("[{Type}] Bungie API Refreshed! Next refresh in: {Time} minute(s).", "XP Sessions", ActiveConfig.TimeBetweenRefresh);
             }
             catch (Exception x)
@@ -600,7 +611,10 @@ namespace Levante
 
                 shard.Ready += async () =>
                 {
-                    Log.Information("[{Type}] Shard {ShardID} connected and ready.", "Discord", shard.ShardId);
+                    await Task.Run(() =>
+                    {
+                        Log.Information("[{Type}] Shard {ShardID} connected and ready.", "Discord", shard.ShardId);
+                    });
                 };
 
                 readyShards++;
@@ -611,7 +625,7 @@ namespace Levante
                         //397846250797662208
                         //915020047154565220
                         //1011700865087852585
-                        await _interaction.RegisterCommandsToGuildAsync(915020047154565220);
+                        await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
                     }
                     else
                     {
@@ -716,7 +730,7 @@ namespace Levante
                     return;
                 }
                 Ada1Rotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Ada-1 tracking, you will not be notified when {ManifestHelper.Ada1ArmorMods[ModHash]} is available.", ephemeral: true);
+                await interaction.RespondAsync($"Removed your Ada-1 tracking, you will not be notified when {ManifestHelper.Ada1Items[ModHash]} is available.", ephemeral: true);
                 return;
             }
             else if (trackerType.Equals("altars-of-sorrow"))
@@ -727,7 +741,7 @@ namespace Levante
                     return;
                 }
                 AltarsOfSorrowRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Altars of Sorrow tracking, you will not be notified when {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}) is available.", ephemeral: true);
+                await interaction.RespondAsync($"Removed your Altars of Sorrow tracking, you will not be notified when {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType}) is available.", ephemeral: true);
                 return;
             }
             else if (trackerType.Equals("ascendant-challenge"))
@@ -863,6 +877,17 @@ namespace Levante
                 }
                 NightmareHuntRotation.RemoveUserTracking(interaction.User.Id);
                 await interaction.RespondAsync($"Removed your Nightmare Hunt tracking, you will not be notified when {NightmareHuntRotation.GetHuntNameString(NightmareHunt)} ({NightmareHuntRotation.GetHuntBossString(NightmareHunt)}) is available.", ephemeral: true);
+                return;
+            }
+            else if (trackerType.Equals("terminal-overload"))
+            {
+                if (TerminalOverloadRotation.GetUserTracking(interaction.User.Id, out var Location) == null)
+                {
+                    await interaction.RespondAsync($"No Terminal Overload tracking enabled.", ephemeral: true);
+                    return;
+                }
+                TerminalOverloadRotation.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Terminal Overload tracking, you will not be notified when {TerminalOverloadRotation.TerminalOverloads[Location].Weapon} ({TerminalOverloadRotation.TerminalOverloads[Location].WeaponType}) is available.", ephemeral: true);
                 return;
             }
             else if (trackerType.Equals("vog-challenge"))

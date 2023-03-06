@@ -54,6 +54,7 @@ namespace Levante.Util
         public static readonly string Kinetic = "<:Kinetic:955691794455232543>";
         public static readonly string Solar = "<:Solar:900144171267022888>";
         public static readonly string Stasis = "<:Stasis:955698714738061362>";
+        public static readonly string Strand = "<:Strand:1081668335831371819>";
         public static readonly string Void = "<:Void:900144180288958474>";
 
         // Weapon Types
@@ -93,15 +94,18 @@ namespace Levante.Util
         public static readonly string DreamingCity = "<:DreamingCity:934496727820554341>";
         public static readonly string Europa = "<:Europa:933972047980285972>";
         public static readonly string Luna = "<:Luna:934486787101958205>";
+        public static readonly string TerminalOverload = "<:TerminalOverload:1082431658743046254>";
         public static readonly string ThroneWorld = "<:ThroneWorld:947293281983799337>";
 
         // Misc
         public static readonly string Ada1 = "<:Ada1:1009837298814288003>";
         public static readonly string AscendantChallengeBounty = "<:ACBounty:934478080737693787>";
         public static readonly string Classified = "<:Classified:1014305658390184006>";
+        public static readonly string Commendations = "<:Commendations:1082135754320384001>";
         public static readonly string Enhanced = "<:Enhanced:1020834766397911080>";
         public static readonly string Gilded = "<:Gilded:994067890024235029>";
         public static readonly string GildedPurple = "<:GildedPurple:996604027867500574>";
+        public static readonly string GuardianRank = "<:GuardianRank:1081811162808721469>";
         public static readonly string Headshot = "<:Headshot:1062970942369824828>";
         public static readonly string KFRaidChallenge = "<:KFRaidChallenge:1021602526652534864>";
         public static readonly string Light = "<:LightLevel:844029708077367297>";
@@ -129,7 +133,9 @@ namespace Levante.Util
         public static readonly string ResonantAlloy = "<:ResonantAlloy:986514895946268742>";
         public static readonly string ResonantElement = "<:ResonantElement:986676994731278417>";
         public static readonly string SpoilsOfConquest = "<:SpoilsOfConquest:986514871850008616>";
+        public static readonly string StrandMeditations = "<:StrandMeditations:1082072750518173737>";
         public static readonly string StrangeCoins = "<:StrangeCoins:1020469985132425348>";
+        public static readonly string TerminalOverloadKey = "<:TerminalOverloadKey:1082072793002287226>";
         public static readonly string TinctureOfQueensfoil = "<:TinctureOfQueensfoil:1020468790078738462>";
         public static readonly string TreasureKeys = "<:TreasureKeys:1020468358229016596>";
         public static readonly string UpgradeModule = "<:UpgradeModule:986514733609926656>";

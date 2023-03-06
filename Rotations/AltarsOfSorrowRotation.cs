@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Levante.Util;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,8 +8,10 @@ namespace Levante.Rotations
 {
     public class AltarsOfSorrowRotation
     {
-        public static readonly int AltarWeaponCount = 3;
         public static readonly string FilePath = @"Trackers/altarsOfSorrow.json";
+        public static readonly string RotationsFilePath = @"Rotations/altarsOfSorrow.json";
+
+        public static List<AltarsOfSorrow> AltarsOfSorrows = new();
 
         [JsonProperty("AltarsOfSorrowLinks")]
         public static List<AltarsOfSorrowLink> AltarsOfSorrowLinks { get; set; } = new List<AltarsOfSorrowLink>();
@@ -19,43 +22,10 @@ namespace Levante.Rotations
             public ulong DiscordID { get; set; } = 0;
 
             [JsonProperty("WeaponDrop")]
-            public AltarsOfSorrow WeaponDrop { get; set; } = AltarsOfSorrow.Shotgun;
+            public int WeaponDrop { get; set; } = 0;
         }
 
-        public static string GetAltarBossString(AltarsOfSorrow Weapon)
-        {
-            switch (Weapon)
-            {
-                case AltarsOfSorrow.Shotgun: return "Phogoth, the Untamed";
-                case AltarsOfSorrow.Sniper: return "Taniks, the Scarred";
-                case AltarsOfSorrow.Rocket: return "Zydron, Gate Lord";
-                default: return "Altars of Sorrow";
-            }
-        }
-
-        public static string GetWeaponNameString(AltarsOfSorrow Weapon)
-        {
-            switch (Weapon)
-            {
-                case AltarsOfSorrow.Shotgun: return "Blasphemer";
-                case AltarsOfSorrow.Sniper: return "Apostate";
-                case AltarsOfSorrow.Rocket: return "Heretic";
-                default: return "Altars of Sorrow";
-            }
-        }
-
-        public static string GetWeaponEmote(AltarsOfSorrow Weapon)
-        {
-            switch (Weapon)
-            {
-                case AltarsOfSorrow.Shotgun: return "<:Shotgun:933969813594837093>";
-                case AltarsOfSorrow.Sniper: return "<:Sniper:933969813322203198>";
-                case AltarsOfSorrow.Rocket: return "<:Rocket:933969813733265488>";
-                default: return "Altars of Sorrow Weapon Emote";
-            }
-        }
-
-        public static void AddUserTracking(ulong DiscordID, AltarsOfSorrow WeaponDrop)
+        public static void AddUserTracking(ulong DiscordID, int WeaponDrop)
         {
             AltarsOfSorrowLinks.Add(new AltarsOfSorrowLink() { DiscordID = DiscordID, WeaponDrop = WeaponDrop });
             UpdateJSON();
@@ -68,7 +38,7 @@ namespace Levante.Rotations
         }
 
         // Returns null if no tracking is found.
-        public static AltarsOfSorrowLink GetUserTracking(ulong DiscordID, out AltarsOfSorrow Weapon)
+        public static AltarsOfSorrowLink GetUserTracking(ulong DiscordID, out int Weapon)
         {
             foreach (var Link in AltarsOfSorrowLinks)
                 if (Link.DiscordID == DiscordID)
@@ -76,7 +46,7 @@ namespace Levante.Rotations
                     Weapon = Link.WeaponDrop;
                     return Link;
                 }
-            Weapon = AltarsOfSorrow.Shotgun;
+            Weapon = -1;
             return null;
         }
 
@@ -96,6 +66,20 @@ namespace Levante.Rotations
             }
         }
 
+        public static void GetRotationJSON()
+        {
+            if (File.Exists(RotationsFilePath))
+            {
+                string json = File.ReadAllText(RotationsFilePath);
+                AltarsOfSorrows = JsonConvert.DeserializeObject<List<AltarsOfSorrow>>(json);
+            }
+            else
+            {
+                File.WriteAllText(RotationsFilePath, JsonConvert.SerializeObject(AltarsOfSorrows, Formatting.Indented));
+                Console.WriteLine($"No {RotationsFilePath} file detected. No action needed.");
+            }
+        }
+
         public static void UpdateJSON()
         {
             var obj = new AltarsOfSorrowRotation();
@@ -103,23 +87,35 @@ namespace Levante.Rotations
             File.WriteAllText(FilePath, output);
         }
 
-        public static DateTime DatePrediction(AltarsOfSorrow Weapon)
+        public static DateTime DatePrediction(int Weapon)
         {
-            AltarsOfSorrow iterationWeapon = CurrentRotations.AltarWeapon;
+            int iterationWeapon = CurrentRotations.AltarWeapon;
             int DaysUntil = 0;
             do
             {
-                iterationWeapon = iterationWeapon == AltarsOfSorrow.Rocket ? AltarsOfSorrow.Shotgun : iterationWeapon + 1;
+                iterationWeapon = iterationWeapon == AltarsOfSorrows.Count - 1 ? 0 : iterationWeapon + 1;
                 DaysUntil++;
             } while (iterationWeapon != Weapon);
             return CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil);
         }
     }
 
-    public enum AltarsOfSorrow
+    public class AltarsOfSorrow
+    {
+        [JsonProperty("Boss")]
+        public string Boss;
+        [JsonProperty("Weapon")]
+        public string Weapon;
+        [JsonProperty("WeaponType")]
+        public string WeaponType;
+        [JsonProperty("WeaponEmote")]
+        public string WeaponEmote;
+    }
+
+    /*public enum AltarsOfSorrow
     {
         Shotgun, // Blasphemer
         Sniper, // Apostate
         Rocket, // Heretic
-    }
+    }*/
 }

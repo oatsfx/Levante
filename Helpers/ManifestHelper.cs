@@ -24,7 +24,7 @@ namespace Levante.Helpers
         public static Dictionary<long, string> Emblems = new();
         public static Dictionary<long, string> Weapons = new();
         public static Dictionary<long, string> Seals = new();
-        public static Dictionary<long, string> Ada1ArmorMods = new();
+        public static Dictionary<long, string> Ada1Items = new();
         public static Dictionary<long, string> Activities = new();
         // Seal Hash, Tracker Hash
         public static Dictionary<long, long> GildableSeals = new();
@@ -40,6 +40,8 @@ namespace Levante.Helpers
         public static List<Dictionary<long, DestinyRecordDefinition>> SeasonalChallenges = new();
         public static string SeasonIcon;
         public static Dictionary<long, string> SeasonalObjectives = new();
+
+        public static Dictionary<long, string> GuardianRanks = new();
 
         private static Dictionary<string, int> SeasonIconURLs = new Dictionary<string, int>();
 
@@ -73,7 +75,7 @@ namespace Levante.Helpers
             EmblemsCollectible.Clear();
             Weapons.Clear();
             Seals.Clear();
-            Ada1ArmorMods.Clear();
+            Ada1Items.Clear();
             GildableSeals.Clear();
             Activities.Clear();
             SeasonIconURLs.Clear();
@@ -374,6 +376,15 @@ namespace Levante.Helpers
                             }
                         }
 
+                        if (node.Value.DisplayProperties.Name.Equals("Guardian Ranks"))
+                        {
+                            foreach (var rank in node.Value.Children.PresentationNodes)
+                            {
+                                GuardianRanks.Add(rank.PresentationNodeHash, presentNodeList[$"{rank.PresentationNodeHash}"].DisplayProperties.Name);
+                                Log.Debug($"Added {presentNodeList[$"{rank.PresentationNodeHash}"].DisplayProperties.Name}");
+                            }
+                        }
+
                         if (!node.Value.Children.Records.Any()) continue;
                         if (node.Value.CompletionRecordHash == null) continue;
                         foreach (var child in node.Value.Children.Records)
@@ -472,10 +483,10 @@ namespace Levante.Helpers
                         }
                             
 
-                        if (/*invItem.Value.TraitIds != null && invItem.Value.TraitIds.Contains("item_type.weapon")*/invItem.Value.ItemType == DestinyItemType.Weapon)
+                        if (invItem.Value.ItemType == DestinyItemType.Weapon)
                         {
                             if (invItem.Value.DisplayProperties.Name == null)
-                                continue; 
+                                continue;
 
                             if (invItem.Value.Hash == 417164956) // Jötunn
                                 Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} (Jotunn)");
@@ -492,8 +503,8 @@ namespace Levante.Helpers
                                             Weapons.Remove(weapon.Key);
                                             if (invItemList[$"{weapon.Key}"].IconWatermark == null)
                                                 Weapons.Add(weapon.Key, $"{weapon.Value} [S1]");
-                                            else if (SeasonIconURLs.ContainsKey(invItem.Value.IconWatermark))
-                                                Weapons.Add(weapon.Key, $"{weapon.Value} [S{SeasonIconURLs[$"{invItem.Value.IconWatermark}"]}]");
+                                            else if (SeasonIconURLs.ContainsKey(invItemList[$"{weapon.Key}"].IconWatermark))
+                                                Weapons.Add(weapon.Key, $"{weapon.Value} [S{SeasonIconURLs[$"{invItemList[$"{weapon.Key}"].IconWatermark}"]}]");
                                             else // This handles event weapons because their icon does not have the season one. Lazy implementation that does not take into account whether or not the weapon is the more recent version.
                                             {
                                                 //Log.Debug("Added: {Name} [V{Count}]", weapon.Value, dupeCount + 1);
@@ -524,7 +535,7 @@ namespace Levante.Helpers
                             }
                         }
 
-                        if (invItem.Value.ItemType == DestinyItemType.Mod && invItem.Value.ItemSubType == 0)
+                        if (invItem.Value.ItemType == DestinyItemType.Mod)
                         {
                             //if (invItem.Value.DisplayProperties.Name == null || 
                             //    invItem.Value.DisplayProperties.Name.Equals("Empty Mod Socket") || 
@@ -534,10 +545,14 @@ namespace Levante.Helpers
                             //if (!invItem.Value.ItemCategoryHashes.Contains(4104513227))
                             //    continue;
 
-                            if (ada1ItemList.Contains(invItem.Value.Hash))
-                                Ada1ArmorMods.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
+                            if (ada1ItemList.Contains(invItem.Value.Hash) && invItem.Value.ItemSubType == DestinyItemSubType.Shader)
+                            {
+                                Ada1Items.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
+                                Log.Debug($"{invItem.Value.DisplayProperties.Name}");
+                            }
+                                
 
-                            if (invItem.Value.ItemTypeDisplayName.Contains("Trait") && !invItem.Value.ItemCategoryHashes.Contains(4104513227) /*Exclude Armor Mods*/)
+                            if (invItem.Value.ItemSubType == 0 && invItem.Value.ItemTypeDisplayName.Contains("Trait") && !invItem.Value.ItemCategoryHashes.Contains(4104513227) /*Exclude Armor Mods*/)
                             {
                                 //Log.Debug("Perk: {PerkName} {IsEnhanced}", invItem.Value.DisplayProperties.Name, invItem.Value.ItemTypeDisplayName.Contains("Enhanced"));
                                 if (invItem.Value.ItemTypeDisplayName.Contains("Enhanced"))

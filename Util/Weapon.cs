@@ -264,5 +264,6 @@ namespace Levante.Util
         Void,
         Raid, // Not Used
         Stasis,
+        Strand,
     }
 }

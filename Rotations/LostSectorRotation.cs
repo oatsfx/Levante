@@ -104,8 +104,8 @@ namespace Levante.Rotations
         {
             return lsd switch
             {
-                LostSectorDifficulty.Legend => "1580",
-                LostSectorDifficulty.Master => "1610",
+                LostSectorDifficulty.Legend => "1830",
+                LostSectorDifficulty.Master => "1840",
                 _ => "",
             };
         }
@@ -169,27 +169,36 @@ namespace Levante.Rotations
             File.WriteAllText(FilePath, output);
         }
 
-        public static DateTime DatePrediction(int LS, ExoticArmorType? ArmorType)
+        public static LostSectorPrediction DatePrediction(int LS, ExoticArmorType? ArmorType, int skip)
         {
             ExoticArmorType iterationEAT = CurrentRotations.LostSectorArmorDrop;
             int iterationLS = CurrentRotations.LostSector;
-            int DaysUntil =  0;
+            int correctIterations = -1;
+            int DaysUntil = 0;
 
             if (LS == -1 && ArmorType != null)
             {
                 do
                 {
                     iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
+                    iterationLS = iterationLS == LostSectors.Count - 1 ? 0 : iterationLS + 1;
                     DaysUntil++;
-                } while (iterationEAT != ArmorType);
+                    if (iterationEAT == ArmorType)
+                        correctIterations++;
+
+                } while (skip != correctIterations);
             }
             else if (ArmorType == null && LS != -1)
             {
                 do
                 {
+                    iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
                     iterationLS = iterationLS == LostSectors.Count - 1 ? 0 : iterationLS + 1;
                     DaysUntil++;
-                } while (iterationLS != LS);
+                    if (iterationLS == LS)
+                        correctIterations++;
+
+                } while (skip != correctIterations);
             }
             else if (ArmorType != null && LS != -1)
             {
@@ -198,9 +207,32 @@ namespace Levante.Rotations
                     iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
                     iterationLS = iterationLS == LostSectors.Count - 1 ? 0 : iterationLS + 1;
                     DaysUntil++;
-                } while (iterationEAT != ArmorType || iterationLS != LS);
+                    if (iterationEAT == ArmorType && iterationLS == LS)
+                        correctIterations++;
+
+                } while (skip != correctIterations);
             }
-            return CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil);
+            return new LostSectorPrediction { LostSector = LostSectors[iterationLS], ArmorDrop = iterationEAT, Date = CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil) };
+        }
+
+        public static KeyValuePair<LostSector, ExoticArmorType> GetLostSectorAtDate(DateTime date)
+        {
+            ExoticArmorType iterationEAT = CurrentRotations.LostSectorArmorDrop;
+            int iterationLS = CurrentRotations.LostSector;
+            var today = DateTime.UtcNow;
+
+            if (today.Hour < 17)
+                today = today.AddDays(-1);
+
+            do
+            {
+                iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
+                iterationLS = iterationLS == LostSectors.Count - 1 ? 0 : iterationLS + 1;
+                today = today.AddDays(1);
+                Console.WriteLine($"{today.Date} {date.Date}");
+            } while (today.Date != date.Date);
+
+            return new KeyValuePair<LostSector, ExoticArmorType>(LostSectors[iterationLS], iterationEAT);
         }
     }
 
@@ -324,5 +356,12 @@ namespace Levante.Rotations
         Legs,
         Arms,
         Chest
+    }
+
+    public class LostSectorPrediction
+    {
+        public LostSector LostSector;
+        public ExoticArmorType ArmorDrop;
+        public DateTime Date;
     }
 }

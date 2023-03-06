@@ -31,10 +31,13 @@ namespace Levante.Rotations
         public static ExoticArmorType LostSectorArmorDrop = ExoticArmorType.Legs;
 
         [JsonProperty("AltarWeapon")]
-        public static AltarsOfSorrow AltarWeapon = AltarsOfSorrow.Shotgun;
+        public static int AltarWeapon = 0;
 
         [JsonProperty("Wellspring")]
         public static Wellspring Wellspring = Wellspring.Golmag;
+
+        [JsonProperty("TerminalOverload")]
+        public static int TerminalOverload = 0;
 
         // Weeklies
 
@@ -78,7 +81,7 @@ namespace Levante.Rotations
         public static NightmareHunt[] NightmareHunts = { NightmareHunt.Crota, NightmareHunt.Phogoth, NightmareHunt.Ghaul };
 
         [JsonProperty("Ada1Mods")]
-        public static Dictionary<long, string> Ada1Mods = new Dictionary<long, string>();
+        public static Dictionary<long, string> Ada1Items = new Dictionary<long, string>();
 
         public static void DailyRotation()
         {
@@ -87,7 +90,7 @@ namespace Levante.Rotations
             LostSector = LostSector == LostSectorRotation.LostSectors.Count - 1 ? 0 : LostSector + 1;
             LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
 
-            AltarWeapon = AltarWeapon == AltarsOfSorrow.Rocket ? AltarsOfSorrow.Shotgun : AltarWeapon + 1;
+            AltarWeapon = AltarWeapon == AltarsOfSorrowRotation.AltarsOfSorrows.Count - 1 ? 0 : AltarWeapon + 1;
             Wellspring = Wellspring == Wellspring.Zeerik ? Wellspring.Golmag : Wellspring + 1;
 
             DailyResetTimestamp = DateTime.Now;
@@ -127,7 +130,7 @@ namespace Levante.Rotations
 
         public static int GetTotalLinks()
         {
-            return Ada1Rotation.Ada1ModLinks.Count +
+            return Ada1Rotation.Ada1Links.Count +
                 AltarsOfSorrowRotation.AltarsOfSorrowLinks.Count +
                 AscendantChallengeRotation.AscendantChallengeLinks.Count +
                 CurseWeekRotation.CurseWeekLinks.Count +
@@ -179,6 +182,7 @@ namespace Levante.Rotations
             LostSectorRotation.CreateJSON();
             NightfallRotation.CreateJSON();
             NightmareHuntRotation.CreateJSON();
+            TerminalOverloadRotation.CreateJSON();
             VaultOfGlassRotation.CreateJSON();
             VowOfTheDiscipleRotation.CreateJSON();
             WellspringRotation.CreateJSON();
@@ -188,9 +192,12 @@ namespace Levante.Rotations
 
         public static void UpdateRotationsJSON()
         {
-            CurrentRotations cr = new CurrentRotations();
+            CurrentRotations cr = new();
             string output = JsonConvert.SerializeObject(cr, Formatting.Indented);
             File.WriteAllText(FilePath, output);
+
+            AltarsOfSorrowRotation.GetRotationJSON();
+            TerminalOverloadRotation.GetRotationJSON();
         }
 
         public static EmbedBuilder DailyResetEmbed()
@@ -199,19 +206,13 @@ namespace Levante.Rotations
             {
                 Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
             };
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Footer = foot,
+                Title = $"Daily Reset of {TimestampTag.FromDateTime(DailyResetTimestamp, TimestampTagStyles.ShortDate)}",
+                Description = "Below are some of the things that are available today."
             };
-            embed.Title = $"Daily Reset of {TimestampTag.FromDateTime(DailyResetTimestamp, TimestampTagStyles.ShortDate)}";
-            embed.Description = "Below are some of the things that are available today.";
-
-            string adaMods = "";
-            foreach (var pair in Ada1Mods)
-            {
-                adaMods += $"{pair.Value}\n";
-            }
 
             embed.AddField(x =>
             {
@@ -240,16 +241,16 @@ namespace Levante.Rotations
             {
                 x.Name = "Altars of Sorrow";
                 x.Value =
-                    $"{AltarsOfSorrowRotation.GetWeaponEmote(AltarWeapon)} {AltarsOfSorrowRotation.GetWeaponNameString(AltarWeapon)}\n" +
-                    $"{DestinyEmote.Luna} {AltarsOfSorrowRotation.GetAltarBossString(AltarWeapon)}";
+                    $"{AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].WeaponEmote} {AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].Weapon}\n" +
+                    $"{DestinyEmote.Luna} {AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].Boss}";
                 x.IsInline = true;
-            })/*.AddField(x =>
+            }).AddField(x =>
             {
-                x.Name = $"{DestinyEmote.Ada1}Ada-1 Mod Sales";
+                x.Name = "Terminal Overload";
                 x.Value =
-                    $"{adaMods}";
-                x.IsInline = true;
-            })*/;
+                    $"{TerminalOverloadRotation.TerminalOverloads[TerminalOverload].WeaponEmote} {TerminalOverloadRotation.TerminalOverloads[TerminalOverload].Weapon}\n" +
+                    $"{DestinyEmote.TerminalOverload} {TerminalOverloadRotation.TerminalOverloads[TerminalOverload].Location}";
+            });
 
             return embed;
         }
@@ -260,13 +261,17 @@ namespace Levante.Rotations
             {
                 Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
             };
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Footer = foot,
+                Title = $"Weekly Reset of {TimestampTag.FromDateTime(WeeklyResetTimestamp, TimestampTagStyles.ShortDate)}",
+                Description = "Below are some of the things that are available this week."
             };
-            embed.Title = $"Weekly Reset of {TimestampTag.FromDateTime(WeeklyResetTimestamp, TimestampTagStyles.ShortDate)}";
-            embed.Description = "Below are some of the things that are available this week.";
+
+            string adaItems = "";
+            foreach (var pair in Ada1Items)
+                adaItems += $"{pair.Value}\n";
 
             embed.AddField(x =>
             {
@@ -295,7 +300,7 @@ namespace Levante.Rotations
             .AddField(x =>
             {
                 x.Name = $"{(FeaturedRaid == Raid.VaultOfGlass ? "★ " : "")}Vault of Glass";
-                x.Value = $"{DestinyEmote.VoGRaidChallenge} {(FeaturedRaid == Raid.VaultOfGlass ? "All challenges available." : $"{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)})\nWeapon Drop: {VaultOfGlassRotation.GetChallengeRewardString(VoGChallengeEncounter)}")}";
+                x.Value = $"{DestinyEmote.VoGRaidChallenge} {(FeaturedRaid == Raid.VaultOfGlass ? "All challenges available." : $"{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)})")}";
                 x.IsInline = true;
             })
             .AddField(x =>
@@ -306,7 +311,7 @@ namespace Levante.Rotations
             })
             .AddField(x =>
             {
-                x.Name = $"King's Fall";
+                x.Name = $"{(FeaturedRaid == Raid.KingsFall ? "★ " : "")}King's Fall";
                 x.Value = $"{DestinyEmote.KFRaidChallenge} {KFChallengeEncounter} ({KingsFallRotation.GetChallengeString(KFChallengeEncounter)})";
                 x.IsInline = true;
             })
@@ -362,6 +367,19 @@ namespace Levante.Rotations
                 x.Name = $"Empire Hunt";
                 x.Value = $"{DestinyEmote.Europa} {EmpireHuntRotation.GetHuntNameString(EmpireHunt)} ({EmpireHuntRotation.GetHuntBossString(EmpireHunt)})";
                 x.IsInline = false;
+            })
+            .AddField(x =>
+            {
+                x.Name = "> Miscellaneous";
+                x.Value = "*Any other important rotations.*";
+                x.IsInline = false;
+            })
+            .AddField(x =>
+            {
+                x.Name = $"{DestinyEmote.Ada1}Ada-1 Sales";
+                x.Value =
+                    $"{adaItems}";
+                x.IsInline = true;
             });
 
             return embed;
@@ -369,29 +387,6 @@ namespace Levante.Rotations
 
         public static async Task CheckUsersDailyTracking(DiscordShardedClient Client)
         {
-            var ada1Temp = new List<Ada1Rotation.Ada1ModLink>();
-            foreach (var Link in Ada1Rotation.Ada1ModLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (Ada1Mods.ContainsKey(Link.ModHash))
-                        await user.SendMessageAsync($"> Hey {user.Mention}! Ada-1 is selling **{ManifestHelper.Ada1ArmorMods[Link.ModHash]}** today. I have removed your tracking, good luck!");
-                    else
-                        ada1Temp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            Ada1Rotation.Ada1ModLinks = ada1Temp;
-            Ada1Rotation.UpdateJSON();
-
             var altarTemp = new List<AltarsOfSorrowRotation.AltarsOfSorrowLink>();
             foreach (var Link in AltarsOfSorrowRotation.AltarsOfSorrowLinks)
             {
@@ -402,7 +397,7 @@ namespace Levante.Rotations
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
 
                     if (AltarWeapon == Link.WeaponDrop)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! Altars of Sorrow is dropping **{AltarsOfSorrowRotation.GetWeaponNameString(AltarWeapon)}** (**{AltarWeapon}**) today. I have removed your tracking, good luck!");
+                        await user.SendMessageAsync($"> Hey {user.Mention}! Altars of Sorrow is dropping **{AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].Weapon}** (**{AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].WeaponType}**) today. I have removed your tracking, good luck!");
                     else
                         altarTemp.Add(Link);
                 }
@@ -460,6 +455,29 @@ namespace Levante.Rotations
 
         public static async Task CheckUsersWeeklyTracking(DiscordShardedClient Client)
         {
+            var ada1Temp = new List<Ada1Rotation.Ada1ModLink>();
+            foreach (var Link in Ada1Rotation.Ada1Links)
+            {
+                try
+                {
+                    IUser user = Client.GetUser(Link.DiscordID);
+                    if (user == null)
+                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
+
+                    if (Ada1Items.ContainsKey(Link.Hash))
+                        await user.SendMessageAsync($"> Hey {user.Mention}! Ada-1 is selling **{ManifestHelper.Ada1Items[Link.Hash]}** today. I have removed your tracking, good luck!");
+                    else
+                        ada1Temp.Add(Link);
+                }
+                catch (Exception x)
+                {
+                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
+                    continue;
+                }
+            }
+            Ada1Rotation.Ada1Links = ada1Temp;
+            Ada1Rotation.UpdateJSON();
+
             var chalTemp = new List<AscendantChallengeRotation.AscendantChallengeLink>();
             foreach (var Link in AscendantChallengeRotation.AscendantChallengeLinks)
             {

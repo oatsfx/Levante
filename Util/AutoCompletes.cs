@@ -25,7 +25,7 @@ namespace Levante.Util
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
             {
-                while (results.Count() < 7)
+                while (results.Count < 7)
                 {
                     var weapon = ManifestHelper.Weapons.ElementAt(random.Next(0, ManifestHelper.Weapons.Count));
                     if (!results.Exists(x => x.Value.Equals(weapon.Key)))
@@ -56,16 +56,16 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                while (results.Count() < 7)
+                while (results.Count < 7)
                 {
-                    var mod = ManifestHelper.Ada1ArmorMods.ElementAt(random.Next(0, ManifestHelper.Ada1ArmorMods.Count));
-                    if (!results.Exists(x => x.Value.Equals(mod.Key)))
-                        results.Add(new AutocompleteResult(mod.Value, $"{mod.Key}"));
+                    var item = ManifestHelper.Ada1Items.ElementAt(random.Next(0, ManifestHelper.Ada1Items.Count));
+                    if (!results.Exists(x => x.Value.Equals(item.Key)))
+                        results.Add(new AutocompleteResult(item.Value, $"{item.Key}"));
                 }
             else
-                foreach (var Mod in ManifestHelper.Ada1ArmorMods)
-                    if (Mod.Value.ToLower().Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult(Mod.Value, $"{Mod.Key}"));
+                foreach (var Item in ManifestHelper.Ada1Items)
+                    if (Item.Value.ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(Item.Value, $"{Item.Key}"));
 
 
             results = results.OrderBy(x => x.Name).ToList();
@@ -85,15 +85,11 @@ namespace Levante.Util
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
                 for (int i = 0; i < NightfallRotation.Nightfalls.Count; i++)
-                {
                     results.Add(new AutocompleteResult(NightfallRotation.Nightfalls[i], i));
-                }
             else
                 for (int i = 0; i < NightfallRotation.Nightfalls.Count; i++)
-                {
                     if (NightfallRotation.Nightfalls[i].Contains(SearchQuery.ToLower()))
                         results.Add(new AutocompleteResult(NightfallRotation.Nightfalls[i], i));
-                }
 
             // max - 25 suggestions at a time (API limit)
             return AutocompletionResult.FromSuccess(results.Take(25));
@@ -110,15 +106,11 @@ namespace Levante.Util
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
                 for (int i = 0; i < NightfallRotation.NightfallWeapons.Count; i++)
-                {
                     results.Add(new AutocompleteResult(NightfallRotation.NightfallWeapons[i].Name, i));
-                }
             else
                 for (int i = 0; i < NightfallRotation.NightfallWeapons.Count; i++)
-                {
                     if (NightfallRotation.NightfallWeapons[i].Name.Contains(SearchQuery.ToLower()))
                         results.Add(new AutocompleteResult(NightfallRotation.NightfallWeapons[i].Name, i));
-                }
 
             // max - 25 suggestions at a time (API limit)
             return AutocompletionResult.FromSuccess(results.Take(25));
@@ -135,15 +127,11 @@ namespace Levante.Util
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
                 for (int i = 0; i < LostSectorRotation.LostSectors.Count; i++)
-                {
                     results.Add(new AutocompleteResult(LostSectorRotation.LostSectors[i].Name, i));
-                }
             else
                 for (int i = 0; i < LostSectorRotation.LostSectors.Count; i++)
-                {
-                    if (LostSectorRotation.LostSectors[i].Name.Contains(SearchQuery.ToLower()))
+                    if (LostSectorRotation.LostSectors[i].Name.ToLower().Contains(SearchQuery.ToLower()))
                         results.Add(new AutocompleteResult(LostSectorRotation.LostSectors[i].Name, i));
-                }
 
             // max - 25 suggestions at a time (API limit)
             return AutocompletionResult.FromSuccess(results.Take(25));
@@ -254,7 +242,7 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                while (results.Count() < 7)
+                while (results.Count < 7)
                 {
                     var emblem = ManifestHelper.Emblems.ElementAt(random.Next(0, ManifestHelper.Emblems.Count));
                     if (!results.Exists(x => x.Value.Equals(emblem.Key)))
@@ -282,7 +270,7 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                while (results.Count() < 7)
+                while (results.Count < 7)
                 {
                     var perk = ManifestHelper.Perks.ElementAt(random.Next(0, ManifestHelper.Perks.Count));
                     if (!results.Exists(x => x.Value.Equals(perk.Key)))
@@ -294,6 +282,48 @@ namespace Levante.Util
                         results.Add(new AutocompleteResult(Perk.Value, $"{Perk.Key}"));
 
             results = results.OrderBy(x => x.Name).ToList();
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class AltarsOfSorrowAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < AltarsOfSorrowRotation.AltarsOfSorrows.Count; i++)
+                    results.Add(new AutocompleteResult($"{AltarsOfSorrowRotation.AltarsOfSorrows[i].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[i].WeaponType})", i));
+            else
+                for (int i = 0; i < AltarsOfSorrowRotation.AltarsOfSorrows.Count; i++)
+                    if ($"{AltarsOfSorrowRotation.AltarsOfSorrows[i].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[i].WeaponType})".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{AltarsOfSorrowRotation.AltarsOfSorrows[i].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[i].WeaponType})", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class TerminalOverloadAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < TerminalOverloadRotation.TerminalOverloads.Count; i++)
+                    results.Add(new AutocompleteResult($"{TerminalOverloadRotation.TerminalOverloads[i].Location}, {TerminalOverloadRotation.TerminalOverloads[i].Weapon} ({TerminalOverloadRotation.TerminalOverloads[i].WeaponType})", i));
+            else
+                for (int i = 0; i < TerminalOverloadRotation.TerminalOverloads.Count; i++)
+                    if ($"{TerminalOverloadRotation.TerminalOverloads[i].Location}, {TerminalOverloadRotation.TerminalOverloads[i].Weapon} ({TerminalOverloadRotation.TerminalOverloads[i].WeaponType})".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{TerminalOverloadRotation.TerminalOverloads[i].Location}, {TerminalOverloadRotation.TerminalOverloads[i].Weapon} ({TerminalOverloadRotation.TerminalOverloads[i].WeaponType})", i));
 
             // max - 25 suggestions at a time (API limit)
             return AutocompletionResult.FromSuccess(results.Take(25));

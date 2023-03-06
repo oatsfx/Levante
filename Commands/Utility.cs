@@ -57,9 +57,9 @@ namespace Levante.Commands
         public class Notify : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("ada-1", "Be notified when an armor mod is for sale at Ada-1.")]
-            public async Task Ada1([Summary("mod-name", "Armor mod to be alerted for."), Autocomplete(typeof(ArmorModsAutocomplete))] string ArmorModHash)
+            public async Task Ada1([Summary("name", "Item to be alerted for."), Autocomplete(typeof(ArmorModsAutocomplete))] string Hash)
             {
-                if (!long.TryParse(ArmorModHash, out long ModHashArg))
+                if (!long.TryParse(Hash, out long HashArg))
                 {
                     var embed = Embeds.GetErrorEmbed();
                     embed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
@@ -70,28 +70,27 @@ namespace Levante.Commands
 
                 if (Ada1Rotation.GetUserTracking(Context.User.Id, out var ModHash) != null)
                 {
-                    await RespondAsync($"You already have tracking for Ada-1 Armor Mods. I am watching for {ManifestHelper.Ada1ArmorMods[ModHash]}.", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Ada-1 Items. I am watching for {ManifestHelper.Ada1Items[ModHash]}.", ephemeral: true);
                     return;
                 }
 
-                Ada1Rotation.AddUserTracking(Context.User.Id, ModHashArg);
-                await RespondAsync($"I will remind you when {ManifestHelper.Ada1ArmorMods[ModHashArg]} is being sold at Ada-1; I cannot provide a prediction for when it will return.", ephemeral: true);
+                Ada1Rotation.AddUserTracking(Context.User.Id, HashArg);
+                await RespondAsync($"I will remind you when {ManifestHelper.Ada1Items[HashArg]} is being sold at Ada-1; I cannot provide a prediction for when it will return.", ephemeral: true);
                 return;
             }
 
             [SlashCommand("altars-of-sorrow", "Be notified when an Altars of Sorrow weapon is active.")]
-            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to be alerted for."),
-                Choice("Blasphemer (Shotgun)", 0), Choice("Apostate (Sniper)", 1), Choice("Heretic (Rocket)", 2)] int ArgWeapon)
+            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to be alerted for."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int ArgWeapon)
             {
                 if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Weapon) != null)
                 {
-                    await RespondAsync($"You already have tracking for Altars of Sorrow. I am watching for {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Altars of Sorrow. I am watching for {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType}).", ephemeral: true);
                     return;
                 }
-                Weapon = (AltarsOfSorrow)ArgWeapon;
+                Weapon = ArgWeapon;
 
                 AltarsOfSorrowRotation.AddUserTracking(Context.User.Id, Weapon);
-                await RespondAsync($"I will remind you when {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}) is in rotation, which will be on {TimestampTag.FromDateTime(AltarsOfSorrowRotation.DatePrediction(Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                await RespondAsync($"I will remind you when {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType}) is in rotation, which will be on {TimestampTag.FromDateTime(AltarsOfSorrowRotation.DatePrediction(Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 return;
             }
 
@@ -271,14 +270,14 @@ namespace Levante.Commands
                     return;
                 }
 
-                LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
+                /*LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
                 if (LS != -1 && EAT == null)
                     await RespondAsync($"I will remind you when {LostSectorRotation.LostSectors[LS].Name} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (LS == -1 && EAT != null)
                     await RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 else if (LS != -1 && EAT != null)
                     await RespondAsync($"I will remind you when {LostSectorRotation.LostSectors[LS].Name} is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-
+                */
                 return;
             }
 
@@ -344,6 +343,21 @@ namespace Levante.Commands
                 return;
             }
 
+            [SlashCommand("terminal-overload", "Be notified when a Terminal Overload location is active.")]
+            public async Task TerminalOverload([Summary("location", "Terminal Overload location to be alerted for."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int ArgLocation)
+            {
+                if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Location) != null)
+                {
+                    await RespondAsync($"You already have tracking for Terminal Overload. I am watching for {TerminalOverloadRotation.TerminalOverloads[Location].Location}, {TerminalOverloadRotation.TerminalOverloads[Location].WeaponEmote}{TerminalOverloadRotation.TerminalOverloads[Location].Weapon}.", ephemeral: true);
+                    return;
+                }
+                Location = ArgLocation;
+
+                AltarsOfSorrowRotation.AddUserTracking(Context.User.Id, Location);
+                await RespondAsync($"I will remind you when {TerminalOverloadRotation.TerminalOverloads[Location].Location}, {TerminalOverloadRotation.TerminalOverloads[Location].WeaponEmote}{TerminalOverloadRotation.TerminalOverloads[Location].Weapon} is in rotation, which will be on {TimestampTag.FromDateTime(TerminalOverloadRotation.DatePrediction(Location), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                return;
+            }
+
             [SlashCommand("vault-of-glass", "Be notified when a Vault of Glass challenge is active.")]
             public async Task VaultOfGlass([Summary("challenge", "Vault of Glass challenge to be alerted for."),
                 Choice("Confluxes (Wait for It...)", 0), Choice("Oracles (The Only Oracle for You)", 1), Choice("Templar (Out of Its Way)", 2),
@@ -402,7 +416,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("remove", "Remove an active tracking notification.")]
-            public async Task Remove()
+            public async Task Remove() /* TODO: Use an autocomplete for this. */
             {
                 // Build a selection menu with a list of all of the active trackings a user has.
                 var menuBuilder = new SelectMenuBuilder()
@@ -411,11 +425,11 @@ namespace Levante.Commands
                     .WithMinValues(1)
                     .WithMaxValues(1);
 
-                if (Ada1Rotation.GetUserTracking(Context.User.Id, out var ModHash) != null)
-                    menuBuilder.AddOption("Ada-1", "ada-1", $"{ManifestHelper.Ada1ArmorMods[ModHash]}");
+                if (Ada1Rotation.GetUserTracking(Context.User.Id, out var Hash) != null)
+                    menuBuilder.AddOption("Ada-1", "ada-1", $"{ManifestHelper.Ada1Items[Hash]}");
 
                 if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Weapon) != null)
-                    menuBuilder.AddOption("Altars of Sorrow", "altars-of-sorrow", $"{AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon})");
+                    menuBuilder.AddOption("Altars of Sorrow", "altars-of-sorrow", $"{AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType})");
 
                 if (AscendantChallengeRotation.GetUserTracking(Context.User.Id, out var Challenge) != null)
                     menuBuilder.AddOption("Ascendant Challenge", "ascendant-challenge", $"{AscendantChallengeRotation.GetChallengeNameString(Challenge)} ({AscendantChallengeRotation.GetChallengeLocationString(Challenge)})");
@@ -468,6 +482,9 @@ namespace Levante.Commands
                 if (NightmareHuntRotation.GetUserTracking(Context.User.Id, out var NightmareHunt) != null)
                     menuBuilder.AddOption("Nightmare Hunt", "nightmare-hunt", $"{NightmareHuntRotation.GetHuntNameString(NightmareHunt)} ({NightmareHuntRotation.GetHuntBossString(NightmareHunt)})");
 
+                if (TerminalOverloadRotation.GetUserTracking(Context.User.Id, out var Location) != null)
+                    menuBuilder.AddOption("Terminal Overload", "terminal-overload", $"{TerminalOverloadRotation.TerminalOverloads[Location].Weapon} ({TerminalOverloadRotation.TerminalOverloads[Location].WeaponType})");
+
                 if (VaultOfGlassRotation.GetUserTracking(Context.User.Id, out var VoGEncounter) != null)
                     menuBuilder.AddOption("Vault of Glass Challenge", "vog-challenge", $"{VaultOfGlassRotation.GetEncounterString(VoGEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGEncounter)})");
 
@@ -495,11 +512,8 @@ namespace Levante.Commands
         public class Next : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("altars-of-sorrow", "Find out when an Altars of Sorrow weapon is active next.")]
-            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to predict its next appearance."),
-                Choice("Blasphemer (Shotgun)", 0), Choice("Apostate (Sniper)", 1), Choice("Heretic (Rocket)", 2)] int ArgWeapon)
+            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to predict its next appearance."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int Weapon)
             {
-                AltarsOfSorrow Weapon = (AltarsOfSorrow)ArgWeapon;
-
                 var predictedDate = AltarsOfSorrowRotation.DatePrediction(Weapon);
                 var embed = new EmbedBuilder()
                 {
@@ -507,7 +521,7 @@ namespace Levante.Commands
                 };
                 embed.Title = "Altars of Sorrow";
                 embed.Description =
-                    $"Next occurrance of {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}) " +
+                    $"Next occurrance of {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponEmote}{AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} " +
                         $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
                 await RespondAsync($"", embed: embed.Build());
@@ -698,39 +712,65 @@ namespace Levante.Commands
                 return;
             }
 
-            [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
+            [SlashCommand("lost-sector", "Find out when a Lost Sector and/or Armor Drop is active.")]
             public async Task LostSector([Summary("lost-sector", "Lost Sector to predict its next appearance."), Autocomplete(typeof(LostSectorAutocomplete))] int ArgLS = -1,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop to predict its next appearance.")] ExoticArmorType? ArgEAT = null,
                 [Summary("show-next", "Number of next occurrances to show.")] int show = 1)
             {
                 //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
                 //return;
+                await DeferAsync();
 
                 // TODO: Implement a way to show the next X lost sectors. Requires modification of the DatePrediction method.
                 int LS = ArgLS;
                 ExoticArmorType? EAT = ArgEAT;
 
-                var predictedDate = LostSectorRotation.DatePrediction(LS, EAT);
+                if (LS == -1 && EAT == null)
+                {
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = $"An error has occurred. No parameters.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errEmbed.Build(); });
+                    return;
+                }
+
+                var predictions = new List<LostSectorPrediction>();
+
+                if (show < 1)
+                    show = 1;
+                else if (show > 4)
+                    show = 4;
+
+                for (int i = 0; i < show; i++)
+                {
+                    predictions.Add(LostSectorRotation.DatePrediction(LS, EAT, i));
+                }
+
                 var embed = new EmbedBuilder()
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
-                embed.Title = "Lost Sectors";
-                if (LS == -1 && EAT == null)
-                    await RespondAsync($"An error has occurred. No parameters.", ephemeral: true);
-                else if (LS != -1 && EAT == null)
-                    embed.Description =
-                        $"Next occurrance of {LostSectorRotation.LostSectors[LS].Name} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (LS == -1 && EAT != null)
-                    embed.Description =
-                        $"Next occurrance of Lost Sectors" +
-                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (LS != -1 && EAT != null)
-                    embed.Description =
-                        $"Next occurrance of {LostSectorRotation.LostSectors[LS].Name}" +
-                            $"{(EAT != null ? $" dropping {EAT}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
+                int occurrances = 1;
+                foreach (var prediction in predictions)
+                {
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrance {occurrances}";
+                        x.Value = $"{prediction.LostSector.Name} dropping {prediction.ArmorDrop} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrances++;
+                }
+
+                embed.Title = "Lost Sectors";
+                if (LS != -1 && EAT == null)
+                    embed.Description = $"Requested: {LostSectorRotation.LostSectors[LS].Name}";
+                else if (LS == -1 && EAT != null)
+                    embed.Description = $"Requested: Lost Sectors dropping {EAT}";
+                else if (LS != -1 && EAT != null)
+                    embed.Description = $"Requested: {LostSectorRotation.LostSectors[LS].Name} dropping {EAT}";
+
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                 return;
             }
 
@@ -798,6 +838,23 @@ namespace Levante.Commands
                 embed.Description =
                     $"Next occurrance of {NightmareHuntRotation.GetHuntNameString(Hunt)} " +
                         $"({NightmareHuntRotation.GetHuntBossString(Hunt)}) is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+
+                await RespondAsync($"", embed: embed.Build());
+                return;
+            }
+
+            [SlashCommand("terminal-overload", "Find out when a Terminal Overload location is active next.")]
+            public async Task TerminalOverload([Summary("location", "Terminal Overload location to predict its next appearance."), Autocomplete(typeof(TerminalOverloadAutocomplete))] int Location)
+            {
+                var predictedDate = TerminalOverloadRotation.DatePrediction(Location);
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                };
+                embed.Title = "Terminal Overload";
+                embed.Description =
+                    $"Next occurrance of {TerminalOverloadRotation.TerminalOverloads[Location].Location}, {TerminalOverloadRotation.TerminalOverloads[Location].WeaponEmote}{TerminalOverloadRotation.TerminalOverloads[Location].Weapon} " +
+                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;

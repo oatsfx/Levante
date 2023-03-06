@@ -15,6 +15,7 @@ using Levante.Util.Attributes;
 using System.Linq;
 using Fergun.Interactive.Pagination;
 using Levante.Helpers;
+using BungieSharper.Entities.Destiny;
 
 namespace Levante.Commands
 {
@@ -173,6 +174,7 @@ namespace Levante.Commands
                         .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
                         .WithActionOnCancellation(ActionOnStop.DeleteInput)
                         .WithActionOnTimeout(ActionOnStop.DeleteInput)
+                        .WithFooter(PaginatorFooter.None)
                         .Build();
 
                     await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator));
@@ -211,31 +213,53 @@ namespace Levante.Commands
         [SlashCommand("free-emblems", "Display a list of universal emblem codes.")]
         public async Task FreeEmblems()
         {
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = $"Universal Emblem Codes",
-                IconUrl = Context.Client.GetApplicationInfoAsync().Result.IconUrl,
-            };
-            var foot = new EmbedFooterBuilder()
-            {
-                Text = $"These codes are not limited to one account and can be used by anyone."
-            };
-            var embed = new EmbedBuilder()
-            {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                Author = auth,
-                Footer = foot,
-            };
-            foreach (var emblem in BotConfig.UniversalCodes)
-            {
-                embed.Description +=
-                    $"[{emblem.Name}]({emblem.ImageUrl}): **{emblem.Code}**\n";
-            }
-            embed.Description +=
-                $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*";
+            var paginator = new LazyPaginatorBuilder()
+                .AddUser(Context.User)
+                .WithPageFactory(GeneratePage)
+                .WithMaxPageIndex((int)Math.Ceiling(BotConfig.UniversalCodes.Count / (decimal)10) - 1)
+                .AddOption(new Emoji("◀"), PaginatorAction.Backward)
+                .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
+                .AddOption(new Emoji("▶"), PaginatorAction.Forward)
+                .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
+                .WithActionOnCancellation(ActionOnStop.DeleteInput)
+                .WithActionOnTimeout(ActionOnStop.DeleteInput)
+                .WithFooter(PaginatorFooter.None)
+                .Build();
 
-            await RespondAsync(embed: embed.Build());
-            return;
+            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator));
+
+            PageBuilder GeneratePage(int index)
+            {
+                var auth = new EmbedAuthorBuilder()
+                {
+                    Name = $"Universal Emblem Codes",
+                    IconUrl = Context.Client.GetApplicationInfoAsync().Result.IconUrl,
+                };
+                var foot = new EmbedFooterBuilder()
+                {
+                    Text = $"These codes are not limited to one account and can be used by anyone."
+                };
+                var embed = new EmbedBuilder()
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Author = auth,
+                    Footer = foot,
+                };
+
+                foreach (var emblem in BotConfig.UniversalCodes.GetRange(10 * index, (10 * index) + 10 > BotConfig.UniversalCodes.Count ? BotConfig.UniversalCodes.Count - (10 * index) : 10))
+                {
+                    embed.Description +=
+                        $"[{emblem.Name}]({emblem.ImageUrl}): **{emblem.Code}**\n";
+                }
+                embed.Description +=
+                    $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*\n({(10 * index) + 1}-{((10 * index) + 10 > BotConfig.UniversalCodes.Count ? BotConfig.UniversalCodes.Count : (10 * index) + 10)})";
+                return new PageBuilder()
+                    .WithAuthor(embed.Author)
+                    .WithDescription(embed.Description)
+                    .WithFields(embed.Fields)
+                    .WithFooter(embed.Footer)
+                    .WithColor((Discord.Color)embed.Color);
+            }
         }
 
         [Group("guardian", "Display Guardian information.")]
@@ -243,7 +267,7 @@ namespace Levante.Commands
         {
             [SlashCommand("linked-user", "Get Guardian information of a Linked User.")]
             public async Task LinkedUser([Summary("user", "User to get Guardian information for.")] IUser User,
-                [Summary("class", "Guardian Class to get information for.")] Guardian.Class ClassType,
+                [Summary("class", "Guardian Class to get information for."), Choice("Titan", 0), Choice("Hunter", 1), Choice("Warlock", 2)] int ClassType,
                 [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
                 Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5), Choice("Epic Games", 6)]int ArgPlatform = 0)
             {
@@ -255,7 +279,7 @@ namespace Levante.Commands
                 if (LinkedUser == null || !DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
                 {
                     var embed = Embeds.GetErrorEmbed();
-                    embed.Description = $"User is not linked; tell them to link using '/link' or the Bungie tag variant of this command.";
+                    embed.Description = $"User is not linked; tell them to link using '/link' or use the Bungie tag variant of this command.";
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                     return;
                 }
@@ -284,18 +308,21 @@ namespace Levante.Commands
                         return;
                     }
 
-                    List<Guardian> userGuardians = new List<Guardian>();
+                    List<Guardian> userGuardians = new();
                     for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
                     {
                         try
                         {
                             string charId = $"{item.Response.profile.data.characterIds[i]}";
-                            if ((Guardian.Class)item.Response.characters.data[$"{charId}"].classType == ClassType)
+                            if ((int)item.Response.characters.data[$"{charId}"].classType == ClassType)
                                 userGuardians.Add(new Guardian(LinkedUser.UniqueBungieName, LinkedUser.BungieMembershipID, LinkedUser.BungieMembershipType, charId));
                         }
                         catch (Exception x)
                         {
-                            Console.WriteLine($"{x}");
+                            var embed = Embeds.GetErrorEmbed();
+                            embed.Description = $"`{x}`";
+                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                            return;
                         }
                     }
 
@@ -307,7 +334,7 @@ namespace Levante.Commands
                         return;
                     }
 
-                    List<Embed> embeds = new List<Embed>();
+                    List<Embed> embeds = new();
                     foreach (var guardian in userGuardians)
                         embeds.Add(guardian.GetGuardianEmbed().Build());
 
@@ -318,7 +345,7 @@ namespace Levante.Commands
 
             [SlashCommand("bungie-tag", "Get Guardian information of any player.")]
             public async Task BungieTag([Summary("player", "Player's Bungie tag to get Guardian information for."), Autocomplete(typeof(BungieTagAutocomplete))] string BungieTag,
-                [Summary("class", "Guardian Class to get information for.")] Guardian.Class ClassType,
+                [Summary("class", "Guardian Class to get information for."), Choice("Titan", 0), Choice("Hunter", 1), Choice("Warlock", 2)] int ClassType,
                 [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
                 Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5), Choice("Epic Games", 6)]int ArgPlatform = 0)
             {
@@ -392,13 +419,13 @@ namespace Levante.Commands
                         return;
                     }
 
-                    List<Guardian> userGuardians = new List<Guardian>();
+                    List<Guardian> userGuardians = new();
                     for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
                     {
                         try
                         {
                             string charId = $"{item.Response.profile.data.characterIds[i]}";
-                            if ((Guardian.Class)item.Response.characters.data[$"{charId}"].classType == ClassType)
+                            if ((int)item.Response.characters.data[$"{charId}"].classType == ClassType)
                                 userGuardians.Add(new Guardian(BungieTag, MembershipID, MembershipType, charId));
                         }
                         catch (Exception x)
@@ -571,8 +598,9 @@ namespace Levante.Commands
             }
 
             int Glimmer = 0, LegendaryShards = 0, UpgradeModules = 0, EnhancementCores = 0, EnhancementPrisms = 0, AscendantShards = 0,
-                SpoilsOfConquest = 0, RaidBanners = 0, BrightDust = 0, ResonantElement = 0, ResonantAlloy = 0, HarmonicAlloy = 0, AscendantAlloy = 0,
-                StrangeCoins = 0, TreasureKeys = 0, ParaversalHauls = 0, TinctureOfQueensfoil = 0, PhantasmalFragments = 0, HerealwaysPieces = 0;
+                SpoilsOfConquest = 0, RaidBanners = 0, BrightDust = 0, ResonantAlloy = 0, HarmonicAlloy = 0, AscendantAlloy = 0,
+                StrangeCoins = 0, TreasureKeys = 0, ParaversalHauls = 0, TinctureOfQueensfoil = 0, PhantasmalFragments = 0, HerealwaysPieces = 0, StrandMeditations = 0,
+                TerminalOverloadKeys = 0;
 
             // <Hash, Amount>
             var seasonalMats = new Dictionary<long, int>();
@@ -650,6 +678,12 @@ namespace Levante.Commands
                         // Herealways Pieces
                         case 2993288448: HerealwaysPieces += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
 
+                        // Strand Meditations
+                        case 1289622079: StrandMeditations += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                        // Terminal Overload Keys
+                        case 1471199156: TerminalOverloadKeys += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
                         default: break;
                     }
                 }
@@ -686,6 +720,12 @@ namespace Levante.Commands
                             // Ascendant Alloy
                             case 353704689: AscendantAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
+                            // Strange Coins
+                            case 800069450: StrangeCoins += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+
+                            // Terminal Overload Keys
+                            case 1471199156: TerminalOverloadKeys += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
+
                             default: break;
                         }
                     }
@@ -694,8 +734,6 @@ namespace Levante.Commands
                 Glimmer += int.Parse($"{item.Response.profileCurrencies.data.items[0].quantity}");
                 LegendaryShards += int.Parse($"{item.Response.profileCurrencies.data.items[1].quantity}");
                 BrightDust += int.Parse($"{item.Response.profileCurrencies.data.items[2].quantity}");
-
-                ResonantElement += int.Parse($"{item.Response.profileStringVariables.data.integerValuesByHash["2747150405"]}");
 
                 var auth = new EmbedAuthorBuilder()
                 {
@@ -730,8 +768,7 @@ namespace Levante.Commands
                 }).AddField(x =>
                 {
                     x.Name = "Crafting";
-                    x.Value = $"{DestinyEmote.ResonantElement} {ResonantElement:n0}\n" +
-                        $"{DestinyEmote.ResonantAlloy} {ResonantAlloy:n0}\n" +
+                    x.Value = $"{DestinyEmote.ResonantAlloy} {ResonantAlloy:n0}\n" +
                         $"{DestinyEmote.HarmonicAlloy} {HarmonicAlloy:n0}\n" +
                         $"{DestinyEmote.AscendantAlloy} {AscendantAlloy:n0}";
                     x.IsInline = true;
@@ -740,7 +777,9 @@ namespace Levante.Commands
                     x.Name = "Campaign";
                     x.Value = $"{DestinyEmote.TinctureOfQueensfoil} {TinctureOfQueensfoil:n0}\n" +
                         $"{DestinyEmote.PhantasmalFragments} {PhantasmalFragments:n0}\n" +
-                        $"{DestinyEmote.HerealwaysPieces} {HerealwaysPieces:n0}";
+                        $"{DestinyEmote.HerealwaysPieces} {HerealwaysPieces:n0}\n" +
+                        $"{DestinyEmote.StrandMeditations} {StrandMeditations:n0}\n" +
+                        $"{DestinyEmote.TerminalOverloadKey} {TerminalOverloadKeys:n0}\n";
                     x.IsInline = true;
                 }).AddField(x =>
                 {

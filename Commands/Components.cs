@@ -185,10 +185,10 @@ namespace Levante.Commands
                 return;
             }
 
-            if (ActiveConfig.IsExistingActiveUser(user.Id))
+            if (!ActiveConfig.IsExistingActiveUser(user.Id))
             {
                 var embed = Embeds.GetErrorEmbed();
-                embed.Description = $"You are already actively using my logging feature.";
+                embed.Description = $"You are already using my logging feature.";
 
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
@@ -255,7 +255,9 @@ namespace Levante.Commands
         {
             if (Context.User.Id != DiscordID)
             {
-                await RespondAsync($"You do not have permission to perform this action.", ephemeral: true);
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"You do not have permission to perform this action.";
+                await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
             }
 

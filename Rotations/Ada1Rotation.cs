@@ -18,40 +18,40 @@ namespace Levante.Rotations
     {
         public static readonly string FilePath = @"Trackers/ada1.json";
 
-        [JsonProperty("Ada1ModLinks")]
-        public static List<Ada1ModLink> Ada1ModLinks { get; set; } = new List<Ada1ModLink>();
+        [JsonProperty("Ada1Links")]
+        public static List<Ada1ModLink> Ada1Links { get; set; } = new List<Ada1ModLink>();
 
         public class Ada1ModLink
         {
             [JsonProperty("DiscordID")]
             public ulong DiscordID { get; set; } = 0;
 
-            [JsonProperty("ModHash")]
-            public long ModHash { get; set; } = 0;
+            [JsonProperty("Hash")]
+            public long Hash { get; set; } = 0;
         }
 
         public static void AddUserTracking(ulong DiscordID, long ModHash)
         {
-            Ada1ModLinks.Add(new Ada1ModLink() { DiscordID = DiscordID, ModHash = ModHash });
+            Ada1Links.Add(new Ada1ModLink() { DiscordID = DiscordID, Hash = ModHash });
             UpdateJSON();
         }
 
         public static void RemoveUserTracking(ulong DiscordID)
         {
-            Ada1ModLinks.Remove(GetUserTracking(DiscordID, out _));
+            Ada1Links.Remove(GetUserTracking(DiscordID, out _));
             UpdateJSON();
         }
 
         // Returns null if no tracking is found.
-        public static Ada1ModLink GetUserTracking(ulong DiscordID, out long ModHash)
+        public static Ada1ModLink GetUserTracking(ulong DiscordID, out long Hash)
         {
-            foreach (var Link in Ada1ModLinks)
+            foreach (var Link in Ada1Links)
                 if (Link.DiscordID == DiscordID)
                 {
-                    ModHash = Link.ModHash;
+                    Hash = Link.Hash;
                     return Link;
                 }
-            ModHash = 0;
+            Hash = 0;
             return null;
         }
 
@@ -80,13 +80,13 @@ namespace Levante.Rotations
                     var jObject = token.Value<JObject>();
                     List<string> keys = jObject.Properties().Select(p => p.Name).ToList();
 
-                    CurrentRotations.Ada1Mods.Clear();
+                    CurrentRotations.Ada1Items.Clear();
                     for (int i = 0; i < token.Count(); i++)
                     {
                         long hash = long.Parse($"{item.Response.sales.data[keys[i]].itemHash}");
-                        if (ManifestHelper.Ada1ArmorMods.ContainsKey(hash))
+                        if (ManifestHelper.Ada1Items.ContainsKey(hash))
                         {
-                            CurrentRotations.Ada1Mods.Add(hash, ManifestHelper.Ada1ArmorMods[hash]);
+                            CurrentRotations.Ada1Items.Add(hash, ManifestHelper.Ada1Items[hash]);
                         }
                     }
                 }

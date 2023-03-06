@@ -10,7 +10,7 @@ namespace Levante.Util
             var embed = new EmbedBuilder()
             {
                 Title = "Uh oh!",
-                Description = "An error has occurred.",
+                Description = $"An error has occurred. If this error continues, [let us know](https://discord.gg/{BotConfig.SupportServer})!",
                 Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 ThumbnailUrl = BotConfig.BotLogoUrl,
                 Footer = new()

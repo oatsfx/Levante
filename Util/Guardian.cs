@@ -5,6 +5,9 @@ using System.Net.Http;
 using System.Collections.Generic;
 using Levante.Helpers;
 using System;
+using BungieSharper.Entities.Destiny;
+using System.Linq;
+using System.Xml;
 
 namespace Levante.Util
 {
@@ -14,7 +17,38 @@ namespace Levante.Util
         protected string MembershipID;
         protected string MembershipType;
         protected string CharacterID;
-        protected Emblem Emblem;
+        public readonly Emblem Emblem;
+
+        public readonly DestinyRace Race;
+        public readonly DestinyGender Gender;
+        public readonly DestinyClass Class;
+        public readonly int LightLevel;
+        public readonly string SealDiscordString;
+        // This is zero indexed.
+        public readonly int Rank;
+        public readonly int RankProgress;
+        public readonly int RankCompletion;
+        public readonly int CommendationTotal;
+
+        public readonly int Mobility;
+        public readonly int Resilience;
+        public readonly int Recovery;
+        public readonly int Discipline;
+        public readonly int Intellect;
+        public readonly int Strength;
+
+        public readonly Weapon Kinetic;
+        public readonly Weapon Energy;
+        public readonly Weapon Heavy;
+
+        public readonly Weapon Helmet;
+        public readonly Weapon Arms;
+        public readonly Weapon Chest;
+        public readonly Weapon Legs;
+        public readonly Weapon ClassItem;
+
+        public readonly long ActivityHash = -1;
+        public readonly DateTime ActivityStarted;
 
         protected string GuardianContent;
         protected string APIUrl;
@@ -37,77 +71,86 @@ namespace Levante.Util
             }
             dynamic item = JsonConvert.DeserializeObject(GuardianContent);
             Emblem = new Emblem((long)item.Response.character.data.emblemHash);
-        }
+            Race = item.Response.character.data.raceType;
+            Class = item.Response.character.data.classType;
+            Gender = item.Response.character.data.genderType;
+            LightLevel = item.Response.character.data.light;
 
-        public Class GetClass()
-        {
-            dynamic item = JsonConvert.DeserializeObject(GuardianContent);
-            return item.Response.character.data.classType;
+            Mobility = item.Response.character.data.stats["2996146975"];
+            Resilience = item.Response.character.data.stats["392767087"];
+            Recovery = item.Response.character.data.stats["1943323491"];
+            Discipline = item.Response.character.data.stats["1735777505"];
+            Intellect = item.Response.character.data.stats["144602215"];
+            Strength = item.Response.character.data.stats["4244567218"];
+
+            Kinetic = new Weapon((long)item.Response.equipment.data.items[0].itemHash);
+            Energy = new Weapon((long)item.Response.equipment.data.items[1].itemHash);
+            Heavy = new Weapon((long)item.Response.equipment.data.items[2].itemHash);
+
+            Helmet = new Weapon((long)item.Response.equipment.data.items[3].itemHash);
+            Arms = new Weapon((long)item.Response.equipment.data.items[4].itemHash);
+            Chest = new Weapon((long)item.Response.equipment.data.items[5].itemHash);
+            Legs = new Weapon((long)item.Response.equipment.data.items[6].itemHash);
+            ClassItem = new Weapon((long)item.Response.equipment.data.items[7].itemHash);
+
+            if (item.Response.activities.data != null && item.Response.activities.data.currentActivityHash != 0)
+            {
+                ActivityHash = (long)item.Response.activities.data.currentActivityHash;
+                ActivityStarted = DateTime.SpecifyKind(DateTime.Parse($"{item.Response.activities.data.dateActivityStarted}"), DateTimeKind.Utc);
+            }
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+
+                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=700,900,1400").Result;
+                string content = response.Content.ReadAsStringAsync().Result;
+                dynamic item1 = JsonConvert.DeserializeObject(content);
+
+                CommendationTotal = item1.Response.profileCommendations.data.totalScore;
+
+                foreach (var rank in ManifestHelper.GuardianRanks)
+                {
+                    var rankObj = item1.Response.profilePresentationNodes.data.nodes[$"{rank.Key}"];
+                    if ((int)rankObj.progressValue < (int)rankObj.completionValue)
+                    {
+                        RankProgress = (int)rankObj.progressValue;
+                        RankCompletion = (int)rankObj.completionValue;
+                        break;
+                    }
+                    Rank++;
+                }
+
+                if (item.Response.character.data.titleRecordHash != null)
+                {
+                    long sealHash = (long)item.Response.character.data.titleRecordHash;
+                    SealDiscordString = $"{ManifestHelper.Seals[sealHash]}";
+
+                    if (ManifestHelper.GildableSeals.ContainsKey(sealHash))
+                    {
+                        var trackHash = ManifestHelper.GildableSeals[sealHash];
+                        if (item1.Response.profileRecords.data != null)
+                        {
+                            bool isGildedThisSeason = item1.Response.profileRecords.data.records[$"{trackHash}"].objectives[0].complete;
+                            if (isGildedThisSeason && item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
+                                SealDiscordString += $" {DestinyEmote.Gilded}{item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount}";
+                            else if (item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
+                                SealDiscordString += $" {DestinyEmote.GildedPurple}{item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount}";
+                        }
+                    }
+                }
+            }
         }
 
         public string GetClassEmote()
         {
-            switch (GetClass())
+            return Class switch
             {
-                case Class.Titan: return $"{DestinyEmote.Titan}";
-                case Class.Hunter: return $"{DestinyEmote.Hunter}";
-                case Class.Warlock: return $"{DestinyEmote.Warlock}";
-                default:
-                    break;
-            }
-            return null;
-        }
-
-        public Race GetRace()
-        {
-            dynamic item = JsonConvert.DeserializeObject(GuardianContent);
-            return item.Response.character.data.raceType;
-        }
-
-        public Gender GetGender()
-        {
-            dynamic item = JsonConvert.DeserializeObject(GuardianContent);
-            return item.Response.character.data.genderType;
-        }
-
-        public int GetLightLevel()
-        {
-            dynamic item = JsonConvert.DeserializeObject(GuardianContent);
-            return item.Response.character.data.light;
-        }
-
-        public Emblem GetEmblem()
-        {
-            return Emblem;
-        }
-
-        public string GetSeal()
-        {
-            dynamic item1 = JsonConvert.DeserializeObject(GuardianContent);
-            if (item1.Response.character.data.titleRecordHash == null)
-                return null;
-            long sealHash = (long)item1.Response.character.data.titleRecordHash;
-            string sealResult = $"{ManifestHelper.Seals[sealHash]}";
-
-            if (ManifestHelper.GildableSeals.ContainsKey(sealHash))
-            {
-                using (var client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    var trackHash = ManifestHelper.GildableSeals[sealHash];
-                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=900").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item2 = JsonConvert.DeserializeObject(content);
-                    if (item2.Response.profileRecords.data == null)
-                        return null;
-                    bool isGildedThisSeason = item2.Response.profileRecords.data.records[$"{trackHash}"].objectives[0].complete;
-                    if (isGildedThisSeason && item2.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
-                        sealResult += $" {DestinyEmote.Gilded}{item2.Response.profileRecords.data.records[$"{trackHash}"].completedCount}";
-                    else if (item2.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
-                        sealResult += $" {DestinyEmote.GildedPurple}{item2.Response.profileRecords.data.records[$"{trackHash}"].completedCount}";
-                }
-            }
-            return sealResult;
+                DestinyClass.Titan => $"{DestinyEmote.Titan}",
+                DestinyClass.Hunter => $"{DestinyEmote.Titan}",
+                DestinyClass.Warlock => $"{DestinyEmote.Titan}",
+                _ => "",
+            };
         }
 
         public EmbedBuilder GetGuardianEmbed()
@@ -123,105 +166,80 @@ namespace Levante.Util
 
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"{UniqueBungieName}: {GetClass()}",
-                IconUrl = GetEmblem().GetIconUrl(),
+                Name = $"{UniqueBungieName}: {Class}",
+                IconUrl = Emblem.GetIconUrl(),
             };
             var foot = new EmbedFooterBuilder()
             {
                 Text = $"Powered by the Bungie API"
             };
-            int[] emblemRGB = GetEmblem().GetRGBAsIntArray();
-            var embed = new EmbedBuilder()
+            int[] emblemRGB = Emblem.GetRGBAsIntArray();
+            var embed = new EmbedBuilder
             {
                 Color = new Color(emblemRGB[0], emblemRGB[1], emblemRGB[2]),
                 Author = auth,
-                Footer = foot
+                Footer = foot,
+                Description =
+                    $"{GetClassEmote()} **{Race} {Gender} {Class}** {GetClassEmote()}\n" +
+                    $"{DestinyEmote.Light}{LightLevel} {DestinyEmote.GuardianRank}{Rank + 1} {ManifestHelper.GuardianRanks.ElementAt(Rank).Value} ({RankProgress}/{RankCompletion}) {DestinyEmote.Commendations}{CommendationTotal}{badge}",
+                ThumbnailUrl = Emblem.GetIconUrl()
             };
-            var seal = GetSeal();
-            embed.Description =
-                $"{GetClassEmote()} **{GetRace()} {GetGender()} {GetClass()}** {GetClassEmote()}\n" +
-                $"{DestinyEmote.Light}{GetLightLevel()}{badge}";
-            embed.ThumbnailUrl = GetEmblem().GetIconUrl();
 
-            dynamic item = JsonConvert.DeserializeObject(GuardianContent);
-            var wep1 = new Weapon((long)item.Response.equipment.data.items[0].itemHash);
-            var wep2 = new Weapon((long)item.Response.equipment.data.items[1].itemHash);
-            var wep3 = new Weapon((long)item.Response.equipment.data.items[2].itemHash);
             embed.AddField(x =>
             {
                 x.Name = "Weapons";
-                x.Value = $"{wep1.GetDamageTypeEmote()} {wep1.GetName()}\n" +
-                    $"{wep2.GetDamageTypeEmote()} {wep2.GetName()}\n" +
-                    $"{wep3.GetDamageTypeEmote()} {wep3.GetName()}";
+                x.Value = $"{Kinetic.GetDamageTypeEmote()} {Kinetic.GetName()}\n" +
+                    $"{Energy.GetDamageTypeEmote()} {Energy.GetName()}\n" +
+                    $"{Heavy.GetDamageTypeEmote()} {Heavy.GetName()}";
                 x.IsInline = true;
             }).AddField(x =>
             {
                 x.Name = "Armor";
-                x.Value = $"{DestinyEmote.Helmet} {new Weapon((long)item.Response.equipment.data.items[3].itemHash).GetName()}\n" +
-                    $"{DestinyEmote.Arms} {new Weapon((long)item.Response.equipment.data.items[4].itemHash).GetName()}\n" +
-                    $"{DestinyEmote.Chest} {new Weapon((long)item.Response.equipment.data.items[5].itemHash).GetName()}\n" +
-                    $"{DestinyEmote.Legs} {new Weapon((long)item.Response.equipment.data.items[6].itemHash).GetName()}\n" +
-                    $"{DestinyEmote.Class} {new Weapon((long)item.Response.equipment.data.items[7].itemHash).GetName()}";
+                x.Value = $"{DestinyEmote.Helmet} {Helmet.GetName()}\n" +
+                    $"{DestinyEmote.Arms} {Arms.GetName()}\n" +
+                    $"{DestinyEmote.Chest} {Chest.GetName()}\n" +
+                    $"{DestinyEmote.Legs} {Legs.GetName()}\n" +
+                    $"{DestinyEmote.Class} {ClassItem.GetName()}";
                 x.IsInline = true;
             }).AddField(x =>
             {
                 x.Name = "Stats";
-                x.Value = $"{DestinyEmote.Mobility} {item.Response.character.data.stats["2996146975"]}\n" +
-                    $"{DestinyEmote.Resilience} {item.Response.character.data.stats["392767087"]}\n" +
-                    $"{DestinyEmote.Recovery} {item.Response.character.data.stats["1943323491"]}\n" +
-                    $"{DestinyEmote.Discipline} {item.Response.character.data.stats["1735777505"]}\n" +
-                    $"{DestinyEmote.Intellect} {item.Response.character.data.stats["144602215"]}\n" +
-                    $"{DestinyEmote.Strength} {item.Response.character.data.stats["4244567218"]}";
+                x.Value = $"{DestinyEmote.Mobility} {Mobility}\n" +
+                    $"{DestinyEmote.Resilience} {Resilience}\n" +
+                    $"{DestinyEmote.Recovery} {Recovery}\n" +
+                    $"{DestinyEmote.Discipline} {Discipline}\n" +
+                    $"{DestinyEmote.Intellect} {Intellect}\n" +
+                    $"{DestinyEmote.Strength} {Strength}";
                 x.IsInline = true;
             }).AddField(x =>
             {
                 x.Name = "Emblem";
-                x.Value = $"[{GetEmblem().GetName()}]({GetEmblem().GetDECUrl()})";
+                x.Value = $"[{Emblem.GetName()}]({Emblem.GetDECUrl()})";
                 x.IsInline = true;
             });
             
-            if (item.Response.activities.data != null && item.Response.activities.data.currentActivityHash != 0)
+            if (ActivityHash != -1)
             {
                 embed.AddField(x =>
                 {
                     x.Name = "Activity";
-                    x.Value = $"{ManifestHelper.Activities[(long)item.Response.activities.data.currentActivityHash]}\n" +
-                        $"Started {TimestampTag.FromDateTime(DateTime.SpecifyKind(DateTime.Parse($"{item.Response.activities.data.dateActivityStarted}"), DateTimeKind.Utc), TimestampTagStyles.Relative)}.";
+                    x.Value = $"{ManifestHelper.Activities[ActivityHash]}\n" +
+                        $"Started {TimestampTag.FromDateTime(ActivityStarted, TimestampTagStyles.Relative)}.";
                     x.IsInline = true;
                 });
             }
 
-            if (seal != null)
+            if (SealDiscordString != null)
             {
                 embed.AddField(x =>
                 {
                     x.Name = "Title";
-                    x.Value = $"{seal}";
+                    x.Value = $"{SealDiscordString}";
                     x.IsInline = true;
                 });
             }
 
             return embed;
-        }
-
-        public enum Class
-        {
-            Titan,
-            Hunter,
-            Warlock
-        }
-
-        public enum Race
-        {
-            Human,
-            Awoken,
-            Exo
-        }
-
-        public enum Gender
-        {
-            Male,
-            Female
         }
 
         public enum Platform

@@ -16,16 +16,7 @@ using System.Collections.Generic;
 using Discord.Interactions;
 using System.Diagnostics;
 using Levante.Util.Attributes;
-using BungieSharper.Entities.Forum;
-using System.Collections.Immutable;
-using System.Globalization;
-using Fergun.Interactive.Pagination;
-using System.Reflection;
-using Fergun.Interactive.Selection;
-using System.ComponentModel;
-using Serilog.Data;
 using Serilog;
-using BungieSharper.Entities.Destiny.Responses;
 
 namespace Levante.Commands
 {
@@ -39,7 +30,7 @@ namespace Levante.Commands
         [SlashCommand("force", "[OWNER]: Sends a button to force a daily/weekly reset.")]
         public async Task Force()
         {
-            Emoji helpEmote = new Emoji("❔");
+            Emoji helpEmote = new("❔");
 
             var buttonBuilder = new ComponentBuilder()
                 .WithButton("Force Daily Reset", customId: "dailyForce", ButtonStyle.Secondary, helpEmote, row: 0)
@@ -94,32 +85,6 @@ namespace Levante.Commands
         }
 
         [RequireOwner]
-        [SlashCommand("give-config", "[OWNER]: Sends the botConfig.json file.")]
-        public async Task GiveConfigs()
-        {
-            await Context.User.SendFileAsync(BotConfig.FilePath);
-            await RespondAsync("Check your DMs.");
-        }
-
-        [RequireOwner]
-        [SlashCommand("replace-config", "[OWNER]: Replaces the botConfig.json file and refreshes the bot's activity.")]
-        public async Task ReplaceConfig([Summary("config-json", "Replacement botConfig.json file.")] IAttachment attachment)
-        {
-            using (var httpCilent = new HttpClient())
-            {
-                var url = attachment.Url;
-                byte[] bytes = await httpCilent.GetByteArrayAsync(url);
-                using (var fs = new FileStream(BotConfig.FilePath, FileMode.Create))
-                {
-                    fs.Write(bytes, 0, bytes.Length);
-                }
-            }
-
-            await Refresh();
-            await Context.Interaction.ModifyOriginalResponseAsync(x => x.Content = "Config replaced and bot is refreshed.");
-        }
-
-        [RequireOwner]
         [SlashCommand("refresh", "[OWNER]: Refreshes the bot's activity.")]
         public async Task Refresh()
         {
@@ -135,11 +100,11 @@ namespace Levante.Commands
         {
             if (User == null)
             {
-                var embed = new EmbedBuilder()
+                var embed = new EmbedBuilder
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Title = "Supporters"
                 };
-                embed.Title = "Supporters";
                 string result = "";
                 foreach (var supporter in BotConfig.BotSupportersDiscordIDs)
                     result += $"<@{supporter}>\n";
@@ -260,14 +225,14 @@ namespace Levante.Commands
                 .WithButton("Yes", customId: $"sendYes", ButtonStyle.Success, row: 0)
                 .WithButton("No", customId: $"sendNo", ButtonStyle.Danger, row: 0);
 
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{Context.User.Username}" },
+                Title = "New Countdown",
+                Description = $"**{Name}**: Starts {TimestampTag.FromDateTime(StartTime, TimestampTagStyles.Relative)} ({TimestampTag.FromDateTime(StartTime, TimestampTagStyles.ShortDate)})"
             };
-            embed.Title = "New Countdown";
-            embed.Description = $"**{Name}**: Starts {TimestampTag.FromDateTime(StartTime, TimestampTagStyles.Relative)} ({TimestampTag.FromDateTime(StartTime, TimestampTagStyles.ShortDate)})";
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "This is the countdown you are adding, continue?"; message.Components = buttonBuilder.Build(); message.Embed = embed.Build(); });
             var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
@@ -310,14 +275,14 @@ namespace Levante.Commands
                 .WithButton("Yes", customId: $"removeYes", ButtonStyle.Success, row: 0)
                 .WithButton("No", customId: $"removeNo", ButtonStyle.Danger, row: 0);
 
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{Context.User.Username}" },
+                Title = "Countdown Removal",
+                Description = $"**{Name}**: Starts {TimestampTag.FromDateTime(CountdownConfig.Countdowns[Name], TimestampTagStyles.Relative)} ({TimestampTag.FromDateTime(CountdownConfig.Countdowns[Name], TimestampTagStyles.ShortDate)})"
             };
-            embed.Title = "Countdown Removal";
-            embed.Description = $"**{Name}**: Starts {TimestampTag.FromDateTime(CountdownConfig.Countdowns[Name], TimestampTagStyles.Relative)} ({TimestampTag.FromDateTime(CountdownConfig.Countdowns[Name], TimestampTagStyles.ShortDate)})";
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Remove this countdown?"; message.Embed = embed.Build(); message.Components = buttonBuilder.Build(); });
 
@@ -369,14 +334,14 @@ namespace Levante.Commands
                 return;
             }
 
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{removeHashes.Count} expired Emblem offers" },
+                Title = "Remove these offers?",
+                Description = result
             };
-            embed.Title = "Remove these offers?";
-            embed.Description = result;
 
             var buttonBuilder = new ComponentBuilder()
                 .WithButton("Yes", customId: $"removeYes", ButtonStyle.Success, row: 0)
@@ -563,14 +528,14 @@ namespace Levante.Commands
         public async Task Metrics()
         {
             var app = await Context.Client.GetApplicationInfoAsync();
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{BotConfig.AppName} v{BotConfig.Version}" },
+                Title = "Metrics",
+                ThumbnailUrl = BotConfig.BotLogoUrl
             };
-            embed.Title = "Metrics";
-            embed.ThumbnailUrl = BotConfig.BotLogoUrl;
 
             var process = Process.GetCurrentProcess();
             var uptime = DateTime.Now - process.StartTime;
@@ -694,14 +659,14 @@ namespace Levante.Commands
             {
                 Text = $"Powered by the Bungie API"
             };
-            var embed = new EmbedBuilder()
+            var embed = new EmbedBuilder
             {
                 Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 Author = auth,
                 Footer = foot,
                 Timestamp = DateTime.Now,
+                Description = $"Indexed {totalIndexed} Creations from {TimestampTag.FromDateTime(oldest)} to Now."
             };
-            embed.Description = $"Indexed {totalIndexed} Creations from {TimestampTag.FromDateTime(oldest)} to Now.";
             foreach (var moderator in sorted)
             {
                 embed.AddField(x =>
@@ -803,13 +768,15 @@ namespace Levante.Commands
         [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
         public async Task Test()
         {
-            await DeferAsync();
+            var aaa = Context.User.PublicFlags;
+
+            await RespondAsync($"{aaa}");
         }
 
         public async Task SendToAllAnnounceChannels(EmbedBuilder embed)
         {
-            List<ulong> guildsWithKeptChannel = new List<ulong>();
-            List<ulong> keptChannels = new List<ulong>();
+            List<ulong> guildsWithKeptChannel = new();
+            List<ulong> keptChannels = new();
             foreach (var Link in DataConfig.AnnounceEmblemLinks.ToList())
             {
                 var channel = Context.Client.GetChannel(Link.ChannelID) as SocketTextChannel;
@@ -856,7 +823,7 @@ namespace Levante.Commands
                 catch (Exception x)
                 {
                     //LogHelper.ConsoleLog($"[OFFERS] Could not send to channel {guildChannel.Id} in guild {guildChannel.Guild.Id}.");
-                    Console.WriteLine($"[OFFERS] Could not send to channel {guildChannel.Id} in guild {guildChannel.Guild.Id}. Reason: {x}");
+                    Log.Warning("[{Type}] Could not send to channel {ChannelId} in guild {GuildId}. Reason: {Reason}", "Offers", guildChannel.Id, guildChannel.Guild.Id, x);
                 }
             }
         }

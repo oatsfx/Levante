@@ -207,7 +207,7 @@ namespace Levante.Configs
 
         public static void AddUserToConfig(ulong DiscordID, string MembershipID, string MembershipType, string BungieName, OAuthHelper.CodeResult CodeResult)
         {
-            DiscordIDLink dil = new DiscordIDLink()
+            DiscordIDLink dil = new()
             {
                 DiscordID = DiscordID,
                 BungieMembershipID = MembershipID,
@@ -330,7 +330,7 @@ namespace Levante.Configs
 
         public static void UpdateConfig()
         {
-            DataConfig obj = new DataConfig();
+            DataConfig obj = new();
             string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
             File.WriteAllText(FilePath, output);
         }
@@ -549,8 +549,8 @@ namespace Levante.Configs
 
         public static async Task PostDailyResetUpdate(DiscordShardedClient Client)
         { 
-            List<ulong> guildsWithKeptChannel = new List<ulong>();
-            List<ulong> keptChannels = new List<ulong>();
+            List<ulong> guildsWithKeptChannel = new();
+            List<ulong> keptChannels = new();
             foreach (ulong ChannelID in AnnounceDailyLinks.ToList())
             {
                 try
@@ -583,7 +583,8 @@ namespace Levante.Configs
                 }
                 catch (Exception x)
                 {
-                    Log.Warning("[{Type}] Reset Error on Channel: {Id}. {Exception}", "Data", ChannelID, x);
+                    DeleteChannelFromRotationConfig(ChannelID, true);
+                    Log.Warning("[{Type}] Reset Error on Channel: {Id}. This channel has been removed from the list. {Exception}", "Data", ChannelID, x);
                 }
             }
         }
@@ -624,7 +625,8 @@ namespace Levante.Configs
                 }
                 catch (Exception x)
                 {
-                    Log.Warning("[{Type}] Reset Error on Channel: {Id}. {Exception}", "Data", ChannelID, x);
+                    DeleteChannelFromRotationConfig(ChannelID, true);
+                    Log.Warning("[{Type}] Reset Error on Channel: {Id}. This channel has been removed from the list. {Exception}", "Data", ChannelID, x);
                 }
             }
         }
