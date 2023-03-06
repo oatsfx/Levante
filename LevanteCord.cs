@@ -482,16 +482,20 @@ namespace Levante
                 // In place if the experimental function decides to break!
                 if (ActiveConfig.RefreshScaling >= 0)
                 {
-                    int msTilNext = (int)Math.Floor(-(Math.Sqrt(ActiveConfig.ActiveAFKUsers.Count + ActiveConfig.PriorityActiveAFKUsers.Count) * ActiveConfig.RefreshScaling) + ActiveConfig.TimeBetweenRefresh);
-                    int minutesTilNext = (int)Math.Floor((double)msTilNext * 60000);
-                    _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, minutesTilNext < 0 ? 0 : minutesTilNext);
+                    int msTilNext = (int)Math.Floor((-((ActiveConfig.ActiveAFKUsers.Count + ActiveConfig.PriorityActiveAFKUsers.Count) * ActiveConfig.RefreshScaling) + ActiveConfig.TimeBetweenRefresh) * 60000);
+                    msTilNext = msTilNext < 0 ? 0 : msTilNext;
+                    double minutesTilNext = msTilNext / (double)60000;
+                    
+                    _xpTimer.Change(msTilNext, msTilNext);
                     Log.Debug("Refreshing in {Time} ms.", msTilNext);
+                    Log.Information("[{Type}] Bungie API Refreshed! Next refresh in: {Time} minute(s).", "XP Sessions", minutesTilNext);
                 }
                 else
                 {
                     _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, ActiveConfig.TimeBetweenRefresh * 60000);
+                    Log.Information("[{Type}] Bungie API Refreshed! Next refresh in: {Time} minute(s).", "XP Sessions", ActiveConfig.TimeBetweenRefresh);
                 }
-                Log.Information("[{Type}] Bungie API Refreshed! Next refresh in: {Time} minute(s).", "XP Sessions", ActiveConfig.TimeBetweenRefresh);
+                
             }
             catch (Exception x)
             {
