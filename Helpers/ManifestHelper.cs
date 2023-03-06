@@ -377,13 +377,8 @@ namespace Levante.Helpers
                         }
 
                         if (node.Value.DisplayProperties.Name.Equals("Guardian Ranks"))
-                        {
                             foreach (var rank in node.Value.Children.PresentationNodes)
-                            {
                                 GuardianRanks.Add(rank.PresentationNodeHash, presentNodeList[$"{rank.PresentationNodeHash}"].DisplayProperties.Name);
-                                Log.Debug($"Added {presentNodeList[$"{rank.PresentationNodeHash}"].DisplayProperties.Name}");
-                            }
-                        }
 
                         if (!node.Value.Children.Records.Any()) continue;
                         if (node.Value.CompletionRecordHash == null) continue;
@@ -546,10 +541,7 @@ namespace Levante.Helpers
                             //    continue;
 
                             if (ada1ItemList.Contains(invItem.Value.Hash) && invItem.Value.ItemSubType == DestinyItemSubType.Shader)
-                            {
                                 Ada1Items.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
-                                Log.Debug($"{invItem.Value.DisplayProperties.Name}");
-                            }
                                 
 
                             if (invItem.Value.ItemSubType == 0 && invItem.Value.ItemTypeDisplayName.Contains("Trait") && !invItem.Value.ItemCategoryHashes.Contains(4104513227) /*Exclude Armor Mods*/)

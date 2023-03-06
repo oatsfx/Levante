@@ -37,7 +37,7 @@ namespace Levante.Configs
         public static int TimeBetweenRefresh = 2;
 
         [JsonProperty("RefreshScaling")]
-        public static double RefreshScaling = 0.30;
+        public static double RefreshScaling = 0.025;
 
         public partial class ActiveAFKUser
         {

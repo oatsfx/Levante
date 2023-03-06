@@ -91,6 +91,7 @@ namespace Levante.Rotations
             LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
 
             AltarWeapon = AltarWeapon == AltarsOfSorrowRotation.AltarsOfSorrows.Count - 1 ? 0 : AltarWeapon + 1;
+            TerminalOverload = TerminalOverload == TerminalOverloadRotation.TerminalOverloads.Count - 1 ? 0 : TerminalOverload + 1;
             Wellspring = Wellspring == Wellspring.Zeerik ? Wellspring.Golmag : Wellspring + 1;
 
             DailyResetTimestamp = DateTime.Now;
