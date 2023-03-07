@@ -103,23 +103,43 @@ namespace Levante.Util
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
+                var linkedUser = DataConfig.DiscordIDLinks.Where(x => x.BungieMembershipID == MembershipID).FirstOrDefault();
+                if (linkedUser != null)
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
+
                 var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=700,900,1400").Result;
+                
                 string content = response.Content.ReadAsStringAsync().Result;
                 dynamic item1 = JsonConvert.DeserializeObject(content);
 
-                CommendationTotal = item1.Response.profileCommendations.data.totalScore;
-
-                foreach (var rank in ManifestHelper.GuardianRanks)
+                try
                 {
-                    var rankObj = item1.Response.profilePresentationNodes.data.nodes[$"{rank.Key}"];
-                    if ((int)rankObj.progressValue < (int)rankObj.completionValue)
-                    {
-                        RankProgress = (int)rankObj.progressValue;
-                        RankCompletion = (int)rankObj.completionValue;
-                        break;
-                    }
-                    Rank++;
+                    CommendationTotal = item1.Response.profileCommendations.data.totalScore;
                 }
+                catch
+                {
+                    CommendationTotal = -1;
+                }
+
+                try
+                {
+                    foreach (var rank in ManifestHelper.GuardianRanks)
+                    {
+                        var rankObj = item1.Response.profilePresentationNodes.data.nodes[$"{rank.Key}"];
+                        if ((int)rankObj.progressValue < (int)rankObj.completionValue)
+                        {
+                            RankProgress = (int)rankObj.progressValue;
+                            RankCompletion = (int)rankObj.completionValue;
+                            break;
+                        }
+                        Rank++;
+                    }
+                }
+                catch
+                {
+                    Rank = -1;
+                }
+                
 
                 if (item.Response.character.data.titleRecordHash != null)
                 {
@@ -181,9 +201,17 @@ namespace Levante.Util
                 Footer = foot,
                 Description =
                     $"{GetClassEmote()} **{Race} {Gender} {Class}** {GetClassEmote()}\n" +
-                    $"{DestinyEmote.Light}{LightLevel} {DestinyEmote.GuardianRank}{Rank + 1} {ManifestHelper.GuardianRanks.ElementAt(Rank).Value} ({RankProgress}/{RankCompletion}) {DestinyEmote.Commendations}{CommendationTotal}{badge}",
+                    $"{DestinyEmote.Light}{LightLevel}",
                 ThumbnailUrl = Emblem.GetIconUrl()
             };
+
+            if (Rank >= 0)
+                embed.Description += $" {DestinyEmote.GuardianRank}{Rank} {ManifestHelper.GuardianRanks.ElementAt(Rank - 1).Value} ({RankProgress}/{RankCompletion})";
+
+            if (CommendationTotal >= 0)
+                embed.Description += $" {DestinyEmote.Commendations}{CommendationTotal}";
+
+            embed.Description += badge;
 
             embed.AddField(x =>
             {
