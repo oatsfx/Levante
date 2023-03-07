@@ -53,7 +53,7 @@ namespace Levante.Util
         protected string GuardianContent;
         protected string APIUrl;
 
-        public Guardian(string bungieName, string membershipId, string membershipType, string characterId)
+        public Guardian(string bungieName, string membershipId, string membershipType, string characterId, ulong discordId = 0)
         {
             UniqueBungieName = bungieName;
             MembershipID = membershipId;
@@ -103,9 +103,12 @@ namespace Levante.Util
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
-                var linkedUser = DataConfig.DiscordIDLinks.Where(x => x.BungieMembershipID == MembershipID).FirstOrDefault();
-                if (linkedUser != null)
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
+                if (discordId != 0)
+                {
+                    var linkedUser = DataConfig.DiscordIDLinks.Where(x => x.DiscordID == discordId).FirstOrDefault();
+                    if (linkedUser != null)
+                        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
+                }
 
                 var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=700,900,1400").Result;
                 

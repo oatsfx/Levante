@@ -315,7 +315,7 @@ namespace Levante.Commands
                         {
                             string charId = $"{item.Response.profile.data.characterIds[i]}";
                             if ((int)item.Response.characters.data[$"{charId}"].classType == ClassType)
-                                userGuardians.Add(new Guardian(LinkedUser.UniqueBungieName, LinkedUser.BungieMembershipID, LinkedUser.BungieMembershipType, charId));
+                                userGuardians.Add(new Guardian(LinkedUser.UniqueBungieName, LinkedUser.BungieMembershipID, LinkedUser.BungieMembershipType, charId, User.Id));
                         }
                         catch (Exception x)
                         {

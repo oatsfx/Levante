@@ -102,6 +102,7 @@ namespace Levante.Rotations
         public static void WeeklyRotation()
         {
             NightfallRotation.GetCurrentNightfall();
+            Ada1Rotation.GetAda1Inventory();
 
             LWChallengeEncounter = LWChallengeEncounter == LastWishEncounter.Riven ? LastWishEncounter.Kalli : LWChallengeEncounter + 1;
             DSCChallengeEncounter = DSCChallengeEncounter == DeepStoneCryptEncounter.Taniks ? DeepStoneCryptEncounter.Security : DSCChallengeEncounter + 1;
