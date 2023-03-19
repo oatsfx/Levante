@@ -166,7 +166,7 @@ namespace Levante.Commands
 
             [SlashCommand("featured-raid", "Be notified when a raid is featured.")]
             public async Task FeaturedRaid([Summary("raid", "Legacy raid activity to be alerted for."),
-                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3), Choice("Vow of the Disciple", 4)] int ArgRaid)
+                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3), Choice("Vow of the Disciple", 4), Choice("King's Fall", 5)] int ArgRaid)
             {
                 if (FeaturedRaidRotation.GetUserTracking(Context.User.Id, out var Raid) != null)
                 {
@@ -618,7 +618,7 @@ namespace Levante.Commands
 
             [SlashCommand("featured-raid", "Find out when a raid is being featured next.")]
             public async Task FeaturedRaid([Summary("raid", "Legacy raid activity to predict its next appearance."),
-                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3), Choice("Vow of the Disciple", 4)] int ArgRaid)
+                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3), Choice("Vow of the Disciple", 4), Choice("King's Fall", 5)] int ArgRaid)
             {
                 Raid Raid = (Raid)ArgRaid;
 

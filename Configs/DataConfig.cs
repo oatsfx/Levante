@@ -583,7 +583,7 @@ namespace Levante.Configs
                 }
                 catch (Exception x)
                 {
-                    DeleteChannelFromRotationConfig(ChannelID, true);
+                    //DeleteChannelFromRotationConfig(ChannelID, true);
                     Log.Warning("[{Type}] Reset Error on Channel: {Id}. This channel has been removed from the list. {Exception}", "Data", ChannelID, x);
                 }
             }
@@ -625,7 +625,7 @@ namespace Levante.Configs
                 }
                 catch (Exception x)
                 {
-                    DeleteChannelFromRotationConfig(ChannelID, true);
+                    //DeleteChannelFromRotationConfig(ChannelID, true);
                     Log.Warning("[{Type}] Reset Error on Channel: {Id}. This channel has been removed from the list. {Exception}", "Data", ChannelID, x);
                 }
             }
