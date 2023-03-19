@@ -93,7 +93,7 @@ namespace Levante.Rotations
             int WeeksUntil = 0;
             do
             {
-                iterationRaid = iterationRaid == Raid.VowOfTheDisciple ? Raid.LastWish : iterationRaid + 1;
+                iterationRaid = iterationRaid == Raid.KingsFall ? Raid.LastWish : iterationRaid + 1;
                 WeeksUntil++;
             } while (iterationRaid != Raid);
             return CurrentRotations.WeeklyResetTimestamp.AddDays(WeeksUntil * 7); // Because there is no .AddWeeks().
