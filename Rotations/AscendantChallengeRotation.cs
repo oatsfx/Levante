@@ -7,8 +7,10 @@ namespace Levante.Rotations
 {
     public class AscendantChallengeRotation
     {
-        public static readonly int AscendantChallengeCount = 6;
         public static readonly string FilePath = @"Trackers/ascendantChallenge.json";
+        public static readonly string RotationsFilePath = @"Rotations/ascendantChallenge.json";
+
+        public static List<AscendantChallenge> AscendantChallenges = new();
 
         [JsonProperty("AscendantChallengeLinks")]
         public static List<AscendantChallengeLink> AscendantChallengeLinks { get; set; } = new List<AscendantChallengeLink>();
@@ -19,7 +21,7 @@ namespace Levante.Rotations
             public ulong DiscordID { get; set; } = 0;
 
             [JsonProperty("AscendantChallenge")]
-            public AscendantChallenge AscendantChallenge { get; set; } = AscendantChallenge.AgonarchAbyss;
+            public AscendantChallenge AscendantChallenge { get; set; } = 0;
         }
 
         public static string GetChallengeNameString(AscendantChallenge Encounter)
@@ -120,4 +122,12 @@ namespace Levante.Rotations
         ShatteredRuins, // Spine of Keres
         KeepOfHonedEdges, // Harbinger's Seclude
     }
+
+    /*public class AscendantChallenge
+    {
+        [JsonProperty("Name")]
+        public readonly string Name;
+        [JsonProperty("Location")]
+        public readonly string Location;
+    }*/
 }

@@ -739,13 +739,15 @@ namespace Levante
             }
             else if (trackerType.Equals("altars-of-sorrow"))
             {
-                if (AltarsOfSorrowRotation.GetUserTracking(interaction.User.Id, out var Weapon) == null)
+                var tracker = CurrentRotations.AltarsOfSorrow.GetUserTracking(interaction.User.Id);
+                if (tracker == null)
                 {
                     await interaction.RespondAsync($"No Altars of Sorrow tracking enabled.", ephemeral: true);
                     return;
                 }
-                AltarsOfSorrowRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Altars of Sorrow tracking, you will not be notified when {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType}) is available.", ephemeral: true);
+                var trackerRotation = CurrentRotations.AltarsOfSorrow.Rotations[tracker.WeaponDrop];
+                CurrentRotations.AltarsOfSorrow.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Altars of Sorrow tracking, you will not be notified when {trackerRotation.Weapon} ({trackerRotation.WeaponType}) is available.", ephemeral: true);
                 return;
             }
             else if (trackerType.Equals("ascendant-challenge"))

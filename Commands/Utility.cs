@@ -80,17 +80,20 @@ namespace Levante.Commands
             }
 
             [SlashCommand("altars-of-sorrow", "Be notified when an Altars of Sorrow weapon is active.")]
-            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to be alerted for."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int ArgWeapon)
+            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to be alerted for."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int Weapon)
             {
-                if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Weapon) != null)
+                var tracking = CurrentRotations.AltarsOfSorrow.GetUserTracking(Context.User.Id);
+                var trackingRotation = CurrentRotations.AltarsOfSorrow.Rotations[tracking.WeaponDrop];
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Altars of Sorrow. I am watching for {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Altars of Sorrow. I am watching for {trackingRotation.Weapon} ({trackingRotation.WeaponType}).", ephemeral: true);
                     return;
                 }
-                Weapon = ArgWeapon;
 
-                AltarsOfSorrowRotation.AddUserTracking(Context.User.Id, Weapon);
-                await RespondAsync($"I will remind you when {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType}) is in rotation, which will be on {TimestampTag.FromDateTime(AltarsOfSorrowRotation.DatePrediction(Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                var currentRotation = CurrentRotations.AltarsOfSorrow.Rotations[CurrentRotations.AltarWeapon];
+
+                CurrentRotations.AltarsOfSorrow.AddUserTracking(new AltarsOfSorrowLink { DiscordID = Context.User.Id, WeaponDrop = Weapon });
+                await RespondAsync($"I will remind you when {currentRotation.Weapon} ({currentRotation.WeaponType}) is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.AltarsOfSorrow.DatePrediction(Weapon, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 return;
             }
 
@@ -346,14 +349,14 @@ namespace Levante.Commands
             [SlashCommand("terminal-overload", "Be notified when a Terminal Overload location is active.")]
             public async Task TerminalOverload([Summary("location", "Terminal Overload location to be alerted for."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int ArgLocation)
             {
-                if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Location) != null)
+                if (TerminalOverloadRotation.GetUserTracking(Context.User.Id, out var Location) != null)
                 {
                     await RespondAsync($"You already have tracking for Terminal Overload. I am watching for {TerminalOverloadRotation.TerminalOverloads[Location].Location}, {TerminalOverloadRotation.TerminalOverloads[Location].WeaponEmote}{TerminalOverloadRotation.TerminalOverloads[Location].Weapon}.", ephemeral: true);
                     return;
                 }
                 Location = ArgLocation;
 
-                AltarsOfSorrowRotation.AddUserTracking(Context.User.Id, Location);
+                TerminalOverloadRotation.AddUserTracking(Context.User.Id, Location);
                 await RespondAsync($"I will remind you when {TerminalOverloadRotation.TerminalOverloads[Location].Location}, {TerminalOverloadRotation.TerminalOverloads[Location].WeaponEmote}{TerminalOverloadRotation.TerminalOverloads[Location].Weapon} is in rotation, which will be on {TimestampTag.FromDateTime(TerminalOverloadRotation.DatePrediction(Location), TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 return;
             }
@@ -428,8 +431,9 @@ namespace Levante.Commands
                 if (Ada1Rotation.GetUserTracking(Context.User.Id, out var Hash) != null)
                     menuBuilder.AddOption("Ada-1", "ada-1", $"{ManifestHelper.Ada1Items[Hash]}");
 
-                if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Weapon) != null)
-                    menuBuilder.AddOption("Altars of Sorrow", "altars-of-sorrow", $"{AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType})");
+                var altarTrack = CurrentRotations.AltarsOfSorrow.GetUserTracking(Context.User.Id);
+                if (altarTrack != null)
+                    menuBuilder.AddOption("Altars of Sorrow", "altars-of-sorrow", $"{CurrentRotations.AltarsOfSorrow.Rotations[altarTrack.WeaponDrop].Weapon} ({CurrentRotations.AltarsOfSorrow.Rotations[altarTrack.WeaponDrop].WeaponType})");
 
                 if (AscendantChallengeRotation.GetUserTracking(Context.User.Id, out var Challenge) != null)
                     menuBuilder.AddOption("Ascendant Challenge", "ascendant-challenge", $"{AscendantChallengeRotation.GetChallengeNameString(Challenge)} ({AscendantChallengeRotation.GetChallengeLocationString(Challenge)})");
@@ -474,9 +478,9 @@ namespace Levante.Commands
                     else if (NF != null && NFWeapon == null)
                         menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.Nightfalls[(int)NF]}");
                     else if (NF == null && NFWeapon != null)
-                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.NightfallWeapons[(int)Weapon].Name} Drop");
+                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.NightfallWeapons[(int)NFWeapon].Name} Drop");
                     else if (NF != null && NFWeapon != null)
-                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.Nightfalls[(int)NF]} dropping {NightfallRotation.NightfallWeapons[(int)Weapon].Name}");
+                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.Nightfalls[(int)NF]} dropping {NightfallRotation.NightfallWeapons[(int)NFWeapon].Name}");
                 }
 
                 if (NightmareHuntRotation.GetUserTracking(Context.User.Id, out var NightmareHunt) != null)
@@ -514,15 +518,15 @@ namespace Levante.Commands
             [SlashCommand("altars-of-sorrow", "Find out when an Altars of Sorrow weapon is active next.")]
             public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to predict its next appearance."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int Weapon)
             {
-                var predictedDate = AltarsOfSorrowRotation.DatePrediction(Weapon);
+                var prediction = CurrentRotations.AltarsOfSorrow.DatePrediction(Weapon, 0);
                 var embed = new EmbedBuilder()
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
                 };
                 embed.Title = "Altars of Sorrow";
                 embed.Description =
-                    $"Next occurrance of {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponEmote}{AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
+                    $"Next occurrance of {CurrentRotations.AltarsOfSorrow.Rotations[Weapon].WeaponEmote}{CurrentRotations.AltarsOfSorrow.Rotations[Weapon].Weapon} " +
+                        $"is: {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}.";
 
                 await RespondAsync($"", embed: embed.Build());
                 return;

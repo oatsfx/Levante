@@ -297,12 +297,12 @@ namespace Levante.Util
             List<AutocompleteResult> results = new();
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < AltarsOfSorrowRotation.AltarsOfSorrows.Count; i++)
-                    results.Add(new AutocompleteResult($"{AltarsOfSorrowRotation.AltarsOfSorrows[i].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[i].WeaponType})", i));
+                for (int i = 0; i < CurrentRotations.AltarsOfSorrow.Rotations.Count; i++)
+                    results.Add(new AutocompleteResult($"{CurrentRotations.AltarsOfSorrow.Rotations[i].Weapon} ({CurrentRotations.AltarsOfSorrow.Rotations[i].WeaponType})", i));
             else
-                for (int i = 0; i < AltarsOfSorrowRotation.AltarsOfSorrows.Count; i++)
-                    if ($"{AltarsOfSorrowRotation.AltarsOfSorrows[i].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[i].WeaponType})".ToLower().Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult($"{AltarsOfSorrowRotation.AltarsOfSorrows[i].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[i].WeaponType})", i));
+                for (int i = 0; i < CurrentRotations.AltarsOfSorrow.Rotations.Count; i++)
+                    if ($"{CurrentRotations.AltarsOfSorrow.Rotations[i].Weapon} ({CurrentRotations.AltarsOfSorrow.Rotations[i].WeaponType})".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{CurrentRotations.AltarsOfSorrow.Rotations[i].Weapon} ({CurrentRotations.AltarsOfSorrow.Rotations[i].WeaponType})", i));
 
             // max - 25 suggestions at a time (API limit)
             return AutocompletionResult.FromSuccess(results.Take(25));

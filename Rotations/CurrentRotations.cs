@@ -9,12 +9,15 @@ using System.IO;
 using System.Threading.Tasks;
 using Levante.Helpers;
 using Serilog;
+using Levante.Rotations.Interfaces;
 
 namespace Levante.Rotations
 {
     public class CurrentRotations
     {
         public static string FilePath { get; } = @"Configs/currentRotations.json";
+
+        public static AltarsOfSorrowRotation AltarsOfSorrow = new();
 
         [JsonProperty("DailyResetTimestamp")]
         public static DateTime DailyResetTimestamp = DateTime.Now;
@@ -66,7 +69,7 @@ namespace Levante.Rotations
         public static CurseWeek CurseWeek = CurseWeek.Weak;
 
         [JsonProperty("AscendantChallenge")]
-        public static AscendantChallenge AscendantChallenge = AscendantChallenge.AgonarchAbyss;
+        public static AscendantChallenge AscendantChallenge = 0;
 
         [JsonProperty("Nightfall")]
         public static int Nightfall = 0;
@@ -80,8 +83,8 @@ namespace Levante.Rotations
         [JsonProperty("NightmareHunts")]
         public static NightmareHunt[] NightmareHunts = { NightmareHunt.Crota, NightmareHunt.Phogoth, NightmareHunt.Ghaul };
 
-        [JsonProperty("Ada1Mods")]
-        public static Dictionary<long, string> Ada1Items = new Dictionary<long, string>();
+        [JsonProperty("Ada1Items")]
+        public static Dictionary<long, string> Ada1Items = new();
 
         public static void DailyRotation()
         {
@@ -90,7 +93,7 @@ namespace Levante.Rotations
             LostSector = LostSector == LostSectorRotation.LostSectors.Count - 1 ? 0 : LostSector + 1;
             LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
 
-            AltarWeapon = AltarWeapon == AltarsOfSorrowRotation.AltarsOfSorrows.Count - 1 ? 0 : AltarWeapon + 1;
+            AltarWeapon = AltarWeapon == AltarsOfSorrow.Rotations.Count - 1 ? 0 : AltarWeapon + 1;
             TerminalOverload = TerminalOverload == TerminalOverloadRotation.TerminalOverloads.Count - 1 ? 0 : TerminalOverload + 1;
             Wellspring = Wellspring == Wellspring.Zeerik ? Wellspring.Golmag : Wellspring + 1;
 
@@ -112,7 +115,7 @@ namespace Levante.Rotations
             KFChallengeEncounter = KFChallengeEncounter == KingsFallEncounter.Oryx ? KingsFallEncounter.Basilica : KFChallengeEncounter + 1;
             FeaturedRaid = FeaturedRaid == Raid.KingsFall ? Raid.LastWish : FeaturedRaid + 1;
             CurseWeek = CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : CurseWeek + 1;
-            AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? AscendantChallenge.AgonarchAbyss : AscendantChallenge + 1;
+            AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? 0 : AscendantChallenge + 1;
             //Nightfall = Nightfall == NightfallRotation.Nightfalls.Count - 1 ? 0 : Nightfall + 1;
             // Missing data.
             NightfallWeaponDrop = NightfallWeaponDrop == NightfallRotation.NightfallWeapons.Count - 1 ? 0 : NightfallWeaponDrop + 1;
@@ -133,7 +136,7 @@ namespace Levante.Rotations
         public static int GetTotalLinks()
         {
             return Ada1Rotation.Ada1Links.Count +
-                AltarsOfSorrowRotation.AltarsOfSorrowLinks.Count +
+                AltarsOfSorrow.Trackers.Count +
                 AscendantChallengeRotation.AscendantChallengeLinks.Count +
                 CurseWeekRotation.CurseWeekLinks.Count +
                 DeepStoneCryptRotation.DeepStoneCryptLinks.Count +
@@ -172,7 +175,7 @@ namespace Levante.Rotations
             }
 
             // Create/Check the tracking JSONs.
-            AltarsOfSorrowRotation.CreateJSON();
+            AltarsOfSorrow.GetTrackerJSON();
             AscendantChallengeRotation.CreateJSON();
             CurseWeekRotation.CreateJSON();
             DeepStoneCryptRotation.CreateJSON();
@@ -198,7 +201,7 @@ namespace Levante.Rotations
             string output = JsonConvert.SerializeObject(cr, Formatting.Indented);
             File.WriteAllText(FilePath, output);
 
-            AltarsOfSorrowRotation.GetRotationJSON();
+            AltarsOfSorrow.GetRotationJSON();
             TerminalOverloadRotation.GetRotationJSON();
         }
 
@@ -243,8 +246,8 @@ namespace Levante.Rotations
             {
                 x.Name = "Altars of Sorrow";
                 x.Value =
-                    $"{AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].WeaponEmote} {AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].Weapon}\n" +
-                    $"{DestinyEmote.Luna} {AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].Boss}";
+                    $"{AltarsOfSorrow.Rotations[AltarWeapon].WeaponEmote} {AltarsOfSorrow.Rotations[AltarWeapon].Weapon}\n" +
+                    $"{DestinyEmote.Luna} {AltarsOfSorrow.Rotations[AltarWeapon].Boss}";
                 x.IsInline = true;
             }).AddField(x =>
             {
@@ -389,8 +392,8 @@ namespace Levante.Rotations
 
         public static async Task CheckUsersDailyTracking(DiscordShardedClient Client)
         {
-            var altarTemp = new List<AltarsOfSorrowRotation.AltarsOfSorrowLink>();
-            foreach (var Link in AltarsOfSorrowRotation.AltarsOfSorrowLinks)
+            var altarTemp = new List<AltarsOfSorrowLink>();
+            foreach (var Link in AltarsOfSorrow.Trackers)
             {
                 try
                 {
@@ -399,7 +402,7 @@ namespace Levante.Rotations
                         user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
 
                     if (AltarWeapon == Link.WeaponDrop)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! Altars of Sorrow is dropping **{AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].Weapon}** (**{AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].WeaponType}**) today. I have removed your tracking, good luck!");
+                        await user.SendMessageAsync($"> Hey {user.Mention}! Altars of Sorrow is dropping **{AltarsOfSorrow.Rotations[AltarWeapon].Weapon}** (**{AltarsOfSorrow.Rotations[AltarWeapon].WeaponType}**) today. I have removed your tracking, good luck!");
                     else
                         altarTemp.Add(Link);
                 }
@@ -409,8 +412,8 @@ namespace Levante.Rotations
                     continue;
                 }
             }
-            AltarsOfSorrowRotation.AltarsOfSorrowLinks = altarTemp;
-            AltarsOfSorrowRotation.UpdateJSON();
+            AltarsOfSorrow.Trackers = altarTemp;
+            AltarsOfSorrow.UpdateJSON();
             
             var lsTemp = new List<LostSectorRotation.LostSectorLink>();
             foreach (var Link in LostSectorRotation.LostSectorLinks)
