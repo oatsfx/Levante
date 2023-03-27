@@ -12,43 +12,6 @@ namespace Levante.Util
         public static readonly string Titan = "<:Titan:844031790950776842>";
         public static readonly string Warlock = "<:Warlock:844031791119073320>";
 
-        // Activity Modifiers
-        public static readonly string AcuteArcBurn = "<:AcuteArcBurn:947296733761765447>";
-        public static readonly string AcuteSolarBurn = "<:AcuteSolarBurn:950997186013970453>";
-        public static readonly string AcuteVoidBurn = "<:AcuteVoidBurn:954803928883675176>";
-        public static readonly string ArachNO = "<:ArachNO:900142007840833576>";
-        public static readonly string ArcBurn = "<:ArcBurn:900142018280456213>";
-        public static readonly string Attrition = "<:Attrition:900142029487632395>";
-        public static readonly string Chaff = "<:Chaff:900142037020598293>";
-        public static readonly string Empath = "<:Empath:938569958806392902>";
-        public static readonly string Epitaph = "<:Epitaph:900142044368994315>";
-        public static readonly string EquipmentLocked = "<:EquipmentLocked:900142051725819965>";
-        public static readonly string Extinguish = "<:Extinguish:935313319110254592>";
-        public static readonly string Famine = "<:Famine:900142061695672331>";
-        public static readonly string FanaticsZeal = "<:FanaticsZeal:935349482302885958>";
-        public static readonly string FesteringRupture = "<:FesteringRupture:935355773960220752>";
-        public static readonly string FirePit = "<:FirePit:900142069182521345>";
-        public static readonly string GrandmasterModifiers = "<:GrandmasterModifiers:935312672856092703>";
-        public static readonly string GrasksBile = "<:GrasksBile:944671093296361552>";
-        public static readonly string HotKnife = "<:HotKnife:900142076673540096>";
-        public static readonly string IgnovunsChallenge = "<:IgnovunsChallenge:938570421534601277>";
-        public static readonly string LimitedRevives = "<:LimitedRevives:900142086270115901>";
-        public static readonly string Martyr = "<:Martyr:951000502190112808>";
-        public static readonly string MatchGame = "<:MatchGame:900142096013459516>";
-        public static readonly string Pestilence = "<:Pestilence:987504632433631292>";
-        public static readonly string Poleharm = "<:Poleharm:947300080308879371>";
-        public static readonly string RaiderShield = "<:RaiderShield:900142103697428562>";
-        public static readonly string SediasDurance = "<:SediasDurance:935306050683404288>";
-        public static readonly string SepiksGaze = "<:SepiksGaze:937512845111857222>";
-        public static readonly string ScorchedEarth = "<:ScorchedEarth:935381186136641546>";
-        public static readonly string Shocker = "<:Shocker:900142114426486844>";
-        public static readonly string SolarBurn = "<:SolarBurn:900142136996020224>";
-        public static readonly string StasisBurn = "<:StasisBurn:1054796594190500040>";
-        public static readonly string SubtleFoes = "<:SubtleFoes:951000792465285120>";
-        public static readonly string ThaviksImplant = "<:ThaviksImplant:935381584159342642>";
-        public static readonly string Togetherness = "<:Togetherness:937513440933740584>";
-        public static readonly string VoidBurn = "<:VoidBurn:900142150338105404>";
-
         // Elements
         public static readonly string Arc = "<:Arc:900144187696099359>";
         public static readonly string Kinetic = "<:Kinetic:955691794455232543>";
@@ -131,7 +94,6 @@ namespace Levante.Util
         public static readonly string PhantasmalFragments = "<:PhantasmalFragments:1020468360464576602>";
         public static readonly string RaidBanners = "<:RaidBanners:1020468791244763226>";
         public static readonly string ResonantAlloy = "<:ResonantAlloy:986514895946268742>";
-        public static readonly string ResonantElement = "<:ResonantElement:986676994731278417>";
         public static readonly string SpoilsOfConquest = "<:SpoilsOfConquest:986514871850008616>";
         public static readonly string StrandMeditations = "<:StrandMeditations:1082072750518173737>";
         public static readonly string StrangeCoins = "<:StrangeCoins:1020469985132425348>";

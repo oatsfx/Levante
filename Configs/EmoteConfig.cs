@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.WebSocket;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,14 +33,14 @@ namespace Levante.Configs
                         var emote = await guild.CreateEmoteAsync(name, image);
                         Emotes.Add(name, $"<:{emote.Name}:{emote.Id}>");
                         success = true;
-                        Console.WriteLine($"Added emote for {name}.");
+                        Log.Information("[{Type}] Added emote for {Name}.", "Emotes", name);
                         break;
                     }
                 }
                 catch (Discord.Net.HttpException x)
                 {
                     var json = JsonConvert.SerializeObject(x.Errors, Formatting.Indented);
-                    Console.WriteLine(json);
+                    Log.Error("[{Type}] Could not create an emote for {Name}. Reason: {Json}", "Emotes", name, json);
                     break;
                 }
             }

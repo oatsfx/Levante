@@ -170,8 +170,8 @@ namespace Levante.Util
             return Class switch
             {
                 DestinyClass.Titan => $"{DestinyEmote.Titan}",
-                DestinyClass.Hunter => $"{DestinyEmote.Titan}",
-                DestinyClass.Warlock => $"{DestinyEmote.Titan}",
+                DestinyClass.Hunter => $"{DestinyEmote.Hunter}",
+                DestinyClass.Warlock => $"{DestinyEmote.Warlock}",
                 _ => "",
             };
         }

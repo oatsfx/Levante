@@ -99,23 +99,6 @@ namespace Levante
             NightfallRotation.GetCurrentNightfall();
             CurrentRotations.UpdateRotationsJSON();
 
-            //Console.ForegroundColor = ConsoleColor.Magenta;
-            //Console.WriteLine($"[ROTATIONS]");
-            //Console.WriteLine($"Legend/Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LostSector)} ({CurrentRotations.LostSectorArmorDrop})");
-            //Console.WriteLine($"Altar Weapon: {AltarsOfSorrowRotation.GetWeaponNameString(CurrentRotations.AltarWeapon)} ({CurrentRotations.AltarWeapon})");
-            //Console.WriteLine($"Wellspring ({WellspringRotation.GetWellspringTypeString(CurrentRotations.Wellspring)}): {WellspringRotation.GetWeaponNameString(CurrentRotations.Wellspring)} ({WellspringRotation.GetWellspringBossString(CurrentRotations.Wellspring)})");
-            //Console.WriteLine($"Last Wish Challenge: {LastWishRotation.GetEncounterString(CurrentRotations.LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(CurrentRotations.LWChallengeEncounter)})");
-            //Console.WriteLine($"Garden of Salvation Challenge: {GardenOfSalvationRotation.GetEncounterString(CurrentRotations.GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(CurrentRotations.GoSChallengeEncounter)})");
-            //Console.WriteLine($"Deep Stone Crypt Challenge: {DeepStoneCryptRotation.GetEncounterString(CurrentRotations.DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(CurrentRotations.DSCChallengeEncounter)})");
-            //Console.WriteLine($"Vault of Glass Challenge: {VaultOfGlassRotation.GetEncounterString(CurrentRotations.VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(CurrentRotations.VoGChallengeEncounter)})");
-            //Console.WriteLine($"Vow of the Disciple Challenge: {VowOfTheDiscipleRotation.GetEncounterString(CurrentRotations.VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(CurrentRotations.VowChallengeEncounter)})");
-            //Console.WriteLine($"Curse Week: {CurrentRotations.CurseWeek}");
-            //Console.WriteLine($"Ascendant Challenge: {AscendantChallengeRotation.GetChallengeNameString(CurrentRotations.AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(CurrentRotations.AscendantChallenge)})");
-            //Console.WriteLine($"Nightfall: {NightfallRotation.GetStrikeNameString(CurrentRotations.Nightfall)} (dropping {NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrop)})");
-            //Console.WriteLine($"Empire Hunt: {EmpireHuntRotation.GetHuntNameString(CurrentRotations.EmpireHunt)}");
-            //Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
-            //Console.WriteLine();
-
             var currentTime = DateTime.UtcNow;
             SetUpTimer(currentTime.Hour >= 17 ? new DateTime(currentTime.AddDays(1).Year, currentTime.AddDays(1).Month, currentTime.AddDays(1).Day, 17, 0, 5) : new DateTime(currentTime.Year, currentTime.Month, currentTime.Day, 17, 0, 5));
 
@@ -168,7 +151,7 @@ namespace Levante
             int RNG = 0;
             int RNGMax = 35;
             Random rand = new();
-            if (SetRNG != -1 && SetRNG < RNGMax)
+            if (SetRNG > 0 && SetRNG < RNGMax)
                 RNG = SetRNG;
             else
                 RNG = rand.Next(0, RNGMax);
