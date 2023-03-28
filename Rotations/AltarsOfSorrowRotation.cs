@@ -14,19 +14,27 @@ namespace Levante.Rotations
         {
             FilePath = @"Trackers/altarsOfSorrow.json";
             RotationFilePath = @"Rotations/altarsOfSorrow.json";
+
+            GetRotationJSON();
+            GetTrackerJSON();
         }
 
         public override AltarsOfSorrowPrediction DatePrediction(int Weapon, int Skip)
         {
-            int iterationWeapon = CurrentRotations.AltarWeapon;
+            int iteration = CurrentRotations.Actives.AltarWeapon;
             int DaysUntil = 0;
+            int correctIterations = -1;
             do
             {
-                iterationWeapon = iterationWeapon == Rotations.Count - 1 ? 0 : iterationWeapon + 1;
+                iteration = iteration == Rotations.Count - 1 ? 0 : iteration + 1;
                 DaysUntil++;
-            } while (iterationWeapon != Weapon);
-            return new AltarsOfSorrowPrediction { AltarsOfSorrow = Rotations[iterationWeapon], Date = CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil) };
+                if (iteration == Weapon)
+                    correctIterations++;
+            } while (Skip != correctIterations);
+            return new AltarsOfSorrowPrediction { AltarsOfSorrow = Rotations[iteration], Date = CurrentRotations.Actives.DailyResetTimestamp.AddDays(DaysUntil) };
         }
+
+        public override bool IsTrackerInRotation(AltarsOfSorrowLink Tracker) => Tracker.WeaponDrop == CurrentRotations.Actives.AltarWeapon;
     }
 
     public class AltarsOfSorrow
@@ -39,6 +47,8 @@ namespace Levante.Rotations
         public readonly string WeaponType;
         [JsonProperty("WeaponEmote")]
         public readonly string WeaponEmote;
+
+        public override string ToString() => $"{Weapon} ({WeaponType})";
     }
 
     public class AltarsOfSorrowLink : IRotationTracker

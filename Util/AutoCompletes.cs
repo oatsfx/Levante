@@ -298,11 +298,11 @@ namespace Levante.Util
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
                 for (int i = 0; i < CurrentRotations.AltarsOfSorrow.Rotations.Count; i++)
-                    results.Add(new AutocompleteResult($"{CurrentRotations.AltarsOfSorrow.Rotations[i].Weapon} ({CurrentRotations.AltarsOfSorrow.Rotations[i].WeaponType})", i));
+                    results.Add(new AutocompleteResult($"{CurrentRotations.AltarsOfSorrow.Rotations[i]}", i));
             else
                 for (int i = 0; i < CurrentRotations.AltarsOfSorrow.Rotations.Count; i++)
-                    if ($"{CurrentRotations.AltarsOfSorrow.Rotations[i].Weapon} ({CurrentRotations.AltarsOfSorrow.Rotations[i].WeaponType})".ToLower().Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult($"{CurrentRotations.AltarsOfSorrow.Rotations[i].Weapon} ({CurrentRotations.AltarsOfSorrow.Rotations[i].WeaponType})", i));
+                    if ($"{CurrentRotations.AltarsOfSorrow.Rotations[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{CurrentRotations.AltarsOfSorrow.Rotations[i]}", i));
 
             // max - 25 suggestions at a time (API limit)
             return AutocompletionResult.FromSuccess(results.Take(25));

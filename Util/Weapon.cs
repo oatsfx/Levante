@@ -109,7 +109,7 @@ namespace Levante.Util
         {
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Weapon Details: {GetName()}",
+                Name = $"Weapon Details: {ManifestHelper.Weapons[GetItemHash()]}",
                 IconUrl = GetIconUrl(),
             };
             var foot = new EmbedFooterBuilder()

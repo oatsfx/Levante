@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Levante.Util.Attributes;
 using System.Xml.Linq;
+using Levante.Rotations.Interfaces;
 
 namespace Levante.Commands
 {
@@ -83,17 +84,17 @@ namespace Levante.Commands
             public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to be alerted for."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int Weapon)
             {
                 var tracking = CurrentRotations.AltarsOfSorrow.GetUserTracking(Context.User.Id);
-                var trackingRotation = CurrentRotations.AltarsOfSorrow.Rotations[tracking.WeaponDrop];
                 if (tracking != null)
                 {
+                    var trackingRotation = CurrentRotations.AltarsOfSorrow.Rotations[tracking.WeaponDrop];
                     await RespondAsync($"You already have tracking for Altars of Sorrow. I am watching for {trackingRotation.Weapon} ({trackingRotation.WeaponType}).", ephemeral: true);
                     return;
                 }
 
-                var currentRotation = CurrentRotations.AltarsOfSorrow.Rotations[CurrentRotations.AltarWeapon];
+                var reqRotation = CurrentRotations.AltarsOfSorrow.Rotations[Weapon];
 
                 CurrentRotations.AltarsOfSorrow.AddUserTracking(new AltarsOfSorrowLink { DiscordID = Context.User.Id, WeaponDrop = Weapon });
-                await RespondAsync($"I will remind you when {currentRotation.Weapon} ({currentRotation.WeaponType}) is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.AltarsOfSorrow.DatePrediction(Weapon, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                await RespondAsync($"I will remind you when {reqRotation} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.AltarsOfSorrow.DatePrediction(Weapon, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
                 return;
             }
 
@@ -103,7 +104,8 @@ namespace Levante.Commands
                 Choice("Ouroborea (Aphelion's Rest)", 2), Choice("Forfeit Shrine (Gardens of Esila)", 3),
                 Choice("Shattered Ruins (Spine of Keres)", 4), Choice("Keep of Honed Edges (Harbinger's Seclude)", 5)] int ArgAscendantChallenge)
             {
-                if (AscendantChallengeRotation.GetUserTracking(Context.User.Id, out var AscendantChallenge) != null)
+                var tracking = CurrentRotations.AscendantChallenge.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
                     await RespondAsync($"You already have tracking for Ascendant Challenges. I am watching for {AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}).", ephemeral: true);
                     return;
@@ -516,17 +518,37 @@ namespace Levante.Commands
         public class Next : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("altars-of-sorrow", "Find out when an Altars of Sorrow weapon is active next.")]
-            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to predict its next appearance."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int Weapon)
+            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to predict its next appearance."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int Weapon,
+                [Summary("show-next", "Number of next occurrances to show.")] int show = 1)
             {
-                var prediction = CurrentRotations.AltarsOfSorrow.DatePrediction(Weapon, 0);
-                var embed = new EmbedBuilder()
+                var predictions = new List<AltarsOfSorrowPrediction>();
+
+                if (show < 1)
+                    show = 1;
+                else if (show > 4)
+                    show = 4;
+
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.AltarsOfSorrow.DatePrediction(Weapon, i));
+                
+                var embed = new EmbedBuilder
                 {
                     Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Title = "Altars of Sorrow",
+                    Description = $"Requested: {CurrentRotations.AltarsOfSorrow.Rotations[Weapon].WeaponEmote}{CurrentRotations.AltarsOfSorrow.Rotations[Weapon]}"
                 };
-                embed.Title = "Altars of Sorrow";
-                embed.Description =
-                    $"Next occurrance of {CurrentRotations.AltarsOfSorrow.Rotations[Weapon].WeaponEmote}{CurrentRotations.AltarsOfSorrow.Rotations[Weapon].Weapon} " +
-                        $"is: {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}.";
+
+                int occurrances = 1;
+                foreach (var prediction in predictions)
+                {
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrance {occurrances}";
+                        x.Value = $"{prediction.AltarsOfSorrow.WeaponEmote}{prediction.AltarsOfSorrow} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrances++;
+                }
 
                 await RespondAsync($"", embed: embed.Build());
                 return;

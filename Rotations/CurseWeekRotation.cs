@@ -1,92 +1,69 @@
-﻿using Newtonsoft.Json;
+﻿using Levante.Rotations.Abstracts;
+using Levante.Rotations.Interfaces;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
 namespace Levante.Rotations
 {
-    public class CurseWeekRotation
+    public class CurseWeekRotation : Rotation<CurseWeek, CurseWeekLink, CurseWeekPrediction>
     {
-        public static readonly int CurseWeekCount = 3;
-        public static readonly string FilePath = @"Trackers/curseWeek.json";
-
-        [JsonProperty("CurseWeekLinks")]
-        public static List<CurseWeekLink> CurseWeekLinks { get; set; } = new List<CurseWeekLink>();
-
-        public class CurseWeekLink
+        public CurseWeekRotation()
         {
-            [JsonProperty("DiscordID")]
-            public ulong DiscordID { get; set; } = 0;
+            FilePath = @"Trackers/curseWeek.json";
+            RotationFilePath = @"Rotations/curseWeek.json";
 
-            [JsonProperty("Week")]
-            public CurseWeek Strength { get; set; } = CurseWeek.Weak;
+            GetRotationJSON();
+            GetTrackerJSON();
         }
 
-        public static void AddUserTracking(ulong DiscordID, CurseWeek CurseWeek)
+        public override CurseWeekPrediction DatePrediction(int Strength, int Skip)
         {
-            CurseWeekLinks.Add(new CurseWeekLink() { DiscordID = DiscordID, Strength = CurseWeek });
-            UpdateJSON();
-        }
-
-        public static void RemoveUserTracking(ulong DiscordID)
-        {
-            CurseWeekLinks.Remove(GetUserTracking(DiscordID, out _));
-            UpdateJSON();
-        }
-
-        // Returns null if no tracking is found.
-        public static CurseWeekLink GetUserTracking(ulong DiscordID, out CurseWeek CurseWeek)
-        {
-            foreach (var Link in CurseWeekLinks)
-                if (Link.DiscordID == DiscordID)
-                {
-                    CurseWeek = Link.Strength;
-                    return Link;
-                }
-            CurseWeek = CurseWeek.Weak;
-            return null;
-        }
-
-        public static void CreateJSON()
-        {
-            CurseWeekRotation obj;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                obj = JsonConvert.DeserializeObject<CurseWeekRotation>(json);
-            }
-            else
-            {
-                obj = new CurseWeekRotation();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(obj, Formatting.Indented));
-                Console.WriteLine($"No {FilePath} file detected. No action needed.");
-            }
-        }
-
-        public static void UpdateJSON()
-        {
-            var obj = new CurseWeekRotation();
-            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
-        }
-
-        public static DateTime DatePrediction(CurseWeek CurseWeek)
-        {
-            CurseWeek iterationWeek = CurrentRotations.CurseWeek;
+            int iteration = CurrentRotations.Actives.CurseWeek;
             int WeeksUntil = 0;
+            int correctIterations = -1;
             do
             {
-                iterationWeek = iterationWeek == CurseWeek.Strong ? CurseWeek.Weak : iterationWeek + 1;
+                iteration = iteration == Rotations.Count - 1 ? 0 : iteration + 1;
                 WeeksUntil++;
-            } while (iterationWeek != CurseWeek);
-            return CurrentRotations.WeeklyResetTimestamp.AddDays(WeeksUntil * 7); // Because there is no .AddWeeks().
+                if (iteration == Strength)
+                    correctIterations++;
+            } while (Skip != correctIterations);
+            return new CurseWeekPrediction { CurseWeek = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
+
+        public override bool IsTrackerInRotation(CurseWeekLink Tracker) => Tracker.Strength == CurrentRotations.Actives.CurseWeek;
     }
 
-    public enum CurseWeek
+    /*public enum CurseWeek
     {
         Weak,
         Medium,
         Strong,
+    }*/
+
+    public class CurseWeek
+    {
+        [JsonProperty("Name")]
+        public readonly string Name;
+
+        [JsonProperty("PetraLocation")]
+        public readonly string PetraLocation;
+    }
+
+    public class CurseWeekLink : IRotationTracker
+    {
+        [JsonProperty("DiscordID")]
+        public ulong DiscordID { get; set; } = 0;
+
+        [JsonProperty("Strength")]
+        public int Strength { get; set; } = 0;
+    }
+
+    public class CurseWeekPrediction : IRotationPrediction
+    {
+        public DateTime Date { get; set; }
+        public CurseWeek CurseWeek { get; set; }
     }
 }

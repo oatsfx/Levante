@@ -12,8 +12,8 @@ namespace Levante.Rotations.Abstracts
 {
     public abstract class Rotation<R, T, P> where T : IRotationTracker where P : IRotationPrediction
     {
-        public string FilePath;
-        public string RotationFilePath;
+        protected string FilePath;
+        protected string RotationFilePath;
 
         public List<R> Rotations = new();
         public List<T> Trackers = new();
@@ -28,7 +28,7 @@ namespace Levante.Rotations.Abstracts
             else
             {
                 File.WriteAllText(FilePath, JsonConvert.SerializeObject(Trackers, Formatting.Indented));
-                Log.Warning("No {FilePath} file detected; it has been created for you. No action needed.", FilePath);
+                Log.Warning("No {FilePath} file detected; it has been created for you. No action is needed.", FilePath);
             }
         }
 
@@ -42,7 +42,7 @@ namespace Levante.Rotations.Abstracts
             else
             {
                 File.WriteAllText(RotationFilePath, JsonConvert.SerializeObject(Rotations, Formatting.Indented));
-                Log.Warning("No {RotationFilePath} file detected; it has been created for you. No action needed.", RotationFilePath);
+                Log.Warning("No {RotationFilePath} file detected; it has been created for you. No action is needed.", RotationFilePath);
             }
         }
 
@@ -58,7 +58,7 @@ namespace Levante.Rotations.Abstracts
             UpdateJSON();
         }
 
-        public T GetUserTracking(ulong DiscordID) => Trackers.First(x => x.DiscordID == DiscordID);
+        public T GetUserTracking(ulong DiscordID) => Trackers.FirstOrDefault(x => x.DiscordID == DiscordID);
 
         public void UpdateJSON()
         {
@@ -67,5 +67,7 @@ namespace Levante.Rotations.Abstracts
         }
 
         public abstract P DatePrediction(int Rotation, int Skip);
+
+        public abstract bool IsTrackerInRotation(T Tracker);
     }
 }

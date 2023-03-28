@@ -18,86 +18,21 @@ namespace Levante.Rotations
         public static string FilePath { get; } = @"Configs/currentRotations.json";
 
         public static AltarsOfSorrowRotation AltarsOfSorrow = new();
-
-        [JsonProperty("DailyResetTimestamp")]
-        public static DateTime DailyResetTimestamp = DateTime.Now;
-
-        [JsonProperty("WeeklyResetTimestamp")]
-        public static DateTime WeeklyResetTimestamp = DateTime.Now;
-
-        // Dailies
-
-        [JsonProperty("LostSector")]
-        public static int LostSector = 0;
-
-        [JsonProperty("LostSectorArmorDrop")]
-        public static ExoticArmorType LostSectorArmorDrop = ExoticArmorType.Legs;
-
-        [JsonProperty("AltarWeapon")]
-        public static int AltarWeapon = 0;
-
-        [JsonProperty("Wellspring")]
-        public static Wellspring Wellspring = Wellspring.Golmag;
-
-        [JsonProperty("TerminalOverload")]
-        public static int TerminalOverload = 0;
-
-        // Weeklies
-
-        [JsonProperty("LWChallengeEncounter")]
-        public static LastWishEncounter LWChallengeEncounter = LastWishEncounter.Kalli;
-
-        [JsonProperty("DSCChallengeEncounter")]
-        public static DeepStoneCryptEncounter DSCChallengeEncounter = DeepStoneCryptEncounter.Security;
-
-        [JsonProperty("GoSChallengeEncounter")]
-        public static GardenOfSalvationEncounter GoSChallengeEncounter = GardenOfSalvationEncounter.Evade;
-
-        [JsonProperty("VoGChallengeEncounter")]
-        public static VaultOfGlassEncounter VoGChallengeEncounter = VaultOfGlassEncounter.Confluxes;
-
-        [JsonProperty("VowChallengeEncounter")]
-        public static VowOfTheDiscipleEncounter VowChallengeEncounter = VowOfTheDiscipleEncounter.Acquisition;
-
-        [JsonProperty("KFChallengeEncounter")]
-        public static KingsFallEncounter KFChallengeEncounter = KingsFallEncounter.Basilica;
-
-        [JsonProperty("FeaturedRaid")]
-        public static Raid FeaturedRaid = Raid.LastWish;
-
-        [JsonProperty("CurseWeek")]
-        public static CurseWeek CurseWeek = CurseWeek.Weak;
-
-        [JsonProperty("AscendantChallenge")]
-        public static AscendantChallenge AscendantChallenge = 0;
-
-        [JsonProperty("Nightfall")]
-        public static int Nightfall = 0;
-
-        [JsonProperty("NightfallWeaponDrop")]
-        public static int NightfallWeaponDrop = 0;
-
-        [JsonProperty("EmpireHunt")]
-        public static EmpireHunt EmpireHunt = EmpireHunt.Warrior;
-
-        [JsonProperty("NightmareHunts")]
-        public static NightmareHunt[] NightmareHunts = { NightmareHunt.Crota, NightmareHunt.Phogoth, NightmareHunt.Ghaul };
-
-        [JsonProperty("Ada1Items")]
-        public static Dictionary<long, string> Ada1Items = new();
+        public static AscendantChallengeRotation AscendantChallenge = new();
+        public static Actives Actives = new();
 
         public static void DailyRotation()
         {
             //Ada1Rotation.GetAda1Inventory();
 
-            LostSector = LostSector == LostSectorRotation.LostSectors.Count - 1 ? 0 : LostSector + 1;
-            LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
+            Actives.LostSector = Actives.LostSector == LostSectorRotation.LostSectors.Count - 1 ? 0 : Actives.LostSector + 1;
+            Actives.LostSectorArmorDrop = Actives.LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : Actives.LostSectorArmorDrop + 1;
 
-            AltarWeapon = AltarWeapon == AltarsOfSorrow.Rotations.Count - 1 ? 0 : AltarWeapon + 1;
-            TerminalOverload = TerminalOverload == TerminalOverloadRotation.TerminalOverloads.Count - 1 ? 0 : TerminalOverload + 1;
-            Wellspring = Wellspring == Wellspring.Zeerik ? Wellspring.Golmag : Wellspring + 1;
+            Actives.AltarWeapon = Actives.AltarWeapon == AltarsOfSorrow.Rotations.Count - 1 ? 0 : Actives.AltarWeapon + 1;
+            Actives.TerminalOverload = Actives.TerminalOverload == TerminalOverloadRotation.TerminalOverloads.Count - 1 ? 0 : TerminalOverload + 1;
+            Actives.Wellspring = Actives.Wellspring == Wellspring.Zeerik ? Wellspring.Golmag : Actives.Wellspring + 1;
 
-            DailyResetTimestamp = DateTime.Now;
+            Actives.DailyResetTimestamp = DateTime.Now;
 
             UpdateRotationsJSON();
         }
@@ -107,25 +42,25 @@ namespace Levante.Rotations
             NightfallRotation.GetCurrentNightfall();
             Ada1Rotation.GetAda1Inventory();
 
-            LWChallengeEncounter = LWChallengeEncounter == LastWishEncounter.Riven ? LastWishEncounter.Kalli : LWChallengeEncounter + 1;
-            DSCChallengeEncounter = DSCChallengeEncounter == DeepStoneCryptEncounter.Taniks ? DeepStoneCryptEncounter.Security : DSCChallengeEncounter + 1;
-            GoSChallengeEncounter = GoSChallengeEncounter == GardenOfSalvationEncounter.SanctifiedMind ? GardenOfSalvationEncounter.Evade : GoSChallengeEncounter + 1;
-            VoGChallengeEncounter = VoGChallengeEncounter == VaultOfGlassEncounter.Atheon ? VaultOfGlassEncounter.Confluxes : VoGChallengeEncounter + 1;
-            VowChallengeEncounter = VowChallengeEncounter == VowOfTheDiscipleEncounter.Rhulk ? VowOfTheDiscipleEncounter.Acquisition : VowChallengeEncounter + 1;
-            KFChallengeEncounter = KFChallengeEncounter == KingsFallEncounter.Oryx ? KingsFallEncounter.Basilica : KFChallengeEncounter + 1;
-            FeaturedRaid = FeaturedRaid == Raid.KingsFall ? Raid.LastWish : FeaturedRaid + 1;
-            CurseWeek = CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : CurseWeek + 1;
-            AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? 0 : AscendantChallenge + 1;
+            Actives.LWChallengeEncounter = Actives.LWChallengeEncounter == LastWishEncounter.Riven ? LastWishEncounter.Kalli : Actives.LWChallengeEncounter + 1;
+            Actives.DSCChallengeEncounter = Actives.DSCChallengeEncounter == DeepStoneCryptEncounter.Taniks ? DeepStoneCryptEncounter.Security : Actives.DSCChallengeEncounter + 1;
+            Actives.GoSChallengeEncounter = Actives.GoSChallengeEncounter == GardenOfSalvationEncounter.SanctifiedMind ? GardenOfSalvationEncounter.Evade : Actives.GoSChallengeEncounter + 1;
+            Actives.VoGChallengeEncounter = Actives.VoGChallengeEncounter == VaultOfGlassEncounter.Atheon ? VaultOfGlassEncounter.Confluxes : Actives.VoGChallengeEncounter + 1;
+            Actives.VowChallengeEncounter = Actives.VowChallengeEncounter == VowOfTheDiscipleEncounter.Rhulk ? VowOfTheDiscipleEncounter.Acquisition : Actives.VowChallengeEncounter + 1;
+            Actives.KFChallengeEncounter = Actives.KFChallengeEncounter == KingsFallEncounter.Oryx ? KingsFallEncounter.Basilica : Actives.KFChallengeEncounter + 1;
+            Actives.FeaturedRaid = Actives.FeaturedRaid == Raid.KingsFall ? Raid.LastWish : Actives.FeaturedRaid + 1;
+            Actives.CurseWeek = Actives.CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : Actives.CurseWeek + 1;
+            Actives.AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? 0 : Actives.AscendantChallenge + 1;
             //Nightfall = Nightfall == NightfallRotation.Nightfalls.Count - 1 ? 0 : Nightfall + 1;
             // Missing data.
-            NightfallWeaponDrop = NightfallWeaponDrop == NightfallRotation.NightfallWeapons.Count - 1 ? 0 : NightfallWeaponDrop + 1;
-            EmpireHunt = EmpireHunt == EmpireHunt.DarkPriestess ? EmpireHunt.Warrior : EmpireHunt + 1;
+            Actives.NightfallWeaponDrop = Actives.NightfallWeaponDrop == NightfallRotation.NightfallWeapons.Count - 1 ? 0 : Actives.NightfallWeaponDrop + 1;
+            Actives.EmpireHunt = Actives.EmpireHunt == EmpireHunt.DarkPriestess ? EmpireHunt.Warrior : Actives.EmpireHunt + 1;
 
-            NightmareHunts[0] = NightmareHunts[0] >= NightmareHunt.Skolas ? NightmareHunts[0] - 5 : NightmareHunts[0] + 3;
-            NightmareHunts[1] = NightmareHunts[1] >= NightmareHunt.Skolas ? NightmareHunts[1] - 5 : NightmareHunts[1] + 3;
-            NightmareHunts[2] = NightmareHunts[2] >= NightmareHunt.Skolas ? NightmareHunts[2] - 5 : NightmareHunts[2] + 3;
+            Actives.NightmareHunts[0] = Actives.NightmareHunts[0] >= NightmareHunt.Skolas ? Actives.NightmareHunts[0] - 5 : Actives.NightmareHunts[0] + 3;
+            Actives.NightmareHunts[1] = Actives.NightmareHunts[1] >= NightmareHunt.Skolas ? Actives.NightmareHunts[1] - 5 : Actives.NightmareHunts[1] + 3;
+            Actives.NightmareHunts[2] = Actives.NightmareHunts[2] >= NightmareHunt.Skolas ? Actives.NightmareHunts[2] - 5 : Actives.NightmareHunts[2] + 3;
 
-            WeeklyResetTimestamp = DateTime.Now;
+            Actives.WeeklyResetTimestamp = DateTime.Now;
 
             // Because weekly is also a daily reset.
             DailyRotation();
@@ -161,21 +96,18 @@ namespace Levante.Rotations
             if (!Directory.Exists("Rotations"))
                 Directory.CreateDirectory("Rotations");
 
-            CurrentRotations cr;
             if (File.Exists(FilePath))
             {
                 string json = File.ReadAllText(FilePath);
-                cr = JsonConvert.DeserializeObject<CurrentRotations>(json);
+                Actives = JsonConvert.DeserializeObject<Actives>(json);
             }
             else
             {
-                cr = new CurrentRotations();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(cr, Formatting.Indented));
+                File.WriteAllText(FilePath, JsonConvert.SerializeObject(Actives, Formatting.Indented));
                 Console.WriteLine($"No currentRotations.json file detected. Restart the program and change the values accordingly.");
             }
 
             // Create/Check the tracking JSONs.
-            AltarsOfSorrow.GetTrackerJSON();
             AscendantChallengeRotation.CreateJSON();
             CurseWeekRotation.CreateJSON();
             DeepStoneCryptRotation.CreateJSON();
@@ -246,7 +178,7 @@ namespace Levante.Rotations
             {
                 x.Name = "Altars of Sorrow";
                 x.Value =
-                    $"{AltarsOfSorrow.Rotations[AltarWeapon].WeaponEmote} {AltarsOfSorrow.Rotations[AltarWeapon].Weapon}\n" +
+                    $"{AltarsOfSorrow.Rotations[AltarWeapon].WeaponEmote} {AltarsOfSorrow.Rotations[AltarWeapon]}\n" +
                     $"{DestinyEmote.Luna} {AltarsOfSorrow.Rotations[AltarWeapon].Boss}";
                 x.IsInline = true;
             }).AddField(x =>
@@ -754,5 +686,85 @@ namespace Levante.Rotations
             VowOfTheDiscipleRotation.VowOfTheDiscipleLinks = vowTemp;
             VowOfTheDiscipleRotation.UpdateJSON();
         }
+    }
+
+    public class Actives
+    {
+        [JsonProperty("DailyResetTimestamp")]
+        public DateTime DailyResetTimestamp = DateTime.Now;
+
+        [JsonProperty("WeeklyResetTimestamp")]
+        public DateTime WeeklyResetTimestamp = DateTime.Now;
+
+        // Dailies
+
+        [JsonProperty("LostSector")]
+        public int LostSector = 0;
+
+        [JsonProperty("LostSectorArmorDrop")]
+        public int LostSectorArmorDrop = 0;
+
+        [JsonProperty("AltarWeapon")]
+        public int AltarWeapon = 0;
+
+        [JsonProperty("Wellspring")]
+        public int Wellspring = 0;
+
+        [JsonProperty("TerminalOverload")]
+        public int TerminalOverload = 0;
+
+        // Weeklies
+
+        [JsonProperty("LWChallenge")]
+        public int LWChallenge = 0;
+
+        [JsonProperty("DSCChallenge")]
+        public int DSCChallenge = 0;
+
+        [JsonProperty("GoSChallenge")]
+        public int GoSChallenge = 0;
+
+        [JsonProperty("VoGChallenge")]
+        public int VoGChallenge = 0;
+
+        [JsonProperty("VowChallenge")]
+        public int VowChallenge = 0;
+
+        [JsonProperty("KFChallenge")]
+        public int KFChallenge = 0;
+
+        [JsonProperty("RoNChallenge")]
+        public int RoNChallenge = 0;
+
+        [JsonProperty("FeaturedRaid")]
+        public int FeaturedRaid = 0;
+
+        [JsonProperty("FeaturedDungeon")]
+        public int FeaturedDungeon = 0;
+
+        [JsonProperty("CurseWeek")]
+        public int CurseWeek = 0;
+
+        [JsonProperty("AscendantChallenge")]
+        public int AscendantChallenge = 0;
+
+        [JsonProperty("Nightfall")]
+        public int Nightfall = 0;
+
+        [JsonProperty("NightfallWeaponDrop")]
+        public int NightfallWeaponDrop = 0;
+
+        [JsonProperty("EmpireHunt")]
+        public int EmpireHunt = 0;
+
+        [JsonProperty("NightmareHunts")]
+        public int[] NightmareHunts = { 0, 1, 2 };
+
+        [JsonProperty("Ada1Items")]
+        public Dictionary<long, string> Ada1Items = new();
+
+        // TODO: Implement a seasonal rotation type for things like Legend Defiant Battlegrounds.
+        [JsonProperty("Seasonals")]
+        public Dictionary<string, int> Seasonals = new();
     }
 }
