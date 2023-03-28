@@ -575,7 +575,7 @@ namespace Levante.Helpers
                                 //Log.Debug("Perk: {PerkName} {IsEnhanced}", invItem.Value.DisplayProperties.Name, invItem.Value.ItemTypeDisplayName.Contains("Enhanced"));
                                 EnhancedPerks.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name.Replace("Enhanced", "") /*Looking at you Perpetual Motion and Golden Tricorn*/);
 
-                                if (clarity.ContainsKey(invItem.Value.Hash))
+                                if (clarity.ContainsKey(invItem.Value.Hash) && clarity[invItem.Value.Hash].Descriptions != null)
                                     ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
                             }
                                 
