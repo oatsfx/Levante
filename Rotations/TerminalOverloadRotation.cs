@@ -5,114 +5,64 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Levante.Rotations.AltarsOfSorrowRotation;
-using static Levante.Rotations.TerminalOverloadRotation;
+using Levante.Rotations.Abstracts;
+using Levante.Rotations.Interfaces;
 
 namespace Levante.Rotations
 {
-    public class TerminalOverloadRotation
+    public class TerminalOverloadRotation : Rotation<TerminalOverload, TerminalOverloadLink, TerminalOverloadPrediction>
     {
-        public static readonly string FilePath = @"Trackers/terminalOverload.json";
-        public static readonly string RotationsFilePath = @"Rotations/terminalOverload.json";
-
-        public static List<TerminalOverload> TerminalOverloads = new();
-
-        [JsonProperty("TerminalOverloadLinks")]
-        public static List<TerminalOverloadLink> TerminalOverloadLinks { get; set; } = new();
-
-        public class TerminalOverloadLink
+        public TerminalOverloadRotation()
         {
-            [JsonProperty("DiscordID")]
-            public ulong DiscordID { get; set; } = 0;
+            FilePath = @"Trackers/terminalOverload.json";
+            RotationFilePath = @"Rotations/terminalOverload.json";
 
-            [JsonProperty("Location")]
-            public int Location { get; set; } = 0;
+            GetRotationJSON();
+            GetTrackerJSON();
         }
 
-        public static void AddUserTracking(ulong DiscordID, int Location)
+        public override TerminalOverloadPrediction DatePrediction(int Location, int Skip)
         {
-            TerminalOverloadLinks.Add(new TerminalOverloadLink() { DiscordID = DiscordID, Location = Location });
-            UpdateJSON();
-        }
-
-        public static void RemoveUserTracking(ulong DiscordID)
-        {
-            TerminalOverloadLinks.Remove(GetUserTracking(DiscordID, out _));
-            UpdateJSON();
-        }
-
-        // Returns null if no tracking is found.
-        public static TerminalOverloadLink GetUserTracking(ulong DiscordID, out int Location)
-        {
-            foreach (var Link in TerminalOverloadLinks)
-                if (Link.DiscordID == DiscordID)
-                {
-                    Location = Link.Location;
-                    return Link;
-                }
-            Location = -1;
-            return null;
-        }
-
-        public static void CreateJSON()
-        {
-            TerminalOverloadRotation obj;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                obj = JsonConvert.DeserializeObject<TerminalOverloadRotation>(json);
-            }
-            else
-            {
-                obj = new TerminalOverloadRotation();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(obj, Formatting.Indented));
-                Console.WriteLine($"No {FilePath} file detected. No action needed.");
-            }
-        }
-
-        public static void GetRotationJSON()
-        {
-            if (File.Exists(RotationsFilePath))
-            {
-                string json = File.ReadAllText(RotationsFilePath);
-                TerminalOverloads = JsonConvert.DeserializeObject<List<TerminalOverload>>(json);
-            }
-            else
-            {
-                File.WriteAllText(RotationsFilePath, JsonConvert.SerializeObject(TerminalOverloads, Formatting.Indented));
-                Console.WriteLine($"No {RotationsFilePath} file detected. No action needed.");
-            }
-        }
-
-        public static void UpdateJSON()
-        {
-            var obj = new TerminalOverloadRotation();
-            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
-        }
-
-        public static DateTime DatePrediction(int Location)
-        {
-            int iterationLoc = CurrentRotations.TerminalOverload;
+            int iteration = CurrentRotations.Actives.TerminalOverload;
             int DaysUntil = 0;
+            int correctIterations = -1;
             do
             {
-                iterationLoc = iterationLoc == TerminalOverloads.Count - 1 ? 0 : iterationLoc + 1;
+                iteration = iteration == Rotations.Count - 1 ? 0 : iteration + 1;
                 DaysUntil++;
-            } while (iterationLoc != Location);
-            return CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil);
+                if (iteration == Location)
+                    correctIterations++;
+            } while (Skip != correctIterations);
+            return new TerminalOverloadPrediction { TerminalOverload = Rotations[Location], Date = CurrentRotations.Actives.DailyResetTimestamp.AddDays(DaysUntil) };
         }
+
+        public override bool IsTrackerInRotation(TerminalOverloadLink Tracker) => Tracker.Location == CurrentRotations.Actives.TerminalOverload;
     }
 
     public class TerminalOverload
     {
         [JsonProperty("Location")]
-        public string Location;
+        public readonly string Location;
         [JsonProperty("Weapon")]
-        public string Weapon;
+        public readonly string Weapon;
         [JsonProperty("WeaponType")]
-        public string WeaponType;
+        public readonly string WeaponType;
         [JsonProperty("WeaponEmote")]
-        public string WeaponEmote;
+        public readonly string WeaponEmote;
+    }
+
+    public class TerminalOverloadLink : IRotationTracker
+    {
+        [JsonProperty("DiscordID")]
+        public ulong DiscordID { get; set; } = 0;
+
+        [JsonProperty("Location")]
+        public int Location { get; set; } = 0;
+    }
+
+    public class TerminalOverloadPrediction : IRotationPrediction
+    {
+        public DateTime Date { get; set; }
+        public TerminalOverload TerminalOverload { get; set; }
     }
 }

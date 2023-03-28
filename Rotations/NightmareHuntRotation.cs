@@ -1,28 +1,26 @@
-﻿using Newtonsoft.Json;
+﻿using Levante.Rotations.Abstracts;
+using Levante.Rotations.Interfaces;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.IO;
+using System.Linq;
 
 namespace Levante.Rotations
 {
-    public class NightmareHuntRotation
+    public class NightmareHuntRotation : Rotation<NightmareHunt, NightmareHuntLink, NightmareHuntPrediction>
     {
-        public static readonly int NightmareHuntCount = 8;
-        public static readonly string FilePath = @"Trackers/nightmareHunt.json";
-
-        [JsonProperty("NightmareHuntLinks")]
-        public static List<NightmareHuntLink> NightmareHuntLinks { get; set; } = new List<NightmareHuntLink>();
-
-        public class NightmareHuntLink
+        public NightmareHuntRotation()
         {
-            [JsonProperty("DiscordID")]
-            public ulong DiscordID { get; set; } = 0;
+            FilePath = @"Trackers/nightmareHunt.json";
+            RotationFilePath = @"Rotations/altarsOfSorrow.json";
 
-            [JsonProperty("NightmareHunt")]
-            public NightmareHunt NightmareHunt { get; set; } = NightmareHunt.Crota;
+            GetRotationJSON();
+            GetTrackerJSON();
         }
 
-        public static string GetHuntNameString(NightmareHunt Encounter)
+        /*public static string GetHuntNameString(NightmareHunt Encounter)
         {
             switch (Encounter)
             {
@@ -52,78 +50,26 @@ namespace Levante.Rotations
                 case NightmareHunt.Fanatic: return "Fikrul, the Fanatic";
                 default: return "Nightmare Hunt Boss";
             }
-        }
+        }*/
 
-        public static void AddUserTracking(ulong DiscordID, NightmareHunt NightmareHunt)
+        public override NightmareHuntPrediction DatePrediction(int Hunt, int Skip)
         {
-            NightmareHuntLinks.Add(new NightmareHuntLink() { DiscordID = DiscordID, NightmareHunt = NightmareHunt });
-            UpdateJSON();
-        }
-
-        public static void RemoveUserTracking(ulong DiscordID)
-        {
-            NightmareHuntLinks.Remove(GetUserTracking(DiscordID, out _));
-            UpdateJSON();
-        }
-
-        // Returns null if no tracking is found.
-        public static NightmareHuntLink GetUserTracking(ulong DiscordID, out NightmareHunt NightmareHunt)
-        {
-            foreach (var Link in NightmareHuntLinks)
-                if (Link.DiscordID == DiscordID)
-                {
-                    NightmareHunt = Link.NightmareHunt;
-                    return Link;
-                }
-            NightmareHunt = NightmareHunt.Crota;
-            return null;
-        }
-
-        public static void CreateJSON()
-        {
-            NightmareHuntRotation obj;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                obj = JsonConvert.DeserializeObject<NightmareHuntRotation>(json);
-            }
-            else
-            {
-                obj = new NightmareHuntRotation();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(obj, Formatting.Indented));
-                Console.WriteLine($"No {FilePath} file detected. No action needed.");
-            }
-        }
-
-        public static void UpdateJSON()
-        {
-            var obj = new NightmareHuntRotation();
-            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
-        }
-
-        public static DateTime DatePrediction(NightmareHunt NightmareHunt)
-        {
-            Console.WriteLine($"Looking for: {(int)NightmareHunt}");
-            NightmareHunt[] iterationHunts = new NightmareHunt[3];
-            iterationHunts[0] = CurrentRotations.NightmareHunts[0];
-            iterationHunts[1] = CurrentRotations.NightmareHunts[1];
-            iterationHunts[2] = CurrentRotations.NightmareHunts[2];
+            int[] iterations = CurrentRotations.Actives.NightmareHunts;
             int WeeksUntil = 0;
-            Console.WriteLine($"Starting {(int)CurrentRotations.NightmareHunts[0]} - {(int)CurrentRotations.NightmareHunts[1]} - {(int)CurrentRotations.NightmareHunts[2]}");
             do
             {
-                Console.WriteLine($"{(int)iterationHunts[0]} - {(int)iterationHunts[1]} - {(int)iterationHunts[2]}");
-                iterationHunts[0] = iterationHunts[0] >= NightmareHunt.Skolas ? iterationHunts[0] - 5 : iterationHunts[0] + 3;
-                iterationHunts[1] = iterationHunts[1] >= NightmareHunt.Skolas ? iterationHunts[1] - 5 : iterationHunts[1] + 3;
-                iterationHunts[2] = iterationHunts[2] >= NightmareHunt.Skolas ? iterationHunts[2] - 5 : iterationHunts[2] + 3;
+                iterations[0] = iterations[0] >= Rotations.Count - 3 ? iterations[0] - 5 : iterations[0] + 3;
+                iterations[1] = iterations[1] >= Rotations.Count - 3 ? iterations[1] - 5 : iterations[1] + 3;
+                iterations[2] = iterations[2] >= Rotations.Count - 3 ? iterations[2] - 5 : iterations[2] + 3;
                 WeeksUntil++;
-            } while (iterationHunts[0] != NightmareHunt && iterationHunts[1] != NightmareHunt && iterationHunts[2] != NightmareHunt);
-            return CurrentRotations.WeeklyResetTimestamp.AddDays(WeeksUntil * 7); // Because there is no .AddWeeks().
+            } while (iterations[0] != Hunt && iterations[1] != Hunt && iterations[2] != Hunt);
+            return new NightmareHuntPrediction { NightmareHunt = Rotations[Hunt], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) }; // Because there is no .AddWeeks().
         }
+
+        public override bool IsTrackerInRotation(NightmareHuntLink Tracker) => CurrentRotations.Actives.NightmareHunts.Contains(Tracker.Hunt);
     }
 
-    public enum NightmareHunt
+    /*public enum NightmareHunt
     {
         Crota,
         Phogoth,
@@ -133,5 +79,28 @@ namespace Levante.Rotations
         Skolas,
         Omnigul,
         Fanatic,
+    }*/
+
+    public class NightmareHunt
+    {
+        [JsonProperty("Name")]
+        public string Name;
+        [JsonProperty("Boss")]
+        public string Boss;
+    }
+
+    public class NightmareHuntLink : IRotationTracker
+    {
+        [JsonProperty("DiscordID")]
+        public ulong DiscordID { get; set; } = 0;
+
+        [JsonProperty("Hunt")]
+        public int Hunt { get; set; } = 0;
+    }
+
+    public class NightmareHuntPrediction : IRotationPrediction
+    {
+        public DateTime Date { get; set; }
+        public NightmareHunt NightmareHunt { get; set; }
     }
 }

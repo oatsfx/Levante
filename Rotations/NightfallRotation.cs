@@ -10,10 +10,11 @@ using Newtonsoft.Json.Linq;
 using System.Linq;
 using System.Net.Http;
 using Serilog;
+using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class NightfallRotation
+    public class NightfallRotation : Rotation<>
     {
         public static readonly string FilePath = @"Trackers/nightfall.json";
         public static readonly string RotationFilePath = @"Rotations/nfWeapons.json";
@@ -63,7 +64,7 @@ namespace Levante.Rotations
                     {
                         if (ManifestHelper.Nightfalls.ContainsKey((long)availActivities[i].activityHash))
                         {
-                            CurrentRotations.Nightfall = Nightfalls.IndexOf(ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
+                            CurrentRotations.Actives.Nightfall = Nightfalls.IndexOf(ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
                             Log.Debug("Nightfall is {Nightfall}.", ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
                         }
                     }
@@ -173,6 +174,12 @@ namespace Levante.Rotations
             }
             return CurrentRotations.WeeklyResetTimestamp.AddDays(WeeksUntil * 7); // Because there is no .AddWeeks().
         }
+    }
+
+    public class Nightfall
+    {
+        [JsonProperty("Name")]
+        public string Name;
     }
 
     public class NightfallWeapon

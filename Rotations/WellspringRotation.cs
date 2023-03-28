@@ -1,30 +1,26 @@
-﻿using Levante.Util;
+﻿using Levante.Rotations.Interfaces;
+using Levante.Util;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class WellspringRotation
+    public class WellspringRotation : Rotation<Wellspring, WellspringLink, WellspringPrediction>
     {
-        public static readonly int WellspringCount = 4;
-        public static readonly string FilePath = @"Trackers/wellspring.json";
-
-        [JsonProperty("WellspringLinks")]
-        public static List<WellspringLink> WellspringLinks { get; set; } = new List<WellspringLink>();
-
-        public class WellspringLink
+        public WellspringRotation()
         {
-            [JsonProperty("DiscordID")]
-            public ulong DiscordID { get; set; } = 0;
+            FilePath = @"Trackers/wellspring.json";
+            RotationFilePath = @"Rotations/wellspring.json";
 
-            [JsonProperty("WellspringBoss")]
-            public Wellspring WellspringBoss { get; set; } = Wellspring.Golmag;
+            GetRotationJSON();
+            GetTrackerJSON();
         }
 
-        public static string GetWellspringBossString(Wellspring Wellspring)
+        /*public static string GetWellspringBossString(Wellspring Wellspring)
         {
             switch (Wellspring)
             {
@@ -82,74 +78,60 @@ namespace Levante.Rotations
                 case Wellspring.Zeerik: return $"{DestinyEmote.SniperRifle}";
                 default: return "The Wellspring Weapon Emote";
             }
-        }
+        }*/
 
-        public static void AddUserTracking(ulong DiscordID, Wellspring Wellspring)
+        public override WellspringPrediction DatePrediction(int Weapon, int Skip)
         {
-            WellspringLinks.Add(new WellspringLink() { DiscordID = DiscordID, WellspringBoss = Wellspring });
-            UpdateJSON();
-        }
-
-        public static void RemoveUserTracking(ulong DiscordID)
-        {
-            WellspringLinks.Remove(GetUserTracking(DiscordID, out _));
-            UpdateJSON();
-        }
-
-        // Returns null if no tracking is found.
-        public static WellspringLink GetUserTracking(ulong DiscordID, out Wellspring Wellspring)
-        {
-            foreach (var Link in WellspringLinks)
-                if (Link.DiscordID == DiscordID)
-                {
-                    Wellspring = Link.WellspringBoss;
-                    return Link;
-                }
-            Wellspring = Wellspring.Golmag;
-            return null;
-        }
-
-        public static void CreateJSON()
-        {
-            WellspringRotation obj;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                obj = JsonConvert.DeserializeObject<WellspringRotation>(json);
-            }
-            else
-            {
-                obj = new WellspringRotation();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(obj, Formatting.Indented));
-                Console.WriteLine($"No {FilePath} file detected. No action needed.");
-            }
-        }
-
-        public static void UpdateJSON()
-        {
-            var obj = new WellspringRotation();
-            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
-        }
-
-        public static DateTime DatePrediction(Wellspring Wellspring)
-        {
-            Wellspring iterationWellspring = CurrentRotations.Wellspring;
+            int iteration = CurrentRotations.Actives.Wellspring;
             int DaysUntil = 0;
+            int correctIterations = -1;
             do
             {
-                iterationWellspring = iterationWellspring == Wellspring.Zeerik ? Wellspring.Golmag : iterationWellspring + 1;
+                iteration = iteration == Rotations.Count - 1 ? 0 : iteration + 1;
                 DaysUntil++;
-            } while (iterationWellspring != Wellspring);
-            return CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil);
+                if (iteration == Weapon)
+                    correctIterations++;
+            } while (Skip != correctIterations);
+            return new WellspringPrediction { Wellspring = Rotations[iteration], Date = CurrentRotations.Actives.DailyResetTimestamp.AddDays(DaysUntil) };
         }
+
+        public override bool IsTrackerInRotation(WellspringLink Tracker) => Tracker.Wellspring == CurrentRotations.Actives.Wellspring;
     }
 
-    public enum Wellspring
+    /*public enum Wellspring
     {
         Golmag, // Attack, Come to Pass (Auto Rifle)
         Vezuul, // Defense, Tarnation (Heavy Grenade Launcher)
         Borgong, // Attack, Fel Taradiddle (Bow)
         Zeerik, // Defense, Father's Sins (Sniper Rifle)
+    }*/
+
+    public class Wellspring
+    {
+        [JsonProperty("Boss")]
+        public readonly string Boss;
+        [JsonProperty("Weapon")]
+        public readonly string Weapon;
+        [JsonProperty("WeaponType")]
+        public readonly string WeaponType;
+        [JsonProperty("WeaponEmote")]
+        public readonly string WeaponEmote;
+        [JsonProperty("Type")]
+        public readonly string Type;
+    }
+
+    public class WellspringLink : IRotationTracker
+    {
+        [JsonProperty("DiscordID")]
+        public ulong DiscordID { get; set; } = 0;
+
+        [JsonProperty("Wellspring")]
+        public int Wellspring { get; set; } = 0;
+    }
+
+    public class WellspringPrediction : IRotationPrediction
+    {
+        public DateTime Date { get; set; }
+        public Wellspring Wellspring { get; set; }
     }
 }
