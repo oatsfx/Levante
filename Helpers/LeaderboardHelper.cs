@@ -106,11 +106,11 @@ namespace Levante.Helpers
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -128,7 +128,7 @@ namespace Levante.Helpers
                     $"{((LE as LongestSessionData.LongestSessionEntry).Time.Minutes > 0 ? $"{(LE as LongestSessionData.LongestSessionEntry).Time.Minutes:00}m " : "")}" +
                     $"{(LE as LongestSessionData.LongestSessionEntry).Time.Seconds:00}s";
             else if (LE.GetType() == typeof(XPPerHourData.XPPerHourEntry))
-                return $"XP Per Hour: {String.Format("{0:n0}", (LE as XPPerHourData.XPPerHourEntry).XPPerHour)}";
+                return $"XP Per Hour: {(LE as XPPerHourData.XPPerHourEntry).XPPerHour:n0}";
             else if (LE.GetType() == typeof(MostXPLoggingTimeData.MostXPLogTimeEntry))
                 return $"Hours: {Math.Floor((LE as MostXPLoggingTimeData.MostXPLogTimeEntry).Time.TotalHours)}";
             else if (LE.GetType() == typeof(PowerLevelData.PowerLevelDataEntry))

@@ -83,9 +83,9 @@ namespace Levante.Util
             Intellect = item.Response.character.data.stats["144602215"];
             Strength = item.Response.character.data.stats["4244567218"];
 
-            Kinetic = new InstancedWeapon((long)item.Response.equipment.data.items[0].itemHash, membershipType, membershipId, item.Response.equipment.data.items[0].itemInstanceId, linkedUser);
-            Energy = new InstancedWeapon((long)item.Response.equipment.data.items[1].itemHash, membershipType, membershipId, item.Response.equipment.data.items[1].itemInstanceId, linkedUser);
-            Heavy = new InstancedWeapon((long)item.Response.equipment.data.items[2].itemHash, membershipType, membershipId, item.Response.equipment.data.items[2].itemInstanceId, linkedUser);
+            Kinetic = new InstancedWeapon((long)item.Response.equipment.data.items[0].itemHash, membershipId, membershipType, (string)item.Response.equipment.data.items[0].itemInstanceId, linkedUser);
+            Energy = new InstancedWeapon((long)item.Response.equipment.data.items[1].itemHash, membershipId, membershipType, (string)item.Response.equipment.data.items[1].itemInstanceId, linkedUser);
+            Heavy = new InstancedWeapon((long)item.Response.equipment.data.items[2].itemHash, membershipId, membershipType, (string)item.Response.equipment.data.items[2].itemInstanceId, linkedUser);
 
             Helmet = new Weapon((long)item.Response.equipment.data.items[3].itemHash);
             Arms = new Weapon((long)item.Response.equipment.data.items[4].itemHash);
@@ -205,7 +205,7 @@ namespace Levante.Util
             };
 
             if (Rank >= 0)
-                embed.Description += $" {DestinyEmote.GuardianRank}{Rank} {ManifestHelper.GuardianRanks.ElementAt(Rank - 1).Value} ({RankProgress}/{RankCompletion})";
+                embed.Description += $" {DestinyEmote.GuardianRank}{Rank} {ManifestHelper.GuardianRanks.ElementAt(Rank - 1).Value} {(RankProgress == RankCompletion ? "" : $"({RankProgress}/{RankCompletion})")}";
 
             if (CommendationTotal >= 0)
                 embed.Description += $" {DestinyEmote.Commendations}{CommendationTotal}";

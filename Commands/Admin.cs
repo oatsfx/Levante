@@ -11,7 +11,6 @@ namespace Levante.Commands
     public class Admin : InteractionModuleBase<ShardedInteractionContext>
     {
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
-        [RequireBotPermission(GuildPermission.ManageChannels)]
         [Group("alert", "Set up announcements for Daily/Weekly Reset and Emblem Offers.")]
         public class Alert : InteractionModuleBase<ShardedInteractionContext>
         {
@@ -44,9 +43,10 @@ namespace Levante.Commands
                         }
                     }
 
+                    var randomOffer = EmblemOffer.GetRandomOffer();
                     try
                     {
-                        await Context.Channel.SendMessageAsync(embed: EmblemOffer.GetRandomOfferEmbed().Build());
+                        await Context.Channel.SendMessageAsync(embed: randomOffer.BuildEmbed().Build(), components: randomOffer.BuildExternalButton().Build());
                     }
                     catch
                     {
@@ -174,7 +174,7 @@ namespace Levante.Commands
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -198,7 +198,6 @@ namespace Levante.Commands
         }
 
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
-        [RequireBotPermission(GuildPermission.ManageChannels)]
         [SlashCommand("server-info", "Gets general information about a server/guild along with Levante integrations.")]
         public async Task ServerInfo()
         {
@@ -217,11 +216,11 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}",
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}",
             };
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
                 Description = $"\n",

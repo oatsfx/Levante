@@ -15,7 +15,7 @@ namespace Levante.Leaderboards
         public static readonly string FilePath = @"Data/S20/mostXPLoggingTimeData.json";
 
         [JsonProperty("MostXPLogTimeEntries")]
-        public List<MostXPLogTimeEntry> MostXPLogTimeEntries { get; set; } = new List<MostXPLogTimeEntry>();
+        public List<MostXPLogTimeEntry> MostXPLogTimeEntries { get; set; } = new();
 
         [JsonProperty("MostThrallwayTimeEntries")]
         public List<MostXPLogTimeEntry> MostThrallwayTimeEntries { set { MostXPLogTimeEntries = value; } }

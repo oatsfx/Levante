@@ -11,33 +11,54 @@ using System.Linq;
 using System.Net.Http;
 using Serilog;
 using Levante.Rotations.Abstracts;
+using Levante.Rotations.Interfaces;
 
 namespace Levante.Rotations
 {
-    public class NightfallRotation : Rotation<>
+    public class NightfallRotation : SetRotation<Nightfall, NightfallLink, NightfallPrediction>
     {
-        public static readonly string FilePath = @"Trackers/nightfall.json";
-        public static readonly string RotationFilePath = @"Rotations/nfWeapons.json";
+        private string WeaponRotationFilePath;
 
-        [JsonProperty("NightfallLinks")]
-        public static List<NightfallLink> NightfallLinks { get; set; } = new List<NightfallLink>();
+        public List<NightfallWeapon> WeaponRotations = new();
 
-        public static List<string> Nightfalls { get; set; } = new();
-        public static List<NightfallWeapon> NightfallWeapons { get; set; } = new();
-
-        public class NightfallLink
+        public NightfallRotation()
         {
-            [JsonProperty("DiscordID")]
-            public ulong DiscordID { get; set; } = 0;
+            FilePath = @"Trackers/nightfall.json";
+            RotationFilePath = @"Rotations/nightfall.json";
+            WeaponRotationFilePath = @"Rotations/nfWeapons.json";
 
-            [JsonProperty("NightfallStrike")]
-            public int? Nightfall { get; set; } = 0;
+            IsDaily = false;
 
-            [JsonProperty("WeaponDrop")]
-            public int? WeaponDrop { get; set; } = 0;
+            GetRotationJSON();
+            GetTrackerJSON();
         }
 
-        public static void GetCurrentNightfall()
+        public new void GetRotationJSON()
+        {
+            if (File.Exists(RotationFilePath))
+            {
+                string json = File.ReadAllText(RotationFilePath);
+                Rotations = JsonConvert.DeserializeObject<List<Nightfall>>(json);
+            }
+            else
+            {
+                File.WriteAllText(RotationFilePath, JsonConvert.SerializeObject(Rotations, Formatting.Indented));
+                Log.Warning("No {RotationFilePath} file detected; it has been created for you. No action is needed.", RotationFilePath);
+            }
+
+            if (File.Exists(WeaponRotationFilePath))
+            {
+                string json = File.ReadAllText(WeaponRotationFilePath);
+                WeaponRotations = JsonConvert.DeserializeObject<List<NightfallWeapon>>(json);
+            }
+            else
+            {
+                File.WriteAllText(WeaponRotationFilePath, JsonConvert.SerializeObject(WeaponRotations, Formatting.Indented));
+                Log.Warning("No {ArmorRotationFilePath} file detected; it has been created for you. No action is needed.", WeaponRotationFilePath);
+            }
+        }
+
+        public void GetCurrentNightfall()
         {
             try
             {
@@ -64,7 +85,7 @@ namespace Levante.Rotations
                     {
                         if (ManifestHelper.Nightfalls.ContainsKey((long)availActivities[i].activityHash))
                         {
-                            CurrentRotations.Actives.Nightfall = Nightfalls.IndexOf(ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
+                            CurrentRotations.Actives.Nightfall = Rotations.IndexOf(Rotations.Find(x => x.Name == ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]));
                             Log.Debug("Nightfall is {Nightfall}.", ManifestHelper.Nightfalls[(long)availActivities[i].activityHash]);
                         }
                     }
@@ -76,103 +97,69 @@ namespace Levante.Rotations
             }
         }
 
-        public static void AddUserTracking(ulong DiscordID, int? Nightfall, int? WeaponDrop)
+        public NightfallPrediction DatePrediction(int NightfallStrike, int WeaponDrop, int Skip)
         {
-            NightfallLinks.Add(new NightfallLink() { DiscordID = DiscordID, Nightfall = Nightfall, WeaponDrop = WeaponDrop });
-            UpdateJSON();
-        }
-
-        public static void RemoveUserTracking(ulong DiscordID)
-        {
-            NightfallLinks.Remove(GetUserTracking(DiscordID, out _, out _));
-            UpdateJSON();
-        }
-
-        // Returns null if no tracking is found.
-        public static NightfallLink GetUserTracking(ulong DiscordID, out int? Nightfall, out int? WeaponDrop)
-        {
-            foreach (var Link in NightfallLinks)
-                if (Link.DiscordID == DiscordID)
-                {
-                    Nightfall = Link.Nightfall;
-                    WeaponDrop = Link.WeaponDrop;
-                    return Link;
-                }
-            Nightfall = null;
-            WeaponDrop = null;
-            return null;
-        }
-
-        public static void CreateJSON()
-        {
-            NightfallRotation obj;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                obj = JsonConvert.DeserializeObject<NightfallRotation>(json);
-            }
-            else
-            {
-                obj = new NightfallRotation();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(obj, Formatting.Indented));
-                Console.WriteLine($"No {FilePath} file detected. No action needed.");
-            }
-
-            if (File.Exists(RotationFilePath))
-            {
-                string json = File.ReadAllText(RotationFilePath);
-                NightfallWeapons = JsonConvert.DeserializeObject<List<NightfallWeapon>>(json);
-            }
-            else
-            {
-                File.WriteAllText(RotationFilePath, JsonConvert.SerializeObject(NightfallWeapons, Formatting.Indented));
-                Console.WriteLine($"No {RotationFilePath} file detected. No action needed.");
-            }
-        }
-
-        public static void UpdateJSON()
-        {
-            var obj = new NightfallRotation();
-            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
-        }
-
-        public static DateTime DatePrediction(int? NightfallStrike, int? WeaponDrop)
-        {
-            int iterationWeapon = CurrentRotations.NightfallWeaponDrop;
-            int iterationStrike = CurrentRotations.Nightfall;
+            int iterationWeapon = CurrentRotations.Actives.NightfallWeaponDrop;
+            int iterationStrike = CurrentRotations.Actives.Nightfall;
+            int correctIterations = -1;
             int WeeksUntil = 0;
-            // This logic only works if the position in the enums match up with strike drops.
-            if (Nightfalls.Count == NightfallWeapons.Count && NightfallStrike != null && WeaponDrop != null)
-                if ((int)NightfallStrike != (int)WeaponDrop)
-                    return new DateTime();
 
-            if (NightfallStrike == null && WeaponDrop != null)
+            bool isImpossible = NightfallStrike > -1 && WeaponDrop > -1 && NightfallStrike != WeaponDrop && Rotations.Count == WeaponRotations.Count;
+
+            // This logic only works if the position in the rotations match up with strike drops (aka they should).
+            if (isImpossible)
+                return null;
+
+            if (WeaponDrop != -1 && NightfallStrike == -1)
             {
                 do
                 {
-                    iterationWeapon = iterationWeapon == NightfallWeapons.Count - 1 ? 0 : iterationWeapon + 1;
+                    iterationWeapon = iterationWeapon == WeaponRotations.Count - 1 ? 0 : iterationWeapon + 1;
+                    iterationStrike = iterationStrike == Rotations.Count - 1 ? 0 : iterationStrike + 1;
                     WeeksUntil++;
-                } while (iterationWeapon != WeaponDrop);
+                    if (iterationWeapon == WeaponDrop)
+                        correctIterations++;
+                } while (Skip != correctIterations);
             }
-            else if (WeaponDrop == null && NightfallStrike != null)
+            else if (WeaponDrop == -1 && NightfallStrike != -1)
             {
                 do
                 {
-                    iterationStrike = iterationStrike == Nightfalls.Count - 1 ? 0 : iterationStrike + 1;
+                    iterationWeapon = iterationWeapon == WeaponRotations.Count - 1 ? 0 : iterationWeapon + 1;
+                    iterationStrike = iterationStrike == Rotations.Count - 1 ? 0 : iterationStrike + 1;
                     WeeksUntil++;
-                } while (iterationStrike != NightfallStrike);
+                    if (iterationStrike == NightfallStrike)
+                        correctIterations++;
+                } while (Skip != correctIterations);
             }
-            else if (WeaponDrop != null && NightfallStrike != null)
+            else if (WeaponDrop != -1 && NightfallStrike != -1)
             {
                 do
                 {
-                    iterationWeapon = iterationWeapon == NightfallWeapons.Count - 1 ? 0 : iterationWeapon + 1;
-                    iterationStrike = iterationStrike == Nightfalls.Count - 1 ? 0 : iterationStrike + 1;
+                    iterationWeapon = iterationWeapon == WeaponRotations.Count - 1 ? 0 : iterationWeapon + 1;
+                    iterationStrike = iterationStrike == Rotations.Count - 1 ? 0 : iterationStrike + 1;
                     WeeksUntil++;
-                } while (iterationStrike != NightfallStrike && iterationWeapon != WeaponDrop);
+                    if (iterationStrike == NightfallStrike && iterationWeapon == WeaponDrop)
+                        correctIterations++;
+                } while (Skip != correctIterations);
             }
-            return CurrentRotations.WeeklyResetTimestamp.AddDays(WeeksUntil * 7); // Because there is no .AddWeeks().
+
+            return new NightfallPrediction { Nightfall = Rotations[iterationStrike], NightfallWeapon = WeaponRotations[iterationWeapon], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) }; // Because there is no .AddWeeks().
+        }
+
+        public override NightfallPrediction DatePrediction(int Rotation, int Skip)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool IsTrackerInRotation(NightfallLink Tracker)
+        {
+            if (Tracker.Nightfall == -1)
+                return Tracker.WeaponDrop == CurrentRotations.Actives.NightfallWeaponDrop;
+            else if (Tracker.WeaponDrop == -1)
+                return Tracker.Nightfall == CurrentRotations.Actives.Nightfall;
+            else
+                return Tracker.Nightfall == CurrentRotations.Actives.Nightfall && Tracker.WeaponDrop == CurrentRotations.Actives.NightfallWeaponDrop;
         }
     }
 
@@ -180,6 +167,8 @@ namespace Levante.Rotations
     {
         [JsonProperty("Name")]
         public string Name;
+
+        public override string ToString() => Name;
     }
 
     public class NightfallWeapon
@@ -190,5 +179,38 @@ namespace Levante.Rotations
         public long AdeptHash;
         public string Name;
         public string Emote;
+
+        public override string ToString() => $"{Name}";
+    }
+
+    public class NightfallLink : IRotationTracker
+    {
+        [JsonProperty("DiscordID")]
+        public ulong DiscordID { get; set; } = 0;
+
+        [JsonProperty("Nightfall")]
+        public int Nightfall { get; set; } = 0;
+
+        [JsonProperty("WeaponDrop")]
+        public int WeaponDrop { get; set; } = 0;
+
+        public override string ToString()
+        {
+            string result = "Nightfall";
+            if (Nightfall >= 0)
+                result = $"{CurrentRotations.Nightfall.Rotations[Nightfall]}";
+
+            if (WeaponDrop >= 0)
+                result += $" dropping {CurrentRotations.Nightfall.WeaponRotations[WeaponDrop]}";
+
+            return result;
+        }
+    }
+
+    public class NightfallPrediction : IRotationPrediction
+    {
+        public DateTime Date { get; set; }
+        public Nightfall Nightfall { get; set; }
+        public NightfallWeapon NightfallWeapon { get; set; }
     }
 }

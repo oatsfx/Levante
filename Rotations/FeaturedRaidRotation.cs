@@ -10,18 +10,20 @@ using Levante.Rotations.Interfaces;
 
 namespace Levante.Rotations
 {
-    public class FeaturedRaidRotation : Rotation<FeaturedRaid, FeaturedRaidLink, FeaturedRaidPrediction>
+    public class FeaturedRaidRotation : SetRotation<FeaturedRaid, FeaturedRaidLink, FeaturedRaidPrediction>
     {
         public FeaturedRaidRotation()
         {
             FilePath = @"Trackers/featuredRaid.json";
             RotationFilePath = @"Rotations/featuredRaid.json";
 
+            IsDaily = false;
+
             GetRotationJSON();
             GetTrackerJSON();
         }
 
-        public override FeaturedRaidPrediction DatePrediction(int Raid, int Skip)
+        public override FeaturedRaidPrediction DatePrediction(int Encounter, int Skip)
         {
             int iteration = CurrentRotations.Actives.FeaturedRaid;
             int WeeksUntil = 0;
@@ -30,29 +32,23 @@ namespace Levante.Rotations
             {
                 iteration = iteration == Rotations.Count - 1 ? 0 : iteration + 1;
                 WeeksUntil++;
-                if (iteration == Raid)
+                if (iteration == Encounter)
                     correctIterations++;
             } while (Skip != correctIterations);
             return new FeaturedRaidPrediction { FeaturedRaid = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
 
         public override bool IsTrackerInRotation(FeaturedRaidLink Tracker) => Tracker.Raid == CurrentRotations.Actives.FeaturedRaid;
-    }
 
-    /*public enum Raid
-    {
-        LastWish,
-        GardenOfSalvation,
-        DeepStoneCrypt,
-        VaultOfGlass,
-        VowOfTheDisciple,
-        KingsFall,
-    }*/
+        public override string ToString() => "Featured Raid";
+    }
 
     public class FeaturedRaid
     {
         [JsonProperty("Raid")]
         public readonly string Raid;
+
+        public override string ToString() => Raid;
     }
 
     public class FeaturedRaidLink : IRotationTracker
@@ -62,6 +58,8 @@ namespace Levante.Rotations
 
         [JsonProperty("Raid")]
         public int Raid { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.FeaturedRaid.Rotations[Raid]}";
     }
 
     public class FeaturedRaidPrediction : IRotationPrediction

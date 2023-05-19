@@ -14,7 +14,7 @@ namespace Levante.Leaderboards
         public static readonly string FilePath = @"Data/S20/levelData.json";
 
         [JsonProperty("LevelDataEntries")]
-        public List<LevelDataEntry> LevelDataEntries { get; set; } = new List<LevelDataEntry>();
+        public List<LevelDataEntry> LevelDataEntries { get; set; } = new();
 
         public partial class LevelDataEntry : LeaderboardEntry
         {

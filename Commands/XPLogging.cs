@@ -17,16 +17,16 @@ namespace Levante.Commands
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Active XP Logging Users",
+                Name = "Active XP Logging Users",
                 IconUrl = app.IconUrl
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -45,7 +45,7 @@ namespace Levante.Commands
         }
 
         [SlashCommand("current-session", "Pulls stats of a current XP session.")]
-        public async Task SessionStats()
+        public async Task SessionStats([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
             if (!ActiveConfig.IsExistingActiveUser(Context.User.Id))
             {
@@ -57,7 +57,7 @@ namespace Levante.Commands
             }
 
             var aau = ActiveConfig.GetActiveAFKUser(Context.User.Id);
-            await RespondAsync(embed: XPLoggingHelper.GenerateSessionSummary(aau).Build());
+            await RespondAsync(embed: XPLoggingHelper.GenerateSessionSummary(aau).Build(), ephemeral: hide);
         }
     }
 }

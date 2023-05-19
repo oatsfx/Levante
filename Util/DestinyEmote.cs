@@ -65,6 +65,8 @@ namespace Levante.Util
         public static readonly string AscendantChallengeBounty = "<:ACBounty:934478080737693787>";
         public static readonly string Classified = "<:Classified:1014305658390184006>";
         public static readonly string Commendations = "<:Commendations:1082135754320384001>";
+        public static readonly string Dungeon = "<:Dungeon:1109018943525507102>";
+        public static readonly string Emblem = "<:Emblem:1109022520411164755>";
         public static readonly string Enhanced = "<:Enhanced:1020834766397911080>";
         public static readonly string Gilded = "<:Gilded:994067890024235029>";
         public static readonly string GildedPurple = "<:GildedPurple:996604027867500574>";
@@ -76,6 +78,7 @@ namespace Levante.Util
         public static readonly string Nightfall = "<:Nightfall:934476602006458409>";
         public static readonly string Pattern = "<:Pattern:995752936586092595>";
         public static readonly string RaidChallenge = "<:RaidChallenge:933971625118924820>";
+        public static readonly string RoNRaidChallenge = "<:RoNRaidChallenge:1106771755047059506>";
         public static readonly string VoGRaidChallenge = "<:VoGRaidChallenge:933963748295720960>";
         public static readonly string WellspringActivity = "<:WellspringActivity:947293754174365726>";
         public static readonly string VowRaidChallenge = "<:VowRaidChallenge:951003008072831039>";

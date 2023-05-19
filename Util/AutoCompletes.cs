@@ -4,6 +4,7 @@ using Levante.Commands;
 using Levante.Configs;
 using Levante.Helpers;
 using Levante.Rotations;
+using Levante.Rotations.Abstracts;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -32,7 +33,7 @@ namespace Levante.Util
                         results.Add(new AutocompleteResult(weapon.Value, $"{weapon.Key}"));
                 }
             }
-                
+
             else
                 foreach (var Weapon in ManifestHelper.Weapons)
                     if (Weapon.Value.Split('[')[0].ToLower().Contains(SearchQuery.ToLower()))
@@ -46,7 +47,7 @@ namespace Levante.Util
         }
     }
 
-    public class ArmorModsAutocomplete : AutocompleteHandler
+    public class Ada1ItemsAutocomplete : AutocompleteHandler
     {
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
         {
@@ -69,69 +70,6 @@ namespace Levante.Util
 
 
             results = results.OrderBy(x => x.Name).ToList();
-
-            // max - 25 suggestions at a time (API limit)
-            return AutocompletionResult.FromSuccess(results.Take(25));
-        }
-    }
-
-    public class NightfallAutocomplete : AutocompleteHandler
-    {
-        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
-        {
-            await Task.Delay(0);
-            // Create a collection with suggestions for autocomplete
-            List<AutocompleteResult> results = new();
-            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
-            if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < NightfallRotation.Nightfalls.Count; i++)
-                    results.Add(new AutocompleteResult(NightfallRotation.Nightfalls[i], i));
-            else
-                for (int i = 0; i < NightfallRotation.Nightfalls.Count; i++)
-                    if (NightfallRotation.Nightfalls[i].Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult(NightfallRotation.Nightfalls[i], i));
-
-            // max - 25 suggestions at a time (API limit)
-            return AutocompletionResult.FromSuccess(results.Take(25));
-        }
-    }
-
-    public class NightfallWeaponAutocomplete : AutocompleteHandler
-    {
-        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
-        {
-            await Task.Delay(0);
-            // Create a collection with suggestions for autocomplete
-            List<AutocompleteResult> results = new();
-            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
-            if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < NightfallRotation.NightfallWeapons.Count; i++)
-                    results.Add(new AutocompleteResult(NightfallRotation.NightfallWeapons[i].Name, i));
-            else
-                for (int i = 0; i < NightfallRotation.NightfallWeapons.Count; i++)
-                    if (NightfallRotation.NightfallWeapons[i].Name.Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult(NightfallRotation.NightfallWeapons[i].Name, i));
-
-            // max - 25 suggestions at a time (API limit)
-            return AutocompletionResult.FromSuccess(results.Take(25));
-        }
-    }
-
-    public class LostSectorAutocomplete : AutocompleteHandler
-    {
-        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
-        {
-            await Task.Delay(0);
-            // Create a collection with suggestions for autocomplete
-            List<AutocompleteResult> results = new();
-            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
-            if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < LostSectorRotation.LostSectors.Count; i++)
-                    results.Add(new AutocompleteResult(LostSectorRotation.LostSectors[i].Name, i));
-            else
-                for (int i = 0; i < LostSectorRotation.LostSectors.Count; i++)
-                    if (LostSectorRotation.LostSectors[i].Name.ToLower().Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult(LostSectorRotation.LostSectors[i].Name, i));
 
             // max - 25 suggestions at a time (API limit)
             return AutocompletionResult.FromSuccess(results.Take(25));
@@ -295,16 +233,345 @@ namespace Levante.Util
             await Task.Delay(0);
             // Create a collection with suggestions for autocomplete
             List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.AltarsOfSorrow.Rotations;
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < CurrentRotations.AltarsOfSorrow.Rotations.Count; i++)
-                    results.Add(new AutocompleteResult($"{CurrentRotations.AltarsOfSorrow.Rotations[i]}", i));
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
             else
-                for (int i = 0; i < CurrentRotations.AltarsOfSorrow.Rotations.Count; i++)
-                    if ($"{CurrentRotations.AltarsOfSorrow.Rotations[i]}".ToLower().Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult($"{CurrentRotations.AltarsOfSorrow.Rotations[i]}", i));
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
 
             // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class AscendantChallengeAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.AscendantChallenge.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class CurseWeekAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.CurseWeek.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class DeepStoneCryptAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.DeepStoneCrypt.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class EmpireHuntAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.EmpireHunt.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class FeaturedRaidAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.FeaturedRaid.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class FeaturedDungeonAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.FeaturedDungeon.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class GardenOfSalvationAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.GardenOfSalvation.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class KingsFallAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.KingsFall.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class LastWishAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.LastWish.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class LostSectorAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.LostSector.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class ExoticArmorAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.LostSector.ArmorRotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class NightfallAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.Nightfall.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class NightfallWeaponAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.Nightfall.WeaponRotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class NightmareHuntAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.NightmareHunt.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class RootOfNightmaresAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.RootOfNightmares.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
             return AutocompletionResult.FromSuccess(results.Take(25));
         }
     }
@@ -314,18 +581,77 @@ namespace Levante.Util
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
         {
             await Task.Delay(0);
-            // Create a collection with suggestions for autocomplete
             List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.TerminalOverload.Rotations;
             string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
             if (String.IsNullOrWhiteSpace(SearchQuery))
-                for (int i = 0; i < TerminalOverloadRotation.TerminalOverloads.Count; i++)
-                    results.Add(new AutocompleteResult($"{TerminalOverloadRotation.TerminalOverloads[i].Location}, {TerminalOverloadRotation.TerminalOverloads[i].Weapon} ({TerminalOverloadRotation.TerminalOverloads[i].WeaponType})", i));
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
             else
-                for (int i = 0; i < TerminalOverloadRotation.TerminalOverloads.Count; i++)
-                    if ($"{TerminalOverloadRotation.TerminalOverloads[i].Location}, {TerminalOverloadRotation.TerminalOverloads[i].Weapon} ({TerminalOverloadRotation.TerminalOverloads[i].WeaponType})".ToLower().Contains(SearchQuery.ToLower()))
-                        results.Add(new AutocompleteResult($"{TerminalOverloadRotation.TerminalOverloads[i].Location}, {TerminalOverloadRotation.TerminalOverloads[i].Weapon} ({TerminalOverloadRotation.TerminalOverloads[i].WeaponType})", i));
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
 
-            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class VaultOfGlassAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.VaultOfGlass.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class VowOfTheDiscipleAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.VowOfTheDisciple.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class WellspringAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.Wellspring.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
             return AutocompletionResult.FromSuccess(results.Take(25));
         }
     }

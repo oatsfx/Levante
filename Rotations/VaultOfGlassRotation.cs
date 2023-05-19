@@ -11,55 +11,18 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class VaultOfGlassRotation : Rotation<VaultOfGlass, VaultOfGlassLink, VaultOfGlassPrediction>
+    public class VaultOfGlassRotation : SetRotation<VaultOfGlass, VaultOfGlassLink, VaultOfGlassPrediction>
     {
         public VaultOfGlassRotation()
         {
             FilePath = @"Trackers/vaultOfGlass.json";
             RotationFilePath = @"Rotations/vaultOfGlass.json";
 
+            IsDaily = false;
+
             GetRotationJSON();
             GetTrackerJSON();
         }
-
-        /*public static string GetEncounterString(VaultOfGlassEncounter Encounter)
-        {
-            switch (Encounter)
-            {
-                case VaultOfGlassEncounter.Confluxes: return "Confluxes";
-                case VaultOfGlassEncounter.Oracles: return "Oracles";
-                case VaultOfGlassEncounter.Templar: return "Templar";
-                case VaultOfGlassEncounter.Gatekeepers: return "Gatekeepers";
-                case VaultOfGlassEncounter.Atheon: return "Atheon";
-                default: return "Vault of Glass";
-            }
-        }
-
-        public static string GetChallengeString(VaultOfGlassEncounter Encounter)
-        {
-            switch (Encounter)
-            {
-                case VaultOfGlassEncounter.Confluxes: return "Wait for It...";
-                case VaultOfGlassEncounter.Oracles: return "The Only Oracle for You";
-                case VaultOfGlassEncounter.Templar: return "Out of Its Way";
-                case VaultOfGlassEncounter.Gatekeepers: return "Strangers in Time";
-                case VaultOfGlassEncounter.Atheon: return "Ensemble's Refrain";
-                default: return "Vault of Glass";
-            }
-        }
-
-        public static string GetChallengeRewardString(VaultOfGlassEncounter Encounter)
-        {
-            switch (Encounter)
-            {
-                case VaultOfGlassEncounter.Confluxes: return "Vision of Confluence (Timelost)";
-                case VaultOfGlassEncounter.Oracles: return "Praedyth's Revenge (Timelost)";
-                case VaultOfGlassEncounter.Templar: return "Fatebringer (Timelost)";
-                case VaultOfGlassEncounter.Gatekeepers: return "Hezen Vengeance (Timelost)";
-                case VaultOfGlassEncounter.Atheon: return "Corrective Measure (Timelost)";
-                default: return "Vault of Glass Weapon";
-            }
-        }*/
 
         public override VaultOfGlassPrediction DatePrediction(int Encounter, int Skip)
         {
@@ -76,7 +39,9 @@ namespace Levante.Rotations
             return new VaultOfGlassPrediction { VaultOfGlass = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
 
-        public override bool IsTrackerInRotation(VaultOfGlassLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.VoGChallenge;
+        public override bool IsTrackerInRotation(VaultOfGlassLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.VoGChallenge || CurrentRotations.FeaturedRaid.Rotations[CurrentRotations.Actives.FeaturedRaid].Raid.Equals("Vault of Glass");
+
+        public override string ToString() => "Vault of Glass Challenge";
     }
 
     /*public enum VaultOfGlassEncounter
@@ -95,6 +60,8 @@ namespace Levante.Rotations
 
         [JsonProperty("ChallengeName")]
         public readonly string ChallengeName;
+
+        public override string ToString() => $"{Encounter} ({ChallengeName})";
     }
 
     public class VaultOfGlassLink : IRotationTracker
@@ -104,6 +71,8 @@ namespace Levante.Rotations
 
         [JsonProperty("Encounter")]
         public int Encounter { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.VaultOfGlass.Rotations[Encounter]}";
     }
 
     public class VaultOfGlassPrediction : IRotationPrediction

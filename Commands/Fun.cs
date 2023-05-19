@@ -50,13 +50,9 @@ namespace Levante.Commands
             {
                 int msgNum = random.Next(ratioMsgs.Length);
                 if (msgs.Contains(ratioMsgs[msgNum]))
-                {
                     i--;
-                }
                 else
-                {
                     msgs.Add(ratioMsgs[msgNum]);
-                }
             }
 
             string result = "";

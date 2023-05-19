@@ -7,18 +7,20 @@ using System.IO;
 
 namespace Levante.Rotations
 {
-    public class CurseWeekRotation : Rotation<CurseWeek, CurseWeekLink, CurseWeekPrediction>
+    public class CurseWeekRotation : SetRotation<CurseWeek, CurseWeekLink, CurseWeekPrediction>
     {
         public CurseWeekRotation()
         {
             FilePath = @"Trackers/curseWeek.json";
             RotationFilePath = @"Rotations/curseWeek.json";
 
+            IsDaily = false;
+
             GetRotationJSON();
             GetTrackerJSON();
         }
 
-        public override CurseWeekPrediction DatePrediction(int Strength, int Skip)
+        public override CurseWeekPrediction DatePrediction(int Encounter, int Skip)
         {
             int iteration = CurrentRotations.Actives.CurseWeek;
             int WeeksUntil = 0;
@@ -27,13 +29,15 @@ namespace Levante.Rotations
             {
                 iteration = iteration == Rotations.Count - 1 ? 0 : iteration + 1;
                 WeeksUntil++;
-                if (iteration == Strength)
+                if (iteration == Encounter)
                     correctIterations++;
             } while (Skip != correctIterations);
             return new CurseWeekPrediction { CurseWeek = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
 
         public override bool IsTrackerInRotation(CurseWeekLink Tracker) => Tracker.Strength == CurrentRotations.Actives.CurseWeek;
+
+        public override string ToString() => "Curse Week Strength";
     }
 
     /*public enum CurseWeek
@@ -50,6 +54,8 @@ namespace Levante.Rotations
 
         [JsonProperty("PetraLocation")]
         public readonly string PetraLocation;
+
+        public override string ToString() => $"{Name} (Petra Venj Location: {PetraLocation})";
     }
 
     public class CurseWeekLink : IRotationTracker
@@ -59,6 +65,8 @@ namespace Levante.Rotations
 
         [JsonProperty("Strength")]
         public int Strength { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.CurseWeek.Rotations[Strength]}";
     }
 
     public class CurseWeekPrediction : IRotationPrediction

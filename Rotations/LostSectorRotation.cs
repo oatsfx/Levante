@@ -18,7 +18,7 @@ using Serilog;
 
 namespace Levante.Rotations
 {
-    public class LostSectorRotation : Rotation<LostSector, LostSectorLink, LostSectorPrediction>
+    public class LostSectorRotation : SetRotation<LostSector, LostSectorLink, LostSectorPrediction>
     {
         private string ArmorRotationFilePath;
 
@@ -27,8 +27,10 @@ namespace Levante.Rotations
         public LostSectorRotation()
         {
             FilePath = @"Trackers/lostSector.json";
-            RotationFilePath = @"Rotations/lostSector,json";
+            RotationFilePath = @"Rotations/lostSector.json";
             ArmorRotationFilePath = @"Rotations/lostSectorArmor.json";
+
+            IsDaily = true;
 
             GetRotationJSON();
             GetTrackerJSON();
@@ -49,13 +51,13 @@ namespace Levante.Rotations
 
             if (File.Exists(ArmorRotationFilePath))
             {
-                string json = File.ReadAllText(RotationFilePath);
+                string json = File.ReadAllText(ArmorRotationFilePath);
                 ArmorRotations = JsonConvert.DeserializeObject<List<ExoticArmor>>(json);
             }
             else
             {
                 File.WriteAllText(ArmorRotationFilePath, JsonConvert.SerializeObject(ArmorRotations, Formatting.Indented));
-                Log.Warning("No {RotationFilePath} file detected; it has been created for you. No action is needed.", ArmorRotationFilePath);
+                Log.Warning("No {ArmorRotationFilePath} file detected; it has been created for you. No action is needed.", ArmorRotationFilePath);
             }
         }
 
@@ -73,7 +75,7 @@ namespace Levante.Rotations
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -163,7 +165,7 @@ namespace Levante.Rotations
 
                 } while (Skip != correctIterations);
             }
-            return new LostSectorPrediction { LostSector = Rotations[LS], ExoticArmor = ArmorRotations[ArmorType], Date = CurrentRotations.Actives.DailyResetTimestamp.AddDays(DaysUntil) };
+            return new LostSectorPrediction { LostSector = Rotations[iterationLS], ExoticArmor = ArmorRotations[iterationEAT], Date = CurrentRotations.Actives.DailyResetTimestamp.AddDays(DaysUntil) };
         }
 
         public override bool IsTrackerInRotation(LostSectorLink Tracker)
@@ -180,6 +182,8 @@ namespace Levante.Rotations
         {
             throw new NotImplementedException();
         }
+
+        public override string ToString() => "Lost Sector";
     }
 
     public class LostSector
@@ -255,14 +259,6 @@ namespace Levante.Rotations
         Master
     }
 
-    /*public enum ExoticArmorType
-    {
-        Helmet,
-        Legs,
-        Arms,
-        Chest
-    }*/
-
     public class ExoticArmor
     {
         [JsonProperty("Type")]
@@ -270,6 +266,8 @@ namespace Levante.Rotations
 
         [JsonProperty("ArmorEmote")]
         public readonly string ArmorEmote;
+
+        public override string ToString() => $"{Type} {ArmorEmote}";
     }
 
     public class LostSectorLink : IRotationTracker
@@ -282,6 +280,18 @@ namespace Levante.Rotations
 
         [JsonProperty("ArmorDrop")]
         public int ArmorDrop { get; set; } = 0;
+
+        public override string ToString()
+        {
+            string result = "Lost Sector";
+            if (LostSector >= 0)
+                result = $"{CurrentRotations.LostSector.Rotations[LostSector]}";
+
+            if (ArmorDrop >= 0)
+                result += $" dropping {CurrentRotations.LostSector.ArmorRotations[ArmorDrop]}";
+
+            return result;
+        }
     }
 
     public class LostSectorPrediction : IRotationPrediction

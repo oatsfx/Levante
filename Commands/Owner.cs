@@ -56,7 +56,7 @@ namespace Levante.Commands
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -102,7 +102,7 @@ namespace Levante.Commands
             {
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                     Title = "Supporters"
                 };
                 string result = "";
@@ -158,10 +158,10 @@ namespace Levante.Commands
                 return;
             }
 
-            var buttonBuilder = new ComponentBuilder()
-                .WithButton("Post Offer", customId: $"newPost", ButtonStyle.Success, row: 0)
-                .WithButton("Skip Posting", customId: $"newSkip", ButtonStyle.Secondary, row: 0)
-                .WithButton("Cancel", customId: $"newCancel", ButtonStyle.Danger, row: 0);
+            var buttonBuilder = newOffer.BuildExternalButton()
+                .WithButton("Post Offer", customId: $"newPost", ButtonStyle.Success, row: 1)
+                .WithButton("Skip Posting", customId: $"newSkip", ButtonStyle.Secondary, row: 1)
+                .WithButton("Cancel", customId: $"newCancel", ButtonStyle.Danger, row: 1);
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "This is what the embed looks like. What would you like to do?"; message.Embed = newOffer.BuildEmbed().Build(); message.Components = buttonBuilder.Build(); });
 
@@ -184,7 +184,7 @@ namespace Levante.Commands
                 await buttonResponse.Value.DeferAsync();
                 await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sending to {DataConfig.AnnounceEmblemLinks.Count} channels..."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
                 newOffer.CreateJSON();
-                await SendToAllAnnounceChannels(newOffer.BuildEmbed());
+                await SendToAllAnnounceChannels(newOffer);
                 await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sent to {DataConfig.AnnounceEmblemLinks.Count} channels!"; });
                 return;
             }
@@ -227,7 +227,7 @@ namespace Levante.Commands
 
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{Context.User.Username}" },
                 Title = "New Countdown",
@@ -277,7 +277,7 @@ namespace Levante.Commands
 
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{Context.User.Username}" },
                 Title = "Countdown Removal",
@@ -336,7 +336,7 @@ namespace Levante.Commands
 
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{removeHashes.Count} expired Emblem offers" },
                 Title = "Remove these offers?",
@@ -400,11 +400,9 @@ namespace Levante.Commands
             long EmblemHashCode = long.Parse(EmblemHash);
             var offerToDelete = EmblemOffer.GetSpecificOffer(EmblemHashCode);
 
-            string timestamp = offerToDelete.EndDate == null ? "This offer has no end." : $"End{(offerToDelete.EndDate > DateTime.Now ? "s" : "ed")} {TimestampTag.FromDateTime((DateTime)offerToDelete.EndDate, TimestampTagStyles.Relative)}.";
-
-            var buttonBuilder = new ComponentBuilder()
-                .WithButton("Yes", customId: $"removeYes", ButtonStyle.Success, row: 0)
-                .WithButton("No", customId: $"removeNo", ButtonStyle.Danger, row: 0);
+            var buttonBuilder = offerToDelete.BuildExternalButton()
+                .WithButton("Yes", customId: $"removeYes", ButtonStyle.Success, row: 1)
+                .WithButton("No", customId: $"removeNo", ButtonStyle.Danger, row: 1);
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Remove this offer?";  message.Embed = offerToDelete.BuildEmbed().Build(); message.Components = buttonBuilder.Build(); });
 
@@ -448,9 +446,9 @@ namespace Levante.Commands
             else
             {
                 EmblemOffer eo = EmblemOffer.GetSpecificOffer(EmblemHashCode);
-                var buttonBuilder = new ComponentBuilder()
-                    .WithButton("Yes", customId: $"sendYes", ButtonStyle.Success, row: 0)
-                    .WithButton("No", customId: $"sendNo", ButtonStyle.Danger, row: 0);
+                var buttonBuilder = eo.BuildExternalButton()
+                    .WithButton("Yes", customId: $"sendYes", ButtonStyle.Success, row: 1)
+                    .WithButton("No", customId: $"sendNo", ButtonStyle.Danger, row: 1);
                 await RespondAsync("This is what the embed looks like. Ready to send to all channels?", embed: eo.BuildEmbed().Build(), components: buttonBuilder.Build());
                 var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
 
@@ -469,7 +467,7 @@ namespace Levante.Commands
                 if (buttonResponse.Value.Data.CustomId.Equals("sendYes"))
                 {
                     await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sending to {DataConfig.AnnounceEmblemLinks.Count} channels..."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                    await SendToAllAnnounceChannels(eo.BuildEmbed());
+                    await SendToAllAnnounceChannels(eo);
                     await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sent {DataConfig.AnnounceEmblemLinks.Count} channels!"; message.Embed = eo.BuildEmbed().Build(); });
                 }
                 else
@@ -530,7 +528,7 @@ namespace Levante.Commands
             var app = await Context.Client.GetApplicationInfoAsync();
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{BotConfig.AppName} v{BotConfig.Version}" },
                 Title = "Metrics",
@@ -661,7 +659,7 @@ namespace Levante.Commands
             };
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
                 Timestamp = DateTime.Now,
@@ -698,7 +696,7 @@ namespace Levante.Commands
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
                 Timestamp = DateTime.Now,
@@ -768,15 +766,30 @@ namespace Levante.Commands
         [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
         public async Task Test()
         {
-            var aaa = Context.User.PublicFlags;
+            var embed = new EmbedBuilder
+            {
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
+                Footer = new EmbedFooterBuilder() { Text = $"{BotConfig.AppName} v{BotConfig.Version}" },
+                Title = "???",
+                ThumbnailUrl = BotConfig.BotLogoUrl,
+                Description = "Nothing found."
+            };
 
-            await RespondAsync($"{aaa}");
+            embed.AddField(x =>
+            {
+                x.Name = "???";
+                x.Value = $"???";
+                x.IsInline = true;
+            });
+
+            await RespondAsync(embed: embed.Build());
         }
 
-        public async Task SendToAllAnnounceChannels(EmbedBuilder embed)
+        public async Task SendToAllAnnounceChannels(EmblemOffer offer)
         {
-            List<ulong> guildsWithKeptChannel = new();
-            List<ulong> keptChannels = new();
+            var embed = offer.BuildEmbed();
+            var button = offer.BuildExternalButton();
             foreach (var Link in DataConfig.AnnounceEmblemLinks.ToList())
             {
                 var channel = Context.Client.GetChannel(Link.ChannelID) as SocketTextChannel;
@@ -785,20 +798,13 @@ namespace Levante.Commands
                 {
                     if (channel == null || guildChannel == null)
                     {
-                        Log.Information("[{Type}] Could not find channel {Id}. Removing this element.", "Offers", Link.ChannelID);
-                        DataConfig.DeleteEmblemChannel(Link.ChannelID);
+                        Log.Information("[{Type}] Could not find channel {Id}.", "Offers", Link.ChannelID);
                         continue;
-                    }
-
-                    if (!guildsWithKeptChannel.Contains(guildChannel.Guild.Id))
-                    {
-                        keptChannels.Add(Link.ChannelID);
-                        guildsWithKeptChannel.Add(guildChannel.Guild.Id);
                     }
 
                     foreach (var chan in guildChannel.Guild.TextChannels)
                     {
-                        if (DataConfig.IsExistingEmblemLinkedChannel(chan.Id) && Link.ChannelID != chan.Id && guildsWithKeptChannel.Contains(chan.Guild.Id) && !keptChannels.Contains(chan.Id))
+                        if (DataConfig.IsExistingEmblemLinkedChannel(chan.Id) && Link.ChannelID != chan.Id)
                         {
                             Log.Information("[{Type}] Duplicate channel detected. Removing: {Id}", "Offers", chan.Id);
                             DataConfig.DeleteEmblemChannel(chan.Id);
@@ -808,14 +814,14 @@ namespace Levante.Commands
                     if (Link.RoleID != 0)
                     {
                         var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
-                        var msg = await channel.SendMessageAsync($"{role.Mention}", false, embed.Build());
+                        var msg = await channel.SendMessageAsync($"{role.Mention}", embed: embed.Build(), components: button.Build());
                         if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
                             await msg.CrosspostAsync();
                     }
                     else
                     {
-                        // Crosspost/Publish for news channels the bot posts into.
-                        var msg = await channel.SendMessageAsync("", false, embed.Build());
+                        // Crosspost/Publish for the support server news channel.
+                        var msg = await channel.SendMessageAsync("", embed: embed.Build(), components: button.Build());
                         if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
                             await msg.CrosspostAsync();
                     }

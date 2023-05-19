@@ -10,12 +10,14 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class DeepStoneCryptRotation : Rotation<DeepStoneCrypt, DeepStoneCryptLink, DeepStoneCryptPrediction>
+    public class DeepStoneCryptRotation : SetRotation<DeepStoneCrypt, DeepStoneCryptLink, DeepStoneCryptPrediction>
     {
         public DeepStoneCryptRotation()
         {
             FilePath = @"Trackers/deepStoneCrypt.json";
             RotationFilePath = @"Rotations/deepStoneCrypt.json";
+
+            IsDaily = false;
 
             GetRotationJSON();
             GetTrackerJSON();
@@ -36,7 +38,9 @@ namespace Levante.Rotations
             return new DeepStoneCryptPrediction { DeepStoneCrypt = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
 
-        public override bool IsTrackerInRotation(DeepStoneCryptLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.DSCChallenge;
+        public override bool IsTrackerInRotation(DeepStoneCryptLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.DSCChallenge || CurrentRotations.FeaturedRaid.Rotations[CurrentRotations.Actives.FeaturedRaid].Raid.Equals("Deep Stone Crypt");
+
+        public override string ToString() => "Deep Stone Crypt Challenge";
     }
 
     /*public enum DeepStoneCryptEncounter
@@ -54,6 +58,8 @@ namespace Levante.Rotations
 
         [JsonProperty("ChallengeName")]
         public readonly string ChallengeName;
+
+        public override string ToString() => $"{Encounter} ({ChallengeName})";
     }
 
     public class DeepStoneCryptLink : IRotationTracker
@@ -63,6 +69,8 @@ namespace Levante.Rotations
 
         [JsonProperty("Encounter")]
         public int Encounter { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.DeepStoneCrypt.Rotations[Encounter]}";
     }
 
     public class DeepStoneCryptPrediction : IRotationPrediction

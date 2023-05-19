@@ -9,76 +9,18 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class WellspringRotation : Rotation<Wellspring, WellspringLink, WellspringPrediction>
+    public class WellspringRotation : SetRotation<Wellspring, WellspringLink, WellspringPrediction>
     {
         public WellspringRotation()
         {
             FilePath = @"Trackers/wellspring.json";
             RotationFilePath = @"Rotations/wellspring.json";
 
+            IsDaily = true;
+
             GetRotationJSON();
             GetTrackerJSON();
         }
-
-        /*public static string GetWellspringBossString(Wellspring Wellspring)
-        {
-            switch (Wellspring)
-            {
-                case Wellspring.Golmag: return "Golmag, Warden of the Spring";
-                case Wellspring.Vezuul: return "Vezuul, Lightflayer";
-                case Wellspring.Borgong: return "Bor'gong, Warden of the Spring";
-                case Wellspring.Zeerik: return "Zeerik, Lightflayer";
-                default: return "The Wellspring";
-            }
-        }
-
-        public static string GetWellspringTypeString(Wellspring Wellspring)
-        {
-            switch (Wellspring)
-            {
-                case Wellspring.Golmag: return "Attack";
-                case Wellspring.Vezuul: return "Defend";
-                case Wellspring.Borgong: return "Attack";
-                case Wellspring.Zeerik: return "Defend";
-                default: return "The Wellspring Type";
-            }
-        }
-
-        public static string GetWeaponNameString(Wellspring Wellspring)
-        {
-            switch (Wellspring)
-            {
-                case Wellspring.Golmag: return "Come to Pass";
-                case Wellspring.Vezuul: return "Tarnation";
-                case Wellspring.Borgong: return "Fel Taradiddle";
-                case Wellspring.Zeerik: return "Father's Sins";
-                default: return "The Wellspring Weapon";
-            }
-        }
-
-        public static string GetWeaponTypeString(Wellspring Wellspring)
-        {
-            switch (Wellspring)
-            {
-                case Wellspring.Golmag: return "Auto Rifle";
-                case Wellspring.Vezuul: return "Grenade Launcher";
-                case Wellspring.Borgong: return "Bow";
-                case Wellspring.Zeerik: return "Sniper";
-                default: return "The Wellspring Weapon Type";
-            }
-        }
-
-        public static string GetWeaponEmote(Wellspring Wellspring)
-        {
-            switch (Wellspring)
-            {
-                case Wellspring.Golmag: return $"{DestinyEmote.AutoRifle}";
-                case Wellspring.Vezuul: return $"{DestinyEmote.HeavyGrenadeLauncher}";
-                case Wellspring.Borgong: return $"{DestinyEmote.Bow}";
-                case Wellspring.Zeerik: return $"{DestinyEmote.SniperRifle}";
-                default: return "The Wellspring Weapon Emote";
-            }
-        }*/
 
         public override WellspringPrediction DatePrediction(int Weapon, int Skip)
         {
@@ -96,6 +38,8 @@ namespace Levante.Rotations
         }
 
         public override bool IsTrackerInRotation(WellspringLink Tracker) => Tracker.Wellspring == CurrentRotations.Actives.Wellspring;
+
+        public override string ToString() => "The Wellspring";
     }
 
     /*public enum Wellspring
@@ -118,6 +62,8 @@ namespace Levante.Rotations
         public readonly string WeaponEmote;
         [JsonProperty("Type")]
         public readonly string Type;
+
+        public override string ToString() => $"{Type}: {Weapon} ({WeaponType}), {Boss}";
     }
 
     public class WellspringLink : IRotationTracker
@@ -127,6 +73,8 @@ namespace Levante.Rotations
 
         [JsonProperty("Wellspring")]
         public int Wellspring { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.Wellspring.Rotations[Wellspring]}";
     }
 
     public class WellspringPrediction : IRotationPrediction

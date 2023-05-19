@@ -1,4 +1,5 @@
-﻿using Levante.Rotations.Abstracts;
+﻿using BungieSharper.Entities.Destiny.Responses;
+using Levante.Rotations.Abstracts;
 using Levante.Rotations.Interfaces;
 using Newtonsoft.Json;
 using System;
@@ -7,12 +8,14 @@ using System.IO;
 
 namespace Levante.Rotations
 {
-    public class EmpireHuntRotation : Rotation<EmpireHunt, EmpireHuntLink, EmpireHuntPrediction>
+    public class EmpireHuntRotation : SetRotation<EmpireHunt, EmpireHuntLink, EmpireHuntPrediction>
     {
         public EmpireHuntRotation()
         {
             FilePath = @"Trackers/empireHunt.json";
             RotationFilePath = @"Rotations/empireHunt.json";
+
+            IsDaily = false;
 
             GetRotationJSON();
             GetTrackerJSON();
@@ -34,14 +37,9 @@ namespace Levante.Rotations
         }
 
         public override bool IsTrackerInRotation(EmpireHuntLink Tracker) => Tracker.EmpireHunt == CurrentRotations.Actives.EmpireHunt;
-    }
 
-    /*public enum EmpireHunt
-    {
-        Warrior, // Phylaks
-        Technocrat, // Praksis
-        DarkPriestess, // Kridis
-    }*/
+        public override string ToString() => "Empire Hunt";
+    }
 
     public class EmpireHunt
     {
@@ -50,6 +48,8 @@ namespace Levante.Rotations
 
         [JsonProperty("BossName")]
         public readonly string BossName;
+
+        public override string ToString() => $"{Name} ({BossName})";
     }
 
     public class EmpireHuntLink : IRotationTracker
@@ -59,6 +59,8 @@ namespace Levante.Rotations
 
         [JsonProperty("EmpireHunt")]
         public int EmpireHunt { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.EmpireHunt.Rotations[EmpireHunt]}";
     }
 
     public class EmpireHuntPrediction : IRotationPrediction

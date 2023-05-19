@@ -48,7 +48,7 @@ namespace Levante.Util
 
         public string GetDamageTypeEmote() => DestinyEmote.MatchEmote($"{(DamageType)Content.DefaultDamageType}");
 
-        public WeaponPerk GetIntrinsic() => new WeaponPerk(Content.Sockets.SocketEntries.ElementAt(0).SingleInitialItemHash);
+        public WeaponPerk GetIntrinsic() => new(Content.Sockets.SocketEntries.ElementAt(0).SingleInitialItemHash);
 
         public PlugSet GetRandomPerks(int Column /*This parameter is the desired column for weapon perks.*/)
         {
@@ -135,9 +135,14 @@ namespace Levante.Util
 
             embed.AddField(x =>
             {
-                x.Name = $"> Information";
+                x.Name = "> Information";
                 x.Value = $"{GetDamageType()} {GetSpecificItemType()}\n" +
-                    $"{DestinyEmote.Pattern}Craftable?: {(IsCraftable ? Emotes.Yes : Emotes.No)}\n";
+                          $"{DestinyEmote.Pattern}Craftable?: {(IsCraftable ? Emotes.Yes : Emotes.No)}\n";
+                    x.IsInline = false;
+            }).AddField(x =>
+            {
+                x.Name = "> Other Sources";
+                x.Value = $"[d2foundry](https://d2foundry.gg/w/{GetItemHash()})";
                 x.IsInline = false;
             }).AddField(x =>
             {

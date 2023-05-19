@@ -9,12 +9,14 @@ using System.Linq;
 
 namespace Levante.Rotations
 {
-    public class NightmareHuntRotation : Rotation<NightmareHunt, NightmareHuntLink, NightmareHuntPrediction>
+    public class NightmareHuntRotation : SetRotation<NightmareHunt, NightmareHuntLink, NightmareHuntPrediction>
     {
         public NightmareHuntRotation()
         {
             FilePath = @"Trackers/nightmareHunt.json";
-            RotationFilePath = @"Rotations/altarsOfSorrow.json";
+            RotationFilePath = @"Rotations/nightmareHunt.json";
+
+            IsDaily = false;
 
             GetRotationJSON();
             GetTrackerJSON();
@@ -67,6 +69,8 @@ namespace Levante.Rotations
         }
 
         public override bool IsTrackerInRotation(NightmareHuntLink Tracker) => CurrentRotations.Actives.NightmareHunts.Contains(Tracker.Hunt);
+
+        public override string ToString() => "Nightmare Hunt";
     }
 
     /*public enum NightmareHunt
@@ -87,15 +91,19 @@ namespace Levante.Rotations
         public string Name;
         [JsonProperty("Boss")]
         public string Boss;
+
+        public override string ToString() => $"{Name} ({Boss})";
     }
 
     public class NightmareHuntLink : IRotationTracker
     {
         [JsonProperty("DiscordID")]
-        public ulong DiscordID { get; set; } = 0;
+        public ulong DiscordID { get; set; }
 
         [JsonProperty("Hunt")]
-        public int Hunt { get; set; } = 0;
+        public int Hunt { get; set; }
+
+        public override string ToString() => $"{CurrentRotations.NightmareHunt.Rotations[Hunt]}";
     }
 
     public class NightmareHuntPrediction : IRotationPrediction

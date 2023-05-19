@@ -1,5 +1,8 @@
-﻿using Levante.Configs;
+﻿using APIHelper;
+using Levante.Configs;
 using Levante.Helpers;
+using Levante.Rotations.Abstracts;
+using Levante.Rotations.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -10,52 +13,21 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using static Levante.Rotations.LastWishRotation;
 
 namespace Levante.Rotations
 {
-    public class Ada1Rotation
+    public class Ada1Rotation : Rotation<Ada1Link>
     {
-        public static readonly string FilePath = @"Trackers/ada1.json";
-
-        [JsonProperty("Ada1Links")]
-        public static List<Ada1ModLink> Ada1Links { get; set; } = new List<Ada1ModLink>();
-
-        public class Ada1ModLink
+        public Ada1Rotation()
         {
-            [JsonProperty("DiscordID")]
-            public ulong DiscordID { get; set; } = 0;
+            FilePath = @"Trackers/ada1.json";
 
-            [JsonProperty("Hash")]
-            public long Hash { get; set; } = 0;
+            IsDaily = true;
+
+            GetTrackerJSON();
         }
 
-        public static void AddUserTracking(ulong DiscordID, long ModHash)
-        {
-            Ada1Links.Add(new Ada1ModLink() { DiscordID = DiscordID, Hash = ModHash });
-            UpdateJSON();
-        }
-
-        public static void RemoveUserTracking(ulong DiscordID)
-        {
-            Ada1Links.Remove(GetUserTracking(DiscordID, out _));
-            UpdateJSON();
-        }
-
-        // Returns null if no tracking is found.
-        public static Ada1ModLink GetUserTracking(ulong DiscordID, out long Hash)
-        {
-            foreach (var Link in Ada1Links)
-                if (Link.DiscordID == DiscordID)
-                {
-                    Hash = Link.Hash;
-                    return Link;
-                }
-            Hash = 0;
-            return null;
-        }
-
-        public static void GetAda1Inventory()
+        public void GetAda1Inventory()
         {
             try
             {
@@ -80,13 +52,13 @@ namespace Levante.Rotations
                     var jObject = token.Value<JObject>();
                     List<string> keys = jObject.Properties().Select(p => p.Name).ToList();
 
-                    CurrentRotations.Ada1Items.Clear();
+                    CurrentRotations.Actives.Ada1Items.Clear();
                     for (int i = 0; i < token.Count(); i++)
                     {
                         long hash = long.Parse($"{item.Response.sales.data[keys[i]].itemHash}");
                         if (ManifestHelper.Ada1Items.ContainsKey(hash))
                         {
-                            CurrentRotations.Ada1Items.Add(hash, ManifestHelper.Ada1Items[hash]);
+                            CurrentRotations.Actives.Ada1Items.Add(new Ada1 { ItemName = ManifestHelper.Ada1Items[hash], Hash = hash });
                         }
                     }
                 }
@@ -97,27 +69,30 @@ namespace Levante.Rotations
             }
         }
 
-        public static void CreateJSON()
-        {
-            Ada1Rotation obj;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                obj = JsonConvert.DeserializeObject<Ada1Rotation>(json);
-            }
-            else
-            {
-                obj = new Ada1Rotation();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(obj, Formatting.Indented));
-                Console.WriteLine($"No {FilePath} file detected. No action needed.");
-            }
-        }
+        public override bool IsTrackerInRotation(Ada1Link Tracker) => CurrentRotations.Actives.Ada1Items.Exists(x => x.Hash == Tracker.Hash);
 
-        public static void UpdateJSON()
-        {
-            var obj = new Ada1Rotation();
-            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
-        }
+        public override string ToString() => "Ada-1 Vendor Sales";
+    }
+
+    public class Ada1
+    {
+        [JsonProperty("ItemName")]
+        public string ItemName;
+
+        [JsonProperty("Hash")]
+        public long Hash;
+
+        public override string ToString() => $"{ManifestHelper.Ada1Items[Hash]}";
+    }
+
+    public class Ada1Link : IRotationTracker
+    {
+        [JsonProperty("DiscordID")]
+        public ulong DiscordID { get; set; } = 0;
+
+        [JsonProperty("Hash")]
+        public long Hash { get; set; } = 0;
+
+        public override string ToString() => $"{ManifestHelper.Ada1Items[Hash]}";
     }
 }

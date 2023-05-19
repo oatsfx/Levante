@@ -5,10 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Levante.Rotations.Abstracts;
+using Discord;
 
 namespace Levante.Rotations
 {
-    public class AltarsOfSorrowRotation : Rotation<AltarsOfSorrow, AltarsOfSorrowLink, AltarsOfSorrowPrediction>
+    public class AltarsOfSorrowRotation : SetRotation<AltarsOfSorrow, AltarsOfSorrowLink, AltarsOfSorrowPrediction>
     {
         public AltarsOfSorrowRotation()
         {
@@ -19,7 +20,7 @@ namespace Levante.Rotations
             GetTrackerJSON();
         }
 
-        public override AltarsOfSorrowPrediction DatePrediction(int Weapon, int Skip)
+        public override AltarsOfSorrowPrediction DatePrediction(int Location, int Skip)
         {
             int iteration = CurrentRotations.Actives.AltarWeapon;
             int DaysUntil = 0;
@@ -28,13 +29,15 @@ namespace Levante.Rotations
             {
                 iteration = iteration == Rotations.Count - 1 ? 0 : iteration + 1;
                 DaysUntil++;
-                if (iteration == Weapon)
+                if (iteration == Location)
                     correctIterations++;
             } while (Skip != correctIterations);
             return new AltarsOfSorrowPrediction { AltarsOfSorrow = Rotations[iteration], Date = CurrentRotations.Actives.DailyResetTimestamp.AddDays(DaysUntil) };
         }
 
         public override bool IsTrackerInRotation(AltarsOfSorrowLink Tracker) => Tracker.WeaponDrop == CurrentRotations.Actives.AltarWeapon;
+
+        public override string ToString() => "Altars of Sorrow";
     }
 
     public class AltarsOfSorrow
@@ -48,16 +51,18 @@ namespace Levante.Rotations
         [JsonProperty("WeaponEmote")]
         public readonly string WeaponEmote;
 
-        public override string ToString() => $"{Weapon} ({WeaponType})";
+        public override string ToString() => $"{Weapon} ({WeaponType}), {Boss}";
     }
 
     public class AltarsOfSorrowLink : IRotationTracker
     {
         [JsonProperty("DiscordID")]
-        public ulong DiscordID { get; set; } = 0;
+        public ulong DiscordID { get; set; }
 
         [JsonProperty("WeaponDrop")]
-        public int WeaponDrop { get; set; } = 0;
+        public int WeaponDrop { get; set; }
+
+        public override string ToString() => $"{CurrentRotations.AltarsOfSorrow.Rotations[WeaponDrop]}";
     }
 
     public class AltarsOfSorrowPrediction : IRotationPrediction

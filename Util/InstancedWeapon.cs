@@ -2,10 +2,13 @@
 using Levante.Configs;
 using Levante.Helpers;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,6 +19,8 @@ namespace Levante.Util
         private string InstanceID;
 
         private List<string> Perks = new();
+
+        private EmoteConfig Emotes = JsonConvert.DeserializeObject<EmoteConfig>(File.ReadAllText(EmoteConfig.FilePath));
 
         public InstancedWeapon(long hashCode, string memId, string memType, string instanceId, DataConfig.DiscordIDLink linkedUser = null) : base(hashCode)
         {
@@ -36,8 +41,13 @@ namespace Levante.Util
                 for (int i = 0; i < item.Response.sockets.data.sockets.Count; i++)
                 {
                     var socket = item.Response.sockets.data.sockets[i];
-                    if (ManifestHelper.Perks.ContainsKey(socket.plugHash))
-                        Perks.Add(ManifestHelper.Perks[socket.plugHash]);
+                    Log.Debug($"{socket.plugHash}");
+                    if (socket.plugHash == null) continue;
+                    long plugHash = (long)socket.plugHash;
+                    if (ManifestHelper.Perks.ContainsKey(plugHash))
+                        Perks.Add(ManifestHelper.Perks[plugHash]);
+                    else if (ManifestHelper.EnhancedPerks.ContainsKey(plugHash))
+                        Perks.Add(ManifestHelper.EnhancedPerks[plugHash]);
                 }
             }
         }
@@ -48,7 +58,12 @@ namespace Levante.Util
             // TODO: Use emotes for cleanliness.
             string result = "";
             foreach (var perk in Perks)
-                result += $"{perk} ";
+            {
+                if (Emotes.Emotes.ContainsKey(perk.Replace(" ", "").Replace("-", "").Replace("'", "")))
+                    result += $"{Emotes.Emotes[perk.Replace(" ", "").Replace("-", "").Replace("'", "")]}";
+                else
+                    result += $"{DestinyEmote.Classified}";
+            }
             return result;
         }
     }

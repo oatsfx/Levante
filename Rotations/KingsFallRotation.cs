@@ -12,12 +12,14 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class KingsFallRotation : Rotation<KingsFall, KingsFallLink, KingsFallPrediction>
+    public class KingsFallRotation : SetRotation<KingsFall, KingsFallLink, KingsFallPrediction>
     {
         public KingsFallRotation()
         {
             FilePath = @"Trackers/kingsFall.json";
             RotationFilePath = @"Rotations/kingsFall.json";
+
+            IsDaily = false;
 
             GetRotationJSON();
             GetTrackerJSON();
@@ -38,7 +40,9 @@ namespace Levante.Rotations
             return new KingsFallPrediction { KingsFall = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
 
-        public override bool IsTrackerInRotation(KingsFallLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.KFChallenge;
+        public override bool IsTrackerInRotation(KingsFallLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.KFChallenge || CurrentRotations.FeaturedRaid.Rotations[CurrentRotations.Actives.FeaturedRaid].Raid.Equals("King's Fall");
+
+        public override string ToString() => "King's Fall Challenge";
     }
 
     /*public enum KingsFallEncounter
@@ -57,6 +61,8 @@ namespace Levante.Rotations
 
         [JsonProperty("ChallengeName")]
         public readonly string ChallengeName;
+
+        public override string ToString() => $"{Encounter} ({ChallengeName})";
     }
 
     public class KingsFallLink : IRotationTracker
@@ -66,6 +72,8 @@ namespace Levante.Rotations
 
         [JsonProperty("Encounter")]
         public int Encounter { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.KingsFall.Rotations[Encounter]}";
     }
 
     public class KingsFallPrediction : IRotationPrediction

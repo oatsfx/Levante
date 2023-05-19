@@ -10,40 +10,18 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class VowOfTheDiscipleRotation : Rotation<VowOfTheDisciple, VowOfTheDiscipleLink, VowOfTheDisciplePrediction>
+    public class VowOfTheDiscipleRotation : SetRotation<VowOfTheDisciple, VowOfTheDiscipleLink, VowOfTheDisciplePrediction>
     {
         public VowOfTheDiscipleRotation()
         {
             FilePath = @"Trackers/vowOfTheDisciple.json";
             RotationFilePath = @"Rotations/vowOfTheDisciple.json";
 
+            IsDaily = false;
+
             GetRotationJSON();
             GetTrackerJSON();
         }
-
-        /*public static string GetEncounterString(VowOfTheDiscipleEncounter Encounter)
-        {
-            switch (Encounter)
-            {
-                case VowOfTheDiscipleEncounter.Acquisition: return "Acquisition";
-                case VowOfTheDiscipleEncounter.Caretaker: return "The Caretaker";
-                case VowOfTheDiscipleEncounter.Exhibition: return "Exhibition";
-                case VowOfTheDiscipleEncounter.Rhulk: return "Rhulk";
-                default: return "The Vow of the Disciple";
-            }
-        }
-
-        public static string GetChallengeString(VowOfTheDiscipleEncounter Encounter)
-        {
-            switch (Encounter)
-            {
-                case VowOfTheDiscipleEncounter.Acquisition: return "Swift Destruction";
-                case VowOfTheDiscipleEncounter.Caretaker: return "Base Information";
-                case VowOfTheDiscipleEncounter.Exhibition: return "Defenses Down";
-                case VowOfTheDiscipleEncounter.Rhulk: return "Looping Catalyst";
-                default: return "The Vow of the Disciple";
-            }
-        }*/
 
         public override VowOfTheDisciplePrediction DatePrediction(int Encounter, int Skip)
         {
@@ -60,7 +38,9 @@ namespace Levante.Rotations
             return new VowOfTheDisciplePrediction { VowOfTheDisciple = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
 
-        public override bool IsTrackerInRotation(VowOfTheDiscipleLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.VowChallenge;
+        public override bool IsTrackerInRotation(VowOfTheDiscipleLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.VowChallenge || CurrentRotations.FeaturedRaid.Rotations[CurrentRotations.Actives.FeaturedRaid].Raid.Equals("Vow of the Disciple");
+
+        public override string ToString() => "Vow of the Disciple Challenge";
     }
 
     /*public enum VowOfTheDiscipleEncounter
@@ -78,6 +58,8 @@ namespace Levante.Rotations
 
         [JsonProperty("ChallengeName")]
         public readonly string ChallengeName;
+
+        public override string ToString() => $"{Encounter} ({ChallengeName})";
     }
 
     public class VowOfTheDiscipleLink : IRotationTracker
@@ -87,6 +69,8 @@ namespace Levante.Rotations
 
         [JsonProperty("Encounter")]
         public int Encounter { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.VowOfTheDisciple.Rotations[Encounter]}";
     }
 
     public class VowOfTheDisciplePrediction : IRotationPrediction

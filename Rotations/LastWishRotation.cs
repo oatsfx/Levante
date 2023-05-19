@@ -10,12 +10,14 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class LastWishRotation : Rotation<LastWish, LastWishLink, LastWishPrediction>
+    public class LastWishRotation : SetRotation<LastWish, LastWishLink, LastWishPrediction>
     {
         public LastWishRotation()
         {
             FilePath = @"Trackers/lastWish.json";
             RotationFilePath = @"Rotations/lastWish.json";
+
+            IsDaily = false;
 
             GetRotationJSON();
             GetTrackerJSON();
@@ -36,17 +38,10 @@ namespace Levante.Rotations
             return new LastWishPrediction { LastWish = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
 
-        public override bool IsTrackerInRotation(LastWishLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.LWChallenge;
-    }
+        public override bool IsTrackerInRotation(LastWishLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.LWChallenge || CurrentRotations.FeaturedRaid.Rotations[CurrentRotations.Actives.FeaturedRaid].Raid.Equals("Last Wish");
 
-    /*public enum LastWishEncounter
-    {
-        Kalli, // Summoning Ritual
-        ShuroChi, // Which Witch
-        Morgeth, // Forever Fight
-        Vault, // Keep Out
-        Riven, // Strength of Memory
-    }*/
+        public override string ToString() => "Last Wish Challenge";
+    }
 
     public class LastWish
     {
@@ -55,6 +50,8 @@ namespace Levante.Rotations
 
         [JsonProperty("ChallengeName")]
         public readonly string ChallengeName;
+        
+        public override string ToString() => $"{Encounter} ({ChallengeName})";
     }
 
     public class LastWishLink : IRotationTracker
@@ -64,6 +61,8 @@ namespace Levante.Rotations
 
         [JsonProperty("Encounter")]
         public int Encounter { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.LastWish.Rotations[Encounter]}";
     }
 
     public class LastWishPrediction : IRotationPrediction

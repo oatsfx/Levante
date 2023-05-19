@@ -95,8 +95,6 @@ namespace Levante
             ManifestHelper.LoadManifestDictionaries();
 
             EmblemOffer.LoadCurrentOffers();
-            Ada1Rotation.GetAda1Inventory();
-            NightfallRotation.GetCurrentNightfall();
             CurrentRotations.UpdateRotationsJSON();
 
             var currentTime = DateTime.UtcNow;
@@ -408,8 +406,8 @@ namespace Levante
                     }
                     else if (updatedLevel > tempAau.LastLevel)
                     {
-                        await LogHelper.Log(logChannel, $"Level up!: {tempAau.LastLevel} -> {updatedLevel} ({String.Format("{0:n0}", updatedProgression)}/100,000 XP). " +
-                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP).");
+                        await LogHelper.Log(logChannel, $"Level up!: {tempAau.LastLevel} -> {updatedLevel} ({updatedProgression:n0}/100,000 XP). " +
+                            $"Start: {tempAau.StartLevel} ({tempAau.StartLevelProgress:n0}/100,000 XP).");
 
                         actualUser.LastLevel = updatedLevel;
                         actualUser.LastLevelProgress = updatedProgression;
@@ -449,7 +447,7 @@ namespace Levante
                     {
                         int levelsGained = aau.LastLevel - aau.StartLevel;
                         long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
-                        await LogHelper.Log(logChannel, $"Refreshed: {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP. Level: {updatedLevel} | Power Bonus: +{powerBonus} | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours):n0} XP/Hour");
+                        await LogHelper.Log(logChannel, $"Refreshed: {tempAau.LastLevelProgress:n0} XP -> {updatedProgression:n0} XP. Level: {updatedLevel} | Power Bonus: +{powerBonus} | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours):n0} XP/Hour");
 
                         actualUser.LastLevel = updatedLevel;
                         actualUser.LastLevelProgress = updatedProgression;
@@ -500,11 +498,11 @@ namespace Levante
                 bool nameChange = false;
                 foreach (var link in DataConfig.DiscordIDLinks.ToList()) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
                 {
-                    string errorReason = "ResponseError";
                     int Level = 0;
                     int PowerLevel = -1;
                     using (var client = new HttpClient())
                     {
+                        string errorReason = "ResponseError";
                         client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
                         var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + link.BungieMembershipType + "/Profile/" + link.BungieMembershipID + "/?components=100,200,202").Result;
@@ -527,6 +525,9 @@ namespace Levante
 
                             if (item.Response.profile.privacy != 1) continue;
                             if (item.Response.characters.privacy != 1) continue;
+
+                            if (item.Response.profile.data.characterIds.Count <= 0)
+                                continue;
 
                             for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
                             {
@@ -709,7 +710,7 @@ namespace Levante
         {
             string trackerType = interaction.Data.Values.First();
 
-            if (trackerType.Equals("ada-1"))
+            /*if (trackerType.Equals("ada-1"))
             {
                 if (Ada1Rotation.GetUserTracking(interaction.User.Id, out var ModHash) == null)
                 {
@@ -911,7 +912,7 @@ namespace Levante
                 WellspringRotation.RemoveUserTracking(interaction.User.Id);
                 await interaction.RespondAsync($"Removed your Wellspring tracking, you will not be notified when The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} is dropping {WellspringRotation.GetWeaponNameString(Wellspring)}.", ephemeral: true);
                 return;
-            }
+            }*/
         }
 
         //private async Task HandleMessageAsync(SocketMessage arg)

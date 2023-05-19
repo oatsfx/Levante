@@ -10,12 +10,14 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class GardenOfSalvationRotation : Rotation<GardenOfSalvation, GardenOfSalvationLink, GardenOfSalvationPrediction>
+    public class GardenOfSalvationRotation : SetRotation<GardenOfSalvation, GardenOfSalvationLink, GardenOfSalvationPrediction>
     {
         public GardenOfSalvationRotation()
         {
             FilePath = @"Trackers/gardenOfSalvation.json";
             RotationFilePath = @"Rotations/gardenOfSalvation.json";
+
+            IsDaily = false;
 
             GetRotationJSON();
             GetTrackerJSON();
@@ -36,7 +38,9 @@ namespace Levante.Rotations
             return new GardenOfSalvationPrediction { GardenOfSalvation = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
 
-        public override bool IsTrackerInRotation(GardenOfSalvationLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.GoSChallenge;
+        public override bool IsTrackerInRotation(GardenOfSalvationLink Tracker) => Tracker.Encounter == CurrentRotations.Actives.GoSChallenge || CurrentRotations.FeaturedRaid.Rotations[CurrentRotations.Actives.FeaturedRaid].Raid.Equals("Garden of Salvation");
+
+        public override string ToString() => "Garden of Salvation Challenge";
     }
 
     /*public enum GardenOfSalvationEncounter
@@ -54,6 +58,8 @@ namespace Levante.Rotations
 
         [JsonProperty("ChallengeName")]
         public readonly string ChallengeName;
+
+        public override string ToString() => $"{Encounter} ({ChallengeName})";
     }
 
     public class GardenOfSalvationLink : IRotationTracker
@@ -63,6 +69,8 @@ namespace Levante.Rotations
 
         [JsonProperty("Encounter")]
         public int Encounter { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.GardenOfSalvation.Rotations[Encounter]}";
     }
 
     public class GardenOfSalvationPrediction : IRotationPrediction

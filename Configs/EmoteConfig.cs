@@ -15,10 +15,10 @@ namespace Levante.Configs
         public static string FilePath { get; } = @"Configs/emoteConfig.json";
 
         [JsonProperty("EmoteServers")]
-        public List<ulong> EmoteServers { get; internal set; } = new List<ulong>();
+        public List<ulong> EmoteServers { get; internal set; } = new();
 
         [JsonProperty("Emotes")]
-        public Dictionary<string, string> Emotes { get; internal set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Emotes { get; internal set; } = new();
 
         public async Task<bool> AddEmote(string name, Image image)
         {

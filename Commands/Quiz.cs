@@ -291,7 +291,7 @@ namespace Levante.Commands
             TimeStarted = DateTime.Now;
         }
 
-        public async override Task HandleVote(SocketInteractionContext<SocketInteraction> context, long Hash)
+        public override async Task HandleVote(SocketInteractionContext<SocketInteraction> context, long Hash)
         {
             if (VotedUsers.ContainsKey(context.User.Id))
             {
@@ -355,7 +355,7 @@ namespace Levante.Commands
                 await context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = Embed.Build(); });
         }
 
-        public async override Task HandleEnd(SocketInteractionContext<SocketInteraction> context)
+        public override async Task HandleEnd(SocketInteractionContext<SocketInteraction> context)
         {
             cancelToken.Cancel();
             Embed.Description = $"This emblem is **[{ManifestHelper.Emblems[Options[Answer].Hash]}]({_Emblem.GetDECUrl()})**!";
@@ -461,7 +461,7 @@ namespace Levante.Commands
             TimeStarted = DateTime.Now;
         }
 
-        public async override Task HandleVote(SocketInteractionContext<SocketInteraction> context, long Hash)
+        public override async Task HandleVote(SocketInteractionContext<SocketInteraction> context, long Hash)
         {
             if (VotedUsers.ContainsKey(context.User.Id))
             {
@@ -525,7 +525,7 @@ namespace Levante.Commands
                 await context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = Embed.Build(); });
         }
 
-        public async override Task HandleEnd(SocketInteractionContext<SocketInteraction> context)
+        public override async Task HandleEnd(SocketInteractionContext<SocketInteraction> context)
         {
             cancelToken.Cancel();
             Embed.Description = $"{_Perk.GetDescription()}\n\nThis weapon perk is **{ManifestHelper.Perks[Options[Answer].Hash]}**!";

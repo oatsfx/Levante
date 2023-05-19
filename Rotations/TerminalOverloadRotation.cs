@@ -10,12 +10,14 @@ using Levante.Rotations.Interfaces;
 
 namespace Levante.Rotations
 {
-    public class TerminalOverloadRotation : Rotation<TerminalOverload, TerminalOverloadLink, TerminalOverloadPrediction>
+    public class TerminalOverloadRotation : SetRotation<TerminalOverload, TerminalOverloadLink, TerminalOverloadPrediction>
     {
         public TerminalOverloadRotation()
         {
             FilePath = @"Trackers/terminalOverload.json";
             RotationFilePath = @"Rotations/terminalOverload.json";
+
+            IsDaily = true;
 
             GetRotationJSON();
             GetTrackerJSON();
@@ -37,6 +39,8 @@ namespace Levante.Rotations
         }
 
         public override bool IsTrackerInRotation(TerminalOverloadLink Tracker) => Tracker.Location == CurrentRotations.Actives.TerminalOverload;
+
+        public override string ToString() => "Terminal Overload";
     }
 
     public class TerminalOverload
@@ -49,6 +53,8 @@ namespace Levante.Rotations
         public readonly string WeaponType;
         [JsonProperty("WeaponEmote")]
         public readonly string WeaponEmote;
+
+        public override string ToString() => $"{Weapon} ({WeaponType}), {Location}";
     }
 
     public class TerminalOverloadLink : IRotationTracker
@@ -58,6 +64,8 @@ namespace Levante.Rotations
 
         [JsonProperty("Location")]
         public int Location { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.TerminalOverload.Rotations[Location]}";
     }
 
     public class TerminalOverloadPrediction : IRotationPrediction

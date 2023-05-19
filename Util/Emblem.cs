@@ -25,9 +25,9 @@ namespace Levante.Util
             int[] result = new int[3];
             if (Content.BackgroundColor == null)
             {
-                result[0] = BotConfig.EmbedColorGroup.R;
-                result[1] = BotConfig.EmbedColorGroup.G;
-                result[2] = BotConfig.EmbedColorGroup.B;
+                result[0] = BotConfig.EmbedColor.R;
+                result[1] = BotConfig.EmbedColor.G;
+                result[2] = BotConfig.EmbedColor.B;
             }
             else
             {
@@ -108,10 +108,9 @@ namespace Levante.Util
                 if (EmblemOffer.HasExistingOffer(GetItemHash()))
                 {
                     var offer = EmblemOffer.GetSpecificOffer(GetItemHash());
-                    if (offer.StartDate > DateTime.Now)
-                        offerStr = $"This emblem is [available]({offer.SpecialUrl}) {TimestampTag.FromDateTime(offer.StartDate, TimestampTagStyles.Relative)}!\n";
-                    else
-                        offerStr = $"This emblem is [currently available]({offer.SpecialUrl})!\n";
+                    offerStr = offer.StartDate > DateTime.Now
+                        ? $"This emblem is [available]({offer.SpecialUrl}) {TimestampTag.FromDateTime(offer.StartDate, TimestampTagStyles.Relative)}!\n"
+                        : $"This emblem is [currently available]({offer.SpecialUrl})!\n";
                 }
                 
                 if (BotConfig.UniversalCodes.Exists(x => x.Name.Equals(GetName())))
@@ -127,18 +126,7 @@ namespace Levante.Util
 
                 embed.AddField(x =>
                 {
-                    x.Name = "Hash Code";
-                    x.Value = $"{GetItemHash()}";
-                    x.IsInline = true;
-                }).AddField(x =>
-                {
-                    x.Name = "Collectible Hash";
-                    x.Value = $"{GetCollectableHash()}";
-                    x.IsInline = true;
-                })
-                .AddField(x =>
-                {
-                    x.Name = "Availbility";
+                    x.Name = "Availability";
                     x.Value = $"{offerStr}";
                     x.IsInline = false;
                 });
@@ -152,10 +140,19 @@ namespace Levante.Util
                         x.IsInline = false;
                     });
                 }
+
+                embed.AddField(x =>
+                {
+                    x.Name = "Other Sources";
+                    x.Value =
+                        $"[Destiny Emblem Collector](https://destinyemblemcollector.com/emblem?id={GetItemHash()}) | " +
+                        $"[emblem.report](https://emblem.report/{GetItemHash()})";
+                    x.IsInline = false;
+                });
             }
             catch
             {
-                embed.WithColor(new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B));
+                embed.WithColor(new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B));
                 embed.Description = "This emblem is missing some API values, sorry about that!";
             }
             

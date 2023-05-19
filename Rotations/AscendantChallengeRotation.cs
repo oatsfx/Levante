@@ -8,18 +8,20 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class AscendantChallengeRotation : Rotation<AscendantChallenge, AscendantChallengeLink, AscendantChallengePrediction>
+    public class AscendantChallengeRotation : SetRotation<AscendantChallenge, AscendantChallengeLink, AscendantChallengePrediction>
     {
         public AscendantChallengeRotation()
         {
             FilePath = @"Trackers/ascendantChallenge.json";
             RotationFilePath = @"Rotations/ascendantChallenge.json";
 
+            IsDaily = false;
+
             GetRotationJSON();
             GetTrackerJSON();
         }
 
-        public override AscendantChallengePrediction DatePrediction(int Challenge, int Skip)
+        public override AscendantChallengePrediction DatePrediction(int Encounter, int Skip)
         {
             int iteration = CurrentRotations.Actives.AscendantChallenge;
             int WeeksUntil = 0;
@@ -28,24 +30,16 @@ namespace Levante.Rotations
             {
                 iteration = iteration == Rotations.Count - 1 ? 0 : iteration + 1;
                 WeeksUntil++;
-                if (iteration == Challenge)
+                if (iteration == Encounter)
                     correctIterations++;
             } while (Skip != correctIterations);
             return new AscendantChallengePrediction { AscendantChallenge = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
 
         public override bool IsTrackerInRotation(AscendantChallengeLink Tracker) => Tracker.AscendantChallenge == CurrentRotations.Actives.AscendantChallenge;
-    }
 
-    /*public enum AscendantChallenge
-    {
-        AgonarchAbyss, // Bay of Drowned Wishes
-        CimmerianGarrison, // Chamber of Starlight
-        Ouroborea, // Aphelion's Rest
-        ForfeitShrine, // Gardens of Esila
-        ShatteredRuins, // Spine of Keres
-        KeepOfHonedEdges, // Harbinger's Seclude
-    }*/
+        public override string ToString() => "Ascendant Challenge";
+    }
 
     public class AscendantChallenge
     {
@@ -60,10 +54,12 @@ namespace Levante.Rotations
     public class AscendantChallengeLink : IRotationTracker
     {
         [JsonProperty("DiscordID")]
-        public ulong DiscordID { get; set; } = 0;
+        public ulong DiscordID { get; set; }
 
         [JsonProperty("AscendantChallenge")]
-        public int AscendantChallenge { get; set; } = 0;
+        public int AscendantChallenge { get; set; }
+
+        public override string ToString() => $"{CurrentRotations.AscendantChallenge.Rotations[AscendantChallenge]}";
     }
 
     public class AscendantChallengePrediction : IRotationPrediction
