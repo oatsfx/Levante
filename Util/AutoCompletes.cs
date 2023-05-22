@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Levante.Util
@@ -29,7 +30,7 @@ namespace Levante.Util
                 while (results.Count < 7)
                 {
                     var weapon = ManifestHelper.Weapons.ElementAt(random.Next(0, ManifestHelper.Weapons.Count));
-                    if (!results.Exists(x => x.Value.Equals(weapon.Key)))
+                    if (!results.Exists(x => x.Name.Equals($"{weapon.Value}")))
                         results.Add(new AutocompleteResult(weapon.Value, $"{weapon.Key}"));
                 }
             }
@@ -60,7 +61,7 @@ namespace Levante.Util
                 while (results.Count < 7)
                 {
                     var item = ManifestHelper.Ada1Items.ElementAt(random.Next(0, ManifestHelper.Ada1Items.Count));
-                    if (!results.Exists(x => x.Value.Equals(item.Key)))
+                    if (!results.Exists(x => x.Name.Equals($"{item.Value}")))
                         results.Add(new AutocompleteResult(item.Value, $"{item.Key}"));
                 }
             else
@@ -183,7 +184,7 @@ namespace Levante.Util
                 while (results.Count < 7)
                 {
                     var emblem = ManifestHelper.Emblems.ElementAt(random.Next(0, ManifestHelper.Emblems.Count));
-                    if (!results.Exists(x => x.Value.Equals(emblem.Key)))
+                    if (!results.Exists(x => x.Name.Equals($"{emblem.Value}")))
                         results.Add(new AutocompleteResult(emblem.Value, $"{emblem.Key}"));
                 }
             else
@@ -211,7 +212,7 @@ namespace Levante.Util
                 while (results.Count < 7)
                 {
                     var perk = ManifestHelper.Perks.ElementAt(random.Next(0, ManifestHelper.Perks.Count));
-                    if (!results.Exists(x => x.Value.Equals(perk.Key)))
+                    if (!results.Exists(x => x.Name.Equals($"{perk.Value}")))
                         results.Add(new AutocompleteResult(perk.Value, $"{perk.Key}"));
                 }
             else
@@ -446,6 +447,28 @@ namespace Levante.Util
         }
     }
 
+    public class LightfallMissionAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.LightfallMission.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
     public class LostSectorAutocomplete : AutocompleteHandler
     {
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
@@ -576,6 +599,28 @@ namespace Levante.Util
         }
     }
 
+    public class ShadowkeepMissionAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.ShadowkeepMission.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
     public class TerminalOverloadAutocomplete : AutocompleteHandler
     {
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
@@ -652,6 +697,28 @@ namespace Levante.Util
                     if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
                         results.Add(new AutocompleteResult($"{searchList[i]}", i));
 
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class WitchQueenMissionAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.WitchQueenMission.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
+            // max - 25 suggestions at a time (API limit)
             return AutocompletionResult.FromSuccess(results.Take(25));
         }
     }

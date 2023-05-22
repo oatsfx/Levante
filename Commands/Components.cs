@@ -22,6 +22,7 @@ namespace Levante.Commands
         {
             await RespondAsync("Forcing daily...");
             CurrentRotations.DailyRotation();
+            await Task.Run(CountdownConfig.CheckCountdowns);
             await DataConfig.PostDailyResetUpdate(Context.Client);
             await CurrentRotations.CheckUsersDailyTracking(Context.Client);
             await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "Forced Daily Reset!"; });
@@ -33,6 +34,7 @@ namespace Levante.Commands
         {
             await RespondAsync("Forcing weekly...");
             CurrentRotations.WeeklyRotation();
+            await Task.Run(CountdownConfig.CheckCountdowns);
             await DataConfig.PostDailyResetUpdate(Context.Client);
             await DataConfig.PostWeeklyResetUpdate(Context.Client);
             await CurrentRotations.CheckUsersDailyTracking(Context.Client);
@@ -41,7 +43,7 @@ namespace Levante.Commands
         }
 
         [ComponentInteraction("deleteChannel")]
-        public async Task DeleteChannel() => await (Context.Channel as SocketGuildChannel).DeleteAsync(options: new RequestOptions() { AuditLogReason = $"XP Logging Delete Channel (User: {Context.User.Username}#{Context.User.Discriminator})"});
+        public async Task DeleteChannel() => await (Context.Channel as SocketGuildChannel).DeleteAsync(options: new RequestOptions { AuditLogReason = $"XP Logging Delete Channel (User: {Context.User.Username}#{Context.User.Discriminator})"});
 
         [RequireBungieOauth]
         [ComponentInteraction("startXPAFK")]

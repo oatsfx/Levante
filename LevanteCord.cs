@@ -199,6 +199,7 @@ namespace Levante
 
         public async void DailyResetChanges(Object o = null)
         {
+            await Task.Run(CountdownConfig.CheckCountdowns);
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
@@ -591,7 +592,7 @@ namespace Levante
             await _interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
             int readyShards = 0;
-            _client.ShardReady += async (DiscordSocketClient shard) =>
+            _client.ShardReady += async shard =>
             {
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();

@@ -23,15 +23,15 @@ namespace Levante.Rotations
         public static AltarsOfSorrowRotation AltarsOfSorrow = new();
         public static AscendantChallengeRotation AscendantChallenge = new();
         public static CurseWeekRotation CurseWeek = new();
+        public static DaresOfEternityRotation DaresOfEternity = new();
         public static DeepStoneCryptRotation DeepStoneCrypt = new();
         public static EmpireHuntRotation EmpireHunt = new();
-        // Dungeon
-        public static FeaturedRaidRotation FeaturedRaid = new();
         public static FeaturedDungeonRotation FeaturedDungeon = new();
+        public static FeaturedRaidRotation FeaturedRaid = new();
         public static GardenOfSalvationRotation GardenOfSalvation = new();
         public static KingsFallRotation KingsFall = new();
         public static LastWishRotation LastWish = new();
-        // Lightfall Mission
+        public static LightfallMissionRotation LightfallMission = new();
         public static LostSectorRotation LostSector = new();
         public static NightfallRotation Nightfall = new();
         public static NightmareHuntRotation NightmareHunt = new();
@@ -104,6 +104,7 @@ namespace Levante.Rotations
                 LostSector.GetLinkCount() +
                 Nightfall.GetLinkCount() +
                 NightmareHunt.GetLinkCount() +
+                RootOfNightmares.GetLinkCount() +
                 TerminalOverload.GetLinkCount() +
                 VaultOfGlass.GetLinkCount() +
                 VowOfTheDisciple.GetLinkCount() +
@@ -295,7 +296,7 @@ namespace Levante.Rotations
             {
                 x.Name = $"Empire Hunt";
                 x.Value = $"{DestinyEmote.Europa} {EmpireHunt.Rotations[Actives.EmpireHunt]}";
-                x.IsInline = false;
+                x.IsInline = true;
             })
             .AddField(x =>
             {
@@ -314,6 +315,14 @@ namespace Levante.Rotations
             {
                 x.Name = $"Dungeon";
                 x.Value = $"{DestinyEmote.Dungeon} {FeaturedDungeon.Rotations[Actives.FeaturedDungeon]}";
+                x.IsInline = true;
+            })
+            .AddField(x =>
+            {
+                x.Name = "Story Missions";
+                x.Value = $"{DestinyEmote.Shadowkeep} {ShadowkeepMission.Rotations[Actives.ShadowkeepMission]}\n" +
+                          $"{DestinyEmote.WitchQueen} {WitchQueenMission.Rotations[Actives.WitchQueenMission]}\n" +
+                          $"{DestinyEmote.Lightfall} {LightfallMission.Rotations[Actives.LightfallMission]}";
                 x.IsInline = true;
             });
 
@@ -417,6 +426,18 @@ namespace Levante.Rotations
 
         [JsonProperty("EmpireHunt")]
         public int EmpireHunt = 0;
+
+        [JsonProperty("ShadowkeepMission")]
+        public int ShadowkeepMission = 0;
+
+        [JsonProperty("WitchQueenMission")]
+        public int WitchQueenMission = 0;
+
+        [JsonProperty("LightfallMission")]
+        public int LightfallMission = 0;
+
+        [JsonProperty("DaresOfEternity")]
+        public int DaresOfEternity = 0;
 
         [JsonProperty("NightmareHunts")]
         public int[] NightmareHunts = { 0, 1, 2 };

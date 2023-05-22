@@ -10,7 +10,7 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class VowOfTheDiscipleRotation : SetRotation<VowOfTheDisciple, VowOfTheDiscipleLink, VowOfTheDisciplePrediction>
+    public class VowOfTheDiscipleRotation : SetRotation<RaidEncounter, VowOfTheDiscipleLink, VowOfTheDisciplePrediction>
     {
         public VowOfTheDiscipleRotation()
         {
@@ -43,25 +43,6 @@ namespace Levante.Rotations
         public override string ToString() => "Vow of the Disciple Challenge";
     }
 
-    /*public enum VowOfTheDiscipleEncounter
-    {
-        Acquisition, // Swift Destruction
-        Caretaker, // Base Information
-        Exhibition, // Defenses Down
-        Rhulk, // Looping Catalyst
-    }*/
-
-    public class VowOfTheDisciple
-    {
-        [JsonProperty("Encounter")]
-        public readonly string Encounter;
-
-        [JsonProperty("ChallengeName")]
-        public readonly string ChallengeName;
-
-        public override string ToString() => $"{Encounter} ({ChallengeName})";
-    }
-
     public class VowOfTheDiscipleLink : IRotationTracker
     {
         [JsonProperty("DiscordID")]
@@ -76,6 +57,6 @@ namespace Levante.Rotations
     public class VowOfTheDisciplePrediction : IRotationPrediction
     {
         public DateTime Date { get; set; }
-        public VowOfTheDisciple VowOfTheDisciple { get; set; }
+        public RaidEncounter VowOfTheDisciple { get; set; }
     }
 }

@@ -258,6 +258,21 @@ namespace Levante.Commands
                 await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.LostSector.DatePrediction(LS, EAT, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
+            //[SlashCommand("lightfall-mission", "Be notified when a featured Lightfall story mission is active.")]
+            //public async Task LightfallMission([Summary("mission", "Lightfall story mission to be alerted for."), Autocomplete(typeof(LightfallMissionAutocomplete))] int Mission)
+            //{
+            //    var tracking = CurrentRotations.LightfallMission.GetUserTracking(Context.User.Id);
+            //    if (tracking != null)
+            //    {
+            //        await RespondAsync($"You already have tracking for featured Lightfall story missions. I am watching for {tracking}.", ephemeral: true);
+            //        return;
+            //    }
+
+            //    tracking = new LightfallMissionLink { DiscordID = Context.User.Id, Mission = Mission };
+            //    CurrentRotations.LightfallMission.AddUserTracking(tracking);
+            //    await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.LightfallMission.DatePrediction(Mission, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+            //}
+
             [SlashCommand("nightfall", "Be notified when a Nightfall and/or Weapon is active.")]
             public async Task Nightfall([Summary("nightfall", "Nightfall Strike to be alerted for."), Autocomplete(typeof(NightfallAutocomplete))] int NF = -1,
                 [Summary("weapon", "Nightfall Strike weapon drop to be alerted for."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int Weapon = -1)
@@ -313,6 +328,21 @@ namespace Levante.Commands
                 CurrentRotations.RootOfNightmares.AddUserTracking(tracking);
                 await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.RootOfNightmares.DatePrediction(Encounter, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
+
+            //[SlashCommand("shadowkeep-mission", "Be notified when a featured Shadowkeep story mission is active.")]
+            //public async Task ShadowkeepMission([Summary("mission", "Shadowkeep story mission to be alerted for."), Autocomplete(typeof(ShadowkeepMissionAutocomplete))] int Mission)
+            //{
+            //    var tracking = CurrentRotations.ShadowkeepMission.GetUserTracking(Context.User.Id);
+            //    if (tracking != null)
+            //    {
+            //        await RespondAsync($"You already have tracking for featured Shadowkeep story missions. I am watching for {tracking}.", ephemeral: true);
+            //        return;
+            //    }
+
+            //    tracking = new ShadowkeepMissionLink { DiscordID = Context.User.Id, Mission = Mission };
+            //    CurrentRotations.ShadowkeepMission.AddUserTracking(tracking);
+            //    await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.ShadowkeepMission.DatePrediction(Mission, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+            //}
 
             [SlashCommand("terminal-overload", "Be notified when a Terminal Overload location is active.")]
             public async Task TerminalOverload([Summary("location", "Terminal Overload location to be alerted for."), Autocomplete(typeof(TerminalOverloadAutocomplete))] int Location)
@@ -374,10 +404,25 @@ namespace Levante.Commands
                 await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.Wellspring.DatePrediction(Wellspring, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
+            //[SlashCommand("witch-queen-mission", "Be notified when a featured Witch Queen story mission is active.")]
+            //public async Task WitchQueenMission([Summary("mission", "Witch Queen story mission to be alerted for."), Autocomplete(typeof(WitchQueenMissionAutocomplete))] int Mission)
+            //{
+            //    var tracking = CurrentRotations.WitchQueenMission.GetUserTracking(Context.User.Id);
+            //    if (tracking != null)
+            //    {
+            //        await RespondAsync($"You already have tracking for featured Witch Queen story missions. I am watching for {tracking}.", ephemeral: true);
+            //        return;
+            //    }
+
+            //    tracking = new WitchQueenMissionLink { DiscordID = Context.User.Id, Mission = Mission };
+            //    CurrentRotations.WitchQueenMission.AddUserTracking(tracking);
+            //    await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.WitchQueenMission.DatePrediction(Mission, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+            //}
+
             [SlashCommand("remove", "Remove an active tracking notification.")]
             public async Task Remove([Summary("tracker", "Rotation tracker to remove. This list will be empty if you have no active trackers.")] string Tracker)
             {
-                
+
             }
         }
 
@@ -930,6 +975,51 @@ namespace Levante.Commands
                 await RespondAsync(embed: embed.Build());
             }
 
+            //[SlashCommand("lightfall-mission", "Find out when a featured Lightfall mission is active next.")]
+            //public async Task LightfallMission([Summary("mission", "Lightfall mission to predict its next appearance."), Autocomplete(typeof(LightfallMissionAutocomplete))] int Mission,
+            //    [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            //{
+            //    show = show switch
+            //    {
+            //        < 1 => 1,
+            //        > 4 => 4,
+            //        _ => show
+            //    };
+
+            //    var predictions = new List<LightfallMissionPrediction>();
+            //    for (int i = 0; i < show; i++)
+            //        predictions.Add(CurrentRotations.LightfallMission.DatePrediction(Mission, i));
+
+            //    var embed = new EmbedBuilder
+            //    {
+            //        Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+            //        Title = "Lightfall Mission",
+            //        Description = $"Requested: {CurrentRotations.LightfallMission.Rotations[Mission]}"
+            //    }.WithCurrentTimestamp();
+
+            //    var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+            //    int occurrences = 1;
+            //    foreach (var prediction in predictions)
+            //    {
+            //        bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+            //        embed.AddField(x =>
+            //        {
+            //            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+            //            x.Value = $"{prediction.LightfallMission} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+            //            x.IsInline = false;
+            //        });
+            //        occurrences++;
+            //    }
+
+            //    if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+            //        embed.Description +=
+            //            $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+            //    embed.ThumbnailUrl =
+            //        "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_67326996f903b5961421421e60ba128c.png";
+            //    await RespondAsync(embed: embed.Build());
+            //}
+
             [SlashCommand("lost-sector", "Find out when a Lost Sector and/or Armor Drop is active.")]
             public async Task LostSector([Summary("lost-sector", "Lost Sector to predict its next appearance."), Autocomplete(typeof(LostSectorAutocomplete))] int LS = -1,
                 [Summary("armor-drop", "Lost Sector Exotic armor drop to predict its next appearance."), Autocomplete(typeof(ExoticArmorAutocomplete))] int EAT = -1,
@@ -1087,6 +1177,120 @@ namespace Levante.Commands
                     "https://www.bungie.net/common/destiny2_content/icons/DestinyActivityModeDefinition_48ad57129cd0c46a355ef8bcaa1acd04.png";
                 await RespondAsync(embed: embed.Build());
             }
+
+            [SlashCommand("root-of-nightmares", "Find out when a Root of Nightmares challenge is active next.")]
+            public async Task RootOfNightmares([Summary("challenge", "Root of Nightmares challenge to predict its next appearance."), Autocomplete(typeof(RootOfNightmaresAutocomplete))] int Encounter,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            {
+                show = show switch
+                {
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
+                };
+
+                var predictions = new List<RootOfNightmaresPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.RootOfNightmares.DatePrediction(Encounter, i));
+
+                var featuredRaidPredictions = new List<FeaturedRaidPrediction>();
+                for (int i = 0; i < show; i++)
+                    featuredRaidPredictions.Add(CurrentRotations.FeaturedRaid.DatePrediction(CurrentRotations.FeaturedRaid.Rotations.FindIndex(x => x.Raid.Equals("Root of Nightmares")), i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Root of Nightmares",
+                    Description = $"Requested: {CurrentRotations.RootOfNightmares.Rotations[Encounter]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    var nextFeatured = featuredRaidPredictions.ElementAt(0);
+                    bool isPastSeasonEnd = nextFeatured.Date.ToUniversalTime() >= seasonEndDate;
+                    if (prediction.Date >= nextFeatured.Date)
+                    {
+                        featuredRaidPredictions.RemoveAt(0);
+                        embed.AddField(x =>
+                        {
+                            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                            x.Value = $"{prediction.RootOfNightmares} on {TimestampTag.FromDateTime(nextFeatured.Date, TimestampTagStyles.ShortDate)} (Featured Raid)";
+                            x.IsInline = false;
+                        });
+                        occurrences++;
+
+                        // Don't show duplicate weeks.
+                        if (prediction.Date == nextFeatured.Date)
+                            continue;
+                    }
+
+                    isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.RootOfNightmares} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                embed.Fields = embed.Fields.Take(4).ToList();
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_d3dc8747ee63f991c6a56ac7908047ba.png";
+                await RespondAsync(embed: embed.Build());
+            }
+
+            //[SlashCommand("shadowkeep-mission", "Find out when a featured Shadowkeep mission is active next.")]
+            //public async Task ShadowkeepMission([Summary("mission", "Shadowkeep mission to predict its next appearance."), Autocomplete(typeof(ShadowkeepMissionAutocomplete))] int Mission,
+            //    [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            //{
+            //    show = show switch
+            //    {
+            //        < 1 => 1,
+            //        > 4 => 4,
+            //        _ => show
+            //    };
+
+            //    var predictions = new List<ShadowkeepMissionPrediction>();
+            //    for (int i = 0; i < show; i++)
+            //        predictions.Add(CurrentRotations.ShadowkeepMission.DatePrediction(Mission, i));
+
+            //    var embed = new EmbedBuilder
+            //    {
+            //        Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+            //        Title = "Shadowkeep Mission",
+            //        Description = $"Requested: {CurrentRotations.ShadowkeepMission.Rotations[Mission]}"
+            //    }.WithCurrentTimestamp();
+
+            //    var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+            //    int occurrences = 1;
+            //    foreach (var prediction in predictions)
+            //    {
+            //        bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+            //        embed.AddField(x =>
+            //        {
+            //            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+            //            x.Value = $"{prediction.ShadowkeepMission} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+            //            x.IsInline = false;
+            //        });
+            //        occurrences++;
+            //    }
+
+            //    if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+            //        embed.Description +=
+            //            $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+            //    embed.ThumbnailUrl =
+            //        "https://www.bungie.net/common/destiny2_content/icons/DestinyActivityModeDefinition_48ad57129cd0c46a355ef8bcaa1acd04.png";
+            //    await RespondAsync(embed: embed.Build());
+            //}
 
             [SlashCommand("terminal-overload", "Find out when a Terminal Overload location is active next.")]
             public async Task TerminalOverload([Summary("location", "Terminal Overload location to predict its next appearance."), Autocomplete(typeof(TerminalOverloadAutocomplete))] int Location,
@@ -1315,6 +1519,51 @@ namespace Levante.Commands
                     "https://www.bungie.net/common/destiny2_content/icons/e17d13013bad7d53c47b0231b9784e1e.png";
                 await RespondAsync(embed: embed.Build());
             }
+
+            //[SlashCommand("witch-queen-mission", "Find out when a featured Shadowkeep mission is active next.")]
+            //public async Task WitchQueenMission([Summary("mission", "Witch Queen mission to predict its next appearance."), Autocomplete(typeof(WitchQueenMissionAutocomplete))] int Mission,
+            //    [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            //{
+            //    show = show switch
+            //    {
+            //        < 1 => 1,
+            //        > 4 => 4,
+            //        _ => show
+            //    };
+
+            //    var predictions = new List<WitchQueenMissionPrediction>();
+            //    for (int i = 0; i < show; i++)
+            //        predictions.Add(CurrentRotations.WitchQueenMission.DatePrediction(Mission, i));
+
+            //    var embed = new EmbedBuilder
+            //    {
+            //        Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+            //        Title = "Witch Queen Mission",
+            //        Description = $"Requested: {CurrentRotations.WitchQueenMission.Rotations[Mission]}"
+            //    }.WithCurrentTimestamp();
+
+            //    var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+            //    int occurrences = 1;
+            //    foreach (var prediction in predictions)
+            //    {
+            //        bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+            //        embed.AddField(x =>
+            //        {
+            //            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+            //            x.Value = $"{prediction.WitchQueenMission} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+            //            x.IsInline = false;
+            //        });
+            //        occurrences++;
+            //    }
+
+            //    if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+            //        embed.Description +=
+            //            $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+            //    embed.ThumbnailUrl =
+            //        "https://www.bungie.net/common/destiny2_content/icons/e17d13013bad7d53c47b0231b9784e1e.png";
+            //    await RespondAsync(embed: embed.Build());
+            //}
         }
 
         [SlashCommand("rank", "Display a Destiny 2 leaderboard of choice.")]

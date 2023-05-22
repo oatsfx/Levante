@@ -105,7 +105,9 @@ namespace Levante.Util
             }
         }
 
-        public override EmbedBuilder GetEmbed()
+        public override EmbedBuilder GetEmbed() => GetEmbed(false);
+
+        public EmbedBuilder GetEmbed(bool showMorePerks)
         {
             var auth = new EmbedAuthorBuilder()
             {
@@ -138,7 +140,7 @@ namespace Levante.Util
                 x.Name = "> Information";
                 x.Value = $"{GetDamageType()} {GetSpecificItemType()}\n" +
                           $"{DestinyEmote.Pattern}Craftable?: {(IsCraftable ? Emotes.Yes : Emotes.No)}\n";
-                    x.IsInline = false;
+                x.IsInline = false;
             }).AddField(x =>
             {
                 x.Name = "> Other Sources";
@@ -165,17 +167,24 @@ namespace Levante.Util
                     x.Name = "Intrinsic";
                     x.Value = $"{(plug1 == null ? "No intrinsic." : plug1.BuildStringList(false))}";
                     x.IsInline = false;
-                }).AddField(x =>
+                });
+
+                if (showMorePerks)
                 {
-                    x.Name = $"Column 1";
-                    x.Value = $"{(plug2 == null ? "No perks." : plug2.BuildStringList())}";
-                    x.IsInline = true;
-                }).AddField(x =>
-                {
-                    x.Name = $"Column 2";
-                    x.Value = $"{(plug3 == null ? "No perks." : plug3.BuildStringList())}";
-                    x.IsInline = true;
-                }).AddField("\u200b", '\u200b').AddField(x =>
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Column 1";
+                        x.Value = $"{(plug2 == null ? "No perks." : plug2.BuildStringList())}";
+                        x.IsInline = true;
+                    }).AddField(x =>
+                    {
+                        x.Name = $"Column 2";
+                        x.Value = $"{(plug3 == null ? "No perks." : plug3.BuildStringList())}";
+                        x.IsInline = true;
+                    }).AddField("\u200b", '\u200b');
+                }
+                
+                embed.AddField(x =>
                 {
                     x.Name = $"Column 3";
                     x.Value = $"{(plug4 == null ? "No perks." : plug4.BuildStringList())}";
@@ -199,25 +208,32 @@ namespace Levante.Util
                     x.Name = "Intrinsic";
                     x.Value = $"{GetIntrinsic().GetName()}";
                     x.IsInline = false;
-                }).AddField(x =>
+                });
+
+                if (showMorePerks)
                 {
-                    x.Name = $"Column 1";
-                    x.Value = $"{(GetRandomPerks(1) == null ? "No perks." : GetRandomPerks(1).BuildStringList())}";
-                    x.IsInline = true;
-                }).AddField(x =>
-                {
-                    x.Name = $"Column 2";
-                    x.Value = $"{(GetRandomPerks(2) == null ? "No perks." : GetRandomPerks(2).BuildStringList())}";
-                    x.IsInline = true;
-                }).AddField("\u200b", '\u200b').AddField(x =>
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Column 1";
+                        x.Value = $"{(plug1 == null ? "No perks." : plug1.BuildStringList())}";
+                        x.IsInline = true;
+                    }).AddField(x =>
+                    {
+                        x.Name = $"Column 2";
+                        x.Value = $"{(plug2 == null ? "No perks." : plug2.BuildStringList())}";
+                        x.IsInline = true;
+                    }).AddField("\u200b", '\u200b');
+                }
+
+                embed.AddField(x =>
                 {
                     x.Name = $"Column 3";
-                    x.Value = $"{(GetRandomPerks(3) == null ? "No perks." : GetRandomPerks(3).BuildStringList())}";
+                    x.Value = $"{(plug3 == null ? "No perks." : plug3.BuildStringList())}";
                     x.IsInline = true;
                 }).AddField(x =>
                 {
                     x.Name = $"Column 4";
-                    x.Value = $"{(GetRandomPerks(4) == null ? "No perks." : GetRandomPerks(4).BuildStringList())}";
+                    x.Value = $"{(plug4 == null ? "No perks." : plug4.BuildStringList())}";
                     x.IsInline = true;
                 });
             }

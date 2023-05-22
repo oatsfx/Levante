@@ -126,7 +126,7 @@ namespace Levante.Commands
             }
         }
 
-        [SlashCommand("countdowns", "Gives remaining time to Destiny 2 or my own events and releases.")]
+        [SlashCommand("countdowns", "Gives remaining time to Destiny 2 events and releases.")]
         public async Task Countdowns()
         {
             await DeferAsync();
@@ -569,11 +569,7 @@ namespace Levante.Commands
         public async Task LostSector([Summary("lost-sector", "Lost Sector name."), Autocomplete(typeof(LostSectorAutocomplete))] int LS,
                 [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty LSD)
         {
-            //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-            //return;
-
             await RespondAsync(embed: CurrentRotations.LostSector.GetLostSectorEmbed(LS, LSD).Build());
-            return;
         }
 
         [RequireBungieOauth]
@@ -615,15 +611,11 @@ namespace Levante.Commands
                     if (BotConfig.SeasonalCurrencyHashes.ContainsKey(hash))
                     {
                         if (seasonalMats.ContainsKey(hash))
-                        {
                             seasonalMats[hash] += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}");
-                            continue;
-                        }
                         else
-                        {
                             seasonalMats.Add(hash, int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"));
-                            continue;
-                        }
+
+                        continue;
                     }
 
                     switch (hash)
@@ -678,8 +670,6 @@ namespace Levante.Commands
 
                         // Terminal Overload Keys
                         case 1471199156: TerminalOverloadKeys += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
-
-                        default: break;
                     }
                 }
 
@@ -720,8 +710,6 @@ namespace Levante.Commands
 
                             // Terminal Overload Keys
                             case 1471199156: TerminalOverloadKeys += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            default: break;
                         }
                     }
                 }
@@ -793,7 +781,6 @@ namespace Levante.Commands
                     string json = File.ReadAllText(EmoteConfig.FilePath);
                     var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
 
-
                     string result = "";
                     foreach (var seasonalMat in seasonalMats)
                     {
@@ -816,6 +803,23 @@ namespace Levante.Commands
                         x.IsInline = true;
                     });
                 }
+
+                string engramCounts = "";
+                foreach (var engram in BotConfig.EngramHashes)
+                {
+                    engramCounts += $"{engram.Value} {item.Response.profileStringVariables.data.integerValuesByHash[$"{engram.Key}"]}\n";
+                }
+
+                if (!String.IsNullOrEmpty(engramCounts))
+                {
+                    embed.AddField(x =>
+                    {
+                        x.Name = "Vendor Engrams";
+                        x.Value = engramCounts;
+                        x.IsInline = true;
+                    });
+                }
+                    
 
                 await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
             }
@@ -908,7 +912,7 @@ namespace Levante.Commands
                         embed.AddField(x =>
                         {
                             x.Name = challenges.Value.DisplayProperties.Name;
-                            x.Value = $"{challenges.Value.DisplayProperties.Description}\n{progress}";
+                            x.Value = $"{DestinyEmote.ParseBungieVars(challenges.Value.DisplayProperties.Description.Split('\n').FirstOrDefault())}\n{progress}";
                             x.IsInline = false;
                         });
                     }
@@ -1012,7 +1016,8 @@ namespace Levante.Commands
         public class View : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("emblem", "Get details on an emblem via found via Bungie's API.")]
-            public async Task ViewEmblem([Summary("name", "Name of the emblem you want details for."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
+            public async Task ViewEmblem([Summary("name", "Name of the emblem you want details for."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery,
+                [Summary("show-wide-bg", "Show nameplate background or inventory menu background. Default: false (nameplate background)")] bool showWideBg = false)
             {
                 if (!long.TryParse(SearchQuery, out long HashCode))
                 {
@@ -1040,7 +1045,7 @@ namespace Levante.Commands
                     return;
                 }
 
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed(showWideBg).Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
 
             [SlashCommand("perk", "Get details on a weapon perk found via Bungie's API.")]
@@ -1073,6 +1078,7 @@ namespace Levante.Commands
 
             [SlashCommand("weapon", "Get details on a weapon found via Bungie's API.")]
             public async Task ViewWeapon([Summary("name", "Name of the weapon you want details for."), Autocomplete(typeof(WeaponAutocomplete))] string SearchQuery,
+                [Summary("show-more-perks", "Show more perks like barrels and mags. Default: false (no perks)")] bool showMorePerks = false,
                 [Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
             {
                 if (!long.TryParse(SearchQuery, out long HashCode))

@@ -12,7 +12,7 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class KingsFallRotation : SetRotation<KingsFall, KingsFallLink, KingsFallPrediction>
+    public class KingsFallRotation : SetRotation<RaidEncounter, KingsFallLink, KingsFallPrediction>
     {
         public KingsFallRotation()
         {
@@ -45,26 +45,6 @@ namespace Levante.Rotations
         public override string ToString() => "King's Fall Challenge";
     }
 
-    /*public enum KingsFallEncounter
-    {
-        Basilica, // The Grass Is Always Greener
-        Warpriest, // Devious Thievery
-        Golgoroth, // Gaze Amaze
-        Daughters, // Under Construction
-        Oryx, // Hands Off
-    }*/
-
-    public class KingsFall
-    {
-        [JsonProperty("Encounter")]
-        public readonly string Encounter;
-
-        [JsonProperty("ChallengeName")]
-        public readonly string ChallengeName;
-
-        public override string ToString() => $"{Encounter} ({ChallengeName})";
-    }
-
     public class KingsFallLink : IRotationTracker
     {
         [JsonProperty("DiscordID")]
@@ -79,6 +59,6 @@ namespace Levante.Rotations
     public class KingsFallPrediction : IRotationPrediction
     {
         public DateTime Date { get; set; }
-        public KingsFall KingsFall { get; set; }
+        public RaidEncounter KingsFall { get; set; }
     }
 }

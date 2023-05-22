@@ -10,7 +10,7 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class LastWishRotation : SetRotation<LastWish, LastWishLink, LastWishPrediction>
+    public class LastWishRotation : SetRotation<RaidEncounter, LastWishLink, LastWishPrediction>
     {
         public LastWishRotation()
         {
@@ -43,17 +43,6 @@ namespace Levante.Rotations
         public override string ToString() => "Last Wish Challenge";
     }
 
-    public class LastWish
-    {
-        [JsonProperty("Encounter")]
-        public readonly string Encounter;
-
-        [JsonProperty("ChallengeName")]
-        public readonly string ChallengeName;
-        
-        public override string ToString() => $"{Encounter} ({ChallengeName})";
-    }
-
     public class LastWishLink : IRotationTracker
     {
         [JsonProperty("DiscordID")]
@@ -68,6 +57,6 @@ namespace Levante.Rotations
     public class LastWishPrediction : IRotationPrediction
     {
         public DateTime Date { get; set; }
-        public LastWish LastWish { get; set; }
+        public RaidEncounter LastWish { get; set; }
     }
 }

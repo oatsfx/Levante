@@ -10,7 +10,7 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class DeepStoneCryptRotation : SetRotation<DeepStoneCrypt, DeepStoneCryptLink, DeepStoneCryptPrediction>
+    public class DeepStoneCryptRotation : SetRotation<RaidEncounter, DeepStoneCryptLink, DeepStoneCryptPrediction>
     {
         public DeepStoneCryptRotation()
         {
@@ -43,25 +43,6 @@ namespace Levante.Rotations
         public override string ToString() => "Deep Stone Crypt Challenge";
     }
 
-    /*public enum DeepStoneCryptEncounter
-    {
-        Security, // Red Rover
-        Atraks1, // Copies of Copies
-        Descent, // Of All Trades
-        Taniks, // The Core Four
-    }*/
-
-    public class DeepStoneCrypt
-    {
-        [JsonProperty("Encounter")]
-        public readonly string Encounter;
-
-        [JsonProperty("ChallengeName")]
-        public readonly string ChallengeName;
-
-        public override string ToString() => $"{Encounter} ({ChallengeName})";
-    }
-
     public class DeepStoneCryptLink : IRotationTracker
     {
         [JsonProperty("DiscordID")]
@@ -76,6 +57,6 @@ namespace Levante.Rotations
     public class DeepStoneCryptPrediction : IRotationPrediction
     {
         public DateTime Date { get; set; }
-        public DeepStoneCrypt DeepStoneCrypt { get; set; }
+        public RaidEncounter DeepStoneCrypt { get; set; }
     }
 }

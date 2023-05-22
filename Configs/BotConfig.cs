@@ -96,6 +96,10 @@ namespace Levante.Configs
         [JsonProperty("SeasonalCurrencyHashes")]
         public static Dictionary<long, string> SeasonalCurrencyHashes { get; set; } = new();
 
+        // <Hash, Emote>
+        [JsonProperty("EngramHashes")]
+        public static Dictionary<long, string> EngramHashes { get; set; } = new();
+
         public static string BotLogoUrl = "https://www.levante.dev/images/Levante-Logo.png";
         public static string BotAvatarUrl = "https://www.levante.dev/images/Levante-Avatar.png";
 

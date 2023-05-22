@@ -80,7 +80,7 @@ namespace Levante.Util
             embed.AddField(x =>
             {
                 x.Name = "How To Obtain";
-                x.Value = $"{Description}";
+                x.Value = $"{Description}{(!String.IsNullOrEmpty(SpecialUrl) ? $"\n[Get {OfferedEmblem.GetName()}]({SpecialUrl})" : "")}";
                 x.IsInline = false;
             }).AddField(x =>
             {

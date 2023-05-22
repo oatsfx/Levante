@@ -41,6 +41,7 @@ namespace Levante.Helpers
         public static List<Dictionary<long, DestinyRecordDefinition>> SeasonalChallenges = new();
         public static DestinySeasonDefinition CurrentSeason = new();
         public static Dictionary<long, string> SeasonalObjectives = new();
+        public static Dictionary<string, int> StringVariables = new();
 
         public static Dictionary<long, string> GuardianRanks = new();
 
@@ -354,6 +355,12 @@ namespace Levante.Helpers
                         "Manifest", "DestinySeasonDefinition");
                 }
 
+                string stringVarUrl = "https://bungie.net/Platform/Destiny2/3/Profile/4611686018471482002/?components=1200";
+                response = client.GetAsync(stringVarUrl).Result;
+                content = response.Content.ReadAsStringAsync().Result;
+                item = JsonConvert.DeserializeObject(content);
+                StringVariables = item.Response.profileStringVariables.data.integerValuesByHash.ToObject<Dictionary<string, int>>();
+
                 Log.Information("[{Type}] Populating Dictionaries...",
                         "Manifest");
                 try
@@ -609,11 +616,6 @@ namespace Levante.Helpers
 
                         }
                     }
-
-                    /*foreach (var perk in sandboxPerkList)
-                    {
-                        Log.Debug("Perk: {PerkName}", perk.Value.DisplayProperties.Name);
-                    }*/
                 }
                 catch (Exception x)
                 {

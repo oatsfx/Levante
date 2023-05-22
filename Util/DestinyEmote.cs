@@ -1,6 +1,7 @@
 ﻿using BungieSharper.Entities.Destiny;
 using Serilog;
 using System.Linq;
+using Levante.Helpers;
 
 namespace Levante.Util
 {
@@ -74,13 +75,16 @@ namespace Levante.Util
         public static readonly string Headshot = "<:Headshot:1062970942369824828>";
         public static readonly string KFRaidChallenge = "<:KFRaidChallenge:1021602526652534864>";
         public static readonly string Light = "<:LightLevel:844029708077367297>";
+        public static readonly string Lightfall = "<:Lightfall:1110088351974961182>";
         public static readonly string LostSector = "<:LostSector:955004180618174475>";
         public static readonly string Nightfall = "<:Nightfall:934476602006458409>";
         public static readonly string Pattern = "<:Pattern:995752936586092595>";
         public static readonly string RaidChallenge = "<:RaidChallenge:933971625118924820>";
         public static readonly string RoNRaidChallenge = "<:RoNRaidChallenge:1106771755047059506>";
+        public static readonly string Shadowkeep = "<:Shadowkeep:1110088049511112744>";
         public static readonly string VoGRaidChallenge = "<:VoGRaidChallenge:933963748295720960>";
         public static readonly string WellspringActivity = "<:WellspringActivity:947293754174365726>";
+        public static readonly string WitchQueen = "<:WitchQueen:1110088262527225936>";
         public static readonly string VowRaidChallenge = "<:VowRaidChallenge:951003008072831039>";
 
         // Materials/Currencies
@@ -135,6 +139,23 @@ namespace Levante.Util
 
                 string inBetween = Text[leftIndex..rightIndex];
                 Text = Text.Replace($"[{inBetween}]", MatchEmote(inBetween));
+            }
+            return Text;
+        }
+
+        public static string ParseBungieVars(string Text)
+        {
+            if (!Text.Contains('{')) return Text;
+            int replacements = Text.Count(x => x == '{');
+            for (int i = 0; i < replacements; i++)
+            {
+                int leftIndex = Text.IndexOf('{') + 1;
+                int rightIndex = Text.IndexOf('}');
+
+                string inBetween = Text[leftIndex..rightIndex];
+                int colonIndex = inBetween.IndexOf(':') + 1;
+                string variableHash = Text[(leftIndex+colonIndex)..rightIndex];
+                Text = Text.Replace($"{{{inBetween}}}", $"{ManifestHelper.StringVariables[variableHash]}");
             }
             return Text;
         }

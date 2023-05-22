@@ -10,7 +10,7 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class GardenOfSalvationRotation : SetRotation<GardenOfSalvation, GardenOfSalvationLink, GardenOfSalvationPrediction>
+    public class GardenOfSalvationRotation : SetRotation<RaidEncounter, GardenOfSalvationLink, GardenOfSalvationPrediction>
     {
         public GardenOfSalvationRotation()
         {
@@ -51,7 +51,7 @@ namespace Levante.Rotations
         SanctifiedMind, // Zero to One Hundred
     }*/
 
-    public class GardenOfSalvation
+    public class RaidEncounter
     {
         [JsonProperty("Encounter")]
         public readonly string Encounter;
@@ -76,6 +76,6 @@ namespace Levante.Rotations
     public class GardenOfSalvationPrediction : IRotationPrediction
     {
         public DateTime Date { get; set; }
-        public GardenOfSalvation GardenOfSalvation { get; set; }
+        public RaidEncounter GardenOfSalvation { get; set; }
     }
 }

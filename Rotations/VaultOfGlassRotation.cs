@@ -11,7 +11,7 @@ using Levante.Rotations.Abstracts;
 
 namespace Levante.Rotations
 {
-    public class VaultOfGlassRotation : SetRotation<VaultOfGlass, VaultOfGlassLink, VaultOfGlassPrediction>
+    public class VaultOfGlassRotation : SetRotation<RaidEncounter, VaultOfGlassLink, VaultOfGlassPrediction>
     {
         public VaultOfGlassRotation()
         {
@@ -44,26 +44,6 @@ namespace Levante.Rotations
         public override string ToString() => "Vault of Glass Challenge";
     }
 
-    /*public enum VaultOfGlassEncounter
-    {
-        Confluxes, // Vision of Confluence, Wait for It...
-        Oracles, // Praedyth's Revenge, The Only Oracle for You
-        Templar, // Fatebringer, Out of Its Way
-        Gatekeepers, // Hezen Vengeance, Strangers in Time
-        Atheon, // Corrective Measure, Ensemble's Refrain
-    }*/
-
-    public class VaultOfGlass
-    {
-        [JsonProperty("Encounter")]
-        public readonly string Encounter;
-
-        [JsonProperty("ChallengeName")]
-        public readonly string ChallengeName;
-
-        public override string ToString() => $"{Encounter} ({ChallengeName})";
-    }
-
     public class VaultOfGlassLink : IRotationTracker
     {
         [JsonProperty("DiscordID")]
@@ -78,6 +58,6 @@ namespace Levante.Rotations
     public class VaultOfGlassPrediction : IRotationPrediction
     {
         public DateTime Date { get; set; }
-        public VaultOfGlass VaultOfGlass { get; set; }
+        public RaidEncounter VaultOfGlass { get; set; }
     }
 }

@@ -63,13 +63,15 @@ namespace Levante.Util
 
         public string GetBackgroundUrl() => "https://www.bungie.net" + Content.SecondaryIcon;
 
+        public string GetWideBackgroundUrl() => "https://www.bungie.net" + Content.SecondarySpecial;
+
         // Use DEC's information on how to unlock an emblem, if DEC has it in their data.
         public string GetEmblemUnlock()
         {
             try
             {
                 var doc = new HtmlDocument();
-                doc.LoadHtml(new HttpClient().GetStringAsync($"https://destinyemblemcollector.com/emblem?id={HashCode}").Result);
+                doc.LoadHtml(new HttpClient().GetStringAsync(GetDECUrl()).Result);
                 var emblemUnlock = doc.DocumentNode.SelectNodes("//div[@class='gridemblem-emblemdetail']")[8].InnerHtml;
                 return emblemUnlock.Split("<li>")[1].Split("</li>")[0];
             }
@@ -82,7 +84,9 @@ namespace Levante.Util
 
         public string GetDECUrl() => $"https://destinyemblemcollector.com/emblem?id={GetItemHash()}";
 
-        public override EmbedBuilder GetEmbed()
+        public override EmbedBuilder GetEmbed() => GetEmbed(false);
+
+        public EmbedBuilder GetEmbed(bool showWideBackground)
         {
             var auth = new EmbedAuthorBuilder()
             {
@@ -112,7 +116,7 @@ namespace Levante.Util
                         ? $"This emblem is [available]({offer.SpecialUrl}) {TimestampTag.FromDateTime(offer.StartDate, TimestampTagStyles.Relative)}!\n"
                         : $"This emblem is [currently available]({offer.SpecialUrl})!\n";
                 }
-                
+
                 if (BotConfig.UniversalCodes.Exists(x => x.Name.Equals(GetName())))
                 {
                     var uniCode = BotConfig.UniversalCodes.Find(x => x.Name.Equals(GetName()));
@@ -121,7 +125,7 @@ namespace Levante.Util
 
                 var sourceStr = GetSourceString();
                 embed.Description = (sourceStr.Equals("") ? "No source data provided." : sourceStr) + "\n";
-                embed.ImageUrl = GetBackgroundUrl();
+                embed.ImageUrl =  showWideBackground ? GetBackgroundUrl() : GetWideBackgroundUrl();
                 embed.ThumbnailUrl = GetIconUrl();
 
                 embed.AddField(x =>
@@ -130,6 +134,33 @@ namespace Levante.Util
                     x.Value = $"{offerStr}";
                     x.IsInline = false;
                 });
+
+                try
+                {
+                    var acquisition = new EmblemReport((long)GetCollectableHash());
+
+                    embed.AddField(x =>
+                    {
+                        x.Name = "Redeemed";
+                        x.Value = $"> {acquisition.Data.Acquisition:n0}\n[emblem.report](https://emblem.report/{GetItemHash()})";
+                        x.IsInline = true;
+                    }).AddField(x =>
+                    {
+                        x.Name = "Rarity";
+                        x.Value = $"> {acquisition.Data.Percentage}%\n[emblem.report](https://emblem.report/{GetItemHash()})";
+                        x.IsInline = true;
+                    });
+                }
+                catch
+                {
+                    embed.AddField(x =>
+                    {
+                        x.Name = "Error";
+                        x.Value = "emblem.report returned no values.";
+                        x.IsInline = false;
+                    });
+                }
+
 
                 if (!string.IsNullOrEmpty(unlock))
                 {
@@ -155,7 +186,7 @@ namespace Levante.Util
                 embed.WithColor(new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B));
                 embed.Description = "This emblem is missing some API values, sorry about that!";
             }
-            
+
             return embed;
         }
     }
