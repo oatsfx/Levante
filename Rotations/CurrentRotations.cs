@@ -259,7 +259,7 @@ namespace Levante.Rotations
             .AddField(x =>
             {
                 x.Name = $"Strike";
-                x.Value = $"{DestinyEmote.Nightfall} {Nightfall.Rotations[Actives.Nightfall]}";
+                x.Value = $"{DestinyEmote.Nightfall} {(Nightfall.Rotations.Count > 0 ? Nightfall.Rotations[Actives.Nightfall] : "No rotation found.")}";
                 x.IsInline = true;
             })
             .AddField(x =>
@@ -344,6 +344,7 @@ namespace Levante.Rotations
             await CurseWeek.CheckTrackers(Client);
             await DeepStoneCrypt.CheckTrackers(Client);
             await EmpireHunt.CheckTrackers(Client);
+            await FeaturedDungeon.CheckTrackers(Client);
             await FeaturedRaid.CheckTrackers(Client);
             await GardenOfSalvation.CheckTrackers(Client);
             await KingsFall.CheckTrackers(Client);
