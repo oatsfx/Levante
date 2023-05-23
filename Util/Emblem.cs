@@ -125,7 +125,7 @@ namespace Levante.Util
 
                 var sourceStr = GetSourceString();
                 embed.Description = (sourceStr.Equals("") ? "No source data provided." : sourceStr) + "\n";
-                embed.ImageUrl =  showWideBackground ? GetBackgroundUrl() : GetWideBackgroundUrl();
+                embed.ImageUrl = showWideBackground ? GetWideBackgroundUrl() : GetBackgroundUrl();
                 embed.ThumbnailUrl = GetIconUrl();
 
                 embed.AddField(x =>

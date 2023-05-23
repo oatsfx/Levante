@@ -936,7 +936,6 @@ namespace Levante.Commands
         [SlashCommand("try-on", "Try on any emblem in the Bungie API.")]
         public async Task TryOut([Summary("emblem-name", "Emblem name of the Emblem you want to try on."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
         {
-
             var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
 
             string name = linkedUser != null ? linkedUser.UniqueBungieName.Substring(0, linkedUser.UniqueBungieName.Length - 5) : Context.User.Username;
@@ -944,8 +943,8 @@ namespace Levante.Commands
             if (!long.TryParse(SearchQuery, out long HashCode))
             {
                 var errEmbed = Embeds.GetErrorEmbed();
-                errEmbed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
-                await RespondAsync($"", embed: errEmbed.Build(), ephemeral: true);
+                errEmbed.Description = "Invalid search, please try again. Make sure to choose one of the autocomplete options!";
+                await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
                 return;
             }
 

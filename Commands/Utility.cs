@@ -17,6 +17,8 @@ using Levante.Util.Attributes;
 using System.Xml.Linq;
 using Levante.Rotations.Interfaces;
 using System.Diagnostics.Metrics;
+using Microsoft.VisualBasic;
+using System.Diagnostics;
 
 namespace Levante.Commands
 {
@@ -420,9 +422,256 @@ namespace Levante.Commands
             //}
 
             [SlashCommand("remove", "Remove an active tracking notification.")]
-            public async Task Remove([Summary("tracker", "Rotation tracker to remove. This list will be empty if you have no active trackers.")] string Tracker)
+            public async Task Remove([Summary("tracker", "Rotation tracker to remove. This list will be empty if you have no active trackers."), Autocomplete(typeof(TrackersAutocomplete))] string trackerType)
             {
-
+                if (trackerType.Equals("ada-1"))
+                {
+                    var tracker = CurrentRotations.Ada1.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Ada-1 tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.Ada1.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Ada-1 tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("altars-of-sorrow"))
+                {
+                    var tracker = CurrentRotations.AltarsOfSorrow.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Altars of Sorrow tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.AltarsOfSorrow.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Altars of Sorrow tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("ascendant-challenge"))
+                {
+                    var tracker = CurrentRotations.AscendantChallenge.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Ascendant Challenge tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.AscendantChallenge.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Ascendant Challenge tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("curse-week"))
+                {
+                    var tracker = CurrentRotations.CurseWeek.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Curse Week tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.CurseWeek.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Curse Week tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("deep-stone-crypt"))
+                {
+                    var tracker = CurrentRotations.DeepStoneCrypt.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Deep Stone Crypt tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.DeepStoneCrypt.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Deep Stone Crypt tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("empire-hunt"))
+                {
+                    var tracker = CurrentRotations.EmpireHunt.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Empire Hunt tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.EmpireHunt.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Empire Hunt tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("featured-dungeon"))
+                {
+                    var tracker = CurrentRotations.FeaturedDungeon.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Featured Dungeon tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.FeaturedDungeon.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Featured Dungeon tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("featured-raid"))
+                {
+                    var tracker = CurrentRotations.FeaturedRaid.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Featured Raid tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.FeaturedRaid.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Featured Raid tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("garden-of-salvation"))
+                {
+                    var tracker = CurrentRotations.GardenOfSalvation.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Garden of Salvation tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.GardenOfSalvation.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Garden of Salvation tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("kings-fall"))
+                {
+                    var tracker = CurrentRotations.KingsFall.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No King's Fall tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.KingsFall.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your King's Fall tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("last-wish"))
+                {
+                    var tracker = CurrentRotations.LastWish.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Last Wish tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.LastWish.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Last Wish tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("lightfall-mission"))
+                {
+                    var tracker = CurrentRotations.LightfallMission.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Lightfall Weekly Mission tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.LightfallMission.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Lightfall Weekly Mission tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("lost-sector"))
+                {
+                    var tracker = CurrentRotations.LostSector.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Lost Sector tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.LostSector.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("nightfall"))
+                {
+                    var tracker = CurrentRotations.Nightfall.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Nightfall tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.Nightfall.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Nightfall tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("nightmare-hunt"))
+                {
+                    var tracker = CurrentRotations.NightmareHunt.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Nightmare Hunt tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.NightmareHunt.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Nightmare Hunt tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("root-of-nightmares"))
+                {
+                    var tracker = CurrentRotations.RootOfNightmares.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Root of Nightmares tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.RootOfNightmares.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Root of Nightmares tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("shadowkeep-mission"))
+                {
+                    var tracker = CurrentRotations.ShadowkeepMission.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Shadowkeep Weekly Mission tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.ShadowkeepMission.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Shadowkeep Weekly Mission tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("terminal-overload"))
+                {
+                    var tracker = CurrentRotations.TerminalOverload.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Terminal Overload tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.TerminalOverload.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Terminal Overload tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("vault-of-glass"))
+                {
+                    var tracker = CurrentRotations.VaultOfGlass.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Vault of Glass tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.VaultOfGlass.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Vault of Glass tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("vow-of-the-disciple"))
+                {
+                    var tracker = CurrentRotations.VowOfTheDisciple.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Vow of the Disciple tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.VowOfTheDisciple.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Vow of the Disciple tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("wellspring"))
+                {
+                    var tracker = CurrentRotations.Wellspring.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Wellspring tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.Wellspring.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Wellspring tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("witch-queen-mission"))
+                {
+                    var tracker = CurrentRotations.WitchQueenMission.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Witch Queen Weekly Mission tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.WitchQueenMission.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Witch Queen Weekly Mission tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else
+                {
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = "Unable to parse parameters, make sure you're using one of the autocomplete options!";
+                    await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
+                }
             }
         }
 
@@ -1572,7 +1821,8 @@ namespace Levante.Commands
             Choice("Total XP Logging Time", 3), Choice("Equipped Power Level", 4)] int ArgLeaderboard,
             [Summary("season", "Season of the specific leaderboard. Defaults to the current season."),
             Choice("Season of the Lost", 15), Choice("Season of the Risen", 16), Choice("Season of the Haunted", 17),
-            Choice("Season of Plunder", 18), Choice("Season of the Seraph", 19), Choice("Season of Defiance", 20)] int Season = 20)
+            Choice("Season of Plunder", 18), Choice("Season of the Seraph", 19), Choice("Season of Defiance", 20),
+            Choice("Season of the Deep", 21)] int Season = 21)
         {
             Leaderboard LeaderboardType = (Leaderboard)ArgLeaderboard;
 

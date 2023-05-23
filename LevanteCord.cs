@@ -614,7 +614,7 @@ namespace Levante
                         //397846250797662208
                         //915020047154565220
                         //1011700865087852585
-                        await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
+                        await _interaction.RegisterCommandsToGuildAsync(915020047154565220);
                     }
                     else
                     {
