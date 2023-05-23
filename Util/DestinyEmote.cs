@@ -1,6 +1,7 @@
 ﻿using BungieSharper.Entities.Destiny;
 using Serilog;
 using System.Linq;
+using Levante.Helpers;
 
 namespace Levante.Util
 {
@@ -11,43 +12,6 @@ namespace Levante.Util
         public static readonly string Hunter = "<:Hunter:844031780108763146>";
         public static readonly string Titan = "<:Titan:844031790950776842>";
         public static readonly string Warlock = "<:Warlock:844031791119073320>";
-
-        // Activity Modifiers
-        public static readonly string AcuteArcBurn = "<:AcuteArcBurn:947296733761765447>";
-        public static readonly string AcuteSolarBurn = "<:AcuteSolarBurn:950997186013970453>";
-        public static readonly string AcuteVoidBurn = "<:AcuteVoidBurn:954803928883675176>";
-        public static readonly string ArachNO = "<:ArachNO:900142007840833576>";
-        public static readonly string ArcBurn = "<:ArcBurn:900142018280456213>";
-        public static readonly string Attrition = "<:Attrition:900142029487632395>";
-        public static readonly string Chaff = "<:Chaff:900142037020598293>";
-        public static readonly string Empath = "<:Empath:938569958806392902>";
-        public static readonly string Epitaph = "<:Epitaph:900142044368994315>";
-        public static readonly string EquipmentLocked = "<:EquipmentLocked:900142051725819965>";
-        public static readonly string Extinguish = "<:Extinguish:935313319110254592>";
-        public static readonly string Famine = "<:Famine:900142061695672331>";
-        public static readonly string FanaticsZeal = "<:FanaticsZeal:935349482302885958>";
-        public static readonly string FesteringRupture = "<:FesteringRupture:935355773960220752>";
-        public static readonly string FirePit = "<:FirePit:900142069182521345>";
-        public static readonly string GrandmasterModifiers = "<:GrandmasterModifiers:935312672856092703>";
-        public static readonly string GrasksBile = "<:GrasksBile:944671093296361552>";
-        public static readonly string HotKnife = "<:HotKnife:900142076673540096>";
-        public static readonly string IgnovunsChallenge = "<:IgnovunsChallenge:938570421534601277>";
-        public static readonly string LimitedRevives = "<:LimitedRevives:900142086270115901>";
-        public static readonly string Martyr = "<:Martyr:951000502190112808>";
-        public static readonly string MatchGame = "<:MatchGame:900142096013459516>";
-        public static readonly string Pestilence = "<:Pestilence:987504632433631292>";
-        public static readonly string Poleharm = "<:Poleharm:947300080308879371>";
-        public static readonly string RaiderShield = "<:RaiderShield:900142103697428562>";
-        public static readonly string SediasDurance = "<:SediasDurance:935306050683404288>";
-        public static readonly string SepiksGaze = "<:SepiksGaze:937512845111857222>";
-        public static readonly string ScorchedEarth = "<:ScorchedEarth:935381186136641546>";
-        public static readonly string Shocker = "<:Shocker:900142114426486844>";
-        public static readonly string SolarBurn = "<:SolarBurn:900142136996020224>";
-        public static readonly string StasisBurn = "<:StasisBurn:1054796594190500040>";
-        public static readonly string SubtleFoes = "<:SubtleFoes:951000792465285120>";
-        public static readonly string ThaviksImplant = "<:ThaviksImplant:935381584159342642>";
-        public static readonly string Togetherness = "<:Togetherness:937513440933740584>";
-        public static readonly string VoidBurn = "<:VoidBurn:900142150338105404>";
 
         // Elements
         public static readonly string Arc = "<:Arc:900144187696099359>";
@@ -102,6 +66,8 @@ namespace Levante.Util
         public static readonly string AscendantChallengeBounty = "<:ACBounty:934478080737693787>";
         public static readonly string Classified = "<:Classified:1014305658390184006>";
         public static readonly string Commendations = "<:Commendations:1082135754320384001>";
+        public static readonly string Dungeon = "<:Dungeon:1109018943525507102>";
+        public static readonly string Emblem = "<:Emblem:1109022520411164755>";
         public static readonly string Enhanced = "<:Enhanced:1020834766397911080>";
         public static readonly string Gilded = "<:Gilded:994067890024235029>";
         public static readonly string GildedPurple = "<:GildedPurple:996604027867500574>";
@@ -109,12 +75,16 @@ namespace Levante.Util
         public static readonly string Headshot = "<:Headshot:1062970942369824828>";
         public static readonly string KFRaidChallenge = "<:KFRaidChallenge:1021602526652534864>";
         public static readonly string Light = "<:LightLevel:844029708077367297>";
+        public static readonly string Lightfall = "<:Lightfall:1110088351974961182>";
         public static readonly string LostSector = "<:LostSector:955004180618174475>";
         public static readonly string Nightfall = "<:Nightfall:934476602006458409>";
         public static readonly string Pattern = "<:Pattern:995752936586092595>";
         public static readonly string RaidChallenge = "<:RaidChallenge:933971625118924820>";
+        public static readonly string RoNRaidChallenge = "<:RoNRaidChallenge:1106771755047059506>";
+        public static readonly string Shadowkeep = "<:Shadowkeep:1110088049511112744>";
         public static readonly string VoGRaidChallenge = "<:VoGRaidChallenge:933963748295720960>";
         public static readonly string WellspringActivity = "<:WellspringActivity:947293754174365726>";
+        public static readonly string WitchQueen = "<:WitchQueen:1110088262527225936>";
         public static readonly string VowRaidChallenge = "<:VowRaidChallenge:951003008072831039>";
 
         // Materials/Currencies
@@ -131,7 +101,6 @@ namespace Levante.Util
         public static readonly string PhantasmalFragments = "<:PhantasmalFragments:1020468360464576602>";
         public static readonly string RaidBanners = "<:RaidBanners:1020468791244763226>";
         public static readonly string ResonantAlloy = "<:ResonantAlloy:986514895946268742>";
-        public static readonly string ResonantElement = "<:ResonantElement:986676994731278417>";
         public static readonly string SpoilsOfConquest = "<:SpoilsOfConquest:986514871850008616>";
         public static readonly string StrandMeditations = "<:StrandMeditations:1082072750518173737>";
         public static readonly string StrangeCoins = "<:StrangeCoins:1020469985132425348>";
@@ -170,6 +139,23 @@ namespace Levante.Util
 
                 string inBetween = Text[leftIndex..rightIndex];
                 Text = Text.Replace($"[{inBetween}]", MatchEmote(inBetween));
+            }
+            return Text;
+        }
+
+        public static string ParseBungieVars(string Text)
+        {
+            if (!Text.Contains('{')) return Text;
+            int replacements = Text.Count(x => x == '{');
+            for (int i = 0; i < replacements; i++)
+            {
+                int leftIndex = Text.IndexOf('{') + 1;
+                int rightIndex = Text.IndexOf('}');
+
+                string inBetween = Text[leftIndex..rightIndex];
+                int colonIndex = inBetween.IndexOf(':') + 1;
+                string variableHash = Text[(leftIndex+colonIndex)..rightIndex];
+                Text = Text.Replace($"{{{inBetween}}}", $"{ManifestHelper.StringVariables[variableHash]}");
             }
             return Text;
         }

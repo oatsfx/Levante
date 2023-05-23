@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using Levante.Util;
 using Fergun.Interactive;
+using Serilog;
 
 namespace Levante.Helpers
 {
@@ -106,11 +107,11 @@ namespace Levante.Helpers
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -128,7 +129,7 @@ namespace Levante.Helpers
                     $"{((LE as LongestSessionData.LongestSessionEntry).Time.Minutes > 0 ? $"{(LE as LongestSessionData.LongestSessionEntry).Time.Minutes:00}m " : "")}" +
                     $"{(LE as LongestSessionData.LongestSessionEntry).Time.Seconds:00}s";
             else if (LE.GetType() == typeof(XPPerHourData.XPPerHourEntry))
-                return $"XP Per Hour: {String.Format("{0:n0}", (LE as XPPerHourData.XPPerHourEntry).XPPerHour)}";
+                return $"XP Per Hour: {(LE as XPPerHourData.XPPerHourEntry).XPPerHour:n0}";
             else if (LE.GetType() == typeof(MostXPLoggingTimeData.MostXPLogTimeEntry))
                 return $"Hours: {Math.Floor((LE as MostXPLoggingTimeData.MostXPLogTimeEntry).Time.TotalHours)}";
             else if (LE.GetType() == typeof(PowerLevelData.PowerLevelDataEntry))
@@ -174,7 +175,7 @@ namespace Levante.Helpers
             {
                 ld = new LevelData();
                 File.WriteAllText(LevelData.FilePath, JsonConvert.SerializeObject(ld, Formatting.Indented));
-                Console.WriteLine($"No levelData.json file detected. A new one has been created and the program has stopped.");
+                Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped.", LevelData.FilePath);
                 closeProgram = true;
             }
 
@@ -187,7 +188,7 @@ namespace Levante.Helpers
             {
                 xph = new XPPerHourData();
                 File.WriteAllText(XPPerHourData.FilePath, JsonConvert.SerializeObject(xph, Formatting.Indented));
-                Console.WriteLine($"No xpPerHourData.json file detected. A new one has been created and the program has stopped.");
+                Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped.", XPPerHourData.FilePath);
                 closeProgram = true;
             }
 
@@ -200,7 +201,7 @@ namespace Levante.Helpers
             {
                 ls = new LongestSessionData();
                 File.WriteAllText(LongestSessionData.FilePath, JsonConvert.SerializeObject(ls, Formatting.Indented));
-                Console.WriteLine($"No longestSessionData.json file detected. A new one has been created and the program has stopped.");
+                Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped.", LongestSessionData.FilePath);
                 closeProgram = true;
             }
 
@@ -213,7 +214,7 @@ namespace Levante.Helpers
             {
                 mtt = new MostXPLoggingTimeData();
                 File.WriteAllText(MostXPLoggingTimeData.FilePath, JsonConvert.SerializeObject(mtt, Formatting.Indented));
-                Console.WriteLine($"No mostXPLoggingTimeData.json file detected. A new one has been created and the program has stopped.");
+                Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped.", MostXPLoggingTimeData.FilePath);
                 closeProgram = true;
             }
 
@@ -226,7 +227,7 @@ namespace Levante.Helpers
             {
                 pld = new PowerLevelData();
                 File.WriteAllText(PowerLevelData.FilePath, JsonConvert.SerializeObject(mtt, Formatting.Indented));
-                Console.WriteLine($"No powerLevelData.json file detected. A new one has been created and the program has stopped.");
+                Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped.", PowerLevelData.FilePath);
                 closeProgram = true;
             }
 

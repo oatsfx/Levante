@@ -1,128 +1,86 @@
-﻿using Levante.Configs;
-using Levante.Util;
-using Discord;
+﻿using Discord;
 using Discord.WebSocket;
+using Levante.Configs;
+using Levante.Rotations.Abstracts;
+using Levante.Rotations.Interfaces;
+using Levante.Util;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
-using Levante.Helpers;
-using Serilog;
 
 namespace Levante.Rotations
 {
     public class CurrentRotations
     {
-        public static string FilePath { get; } = @"Configs/currentRotations.json";
+        public static string FilePath = @"Configs/currentRotations.json";
 
-        [JsonProperty("DailyResetTimestamp")]
-        public static DateTime DailyResetTimestamp = DateTime.Now;
+        public static Ada1Rotation Ada1 = new();
+        public static AltarsOfSorrowRotation AltarsOfSorrow = new();
+        public static AscendantChallengeRotation AscendantChallenge = new();
+        public static CurseWeekRotation CurseWeek = new();
+        public static DaresOfEternityRotation DaresOfEternity = new();
+        public static DeepStoneCryptRotation DeepStoneCrypt = new();
+        public static EmpireHuntRotation EmpireHunt = new();
+        public static FeaturedDungeonRotation FeaturedDungeon = new();
+        public static FeaturedRaidRotation FeaturedRaid = new();
+        public static GardenOfSalvationRotation GardenOfSalvation = new();
+        public static KingsFallRotation KingsFall = new();
+        public static LastWishRotation LastWish = new();
+        public static LightfallMissionRotation LightfallMission = new();
+        public static LostSectorRotation LostSector = new();
+        public static NightfallRotation Nightfall = new();
+        public static NightmareHuntRotation NightmareHunt = new();
+        public static RootOfNightmaresRotation RootOfNightmares = new();
+        public static ShadowkeepMissionRotation ShadowkeepMission = new();
+        public static TerminalOverloadRotation TerminalOverload = new();
+        public static VaultOfGlassRotation VaultOfGlass = new();
+        public static VowOfTheDiscipleRotation VowOfTheDisciple = new();
+        public static WellspringRotation Wellspring = new();
+        public static WitchQueenMissionRotation WitchQueenMission = new();
 
-        [JsonProperty("WeeklyResetTimestamp")]
-        public static DateTime WeeklyResetTimestamp = DateTime.Now;
-
-        // Dailies
-
-        [JsonProperty("LostSector")]
-        public static int LostSector = 0;
-
-        [JsonProperty("LostSectorArmorDrop")]
-        public static ExoticArmorType LostSectorArmorDrop = ExoticArmorType.Legs;
-
-        [JsonProperty("AltarWeapon")]
-        public static int AltarWeapon = 0;
-
-        [JsonProperty("Wellspring")]
-        public static Wellspring Wellspring = Wellspring.Golmag;
-
-        [JsonProperty("TerminalOverload")]
-        public static int TerminalOverload = 0;
-
-        // Weeklies
-
-        [JsonProperty("LWChallengeEncounter")]
-        public static LastWishEncounter LWChallengeEncounter = LastWishEncounter.Kalli;
-
-        [JsonProperty("DSCChallengeEncounter")]
-        public static DeepStoneCryptEncounter DSCChallengeEncounter = DeepStoneCryptEncounter.Security;
-
-        [JsonProperty("GoSChallengeEncounter")]
-        public static GardenOfSalvationEncounter GoSChallengeEncounter = GardenOfSalvationEncounter.Evade;
-
-        [JsonProperty("VoGChallengeEncounter")]
-        public static VaultOfGlassEncounter VoGChallengeEncounter = VaultOfGlassEncounter.Confluxes;
-
-        [JsonProperty("VowChallengeEncounter")]
-        public static VowOfTheDiscipleEncounter VowChallengeEncounter = VowOfTheDiscipleEncounter.Acquisition;
-
-        [JsonProperty("KFChallengeEncounter")]
-        public static KingsFallEncounter KFChallengeEncounter = KingsFallEncounter.Basilica;
-
-        [JsonProperty("FeaturedRaid")]
-        public static Raid FeaturedRaid = Raid.LastWish;
-
-        [JsonProperty("CurseWeek")]
-        public static CurseWeek CurseWeek = CurseWeek.Weak;
-
-        [JsonProperty("AscendantChallenge")]
-        public static AscendantChallenge AscendantChallenge = AscendantChallenge.AgonarchAbyss;
-
-        [JsonProperty("Nightfall")]
-        public static int Nightfall = 0;
-
-        [JsonProperty("NightfallWeaponDrop")]
-        public static int NightfallWeaponDrop = 0;
-
-        [JsonProperty("EmpireHunt")]
-        public static EmpireHunt EmpireHunt = EmpireHunt.Warrior;
-
-        [JsonProperty("NightmareHunts")]
-        public static NightmareHunt[] NightmareHunts = { NightmareHunt.Crota, NightmareHunt.Phogoth, NightmareHunt.Ghaul };
-
-        [JsonProperty("Ada1Mods")]
-        public static Dictionary<long, string> Ada1Items = new Dictionary<long, string>();
+        public static Actives Actives = new();
 
         public static void DailyRotation()
         {
-            //Ada1Rotation.GetAda1Inventory();
+            Actives.LostSector = Actives.LostSector == LostSector.Rotations.Count - 1 ? 0 : Actives.LostSector + 1;
+            Actives.LostSectorArmorDrop = Actives.LostSectorArmorDrop == LostSector.ArmorRotations.Count - 1 ? 0 : Actives.LostSectorArmorDrop + 1;
 
-            LostSector = LostSector == LostSectorRotation.LostSectors.Count - 1 ? 0 : LostSector + 1;
-            LostSectorArmorDrop = LostSectorArmorDrop == ExoticArmorType.Chest ? ExoticArmorType.Helmet : LostSectorArmorDrop + 1;
+            Actives.AltarWeapon = Actives.AltarWeapon == AltarsOfSorrow.Rotations.Count - 1 ? 0 : Actives.AltarWeapon + 1;
+            Actives.TerminalOverload = Actives.TerminalOverload == TerminalOverload.Rotations.Count - 1 ? 0 : Actives.TerminalOverload + 1;
+            Actives.Wellspring = Actives.Wellspring == Wellspring.Rotations.Count - 1 ? 0 : Actives.Wellspring + 1;
 
-            AltarWeapon = AltarWeapon == AltarsOfSorrowRotation.AltarsOfSorrows.Count - 1 ? 0 : AltarWeapon + 1;
-            TerminalOverload = TerminalOverload == TerminalOverloadRotation.TerminalOverloads.Count - 1 ? 0 : TerminalOverload + 1;
-            Wellspring = Wellspring == Wellspring.Zeerik ? Wellspring.Golmag : Wellspring + 1;
-
-            DailyResetTimestamp = DateTime.Now;
+            Actives.DailyResetTimestamp = DateTime.Now;
 
             UpdateRotationsJSON();
         }
 
         public static void WeeklyRotation()
         {
-            NightfallRotation.GetCurrentNightfall();
-            Ada1Rotation.GetAda1Inventory();
+            Nightfall.GetCurrentNightfall();
+            Ada1.GetAda1Inventory();
 
-            LWChallengeEncounter = LWChallengeEncounter == LastWishEncounter.Riven ? LastWishEncounter.Kalli : LWChallengeEncounter + 1;
-            DSCChallengeEncounter = DSCChallengeEncounter == DeepStoneCryptEncounter.Taniks ? DeepStoneCryptEncounter.Security : DSCChallengeEncounter + 1;
-            GoSChallengeEncounter = GoSChallengeEncounter == GardenOfSalvationEncounter.SanctifiedMind ? GardenOfSalvationEncounter.Evade : GoSChallengeEncounter + 1;
-            VoGChallengeEncounter = VoGChallengeEncounter == VaultOfGlassEncounter.Atheon ? VaultOfGlassEncounter.Confluxes : VoGChallengeEncounter + 1;
-            VowChallengeEncounter = VowChallengeEncounter == VowOfTheDiscipleEncounter.Rhulk ? VowOfTheDiscipleEncounter.Acquisition : VowChallengeEncounter + 1;
-            KFChallengeEncounter = KFChallengeEncounter == KingsFallEncounter.Oryx ? KingsFallEncounter.Basilica : KFChallengeEncounter + 1;
-            FeaturedRaid = FeaturedRaid == Raid.KingsFall ? Raid.LastWish : FeaturedRaid + 1;
-            CurseWeek = CurseWeek == CurseWeek.Strong ? CurseWeek.Weak : CurseWeek + 1;
-            AscendantChallenge = AscendantChallenge == AscendantChallenge.KeepOfHonedEdges ? AscendantChallenge.AgonarchAbyss : AscendantChallenge + 1;
-            //Nightfall = Nightfall == NightfallRotation.Nightfalls.Count - 1 ? 0 : Nightfall + 1;
-            // Missing data.
-            NightfallWeaponDrop = NightfallWeaponDrop == NightfallRotation.NightfallWeapons.Count - 1 ? 0 : NightfallWeaponDrop + 1;
-            EmpireHunt = EmpireHunt == EmpireHunt.DarkPriestess ? EmpireHunt.Warrior : EmpireHunt + 1;
+            Actives.LWChallenge = Actives.LWChallenge == LastWish.Rotations.Count - 1 ? 0 : Actives.LWChallenge + 1;
+            Actives.DSCChallenge = Actives.DSCChallenge == DeepStoneCrypt.Rotations.Count - 1 ? 0 : Actives.DSCChallenge + 1;
+            Actives.GoSChallenge = Actives.GoSChallenge == GardenOfSalvation.Rotations.Count - 1 ? 0 : Actives.GoSChallenge + 1;
+            Actives.VoGChallenge = Actives.VoGChallenge == VaultOfGlass.Rotations.Count - 1 ? 0 : Actives.VoGChallenge + 1;
+            Actives.VowChallenge = Actives.VowChallenge == VowOfTheDisciple.Rotations.Count - 1 ? 0 : Actives.VowChallenge + 1;
+            Actives.KFChallenge = Actives.KFChallenge == KingsFall.Rotations.Count - 1 ? 0 : Actives.KFChallenge + 1;
+            Actives.FeaturedRaid = Actives.FeaturedRaid == FeaturedRaid.Rotations.Count - 1 ? 0 : Actives.FeaturedRaid + 1;
+            Actives.CurseWeek = Actives.CurseWeek == CurseWeek.Rotations.Count - 1 ? 0 : Actives.CurseWeek + 1;
+            Actives.AscendantChallenge = Actives.AscendantChallenge == AscendantChallenge.Rotations.Count - 1 ? 0 : Actives.AscendantChallenge + 1;
+            Actives.NightfallWeaponDrop = Actives.NightfallWeaponDrop == Nightfall.WeaponRotations.Count - 1 ? 0 : Actives.NightfallWeaponDrop + 1;
+            Actives.EmpireHunt = Actives.EmpireHunt == EmpireHunt.Rotations.Count - 1 ? 0 : Actives.EmpireHunt + 1;
 
-            NightmareHunts[0] = NightmareHunts[0] >= NightmareHunt.Skolas ? NightmareHunts[0] - 5 : NightmareHunts[0] + 3;
-            NightmareHunts[1] = NightmareHunts[1] >= NightmareHunt.Skolas ? NightmareHunts[1] - 5 : NightmareHunts[1] + 3;
-            NightmareHunts[2] = NightmareHunts[2] >= NightmareHunt.Skolas ? NightmareHunts[2] - 5 : NightmareHunts[2] + 3;
+            Actives.NightmareHunts[0] = Actives.NightmareHunts[0] >= NightmareHunt.Rotations.Count - 3 ? Actives.NightmareHunts[0] - 5 : Actives.NightmareHunts[0] + 3;
+            Actives.NightmareHunts[1] = Actives.NightmareHunts[1] >= NightmareHunt.Rotations.Count - 3 ? Actives.NightmareHunts[1] - 5 : Actives.NightmareHunts[1] + 3;
+            Actives.NightmareHunts[2] = Actives.NightmareHunts[2] >= NightmareHunt.Rotations.Count - 3 ? Actives.NightmareHunts[2] - 5 : Actives.NightmareHunts[2] + 3;
 
-            WeeklyResetTimestamp = DateTime.Now;
+            Actives.WeeklyResetTimestamp = DateTime.Now;
 
             // Because weekly is also a daily reset.
             DailyRotation();
@@ -132,74 +90,46 @@ namespace Levante.Rotations
 
         public static int GetTotalLinks()
         {
-            return Ada1Rotation.Ada1Links.Count +
-                AltarsOfSorrowRotation.AltarsOfSorrowLinks.Count +
-                AscendantChallengeRotation.AscendantChallengeLinks.Count +
-                CurseWeekRotation.CurseWeekLinks.Count +
-                DeepStoneCryptRotation.DeepStoneCryptLinks.Count +
-                EmpireHuntRotation.EmpireHuntLinks.Count +
-                FeaturedRaidRotation.FeaturedRaidLinks.Count +
-                GardenOfSalvationRotation.GardenOfSalvationLinks.Count +
-                KingsFallRotation.KingsFallLinks.Count +
-                LastWishRotation.LastWishLinks.Count +
-                LostSectorRotation.LostSectorLinks.Count +
-                NightfallRotation.NightfallLinks.Count +
-                NightmareHuntRotation.NightmareHuntLinks.Count +
-                VaultOfGlassRotation.VaultOfGlassLinks.Count +
-                VowOfTheDiscipleRotation.VowOfTheDiscipleLinks.Count +
-                WellspringRotation.WellspringLinks.Count;
+            return 
+                Ada1.GetLinkCount() +
+                AltarsOfSorrow.GetLinkCount() +
+                AscendantChallenge.GetLinkCount() +
+                CurseWeek.GetLinkCount() +
+                DeepStoneCrypt.GetLinkCount() +
+                EmpireHunt.GetLinkCount() +
+                FeaturedRaid.GetLinkCount() +
+                GardenOfSalvation.GetLinkCount() +
+                KingsFall.GetLinkCount() +
+                LastWish.GetLinkCount() +
+                LostSector.GetLinkCount() +
+                Nightfall.GetLinkCount() +
+                NightmareHunt.GetLinkCount() +
+                RootOfNightmares.GetLinkCount() +
+                TerminalOverload.GetLinkCount() +
+                VaultOfGlass.GetLinkCount() +
+                VowOfTheDisciple.GetLinkCount() +
+                Wellspring.GetLinkCount();
         }
 
         public static void CreateJSONs()
         {
-            if (!Directory.Exists("Trackers"))
-                Directory.CreateDirectory("Trackers");
-
-            if (!Directory.Exists("Rotations"))
-                Directory.CreateDirectory("Rotations");
-
-            CurrentRotations cr;
             if (File.Exists(FilePath))
             {
                 string json = File.ReadAllText(FilePath);
-                cr = JsonConvert.DeserializeObject<CurrentRotations>(json);
+                Actives = JsonConvert.DeserializeObject<Actives>(json);
             }
             else
             {
-                cr = new CurrentRotations();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(cr, Formatting.Indented));
+                File.WriteAllText(FilePath, JsonConvert.SerializeObject(Actives, Formatting.Indented));
                 Console.WriteLine($"No currentRotations.json file detected. Restart the program and change the values accordingly.");
             }
-
-            // Create/Check the tracking JSONs.
-            AltarsOfSorrowRotation.CreateJSON();
-            AscendantChallengeRotation.CreateJSON();
-            CurseWeekRotation.CreateJSON();
-            DeepStoneCryptRotation.CreateJSON();
-            EmpireHuntRotation.CreateJSON();
-            FeaturedRaidRotation.CreateJSON();
-            GardenOfSalvationRotation.CreateJSON();
-            KingsFallRotation.CreateJSON();
-            LastWishRotation.CreateJSON();
-            LostSectorRotation.CreateJSON();
-            NightfallRotation.CreateJSON();
-            NightmareHuntRotation.CreateJSON();
-            TerminalOverloadRotation.CreateJSON();
-            VaultOfGlassRotation.CreateJSON();
-            VowOfTheDiscipleRotation.CreateJSON();
-            WellspringRotation.CreateJSON();
-
-            Ada1Rotation.CreateJSON();
         }
 
         public static void UpdateRotationsJSON()
         {
-            CurrentRotations cr = new();
-            string output = JsonConvert.SerializeObject(cr, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
-
-            AltarsOfSorrowRotation.GetRotationJSON();
-            TerminalOverloadRotation.GetRotationJSON();
+            Ada1.GetAda1Inventory();
+            Nightfall.GetCurrentNightfall();
+            File.WriteAllText(FilePath, JsonConvert.SerializeObject(Actives, Formatting.Indented));
         }
 
         public static EmbedBuilder DailyResetEmbed()
@@ -210,48 +140,45 @@ namespace Levante.Rotations
             };
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Footer = foot,
-                Title = $"Daily Reset of {TimestampTag.FromDateTime(DailyResetTimestamp, TimestampTagStyles.ShortDate)}",
+                Title = $"Daily Reset of {TimestampTag.FromDateTime(Actives.DailyResetTimestamp, TimestampTagStyles.ShortDate)}",
                 Description = "Below are some of the things that are available today."
             };
 
             embed.AddField(x =>
             {
                 x.Name = "Lost Sector";
-                if (LostSectorRotation.LostSectors.Count <= 0)
+                x.Value = $"{LostSector.ArmorRotations[Actives.LostSectorArmorDrop].ArmorEmote} {LostSector.ArmorRotations[Actives.LostSectorArmorDrop].Type}\n";
+                if (LostSector.Rotations.Count <= 0)
                 {
-                    x.Value =
-                        $"{LostSectorRotation.GetArmorEmote(LostSectorArmorDrop)} {LostSectorArmorDrop}\n" +
-                        $"{DestinyEmote.LostSector} Rotation Unknown";
+                    x.Value += $"{DestinyEmote.LostSector} Rotation Unknown";
                 }
                 else
                 {
-                    x.Value =
-                        $"{LostSectorRotation.GetArmorEmote(LostSectorArmorDrop)} {LostSectorArmorDrop}\n" +
-                        $"{DestinyEmote.LostSector} {LostSectorRotation.LostSectors[LostSector].Name}";
+                    x.Value += $"{DestinyEmote.LostSector} {LostSector.Rotations[Actives.LostSector].Name}";
                 }
                 x.IsInline = true;
             }).AddField(x =>
             {
-                x.Name = $"The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)}";
+                x.Name = $"The Wellspring: {Wellspring.Rotations[Actives.Wellspring].Type}";
                 x.Value =
-                    $"{WellspringRotation.GetWeaponEmote(Wellspring)} {WellspringRotation.GetWeaponNameString(Wellspring)}\n" +
-                    $"{DestinyEmote.WellspringActivity} {WellspringRotation.GetWellspringBossString(Wellspring)}";
+                    $"{Wellspring.Rotations[Actives.Wellspring].WeaponEmote} {Wellspring.Rotations[Actives.Wellspring].Weapon}\n" +
+                    $"{DestinyEmote.WellspringActivity} {Wellspring.Rotations[Actives.Wellspring].Boss}";
                 x.IsInline = true;
             }).AddField(x =>
             {
                 x.Name = "Altars of Sorrow";
                 x.Value =
-                    $"{AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].WeaponEmote} {AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].Weapon}\n" +
-                    $"{DestinyEmote.Luna} {AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].Boss}";
+                    $"{AltarsOfSorrow.Rotations[Actives.AltarWeapon].WeaponEmote} {AltarsOfSorrow.Rotations[Actives.AltarWeapon].Weapon} ({AltarsOfSorrow.Rotations[Actives.AltarWeapon].WeaponType})\n" +
+                    $"{DestinyEmote.Luna} {AltarsOfSorrow.Rotations[Actives.AltarWeapon].Boss}";
                 x.IsInline = true;
             }).AddField(x =>
             {
                 x.Name = "Terminal Overload";
                 x.Value =
-                    $"{TerminalOverloadRotation.TerminalOverloads[TerminalOverload].WeaponEmote} {TerminalOverloadRotation.TerminalOverloads[TerminalOverload].Weapon}\n" +
-                    $"{DestinyEmote.TerminalOverload} {TerminalOverloadRotation.TerminalOverloads[TerminalOverload].Location}";
+                    $"{TerminalOverload.Rotations[Actives.TerminalOverload].WeaponEmote} {TerminalOverload.Rotations[Actives.TerminalOverload].Weapon}\n" +
+                    $"{DestinyEmote.TerminalOverload} {TerminalOverload.Rotations[Actives.TerminalOverload].Location}";
             });
 
             return embed;
@@ -265,15 +192,15 @@ namespace Levante.Rotations
             };
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Footer = foot,
-                Title = $"Weekly Reset of {TimestampTag.FromDateTime(WeeklyResetTimestamp, TimestampTagStyles.ShortDate)}",
+                Title = $"Weekly Reset of {TimestampTag.FromDateTime(Actives.WeeklyResetTimestamp, TimestampTagStyles.ShortDate)}",
                 Description = "Below are some of the things that are available this week."
             };
 
             string adaItems = "";
-            foreach (var pair in Ada1Items)
-                adaItems += $"{pair.Value}\n";
+            foreach (var pair in Actives.Ada1Items)
+                adaItems += $"{DestinyEmote.Ada1} {pair.ItemName}\n";
 
             embed.AddField(x =>
             {
@@ -283,38 +210,44 @@ namespace Levante.Rotations
             })
             .AddField(x =>
             {
-                x.Name = $"{(FeaturedRaid == Raid.LastWish ? "★ " : "")}Last Wish";
-                x.Value = $"{DestinyEmote.RaidChallenge} {(FeaturedRaid == Raid.LastWish ? "All challenges available." : $"{LastWishRotation.GetEncounterString(LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(LWChallengeEncounter)})")}";
+                x.Name = $"{(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Last Wish") ? "★ " : "")}Last Wish";
+                x.Value = $"{DestinyEmote.RaidChallenge} {(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Last Wish") ? "All challenges available." : $"{LastWish.Rotations[Actives.LWChallenge]}")}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
-                x.Name = $"{(FeaturedRaid == Raid.GardenOfSalvation ? "★ " : "")}Garden of Salvation";
-                x.Value = $"{DestinyEmote.RaidChallenge} {(FeaturedRaid == Raid.GardenOfSalvation ? "All challenges available." : $"{GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)})")}";
+                x.Name = $"{(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Garden of Salvation") ? "★ " : "")}Garden of Salvation";
+                x.Value = $"{DestinyEmote.RaidChallenge} {(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Garden of Salvation") ? "All challenges available." : $"{GardenOfSalvation.Rotations[Actives.GoSChallenge]}")}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
-                x.Name = $"{(FeaturedRaid == Raid.DeepStoneCrypt ? "★ " : "")}Deep Stone Crypt";
-                x.Value = $"{DestinyEmote.RaidChallenge} {(FeaturedRaid == Raid.DeepStoneCrypt ? "All challenges available." : $"{DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)})")}";
+                x.Name = $"{(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Deep Stone Crypt") ? "★ " : "")}Deep Stone Crypt";
+                x.Value = $"{DestinyEmote.RaidChallenge} {(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Deep Stone Crypt") ? "All challenges available." : $"{DeepStoneCrypt.Rotations[Actives.DSCChallenge]}")}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
-                x.Name = $"{(FeaturedRaid == Raid.VaultOfGlass ? "★ " : "")}Vault of Glass";
-                x.Value = $"{DestinyEmote.VoGRaidChallenge} {(FeaturedRaid == Raid.VaultOfGlass ? "All challenges available." : $"{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)})")}";
+                x.Name = $"{(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Vault of Glass") ? "★ " : "")}Vault of Glass";
+                x.Value = $"{DestinyEmote.VoGRaidChallenge} {(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Vault of Glass") ? "All challenges available." : $"{VaultOfGlass.Rotations[Actives.VoGChallenge]}")}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
-                x.Name = $"{(FeaturedRaid == Raid.VowOfTheDisciple ? "★ " : "")}Vow of the Disciple";
-                x.Value = $"{DestinyEmote.VowRaidChallenge} {(FeaturedRaid == Raid.VowOfTheDisciple ? "All challenges available." : $"{VowOfTheDiscipleRotation.GetEncounterString(VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(VowChallengeEncounter)})")}";
+                x.Name = $"{(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Vow of the Disciple") ? "★ " : "")}Vow of the Disciple";
+                x.Value = $"{DestinyEmote.VowRaidChallenge} {(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Vow of the Disciple") ? "All challenges available." : $"{VowOfTheDisciple.Rotations[Actives.VowChallenge]}")}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
-                x.Name = $"{(FeaturedRaid == Raid.KingsFall ? "★ " : "")}King's Fall";
-                x.Value = $"{DestinyEmote.KFRaidChallenge} {KFChallengeEncounter} ({KingsFallRotation.GetChallengeString(KFChallengeEncounter)})";
+                x.Name = $"{(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("King's Fall") ? "★ " : "")}King's Fall";
+                x.Value = $"{DestinyEmote.KFRaidChallenge} {(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("King's Fall") ? "All challenges available." : $"{KingsFall.Rotations[Actives.KFChallenge]}")}";
+                x.IsInline = true;
+            })
+            .AddField(x =>
+            {
+                x.Name = $"{(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Root of Nightmares") ? "★ " : "")}Root of Nightmares";
+                x.Value = $"{DestinyEmote.RoNRaidChallenge} {RootOfNightmares.Rotations[Actives.RoNChallenge]}";
                 x.IsInline = true;
             })
             .AddField(x =>
@@ -326,21 +259,16 @@ namespace Levante.Rotations
             .AddField(x =>
             {
                 x.Name = $"Strike";
-                x.Value = $"{DestinyEmote.Nightfall} {NightfallRotation.Nightfalls[Nightfall]}";
+                x.Value = $"{DestinyEmote.Nightfall} {Nightfall.Rotations[Actives.Nightfall]}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = "Weapon";
-                if (NightfallRotation.NightfallWeapons.Count == 0)
-                {
-                    x.Value = $"Weapon Rotation Unknown";
-                }
-                else
-                {
-                    x.Value = $"{NightfallRotation.NightfallWeapons[NightfallWeaponDrop].Emote} {NightfallRotation.NightfallWeapons[NightfallWeaponDrop].Name}";
-                }
-                
+                x.Value = Nightfall.WeaponRotations.Count == 0
+                    ? "Weapon Rotation Unknown"
+                    : $"{Nightfall.WeaponRotations[Actives.NightfallWeaponDrop].Emote} {Nightfall.WeaponRotations[Actives.NightfallWeaponDrop].Name}";
+
                 x.IsInline = true;
             })
             .AddField(x =>
@@ -352,23 +280,23 @@ namespace Levante.Rotations
             .AddField(x =>
             {
                 x.Name = $"The Dreaming City";
-                x.Value = $"{DestinyEmote.DreamingCity} {CurseWeek}\n" +
-                    $"{DestinyEmote.AscendantChallengeBounty} {AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)})";
+                x.Value = $"{DestinyEmote.DreamingCity} {CurseWeek.Rotations[Actives.CurseWeek]}\n" +
+                    $"{DestinyEmote.AscendantChallengeBounty} {AscendantChallenge.Rotations[Actives.AscendantChallenge]}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = $"Nightmare Hunts";
-                x.Value = $"{DestinyEmote.Luna} {NightmareHuntRotation.GetHuntNameString(NightmareHunts[0])} ({NightmareHuntRotation.GetHuntBossString(NightmareHunts[0])})\n" +
-                    $"{DestinyEmote.Luna} {NightmareHuntRotation.GetHuntNameString(NightmareHunts[1])} ({NightmareHuntRotation.GetHuntBossString(NightmareHunts[1])})\n" +
-                    $"{DestinyEmote.Luna} {NightmareHuntRotation.GetHuntNameString(NightmareHunts[2])} ({NightmareHuntRotation.GetHuntBossString(NightmareHunts[2])})";
+                x.Value = $"{DestinyEmote.Luna} {NightmareHunt.Rotations[Actives.NightmareHunts[0]]}\n" +
+                    $"{DestinyEmote.Luna} {NightmareHunt.Rotations[Actives.NightmareHunts[1]]}\n" +
+                    $"{DestinyEmote.Luna} {NightmareHunt.Rotations[Actives.NightmareHunts[2]]}";
                 x.IsInline = true;
             })
             .AddField(x =>
             {
                 x.Name = $"Empire Hunt";
-                x.Value = $"{DestinyEmote.Europa} {EmpireHuntRotation.GetHuntNameString(EmpireHunt)} ({EmpireHuntRotation.GetHuntBossString(EmpireHunt)})";
-                x.IsInline = false;
+                x.Value = $"{DestinyEmote.Europa} {EmpireHunt.Rotations[Actives.EmpireHunt]}";
+                x.IsInline = true;
             })
             .AddField(x =>
             {
@@ -378,9 +306,23 @@ namespace Levante.Rotations
             })
             .AddField(x =>
             {
-                x.Name = $"{DestinyEmote.Ada1}Ada-1 Sales";
+                x.Name = $"Ada-1 Sales";
                 x.Value =
                     $"{adaItems}";
+                x.IsInline = true;
+            })
+            .AddField(x =>
+            {
+                x.Name = $"Dungeon";
+                x.Value = $"{DestinyEmote.Dungeon} {FeaturedDungeon.Rotations[Actives.FeaturedDungeon]}";
+                x.IsInline = true;
+            })
+            .AddField(x =>
+            {
+                x.Name = "Story Missions";
+                x.Value = $"{DestinyEmote.Shadowkeep} {ShadowkeepMission.Rotations[Actives.ShadowkeepMission]}\n" +
+                          $"{DestinyEmote.WitchQueen} {WitchQueenMission.Rotations[Actives.WitchQueenMission]}\n" +
+                          $"{DestinyEmote.Lightfall} {LightfallMission.Rotations[Actives.LightfallMission]}";
                 x.IsInline = true;
             });
 
@@ -389,367 +331,122 @@ namespace Levante.Rotations
 
         public static async Task CheckUsersDailyTracking(DiscordShardedClient Client)
         {
-            var altarTemp = new List<AltarsOfSorrowRotation.AltarsOfSorrowLink>();
-            foreach (var Link in AltarsOfSorrowRotation.AltarsOfSorrowLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (AltarWeapon == Link.WeaponDrop)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! Altars of Sorrow is dropping **{AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].Weapon}** (**{AltarsOfSorrowRotation.AltarsOfSorrows[AltarWeapon].WeaponType}**) today. I have removed your tracking, good luck!");
-                    else
-                        altarTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            AltarsOfSorrowRotation.AltarsOfSorrowLinks = altarTemp;
-            AltarsOfSorrowRotation.UpdateJSON();
-            
-            var lsTemp = new List<LostSectorRotation.LostSectorLink>();
-            foreach (var Link in LostSectorRotation.LostSectorLinks)
-            {
-                IUser user = Client.GetUser(Link.DiscordID);
-                if (user == null)
-                    user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                if (LostSector == Link.LostSector && Link.ArmorDrop == null)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.LostSectors[LostSector].Name}** (Requested) and is dropping **{LostSectorArmorDrop}** today. I have removed your tracking, good luck!");
-                else if (Link.LostSector == -1 && LostSectorArmorDrop == Link.ArmorDrop)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.LostSectors[LostSector].Name}** and is dropping **{LostSectorArmorDrop}** (Requested) today. I have removed your tracking, good luck!");
-                else if (LostSector == Link.LostSector && LostSectorArmorDrop == Link.ArmorDrop)
-                    await user.SendMessageAsync($"> Hey {user.Mention}! The Lost Sector is **{LostSectorRotation.LostSectors[LostSector].Name}** and is dropping **{LostSectorArmorDrop}** today. I have removed your tracking, good luck!");
-                else
-                    lsTemp.Add(Link);
-            }
-            LostSectorRotation.LostSectorLinks = lsTemp;
-            LostSectorRotation.UpdateJSON();
-
-            var wellspringTemp = new List<WellspringRotation.WellspringLink>();
-            foreach (var Link in WellspringRotation.WellspringLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (Wellspring == Link.WellspringBoss)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}) is dropping **{WellspringRotation.GetWeaponNameString(Wellspring)}** (**{WellspringRotation.GetWeaponTypeString(Wellspring)}**) today. I have removed your tracking, good luck!");
-                    else
-                        wellspringTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            WellspringRotation.WellspringLinks = wellspringTemp;
-            WellspringRotation.UpdateJSON();
+            await AltarsOfSorrow.CheckTrackers(Client);
+            await LostSector.CheckTrackers(Client);
+            await TerminalOverload.CheckTrackers(Client);
+            await Wellspring.CheckTrackers(Client);
         }
 
         public static async Task CheckUsersWeeklyTracking(DiscordShardedClient Client)
         {
-            var ada1Temp = new List<Ada1Rotation.Ada1ModLink>();
-            foreach (var Link in Ada1Rotation.Ada1Links)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (Ada1Items.ContainsKey(Link.Hash))
-                        await user.SendMessageAsync($"> Hey {user.Mention}! Ada-1 is selling **{ManifestHelper.Ada1Items[Link.Hash]}** today. I have removed your tracking, good luck!");
-                    else
-                        ada1Temp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            Ada1Rotation.Ada1Links = ada1Temp;
-            Ada1Rotation.UpdateJSON();
-
-            var chalTemp = new List<AscendantChallengeRotation.AscendantChallengeLink>();
-            foreach (var Link in AscendantChallengeRotation.AscendantChallengeLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (AscendantChallenge == Link.AscendantChallenge)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Ascendant Challenge is **{AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)}** (**{AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}**) this week. I have removed your tracking, good luck!");
-                    else
-                        chalTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            AscendantChallengeRotation.AscendantChallengeLinks = chalTemp;
-            AscendantChallengeRotation.UpdateJSON();
-
-            var curseTemp = new List<CurseWeekRotation.CurseWeekLink>();
-            foreach (var Link in CurseWeekRotation.CurseWeekLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (CurseWeek == Link.Strength)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Curse Strength is **{CurseWeek}** this week. I have removed your tracking, good luck!");
-                    else
-                        curseTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            CurseWeekRotation.CurseWeekLinks = curseTemp;
-            CurseWeekRotation.UpdateJSON();
-
-            var dscTemp = new List<DeepStoneCryptRotation.DeepStoneCryptLink>();
-            foreach (var Link in DeepStoneCryptRotation.DeepStoneCryptLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (FeaturedRaid == Raid.DeepStoneCrypt)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Deep Stone Crypt this week, meaning that all challenges including, **{DeepStoneCryptRotation.GetChallengeString(Link.Encounter)}** (**{DeepStoneCryptRotation.GetEncounterString(Link.Encounter)}**), are available this week. I have removed your tracking, good luck!");
-                    else if (DSCChallengeEncounter == Link.Encounter)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Deep Stone Crypt challenge is **{DeepStoneCryptRotation.GetChallengeString(DSCChallengeEncounter)}** (**{DeepStoneCryptRotation.GetEncounterString(DSCChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
-                    else
-                        dscTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            DeepStoneCryptRotation.DeepStoneCryptLinks = dscTemp;
-            DeepStoneCryptRotation.UpdateJSON();
-
-            var ehuntTemp = new List<EmpireHuntRotation.EmpireHuntLink>();
-            foreach (var Link in EmpireHuntRotation.EmpireHuntLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (EmpireHunt == Link.EmpireHunt)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Empire Hunt is **{EmpireHuntRotation.GetHuntBossString(EmpireHunt)}** this week. I have removed your tracking, good luck!");
-                    else
-                        ehuntTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            EmpireHuntRotation.EmpireHuntLinks = ehuntTemp;
-            EmpireHuntRotation.UpdateJSON();
-
-            var frTemp = new List<FeaturedRaidRotation.FeaturedRaidLink>();
-            foreach (var Link in FeaturedRaidRotation.FeaturedRaidLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (FeaturedRaid == Link.FeaturedRaid)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is **{FeaturedRaidRotation.GetRaidString(FeaturedRaid)}** this week. I have removed your tracking, good luck!");
-                    else
-                        frTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            FeaturedRaidRotation.FeaturedRaidLinks = frTemp;
-            FeaturedRaidRotation.UpdateJSON();
-
-            var gosTemp = new List<GardenOfSalvationRotation.GardenOfSalvationLink>();
-            foreach (var Link in GardenOfSalvationRotation.GardenOfSalvationLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (FeaturedRaid == Raid.GardenOfSalvation)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Garden of Salvation this week, meaning that all challenges including, **{GardenOfSalvationRotation.GetChallengeString(Link.Encounter)}** (**{GardenOfSalvationRotation.GetEncounterString(Link.Encounter)}**), are available this week. I have removed your tracking, good luck!");
-                    else if (GoSChallengeEncounter == Link.Encounter)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Garden of Salvation challenge is **{GardenOfSalvationRotation.GetChallengeString(GoSChallengeEncounter)}** (**{GardenOfSalvationRotation.GetEncounterString(GoSChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
-                    else
-                        gosTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            GardenOfSalvationRotation.GardenOfSalvationLinks = gosTemp;
-            GardenOfSalvationRotation.UpdateJSON();
-
-            var lwTemp = new List<LastWishRotation.LastWishLink>();
-            foreach (var Link in LastWishRotation.LastWishLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (FeaturedRaid == Raid.LastWish)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Last Wish this week, meaning that all challenges including, **{LastWishRotation.GetChallengeString(Link.Encounter)}** (**{LastWishRotation.GetEncounterString(Link.Encounter)}**), are available this week. I have removed your tracking, good luck!");
-                    else if (LWChallengeEncounter == Link.Encounter)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Last Wish challenge is **{LastWishRotation.GetChallengeString(LWChallengeEncounter)}** (**{LastWishRotation.GetEncounterString(LWChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
-                    else
-                        lwTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            LastWishRotation.LastWishLinks = lwTemp;
-            LastWishRotation.UpdateJSON();
-
-            var nfTemp = new List<NightfallRotation.NightfallLink>();
-            foreach (var Link in NightfallRotation.NightfallLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (Link.Nightfall == Nightfall || Link.WeaponDrop == null)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.Nightfalls[Nightfall]}** (Requested) and is dropping **{NightfallRotation.NightfallWeapons[NightfallWeaponDrop].Name}** today. I have removed your tracking, good luck!");
-                    else if (Link.Nightfall == null || Link.WeaponDrop == NightfallWeaponDrop)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.Nightfalls[Nightfall]}** and is dropping **{NightfallRotation.NightfallWeapons[NightfallWeaponDrop].Name}** (Requested) today. I have removed your tracking, good luck!");
-                    else if (Link.Nightfall == Nightfall || Link.WeaponDrop == NightfallWeaponDrop)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightfall is **{NightfallRotation.Nightfalls[Nightfall]}** and is dropping **{NightfallRotation.NightfallWeapons[NightfallWeaponDrop].Name}** today. I have removed your tracking, good luck!");
-                    else
-                        nfTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            NightfallRotation.NightfallLinks = nfTemp;
-            NightfallRotation.UpdateJSON();
-
-            var nhuntTemp = new List<NightmareHuntRotation.NightmareHuntLink>();
-            foreach (var Link in NightmareHuntRotation.NightmareHuntLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (NightmareHunts[0] == Link.NightmareHunt)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[0])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[0])}**) this week. I have removed your tracking, good luck!");
-                    else if (NightmareHunts[1] == Link.NightmareHunt)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[1])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[1])}**) this week. I have removed your tracking, good luck!");
-                    else if (NightmareHunts[2] == Link.NightmareHunt)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Nightmare Hunt is **{NightmareHuntRotation.GetHuntNameString(NightmareHunts[2])}** (**{NightmareHuntRotation.GetHuntBossString(NightmareHunts[2])}**) this week. I have removed your tracking, good luck!");
-                    else
-                        nhuntTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            NightmareHuntRotation.NightmareHuntLinks = nhuntTemp;
-            NightmareHuntRotation.UpdateJSON();
-
-            var vogTemp = new List<VaultOfGlassRotation.VaultOfGlassLink>();
-            foreach (var Link in VaultOfGlassRotation.VaultOfGlassLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (FeaturedRaid == Raid.VaultOfGlass)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Vault of Glass this week, meaning that all challenges including, **{VaultOfGlassRotation.GetChallengeString(Link.Encounter)}** (**{VaultOfGlassRotation.GetEncounterString(Link.Encounter)}**), are available this week. I have removed your tracking, good luck!");
-                    else if (VoGChallengeEncounter == Link.Encounter)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Vault of Glass challenge is **{VaultOfGlassRotation.GetChallengeString(VoGChallengeEncounter)}** (**{VaultOfGlassRotation.GetEncounterString(VoGChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
-                    else
-                        vogTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            VaultOfGlassRotation.VaultOfGlassLinks = vogTemp;
-            VaultOfGlassRotation.UpdateJSON();
-
-            var vowTemp = new List<VowOfTheDiscipleRotation.VowOfTheDiscipleLink>();
-            foreach (var Link in VowOfTheDiscipleRotation.VowOfTheDiscipleLinks)
-            {
-                try
-                {
-                    IUser user = Client.GetUser(Link.DiscordID);
-                    if (user == null)
-                        user = Client.Rest.GetUserAsync(Link.DiscordID).Result;
-
-                    if (FeaturedRaid == Raid.VowOfTheDisciple)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The featured raid is Vow of the Disciple this week, meaning that all challenges including, **{VowOfTheDiscipleRotation.GetChallengeString(Link.Encounter)}** (**{VowOfTheDiscipleRotation.GetEncounterString(Link.Encounter)}**), are available this week. I have removed your tracking, good luck!");
-                    else if (VowChallengeEncounter == Link.Encounter)
-                        await user.SendMessageAsync($"> Hey {user.Mention}! The Vow of the Disciple challenge is **{VowOfTheDiscipleRotation.GetChallengeString(VowChallengeEncounter)}** (**{VowOfTheDiscipleRotation.GetEncounterString(VowChallengeEncounter)}**) this week. I have removed your tracking, good luck!");
-                    else
-                        vowTemp.Add(Link);
-                }
-                catch (Exception x)
-                {
-                    Log.Warning("[{Type}] Unable to send message to user: {Id}. {Exception}", "Tracking", Link.DiscordID, x);
-                    continue;
-                }
-            }
-            VowOfTheDiscipleRotation.VowOfTheDiscipleLinks = vowTemp;
-            VowOfTheDiscipleRotation.UpdateJSON();
+            await Ada1.CheckTrackers(Client);
+            await AscendantChallenge.CheckTrackers(Client);
+            await CurseWeek.CheckTrackers(Client);
+            await DeepStoneCrypt.CheckTrackers(Client);
+            await EmpireHunt.CheckTrackers(Client);
+            await FeaturedRaid.CheckTrackers(Client);
+            await GardenOfSalvation.CheckTrackers(Client);
+            await KingsFall.CheckTrackers(Client);
+            await LastWish.CheckTrackers(Client);
+            await Nightfall.CheckTrackers(Client);
+            await NightmareHunt.CheckTrackers(Client);
+            await RootOfNightmares.CheckTrackers(Client);
+            //await ShadowkeepMission.
+            await VaultOfGlass.CheckTrackers(Client);
+            await VowOfTheDisciple.CheckTrackers(Client);
+            //await Wi
         }
+    }
+
+    public class Actives
+    {
+        [JsonProperty("DailyResetTimestamp")]
+        public DateTime DailyResetTimestamp = DateTime.Now;
+
+        [JsonProperty("WeeklyResetTimestamp")]
+        public DateTime WeeklyResetTimestamp = DateTime.Now;
+
+        // Dailies
+
+        [JsonProperty("LostSector")]
+        public int LostSector = 0;
+
+        [JsonProperty("LostSectorArmorDrop")]
+        public int LostSectorArmorDrop = 0;
+
+        [JsonProperty("AltarWeapon")]
+        public int AltarWeapon = 0;
+
+        [JsonProperty("Wellspring")]
+        public int Wellspring = 0;
+
+        [JsonProperty("TerminalOverload")]
+        public int TerminalOverload = 0;
+
+        // Weeklies
+
+        [JsonProperty("LWChallenge")]
+        public int LWChallenge = 0;
+
+        [JsonProperty("DSCChallenge")]
+        public int DSCChallenge = 0;
+
+        [JsonProperty("GoSChallenge")]
+        public int GoSChallenge = 0;
+
+        [JsonProperty("VoGChallenge")]
+        public int VoGChallenge = 0;
+
+        [JsonProperty("VowChallenge")]
+        public int VowChallenge = 0;
+
+        [JsonProperty("KFChallenge")]
+        public int KFChallenge = 0;
+
+        [JsonProperty("RoNChallenge")]
+        public int RoNChallenge = 0;
+
+        [JsonProperty("FeaturedRaid")]
+        public int FeaturedRaid = 0;
+
+        [JsonProperty("FeaturedDungeon")]
+        public int FeaturedDungeon = 0;
+
+        [JsonProperty("CurseWeek")]
+        public int CurseWeek = 0;
+
+        [JsonProperty("AscendantChallenge")]
+        public int AscendantChallenge = 0;
+
+        [JsonProperty("Nightfall")]
+        public int Nightfall = 0;
+
+        [JsonProperty("NightfallWeaponDrop")]
+        public int NightfallWeaponDrop = 0;
+
+        [JsonProperty("EmpireHunt")]
+        public int EmpireHunt = 0;
+
+        [JsonProperty("ShadowkeepMission")]
+        public int ShadowkeepMission = 0;
+
+        [JsonProperty("WitchQueenMission")]
+        public int WitchQueenMission = 0;
+
+        [JsonProperty("LightfallMission")]
+        public int LightfallMission = 0;
+
+        [JsonProperty("DaresOfEternity")]
+        public int DaresOfEternity = 0;
+
+        [JsonProperty("NightmareHunts")]
+        public int[] NightmareHunts = { 0, 1, 2 };
+
+        [JsonProperty("Ada1Items")]
+        public List<Ada1> Ada1Items = new();
+
+        // TODO: Implement a seasonal rotation type for things like Legend Defiant Battlegrounds?
+        [JsonProperty("Seasonals")]
+        public Dictionary<string, int> Seasonals = new();
     }
 }

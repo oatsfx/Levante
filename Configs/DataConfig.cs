@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Levante.Util;
 using Levante.Helpers;
 using System.Linq;
+using System.Threading.Channels;
 using Serilog;
 
 namespace Levante.Configs
@@ -21,16 +22,16 @@ namespace Levante.Configs
         public static string FilePath { get; } = @"Configs/dataConfig.json";
 
         [JsonProperty("DiscordIDLinks")]
-        public static List<DiscordIDLink> DiscordIDLinks { get; set; } = new List<DiscordIDLink>();
+        public static List<DiscordIDLink> DiscordIDLinks { get; set; } = new();
 
         [JsonProperty("AnnounceDailyLinks")]
-        public static List<ulong> AnnounceDailyLinks { get; set; } = new List<ulong>();
+        public static List<ulong> AnnounceDailyLinks { get; set; } = new();
 
         [JsonProperty("AnnounceWeeklyLinks")]
-        public static List<ulong> AnnounceWeeklyLinks { get; set; } = new List<ulong>();
+        public static List<ulong> AnnounceWeeklyLinks { get; set; } = new();
 
         [JsonProperty("AnnounceEmblemLinks")]
-        public static List<EmblemAnnounceLink> AnnounceEmblemLinks { get; set; } = new List<EmblemAnnounceLink>();
+        public static List<EmblemAnnounceLink> AnnounceEmblemLinks { get; set; } = new();
 
         public class DiscordIDLink
         {
@@ -218,12 +219,6 @@ namespace Levante.Configs
                 AccessExpiration = DateTime.Now.Add(CodeResult.AccessExpiration),
                 RefreshExpiration = DateTime.Now.Add(CodeResult.RefreshExpiration)
             };
-            //string json = File.ReadAllText(FilePath);
-            //DiscordIDLinks.Clear();
-            //AnnounceDailyLinks.Clear();
-            //AnnounceWeeklyLinks.Clear();
-            //AnnounceEmblemLinks.Clear();
-            //DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
 
             DiscordIDLinks.Add(dil);
             string output = JsonConvert.SerializeObject(new DataConfig(), Formatting.Indented);
@@ -232,13 +227,6 @@ namespace Levante.Configs
 
         public static void AddChannelToRotationConfig(ulong ChannelID, bool IsDaily)
         {
-            //string json = File.ReadAllText(FilePath);
-            //DiscordIDLinks.Clear();
-            //AnnounceDailyLinks.Clear();
-            //AnnounceWeeklyLinks.Clear();
-            //AnnounceEmblemLinks.Clear();
-            //DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
-            
             if (IsDaily)
             {
                 AnnounceDailyLinks.Add(ChannelID);
@@ -255,17 +243,7 @@ namespace Levante.Configs
 
         public static void AddEmblemChannel(ulong ChannelID, IRole Role)
         {
-            //string json = File.ReadAllText(FilePath);
-            //DiscordIDLinks.Clear();
-            //AnnounceDailyLinks.Clear();
-            //AnnounceWeeklyLinks.Clear();
-            //AnnounceEmblemLinks.Clear();
-            //DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
-
-            if (Role != null)
-                AnnounceEmblemLinks.Add(new EmblemAnnounceLink() { ChannelID = ChannelID, RoleID = Role.Id });
-            else
-                AnnounceEmblemLinks.Add(new EmblemAnnounceLink() { ChannelID = ChannelID, RoleID = 0 });
+            AnnounceEmblemLinks.Add(Role != null ? new EmblemAnnounceLink { ChannelID = ChannelID, RoleID = Role.Id } : new EmblemAnnounceLink { ChannelID = ChannelID, RoleID = 0 });
 
             string output = JsonConvert.SerializeObject(new DataConfig(), Formatting.Indented);
             File.WriteAllText(FilePath, output);
@@ -273,11 +251,6 @@ namespace Levante.Configs
 
         public static void DeleteUserFromConfig(ulong DiscordID)
         {
-            //string json = File.ReadAllText(FilePath);
-            //DiscordIDLinks.Clear();
-            //AnnounceDailyLinks.Clear();
-            //AnnounceWeeklyLinks.Clear();
-            //AnnounceEmblemLinks.Clear();
             for (int i = 0; i < DiscordIDLinks.Count; i++)
                 if (DiscordIDLinks[i].DiscordID == DiscordID)
                     DiscordIDLinks.RemoveAt(i);
@@ -287,13 +260,6 @@ namespace Levante.Configs
 
         public static void DeleteChannelFromRotationConfig(ulong ChannelID, bool IsDaily)
         {
-            //string json = File.ReadAllText(FilePath);
-            //DiscordIDLinks.Clear();
-            //AnnounceDailyLinks.Clear();
-            //AnnounceWeeklyLinks.Clear();
-            //AnnounceEmblemLinks.Clear();
-            //DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
-
             if (IsDaily)
             {
                 for (int i = 0; i < AnnounceDailyLinks.Count; i++)
@@ -313,13 +279,6 @@ namespace Levante.Configs
 
         public static void DeleteEmblemChannel(ulong ChannelID)
         {
-            //string json = File.ReadAllText(FilePath);
-            //DiscordIDLinks.Clear();
-            //AnnounceDailyLinks.Clear();
-            //AnnounceWeeklyLinks.Clear();
-            //AnnounceEmblemLinks.Clear();
-            //DataConfig dc = JsonConvert.DeserializeObject<DataConfig>(json);
-
             for (int i = 0; i < AnnounceEmblemLinks.Count; i++)
                 if (AnnounceEmblemLinks[i].ChannelID == ChannelID)
                     AnnounceEmblemLinks.RemoveAt(i);
@@ -365,13 +324,7 @@ namespace Levante.Configs
             }
         }
 
-        public static bool IsExistingEmblemLinkedChannel(ulong ChannelID)
-        {
-            foreach (var Link in AnnounceEmblemLinks)
-                if (Link.ChannelID == ChannelID)
-                    return true;
-            return false;
-        }
+        public static bool IsExistingEmblemLinkedChannel(ulong ChannelID) => AnnounceEmblemLinks.Any(x => x.ChannelID == ChannelID);
 
         public static int GetAFKValues(ulong DiscordID, out int XPProgress, out int PowerBonus, out PrivacySetting FireteamPrivacy, out string CharacterId, out string ErrorStatus, out long ActivityHash)
         {
@@ -579,12 +532,14 @@ namespace Levante.Configs
                         }
                     }
 
-                    await channel.SendMessageAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
+                    var msg = await channel.SendMessageAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
+                    if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
+                        await msg.CrosspostAsync();
                 }
                 catch (Exception x)
                 {
                     //DeleteChannelFromRotationConfig(ChannelID, true);
-                    Log.Warning("[{Type}] Reset Error on Channel: {Id}. This channel has been removed from the list. {Exception}", "Data", ChannelID, x);
+                    Log.Warning("[{Type}] Reset Error on Channel: {Id}. {Exception}", "Data", ChannelID, x);
                 }
             }
         }
@@ -621,12 +576,14 @@ namespace Levante.Configs
                         }
                     }
 
-                    await channel.SendMessageAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
+                    var msg = await channel.SendMessageAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
+                    if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
+                        await msg.CrosspostAsync();
                 }
                 catch (Exception x)
                 {
                     //DeleteChannelFromRotationConfig(ChannelID, true);
-                    Log.Warning("[{Type}] Reset Error on Channel: {Id}. This channel has been removed from the list. {Exception}", "Data", ChannelID, x);
+                    Log.Warning("[{Type}] Reset Error on Channel: {Id}. {Exception}", "Data", ChannelID, x);
                 }
             }
         }

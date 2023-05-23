@@ -1,21 +1,21 @@
 ﻿using Discord;
-using Newtonsoft.Json;
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
+using Discord.Interactions;
+using Fergun.Interactive;
+using Fergun.Interactive.Pagination;
 using Levante.Configs;
+using Levante.Helpers;
+using Levante.Rotations;
+using Levante.Util;
+using Levante.Util.Attributes;
+using Newtonsoft.Json;
+using Serilog;
+using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using Levante.Util;
-using System.Collections.Generic;
-using Fergun.Interactive;
-using Discord.Interactions;
-using Levante.Rotations;
-using Levante.Util.Attributes;
 using System.Linq;
-using Fergun.Interactive.Pagination;
-using Levante.Helpers;
-using BungieSharper.Entities.Destiny;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Levante.Commands
 {
@@ -24,7 +24,7 @@ namespace Levante.Commands
         public InteractiveService Interactive { get; set; }
 
         [SlashCommand("artifact", "Project what level you need to hit for a specific Power bonus.")]
-        public async Task ArtifactBonusPrediction([Summary("power-bonus", "Projected Power bonus you want to see what level it'll be hit at.")] int PowerBonus)
+        public async Task ArtifactBonusPrediction([Summary("power-bonus", "Project what level you'll hit a specific Power bonus at.")] int PowerBonus)
         {
             await DeferAsync();
 
@@ -42,11 +42,11 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -126,7 +126,7 @@ namespace Levante.Commands
             }
         }
 
-        [SlashCommand("countdowns", "Gives remaining time to Destiny 2 or my own events and releases.")]
+        [SlashCommand("countdowns", "Gives remaining time to Destiny 2 events and releases.")]
         public async Task Countdowns()
         {
             await DeferAsync();
@@ -138,11 +138,11 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -157,7 +157,7 @@ namespace Levante.Commands
             await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
         }
 
-        [SlashCommand("current-offers", "Gives a list of emblem offers. If hash code provided, command will return with the specific offer.")]
+        [SlashCommand("current-offers", "Gives a list of emblem offers. If an emblem is provided, you'll get the specific offer.")]
         public async Task CurrentOffers([Summary("emblem-name", "Emblem name of an emblem that is a current offer."), Autocomplete(typeof(CurrentOfferAutocomplete))] string EmblemHash = null)
         {
             if (EmblemHash == null)
@@ -193,25 +193,25 @@ namespace Levante.Commands
                     // No need to paginate because we should be able to fit all (less than 10) offers.
                     await RespondAsync(embed: EmblemOffer.GetOfferListEmbed(0).Build());
                 }
-                
+
                 return;
             }
             long EmblemHashCode = long.Parse(EmblemHash);
+            var offer = EmblemOffer.GetSpecificOffer(EmblemHashCode);
             if (!EmblemOffer.HasExistingOffer(EmblemHashCode))
                 await RespondAsync("Invalid search, please try again. Make sure to choose one of the autocomplete options!");
             else
-                await RespondAsync(embed: EmblemOffer.GetSpecificOffer(EmblemHashCode).BuildEmbed().Build());
+                await RespondAsync(embed: offer.BuildEmbed().Build(), components: offer.BuildExternalButton().Build());
         }
 
         [SlashCommand("daily", "Display Daily reset information.")]
         public async Task Daily()
         {
             await RespondAsync(embed: CurrentRotations.DailyResetEmbed().Build());
-            return;
         }
 
         [SlashCommand("free-emblems", "Display a list of universal emblem codes.")]
-        public async Task FreeEmblems()
+        public async Task FreeEmblems([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
             var paginator = new LazyPaginatorBuilder()
                 .AddUser(Context.User)
@@ -226,7 +226,7 @@ namespace Levante.Commands
                 .WithFooter(PaginatorFooter.None)
                 .Build();
 
-            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator));
+            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), ephemeral: hide);
 
             PageBuilder GeneratePage(int index)
             {
@@ -241,7 +241,7 @@ namespace Levante.Commands
                 };
                 var embed = new EmbedBuilder()
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                 };
@@ -315,13 +315,14 @@ namespace Levante.Commands
                         {
                             string charId = $"{item.Response.profile.data.characterIds[i]}";
                             if ((int)item.Response.characters.data[$"{charId}"].classType == ClassType)
-                                userGuardians.Add(new Guardian(LinkedUser.UniqueBungieName, LinkedUser.BungieMembershipID, LinkedUser.BungieMembershipType, charId, User.Id));
+                                userGuardians.Add(new Guardian(LinkedUser.UniqueBungieName, LinkedUser.BungieMembershipID, LinkedUser.BungieMembershipType, charId, DataConfig.GetLinkedUser(User.Id)));
                         }
                         catch (Exception x)
                         {
                             var embed = Embeds.GetErrorEmbed();
                             embed.Description = $"`{x}`";
                             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                            Log.Debug($"{x}");
                             return;
                         }
                     }
@@ -339,7 +340,6 @@ namespace Levante.Commands
                         embeds.Add(guardian.GetGuardianEmbed().Build());
 
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embeds = embeds.ToArray(); });
-                    return;
                 }
             }
 
@@ -363,12 +363,10 @@ namespace Levante.Commands
                     var content = response.Content.ReadAsStringAsync().Result;
                     dynamic item = JsonConvert.DeserializeObject(content);
 
-                    string memId = "";
-                    string memType = "";
                     for (int i = 0; i < item.Response.Count; i++)
                     {
-                        memId = item.Response[i].membershipId;
-                        memType = item.Response[i].membershipType;
+                        string memId = item.Response[i].membershipId;
+                        string memType = item.Response[i].membershipType;
 
                         var memResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + memType + "/Profile/" + memId + "/?components=100").Result;
                         var memContent = memResponse.Content.ReadAsStringAsync().Result;
@@ -445,7 +443,6 @@ namespace Levante.Commands
                         embeds.Add(guardian.GetGuardianEmbed().Build());
 
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embeds = embeds.ToArray(); });
-                    return;
                 }
             }
         }
@@ -464,8 +461,6 @@ namespace Levante.Commands
             await DeferAsync();
             try
             {
-                string season = GetCurrentDestiny2Season(out int seasonNum);
-
                 var dil = DataConfig.GetLinkedUser(User.Id);
                 int Level;
                 int XPProgress;
@@ -504,7 +499,7 @@ namespace Levante.Commands
                 var app = await Context.Client.GetApplicationInfoAsync();
                 var auth = new EmbedAuthorBuilder()
                 {
-                    Name = $"Season {seasonNum}: {season} Level and XP Info",
+                    Name = $"Season {ManifestHelper.CurrentSeason.SeasonNumber}: {ManifestHelper.CurrentSeason.DisplayProperties.Name} Level and XP Info",
                     IconUrl = User.GetAvatarUrl(),
                 };
                 var foot = new EmbedFooterBuilder()
@@ -513,7 +508,7 @@ namespace Levante.Commands
                 };
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                     Description =
@@ -571,14 +566,10 @@ namespace Levante.Commands
         }
 
         [SlashCommand("lost-sector", "Get info on a Lost Sector based on Difficulty.")]
-        public async Task LostSector([Summary("lost-sector", "Lost Sector name."), Autocomplete(typeof(LostSectorAutocomplete))] int ArgLS,
-                [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty ArgLSD)
+        public async Task LostSector([Summary("lost-sector", "Lost Sector name."), Autocomplete(typeof(LostSectorAutocomplete))] int LS,
+                [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty LSD)
         {
-            //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-            //return;
-
-            await RespondAsync(embed: LostSectorRotation.GetLostSectorEmbed(ArgLS, ArgLSD).Build());
-            return;
+            await RespondAsync(embed: CurrentRotations.LostSector.GetLostSectorEmbed(LS, LSD).Build());
         }
 
         [RequireBungieOauth]
@@ -620,15 +611,11 @@ namespace Levante.Commands
                     if (BotConfig.SeasonalCurrencyHashes.ContainsKey(hash))
                     {
                         if (seasonalMats.ContainsKey(hash))
-                        {
                             seasonalMats[hash] += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}");
-                            continue;
-                        }
                         else
-                        {
                             seasonalMats.Add(hash, int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"));
-                            continue;
-                        }
+
+                        continue;
                     }
 
                     switch (hash)
@@ -683,8 +670,6 @@ namespace Levante.Commands
 
                         // Terminal Overload Keys
                         case 1471199156: TerminalOverloadKeys += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
-
-                        default: break;
                     }
                 }
 
@@ -725,8 +710,6 @@ namespace Levante.Commands
 
                             // Terminal Overload Keys
                             case 1471199156: TerminalOverloadKeys += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            default: break;
                         }
                     }
                 }
@@ -746,7 +729,7 @@ namespace Levante.Commands
                 };
                 var embed = new EmbedBuilder()
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                 };
@@ -797,7 +780,6 @@ namespace Levante.Commands
                 {
                     string json = File.ReadAllText(EmoteConfig.FilePath);
                     var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
-                    
 
                     string result = "";
                     foreach (var seasonalMat in seasonalMats)
@@ -822,37 +804,30 @@ namespace Levante.Commands
                     });
                 }
 
+                string engramCounts = "";
+                foreach (var engram in BotConfig.EngramHashes)
+                {
+                    engramCounts += $"{engram.Value} {item.Response.profileStringVariables.data.integerValuesByHash[$"{engram.Key}"]}\n";
+                }
+
+                if (!String.IsNullOrEmpty(engramCounts))
+                {
+                    embed.AddField(x =>
+                    {
+                        x.Name = "Vendor Engrams";
+                        x.Value = engramCounts;
+                        x.IsInline = true;
+                    });
+                }
+                    
+
                 await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
             }
         }
 
-        //[SlashCommand("nightfall", "Display Nightfall information.")]
-        //public async Task Nightfall([Summary("nightfall", "Nightfall Strike."),
-        //        Choice("The Scarlet Keep", 0), Choice("The Arms Dealer", 1), Choice("The Lightblade", 2),
-        //        Choice("The Glassway", 3), Choice("Fallen S.A.B.E.R.", 4), Choice("Birthplace of the Vile", 5)] int ArgNF)
-        //{
-        //    await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
-        //    return;
-        //}
-
-        //[SlashCommand("patrol", "Display Patrol information.")]
-        //public async Task Patrol([Summary("location", "Patrol location."),
-        //        Choice("The Dreaming City", 0), Choice("The Moon", 1), Choice("Europa", 2)] int ArgLocation)
-        //{
-        //    await RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-        //    return;
-        //}
-
-        //[SlashCommand("raid", "Display Raid information.")]
-        //public async Task Raid([Summary("raid", "Raid name."),
-        //        Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3)] int ArgRaid)
-        //{
-        //    await RespondAsync($"Command is under construction! Wait for a future update.", ephemeral: true);
-        //    return;
-        //}
-
         [SlashCommand("seasonals", "View the current season's challenges, even ones not available yet.")]
-        public async Task Seasonals([Summary("week", "Start at a specified week. Numbers outside of the bounds will default accordingly.")] int week = 1)
+        public async Task Seasonals([Summary("week", "Start at a specified week. Numbers outside of the bounds will default accordingly.")] int week = 1,
+            [Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
             if (week > ManifestHelper.SeasonalChallenges.Count)
                 week = ManifestHelper.SeasonalChallenges.Count;
@@ -862,11 +837,9 @@ namespace Levante.Commands
             var User = Context.User;
             var dil = DataConfig.GetLinkedUser(Context.User.Id);
 
-            bool showProgress = false;
-            if (dil != null)
-                showProgress = true;
+            bool showProgress = dil != null;
 
-            await DeferAsync();
+            await DeferAsync(ephemeral: hide);
             using (var client = new HttpClient())
             {
                 dynamic item = "";
@@ -903,13 +876,13 @@ namespace Levante.Commands
                 {
                     var auth = new EmbedAuthorBuilder()
                     {
-                        Name = $"Seasonal Challenges Week {index + 1} of {ManifestHelper.SeasonalChallenges.Count}",
-                        IconUrl = ManifestHelper.SeasonIcon,
+                        Name = $"{ManifestHelper.CurrentSeason.DisplayProperties.Name} Seasonal Challenges Week {index + 1} of {ManifestHelper.SeasonalChallenges.Count}",
+                        IconUrl = $"https://bungie.net{ManifestHelper.CurrentSeason.DisplayProperties.Icon}",
                     };
-                    
+
                     var embed = new EmbedBuilder()
                     {
-                        Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                        Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                         Author = auth,
                     };
 
@@ -939,7 +912,7 @@ namespace Levante.Commands
                         embed.AddField(x =>
                         {
                             x.Name = challenges.Value.DisplayProperties.Name;
-                            x.Value = $"{challenges.Value.DisplayProperties.Description}\n{progress}";
+                            x.Value = $"{DestinyEmote.ParseBungieVars(challenges.Value.DisplayProperties.Description.Split('\n').FirstOrDefault())}\n{progress}";
                             x.IsInline = false;
                         });
                     }
@@ -963,18 +936,15 @@ namespace Levante.Commands
         [SlashCommand("try-on", "Try on any emblem in the Bungie API.")]
         public async Task TryOut([Summary("emblem-name", "Emblem name of the Emblem you want to try on."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
         {
-            string name = "";
             var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
-            if (linkedUser != null)
-                name = linkedUser.UniqueBungieName.Substring(0, linkedUser.UniqueBungieName.Length - 5);
-            else
-                name = Context.User.Username;
+
+            string name = linkedUser != null ? linkedUser.UniqueBungieName.Substring(0, linkedUser.UniqueBungieName.Length - 5) : Context.User.Username;
 
             if (!long.TryParse(SearchQuery, out long HashCode))
             {
                 var errEmbed = Embeds.GetErrorEmbed();
-                errEmbed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
-                await RespondAsync($"", embed: errEmbed.Build(), ephemeral: true);
+                errEmbed.Description = "Invalid search, please try again. Make sure to choose one of the autocomplete options!";
+                await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
                 return;
             }
 
@@ -1012,7 +982,7 @@ namespace Levante.Commands
             {
                 bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
                 byte[] bytes = stream.ToArray();
-                using (var fs = new FileStream(@"temp.png", FileMode.Create))
+                await using (var fs = new FileStream(@"temp.png", FileMode.Create))
                 {
                     fs.Write(bytes, 0, bytes.Length);
                     fs.Close();
@@ -1045,7 +1015,8 @@ namespace Levante.Commands
         public class View : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("emblem", "Get details on an emblem via found via Bungie's API.")]
-            public async Task ViewEmblem([Summary("name", "Name of the emblem you want details for."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
+            public async Task ViewEmblem([Summary("name", "Name of the emblem you want details for."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery,
+                [Summary("show-wide-bg", "Show nameplate background or inventory menu background. Default: false (nameplate background)")] bool showWideBg = false)
             {
                 if (!long.TryParse(SearchQuery, out long HashCode))
                 {
@@ -1073,7 +1044,7 @@ namespace Levante.Commands
                     return;
                 }
 
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = emblem.GetEmbed(showWideBg).Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
 
             [SlashCommand("perk", "Get details on a weapon perk found via Bungie's API.")]
@@ -1105,7 +1076,9 @@ namespace Levante.Commands
             }
 
             [SlashCommand("weapon", "Get details on a weapon found via Bungie's API.")]
-            public async Task ViewWeapon([Summary("name", "Name of the weapon you want details for."), Autocomplete(typeof(WeaponAutocomplete))] string SearchQuery)
+            public async Task ViewWeapon([Summary("name", "Name of the weapon you want details for."), Autocomplete(typeof(WeaponAutocomplete))] string SearchQuery,
+                [Summary("show-more-perks", "Show more perks like barrels and mags. Default: false (no perks)")] bool showMorePerks = false,
+                [Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
             {
                 if (!long.TryParse(SearchQuery, out long HashCode))
                 {
@@ -1115,7 +1088,7 @@ namespace Levante.Commands
                     return;
                 }
 
-                await DeferAsync();
+                await DeferAsync(ephemeral: hide);
                 Weapon weapon;
                 try
                 {
@@ -1140,31 +1113,9 @@ namespace Levante.Commands
         }
 
         [SlashCommand("weekly", "Display Weekly reset information.")]
-        public async Task Weekly()
+        public async Task Weekly([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
-            await RespondAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
-            return;
-        }
-
-        private string GetCurrentDestiny2Season(out int SeasonNumber)
-        {
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/3/Profile/4611686018471482002/?components=100").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                ulong seasonHash = item.Response.profile.data.currentSeasonHash;
-
-                var response1 = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/DestinySeasonDefinition/" + seasonHash + "/").Result;
-                var content1 = response1.Content.ReadAsStringAsync().Result;
-                dynamic item1 = JsonConvert.DeserializeObject(content1);
-
-                SeasonNumber = item1.Response.seasonNumber;
-                return $"{item1.Response.displayProperties.name}";
-            }
+            await RespondAsync(embed: CurrentRotations.WeeklyResetEmbed().Build(), ephemeral: hide);
         }
     }
 }

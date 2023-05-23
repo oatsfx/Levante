@@ -45,7 +45,7 @@ namespace Levante.Util
                    
                     var perk = new WeaponPerk((long)item.Response.reusablePlugItems[i].plugItemHash);
                     // For duplicates and retired perks.
-                    if (WeaponPerks.Count == 0 || ((bool)item.Response.reusablePlugItems[i].currentlyCanRoll == true && !WeaponPerks.Any(x => x.GetItemHash() == (long)item.Response.reusablePlugItems[i].plugItemHash)))
+                    if (WeaponPerks.Count == 0 || ((bool)item.Response.reusablePlugItems[i].currentlyCanRoll && !WeaponPerks.Any(x => x.GetItemHash() == (long)item.Response.reusablePlugItems[i].plugItemHash)))
                         WeaponPerks.Add(new WeaponPerk((long)item.Response.reusablePlugItems[i].plugItemHash));
 
                     if (!PerkLevels.ContainsKey(perk.GetName().Replace(" Enhanced", "")))

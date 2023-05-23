@@ -11,7 +11,7 @@ namespace Levante.Util
             {
                 Title = "Uh oh!",
                 Description = $"An error has occurred. If this error continues, [let us know](https://discord.gg/{BotConfig.SupportServer})!",
-                Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 ThumbnailUrl = BotConfig.BotLogoUrl,
                 Footer = new()
                 {

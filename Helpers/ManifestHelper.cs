@@ -12,6 +12,7 @@ using BungieSharper.Entities.Destiny.Definitions.ActivityModifiers;
 using BungieSharper.Entities.Destiny.Definitions.Presentation;
 using Levante.Util;
 using System.IO;
+using BungieSharper.Entities.Destiny.Definitions.Seasons;
 using Serilog;
 
 namespace Levante.Helpers
@@ -38,12 +39,13 @@ namespace Levante.Helpers
 
         // List per Week, <Hash, Record>.
         public static List<Dictionary<long, DestinyRecordDefinition>> SeasonalChallenges = new();
-        public static string SeasonIcon;
+        public static DestinySeasonDefinition CurrentSeason = new();
         public static Dictionary<long, string> SeasonalObjectives = new();
+        public static Dictionary<string, int> StringVariables = new();
 
         public static Dictionary<long, string> GuardianRanks = new();
 
-        private static Dictionary<string, int> SeasonIconURLs = new Dictionary<string, int>();
+        private static Dictionary<string, int> SeasonIconURLs = new();
 
         private const string DIM_WATERMARK_TO_SEASON_LINK = "https://raw.githubusercontent.com/DestinyItemManager/d2-additional-info/master/output/watermark-to-season.json";
         private const string CLARITY_INFO_LINK = "https://raw.githubusercontent.com/Database-Clarity/Live-Clarity-Database/live/descriptions/crayon.json";
@@ -319,7 +321,7 @@ namespace Levante.Helpers
                     response = client.GetAsync(sandboxPerkUrl).Result;
                     content = response.Content.ReadAsStringAsync().Result;
                     sandboxPerkList = JsonConvert.DeserializeObject<Dictionary<string, DestinySandboxPerkDefinition>>(content);
-                    File.WriteAllText($"Data/Manifest/JSONs/DestinySandboxPerkDefinition/{fileName}", JsonConvert.SerializeObject(presentNodeList, Formatting.Indented));
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinySandboxPerkDefinition/{fileName}", JsonConvert.SerializeObject(sandboxPerkList, Formatting.Indented));
                 }
                 else
                 {
@@ -328,6 +330,36 @@ namespace Levante.Helpers
                     Log.Information("[{Type}] Loaded {def} from local.",
                         "Manifest", "DestinySandboxPerkDefinition");
                 }
+
+                // Seasons
+                path = item.Response.jsonWorldComponentContentPaths.en["DestinySeasonDefinition"];
+                fileName = path.Split('/').LastOrDefault();
+                Dictionary<long, DestinySeasonDefinition> seasonList = new();
+                if (!Directory.Exists("Data/Manifest/JSONs/DestinySeasonDefinition"))
+                    Directory.CreateDirectory("Data/Manifest/JSONs/DestinySeasonDefinition");
+                if (!File.Exists($"Data/Manifest/JSONs/DestinySeasonDefinition/{fileName}"))
+                {
+                    Log.Information("[{Type}] Storing {def} locally...",
+                        "Manifest", "DestinySeasonDefinition");
+                    string seasonUrl = $"https://www.bungie.net{item.Response.jsonWorldComponentContentPaths.en["DestinySeasonDefinition"]}";
+                    response = client.GetAsync(seasonUrl).Result;
+                    content = response.Content.ReadAsStringAsync().Result;
+                    seasonList = JsonConvert.DeserializeObject<Dictionary<long, DestinySeasonDefinition>>(content);
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinySeasonDefinition/{fileName}", JsonConvert.SerializeObject(seasonList, Formatting.Indented));
+                }
+                else
+                {
+                    content = File.ReadAllText($"Data/Manifest/JSONs/DestinySeasonDefinition/{fileName}");
+                    seasonList = JsonConvert.DeserializeObject<Dictionary<long, DestinySeasonDefinition>>(content);
+                    Log.Information("[{Type}] Loaded {def} from local.",
+                        "Manifest", "DestinySeasonDefinition");
+                }
+
+                string stringVarUrl = "https://bungie.net/Platform/Destiny2/3/Profile/4611686018471482002/?components=1200";
+                response = client.GetAsync(stringVarUrl).Result;
+                content = response.Content.ReadAsStringAsync().Result;
+                item = JsonConvert.DeserializeObject(content);
+                StringVariables = item.Response.profileStringVariables.data.integerValuesByHash.ToObject<Dictionary<string, int>>();
 
                 Log.Information("[{Type}] Populating Dictionaries...",
                         "Manifest");
@@ -344,13 +376,16 @@ namespace Levante.Helpers
                         }
                     }
 
+                    foreach (var season in seasonList)
+                    {
+                        if (season.Value.StartDate <= DateTime.UtcNow && DateTime.UtcNow <= season.Value.EndDate)
+                            CurrentSeason = season.Value;
+                    }
+
                     foreach (var node in presentNodeList)
                     {
                         if (node.Value.DisplayProperties == null) continue;
                         if (node.Value.Children == null) continue;
-
-                        if (node.Value.DisplayProperties.Name == "Seasonal Challenges")
-                            SeasonIcon = $"https://bungie.net/{node.Value.DisplayProperties.Icon}";
 
                         if (node.Value.DisplayProperties.Name == "Weekly" && node.Value.Children.PresentationNodes.Any())
                         {
@@ -380,19 +415,19 @@ namespace Levante.Helpers
                             foreach (var rank in node.Value.Children.PresentationNodes)
                                 GuardianRanks.Add(rank.PresentationNodeHash, presentNodeList[$"{rank.PresentationNodeHash}"].DisplayProperties.Name);
 
-                        if (!node.Value.Children.Records.Any()) continue;
-                        if (node.Value.CompletionRecordHash == null) continue;
-                        foreach (var child in node.Value.Children.Records)
-                        {
-                            if (GildableSeals.ContainsKey((long)node.Value.CompletionRecordHash) && recordList.ContainsKey(child.RecordHash.ToString()))
-                            {
-                                string recordName = recordList[child.RecordHash.ToString()].DisplayProperties.Name;
-                                if (recordName.Contains("Grandmaster:"))
-                                {
-                                    NightfallRotation.Nightfalls.Add(recordName.Replace("Grandmaster: ", ""));
-                                }
-                            }
-                        }
+                        //if (!node.Value.Children.Records.Any()) continue;
+                        //if (node.Value.CompletionRecordHash == null) continue;
+                        //foreach (var child in node.Value.Children.Records)
+                        //{
+                        //    if (GildableSeals.ContainsKey((long)node.Value.CompletionRecordHash) && recordList.ContainsKey(child.RecordHash.ToString()))
+                        //    {
+                        //        string recordName = recordList[child.RecordHash.ToString()].DisplayProperties.Name;
+                        //        if (recordName.Contains("Grandmaster:"))
+                        //        {
+                        //            CurrentRotations.Nightfall.Rotations.Add(new Nightfall { Name = recordName.Replace("Grandmaster: ", "") });
+                        //        }
+                        //    }
+                        //}
                     }
 
                     foreach (var activity in activityList)
@@ -405,16 +440,16 @@ namespace Levante.Helpers
                             }
 
                         Activities.Add(activity.Value.Hash, activity.Value.DisplayProperties.Name);
-                        if (NightfallRotation.Nightfalls.Contains(activity.Value.DisplayProperties.Description) && !Nightfalls.ContainsValue(activity.Value.DisplayProperties.Description))
+                        if (CurrentRotations.Nightfall.Rotations.FirstOrDefault(x => x.Name.Equals(activity.Value.DisplayProperties.Description)) != null && !Nightfalls.ContainsValue(activity.Value.DisplayProperties.Description))
                         {
                             Nightfalls.Add(activity.Value.Hash, activity.Value.DisplayProperties.Description);
                             //Console.WriteLine($"{activity.Value.Hash}: {activity.Value.DisplayProperties.Name} ({activity.Value.DisplayProperties.Description})");
                         }
-                        int index = LostSectorRotation.LostSectors.FindIndex(x => activity.Key.Equals($"{x.LegendActivityHash}"));
+                        int index = CurrentRotations.LostSector.Rotations.FindIndex(x => activity.Key.Equals($"{x.LegendActivityHash}"));
                         if (index != -1)
                         {
-                            LostSectorRotation.LostSectors[index].Name = activity.Value.OriginalDisplayProperties.Name;
-                            LostSectorRotation.LostSectors[index].Location = placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name;
+                            CurrentRotations.LostSector.Rotations[index].Name = activity.Value.OriginalDisplayProperties.Name;
+                            CurrentRotations.LostSector.Rotations[index].Location = placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name;
                             foreach (var mod in activity.Value.Modifiers)
                             {
                                 if (!modifierList.ContainsKey($"{mod.ActivityModifierHash}"))
@@ -427,17 +462,17 @@ namespace Levante.Helpers
                                 {
                                     continue;
                                 }
-                                LostSectorRotation.LostSectors[index].LegendModifiers.Add(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name);
+                                CurrentRotations.LostSector.Rotations[index].LegendModifiers.Add(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name);
                             }
                         }
                         else
                         {
-                            index = LostSectorRotation.LostSectors.FindIndex(x => activity.Key.Equals($"{x.MasterActivityHash}"));
+                            index = CurrentRotations.LostSector.Rotations.FindIndex(x => activity.Key.Equals($"{x.MasterActivityHash}"));
                             if (index != -1)
                             {
-                                LostSectorRotation.LostSectors[index].Name = activity.Value.OriginalDisplayProperties.Name;
-                                LostSectorRotation.LostSectors[index].PGCRImage = "https://bungie.net" + activity.Value.PgcrImage;
-                                LostSectorRotation.LostSectors[index].Location = placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name;
+                                CurrentRotations.LostSector.Rotations[index].Name = activity.Value.OriginalDisplayProperties.Name;
+                                CurrentRotations.LostSector.Rotations[index].PGCRImage = "https://bungie.net" + activity.Value.PgcrImage;
+                                CurrentRotations.LostSector.Rotations[index].Location = placeList[$"{activity.Value.PlaceHash}"].DisplayProperties.Name;
                                 foreach (var mod in activity.Value.Modifiers)
                                 {
                                     if (!modifierList.ContainsKey($"{mod.ActivityModifierHash}"))
@@ -451,7 +486,7 @@ namespace Levante.Helpers
                                     {
                                         continue;
                                     }
-                                    LostSectorRotation.LostSectors[index].MasterModifiers.Add(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name);
+                                    CurrentRotations.LostSector.Rotations[index].MasterModifiers.Add(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name);
                                 }
                             }
                         }
@@ -476,7 +511,7 @@ namespace Levante.Helpers
                             if (invItem.Value.CollectibleHash != null)
                                 EmblemsCollectible.Add(invItem.Value.Hash, (uint)invItem.Value.CollectibleHash);
                         }
-                            
+
 
                         if (invItem.Value.ItemType == DestinyItemType.Weapon)
                         {
@@ -521,12 +556,12 @@ namespace Levante.Helpers
                                     Weapons.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
                             }
 
-                            int index = NightfallRotation.NightfallWeapons.FindIndex(x => x.Hash == invItem.Value.Hash);
+                            int index = CurrentRotations.Nightfall.WeaponRotations.FindIndex(x => x.Hash == invItem.Value.Hash);
                             if (index != -1)
                             {
-                                NightfallRotation.NightfallWeapons[index].Name = invItem.Value.DisplayProperties.Name;
+                                CurrentRotations.Nightfall.WeaponRotations[index].Name = invItem.Value.DisplayProperties.Name;
                                 bool isHeavyGL = invItem.Value.ItemSubType == DestinyItemSubType.GrenadeLauncher && invItem.Value.ItemCategoryHashes.Contains<uint>(4);
-                                NightfallRotation.NightfallWeapons[index].Emote = DestinyEmote.MatchWeaponItemSubtypeToEmote(invItem.Value.ItemSubType, isHeavyGL);
+                                CurrentRotations.Nightfall.WeaponRotations[index].Emote = DestinyEmote.MatchWeaponItemSubtypeToEmote(invItem.Value.ItemSubType, isHeavyGL);
                             }
                         }
 
@@ -542,7 +577,7 @@ namespace Levante.Helpers
 
                             if (ada1ItemList.Contains(invItem.Value.Hash) && invItem.Value.ItemSubType == DestinyItemSubType.Shader)
                                 Ada1Items.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
-                                
+
 
                             if (invItem.Value.ItemSubType == 0 && invItem.Value.ItemTypeDisplayName.Contains("Trait") && !invItem.Value.ItemCategoryHashes.Contains(4104513227) /*Exclude Armor Mods*/)
                             {
@@ -554,7 +589,7 @@ namespace Levante.Helpers
 
                                     if (clarity.ContainsKey(invItem.Value.Hash) && clarity[invItem.Value.Hash].Descriptions != null && clarity[invItem.Value.Hash].Descriptions.ContainsKey("en"))
                                         ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
-                                } 
+                                }
                                 else
                                 {
                                     if (Perks.ContainsValue(invItem.Value.DisplayProperties.Name)) continue;
@@ -563,7 +598,7 @@ namespace Levante.Helpers
                                     if (clarity.ContainsKey(invItem.Value.Hash) && clarity[invItem.Value.Hash].Descriptions != null && clarity[invItem.Value.Hash].Descriptions.ContainsKey("en"))
                                         ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
                                 }
-                                    
+
                             }
                         }
 
@@ -578,14 +613,9 @@ namespace Levante.Helpers
                                 if (clarity.ContainsKey(invItem.Value.Hash) && clarity[invItem.Value.Hash].Descriptions != null)
                                     ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
                             }
-                                
+
                         }
                     }
-
-                    /*foreach (var perk in sandboxPerkList)
-                    {
-                        Log.Debug("Perk: {PerkName}", perk.Value.DisplayProperties.Name);
-                    }*/
                 }
                 catch (Exception x)
                 {

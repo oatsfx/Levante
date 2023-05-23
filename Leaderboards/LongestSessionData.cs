@@ -12,10 +12,11 @@ namespace Levante.Leaderboards
         public static readonly string FilePathS17 = @"Data/S17/longestSessionData.json";
         public static readonly string FilePathS18 = @"Data/S18/longestSessionData.json";
         public static readonly string FilePathS19 = @"Data/S19/longestSessionData.json";
-        public static readonly string FilePath = @"Data/S20/longestSessionData.json";
+        public static readonly string FilePathS20 = @"Data/S20/longestSessionData.json";
+        public static readonly string FilePath = @"Data/S21/longestSessionData.json";
 
         [JsonProperty("LongestSessionEntries")]
-        public List<LongestSessionEntry> LongestSessionEntries { get; set; } = new List<LongestSessionEntry>();
+        public List<LongestSessionEntry> LongestSessionEntries { get; set; } = new();
 
         public partial class LongestSessionEntry : LeaderboardEntry
         {

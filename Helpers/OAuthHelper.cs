@@ -183,11 +183,11 @@ namespace Levante.Helpers
                 };
                 var foot = new EmbedFooterBuilder()
                 {
-                    Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}",
+                    Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}",
                 };
                 var embed = new EmbedBuilder()
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                 };
@@ -224,7 +224,7 @@ namespace Levante.Helpers
 
         private int GetMembershipDataFromBungieId(string BungieID, out string MembershipID, out string BungieTag)
         {
-            ///Platform/Destiny2/254/Profile/17125100/LinkedProfiles/
+            // /Platform/Destiny2/254/Profile/17125100/LinkedProfiles/
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);

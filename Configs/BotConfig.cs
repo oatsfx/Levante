@@ -53,9 +53,6 @@ namespace Levante.Configs
         [JsonProperty("Version")]
         public static string Version { get; set; } = "1.0.0";
 
-        [JsonProperty("DefaultCommandPrefix")]
-        public static string DefaultCommandPrefix { get; set; } = "l!";
-
         [JsonProperty("Note")]
         public static List<string> Notes { get; set; } = new();
 
@@ -83,6 +80,9 @@ namespace Levante.Configs
         [JsonProperty("EmbedColor")]
         public static EmbedColorGroup EmbedColor { get; set; } = new();
 
+        [JsonProperty("ThirdPartyProjects")]
+        public static List<ThirdPartyProject> ThirdPartyProjects { get; set; }
+
         [JsonProperty("UniversalCodes")]
         public static List<UniversalCode> UniversalCodes { get; set; } = new();
 
@@ -93,12 +93,16 @@ namespace Levante.Configs
         [JsonProperty("SeasonalCurrencyHashes")]
         public static Dictionary<long, string> SeasonalCurrencyHashes { get; set; } = new();
 
+        // <Hash, Emote>
+        [JsonProperty("EngramHashes")]
+        public static Dictionary<long, string> EngramHashes { get; set; } = new();
+
         public static string BotLogoUrl = "https://www.levante.dev/images/Levante-Logo.png";
         public static string BotAvatarUrl = "https://www.levante.dev/images/Levante-Avatar.png";
 
         public static bool IsDebug = false;
 
-        public static AnsiConsoleTheme LevanteTheme { get; } = new AnsiConsoleTheme(
+        public static AnsiConsoleTheme LevanteTheme { get; } = new(
             new Dictionary<ConsoleThemeStyle, string>
             {
                 [ConsoleThemeStyle.Text] = "\x1b[38;5;0015m",
@@ -122,13 +126,13 @@ namespace Levante.Configs
         public class EmbedColorGroup
         {
             [JsonProperty("R")]
-            public static int R { get; set; } = 0;
+            public int R { get; set; } = 0;
 
             [JsonProperty("G")]
-            public static int G { get; set; } = 0;
+            public int G { get; set; } = 0;
 
             [JsonProperty("B")]
-            public static int B { get; set; } = 0;
+            public int B { get; set; } = 0;
         }
 
         public class UniversalCode
@@ -150,6 +154,27 @@ namespace Levante.Configs
 
             [JsonProperty("Above100Ranks")]
             public string Above100Ranks { get; set; } = "[HASH]";
+        }
+
+        public class ThirdPartyProject
+        {
+            [JsonProperty("Name")]
+            public string Name { get; set; }
+
+            [JsonProperty("Description")]
+            public string Description { get; set; }
+
+            [JsonProperty("Links")]
+            public List<ThirdPartyLink> Links { get; set; }
+        }
+
+        public class ThirdPartyLink
+        {
+            [JsonProperty("Name")]
+            public string Name { get; set; }
+
+            [JsonProperty("Link")]
+            public string Link { get; set; }
         }
 
         public static bool IsSupporter(ulong DiscordID) => BotSupportersDiscordIDs.Contains(DiscordID);

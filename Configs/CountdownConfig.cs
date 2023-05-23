@@ -17,7 +17,7 @@ namespace Levante.Configs
 
         // <Name, Start Time>
         [JsonProperty("Countdowns")]
-        public static Dictionary<string, DateTime> Countdowns { get; internal set; } = new Dictionary<string, DateTime>();
+        public static Dictionary<string, DateTime> Countdowns { get; internal set; } = new();
 
         public static void AddCountdown(string Name, DateTime StartTime)
         {
@@ -35,6 +35,14 @@ namespace Levante.Configs
             File.WriteAllText(FilePath, JsonConvert.SerializeObject(new CountdownConfig(), Formatting.Indented));
 
             Log.Information("[{Type}] Countdown removed: {Name}", "Countdowns", Name);
+        }
+
+        public static void CheckCountdowns()
+        {
+            var countdowns = Countdowns;
+            foreach (var countdown in Countdowns)
+                if (DateTime.Now >= countdown.Value)
+                    RemoveCountdown(countdown.Key);
         }
     }
 }

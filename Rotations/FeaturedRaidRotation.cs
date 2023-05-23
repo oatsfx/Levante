@@ -5,108 +5,66 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Levante.Rotations.Abstracts;
+using Levante.Rotations.Interfaces;
 
 namespace Levante.Rotations
 {
-    public class FeaturedRaidRotation
+    public class FeaturedRaidRotation : SetRotation<FeaturedRaid, FeaturedRaidLink, FeaturedRaidPrediction>
     {
-        public static readonly int FeaturedRaidCount = 5;
-        public static readonly string FilePath = @"Trackers/featuredRaid.json";
-
-        [JsonProperty("FeaturedRaidLinks")]
-        public static List<FeaturedRaidLink> FeaturedRaidLinks { get; set; } = new List<FeaturedRaidLink>();
-
-        public class FeaturedRaidLink
+        public FeaturedRaidRotation()
         {
-            [JsonProperty("DiscordID")]
-            public ulong DiscordID { get; set; } = 0;
+            FilePath = @"Trackers/featuredRaid.json";
+            RotationFilePath = @"Rotations/featuredRaid.json";
 
-            [JsonProperty("Raid")]
-            public Raid FeaturedRaid { get; set; } = Raid.LastWish;
+            IsDaily = false;
+
+            GetRotationJSON();
+            GetTrackerJSON();
         }
 
-        public static string GetRaidString(Raid Raid)
+        public override FeaturedRaidPrediction DatePrediction(int Encounter, int Skip)
         {
-            switch (Raid)
-            {
-                case Raid.LastWish: return "Last Wish";
-                case Raid.GardenOfSalvation: return "Garden of Salvation";
-                case Raid.DeepStoneCrypt: return "Deep Stone Crypt";
-                case Raid.VaultOfGlass: return "Vault of Glass";
-                case Raid.VowOfTheDisciple: return "Vow of the Disciple";
-                case Raid.KingsFall: return "King's Fall";
-                default: return "Raid String";
-            }
-        }
-
-        public static void AddUserTracking(ulong DiscordID, Raid Raid)
-        {
-            FeaturedRaidLinks.Add(new FeaturedRaidLink() { DiscordID = DiscordID, FeaturedRaid = Raid });
-            UpdateJSON();
-        }
-
-        public static void RemoveUserTracking(ulong DiscordID)
-        {
-            FeaturedRaidLinks.RemoveAll(x => x.DiscordID == DiscordID);
-            UpdateJSON();
-        }
-
-        // Returns null if no tracking is found.
-        public static FeaturedRaidLink GetUserTracking(ulong DiscordID, out Raid Raid)
-        {
-            foreach (var Link in FeaturedRaidLinks)
-                if (Link.DiscordID == DiscordID)
-                {
-                    Raid = Link.FeaturedRaid;
-                    return Link;
-                }
-            Raid = Raid.LastWish;
-            return null;
-        }
-
-        public static void CreateJSON()
-        {
-            FeaturedRaidRotation obj;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                obj = JsonConvert.DeserializeObject<FeaturedRaidRotation>(json);
-            }
-            else
-            {
-                obj = new FeaturedRaidRotation();
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(obj, Formatting.Indented));
-                Console.WriteLine($"No {FilePath} file detected. No action needed.");
-            }
-        }
-
-        public static void UpdateJSON()
-        {
-            var obj = new FeaturedRaidRotation();
-            string output = JsonConvert.SerializeObject(obj, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
-        }
-
-        public static DateTime DatePrediction(Raid Raid)
-        {
-            Raid iterationRaid = CurrentRotations.FeaturedRaid;
+            int iteration = CurrentRotations.Actives.FeaturedRaid;
             int WeeksUntil = 0;
+            int correctIterations = -1;
             do
             {
-                iterationRaid = iterationRaid == Raid.KingsFall ? Raid.LastWish : iterationRaid + 1;
+                iteration = iteration == Rotations.Count - 1 ? 0 : iteration + 1;
                 WeeksUntil++;
-            } while (iterationRaid != Raid);
-            return CurrentRotations.WeeklyResetTimestamp.AddDays(WeeksUntil * 7); // Because there is no .AddWeeks().
+                if (iteration == Encounter)
+                    correctIterations++;
+            } while (Skip != correctIterations);
+            return new FeaturedRaidPrediction { FeaturedRaid = Rotations[iteration], Date = CurrentRotations.Actives.WeeklyResetTimestamp.AddDays(WeeksUntil * 7) };
         }
+
+        public override bool IsTrackerInRotation(FeaturedRaidLink Tracker) => Tracker.Raid == CurrentRotations.Actives.FeaturedRaid;
+
+        public override string ToString() => "Featured Raid";
     }
 
-    public enum Raid
+    public class FeaturedRaid
     {
-        LastWish, // Shattered Throne
-        GardenOfSalvation, // Pit of Heresy
-        DeepStoneCrypt, // Prophecy
-        VaultOfGlass, // Grasp of Avarice
-        VowOfTheDisciple,
-        KingsFall,
+        [JsonProperty("Raid")]
+        public readonly string Raid;
+
+        public override string ToString() => Raid;
+    }
+
+    public class FeaturedRaidLink : IRotationTracker
+    {
+        [JsonProperty("DiscordID")]
+        public ulong DiscordID { get; set; } = 0;
+
+        [JsonProperty("Raid")]
+        public int Raid { get; set; } = 0;
+
+        public override string ToString() => $"{CurrentRotations.FeaturedRaid.Rotations[Raid]}";
+    }
+
+    public class FeaturedRaidPrediction : IRotationPrediction
+    {
+        public DateTime Date { get; set; }
+        public FeaturedRaid FeaturedRaid { get; set; }
     }
 }

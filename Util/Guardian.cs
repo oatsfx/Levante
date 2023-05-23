@@ -37,9 +37,9 @@ namespace Levante.Util
         public readonly int Intellect;
         public readonly int Strength;
 
-        public readonly Weapon Kinetic;
-        public readonly Weapon Energy;
-        public readonly Weapon Heavy;
+        public readonly InstancedWeapon Kinetic;
+        public readonly InstancedWeapon Energy;
+        public readonly InstancedWeapon Heavy;
 
         public readonly Weapon Helmet;
         public readonly Weapon Arms;
@@ -53,7 +53,7 @@ namespace Levante.Util
         protected string GuardianContent;
         protected string APIUrl;
 
-        public Guardian(string bungieName, string membershipId, string membershipType, string characterId, ulong discordId = 0)
+        public Guardian(string bungieName, string membershipId, string membershipType, string characterId, DataConfig.DiscordIDLink linkedUser = null)
         {
             UniqueBungieName = bungieName;
             MembershipID = membershipId;
@@ -83,9 +83,9 @@ namespace Levante.Util
             Intellect = item.Response.character.data.stats["144602215"];
             Strength = item.Response.character.data.stats["4244567218"];
 
-            Kinetic = new Weapon((long)item.Response.equipment.data.items[0].itemHash);
-            Energy = new Weapon((long)item.Response.equipment.data.items[1].itemHash);
-            Heavy = new Weapon((long)item.Response.equipment.data.items[2].itemHash);
+            Kinetic = new InstancedWeapon((long)item.Response.equipment.data.items[0].itemHash, membershipId, membershipType, (string)item.Response.equipment.data.items[0].itemInstanceId, linkedUser);
+            Energy = new InstancedWeapon((long)item.Response.equipment.data.items[1].itemHash, membershipId, membershipType, (string)item.Response.equipment.data.items[1].itemInstanceId, linkedUser);
+            Heavy = new InstancedWeapon((long)item.Response.equipment.data.items[2].itemHash, membershipId, membershipType, (string)item.Response.equipment.data.items[2].itemInstanceId, linkedUser);
 
             Helmet = new Weapon((long)item.Response.equipment.data.items[3].itemHash);
             Arms = new Weapon((long)item.Response.equipment.data.items[4].itemHash);
@@ -103,12 +103,8 @@ namespace Levante.Util
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
-                if (discordId != 0)
-                {
-                    var linkedUser = DataConfig.DiscordIDLinks.Where(x => x.DiscordID == discordId).FirstOrDefault();
-                    if (linkedUser != null)
-                        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
-                }
+                if (linkedUser != null)
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
 
                 var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=700,900,1400").Result;
                 
@@ -170,8 +166,8 @@ namespace Levante.Util
             return Class switch
             {
                 DestinyClass.Titan => $"{DestinyEmote.Titan}",
-                DestinyClass.Hunter => $"{DestinyEmote.Titan}",
-                DestinyClass.Warlock => $"{DestinyEmote.Titan}",
+                DestinyClass.Hunter => $"{DestinyEmote.Hunter}",
+                DestinyClass.Warlock => $"{DestinyEmote.Warlock}",
                 _ => "",
             };
         }
@@ -209,7 +205,7 @@ namespace Levante.Util
             };
 
             if (Rank >= 0)
-                embed.Description += $" {DestinyEmote.GuardianRank}{Rank} {ManifestHelper.GuardianRanks.ElementAt(Rank - 1).Value} ({RankProgress}/{RankCompletion})";
+                embed.Description += $" {DestinyEmote.GuardianRank}{Rank} {ManifestHelper.GuardianRanks.ElementAt(Rank - 1).Value} {(RankProgress == RankCompletion ? "" : $"({RankProgress}/{RankCompletion})")}";
 
             if (CommendationTotal >= 0)
                 embed.Description += $" {DestinyEmote.Commendations}{CommendationTotal}";
@@ -219,9 +215,9 @@ namespace Levante.Util
             embed.AddField(x =>
             {
                 x.Name = "Weapons";
-                x.Value = $"{Kinetic.GetDamageTypeEmote()} {Kinetic.GetName()}\n" +
-                    $"{Energy.GetDamageTypeEmote()} {Energy.GetName()}\n" +
-                    $"{Heavy.GetDamageTypeEmote()} {Heavy.GetName()}";
+                x.Value = $"{Kinetic.GetDamageTypeEmote()} {Kinetic.GetName()}\n{Kinetic.PerksToString()}\n" +
+                    $"{Energy.GetDamageTypeEmote()} {Energy.GetName()}\n{Energy.PerksToString()}\n" +
+                    $"{Heavy.GetDamageTypeEmote()} {Heavy.GetName()}\n{Heavy.PerksToString()}";
                 x.IsInline = true;
             }).AddField(x =>
             {

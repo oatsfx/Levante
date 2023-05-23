@@ -95,26 +95,7 @@ namespace Levante
             ManifestHelper.LoadManifestDictionaries();
 
             EmblemOffer.LoadCurrentOffers();
-            Ada1Rotation.GetAda1Inventory();
-            NightfallRotation.GetCurrentNightfall();
             CurrentRotations.UpdateRotationsJSON();
-
-            //Console.ForegroundColor = ConsoleColor.Magenta;
-            //Console.WriteLine($"[ROTATIONS]");
-            //Console.WriteLine($"Legend/Master Lost Sector: {LostSectorRotation.GetLostSectorString(CurrentRotations.LostSector)} ({CurrentRotations.LostSectorArmorDrop})");
-            //Console.WriteLine($"Altar Weapon: {AltarsOfSorrowRotation.GetWeaponNameString(CurrentRotations.AltarWeapon)} ({CurrentRotations.AltarWeapon})");
-            //Console.WriteLine($"Wellspring ({WellspringRotation.GetWellspringTypeString(CurrentRotations.Wellspring)}): {WellspringRotation.GetWeaponNameString(CurrentRotations.Wellspring)} ({WellspringRotation.GetWellspringBossString(CurrentRotations.Wellspring)})");
-            //Console.WriteLine($"Last Wish Challenge: {LastWishRotation.GetEncounterString(CurrentRotations.LWChallengeEncounter)} ({LastWishRotation.GetChallengeString(CurrentRotations.LWChallengeEncounter)})");
-            //Console.WriteLine($"Garden of Salvation Challenge: {GardenOfSalvationRotation.GetEncounterString(CurrentRotations.GoSChallengeEncounter)} ({GardenOfSalvationRotation.GetChallengeString(CurrentRotations.GoSChallengeEncounter)})");
-            //Console.WriteLine($"Deep Stone Crypt Challenge: {DeepStoneCryptRotation.GetEncounterString(CurrentRotations.DSCChallengeEncounter)} ({DeepStoneCryptRotation.GetChallengeString(CurrentRotations.DSCChallengeEncounter)})");
-            //Console.WriteLine($"Vault of Glass Challenge: {VaultOfGlassRotation.GetEncounterString(CurrentRotations.VoGChallengeEncounter)} ({VaultOfGlassRotation.GetChallengeString(CurrentRotations.VoGChallengeEncounter)})");
-            //Console.WriteLine($"Vow of the Disciple Challenge: {VowOfTheDiscipleRotation.GetEncounterString(CurrentRotations.VowChallengeEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(CurrentRotations.VowChallengeEncounter)})");
-            //Console.WriteLine($"Curse Week: {CurrentRotations.CurseWeek}");
-            //Console.WriteLine($"Ascendant Challenge: {AscendantChallengeRotation.GetChallengeNameString(CurrentRotations.AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(CurrentRotations.AscendantChallenge)})");
-            //Console.WriteLine($"Nightfall: {NightfallRotation.GetStrikeNameString(CurrentRotations.Nightfall)} (dropping {NightfallRotation.GetWeaponString(CurrentRotations.NightfallWeaponDrop)})");
-            //Console.WriteLine($"Empire Hunt: {EmpireHuntRotation.GetHuntNameString(CurrentRotations.EmpireHunt)}");
-            //Console.WriteLine($"Nightmare Hunts: {CurrentRotations.NightmareHunts[0]}/{CurrentRotations.NightmareHunts[1]}/{CurrentRotations.NightmareHunts[2]}");
-            //Console.WriteLine();
 
             var currentTime = DateTime.UtcNow;
             SetUpTimer(currentTime.Hour >= 17 ? new DateTime(currentTime.AddDays(1).Year, currentTime.AddDays(1).Month, currentTime.AddDays(1).Day, 17, 0, 5) : new DateTime(currentTime.Year, currentTime.Month, currentTime.Day, 17, 0, 5));
@@ -168,7 +149,7 @@ namespace Levante
             int RNG = 0;
             int RNGMax = 35;
             Random rand = new();
-            if (SetRNG != -1 && SetRNG < RNGMax)
+            if (SetRNG > 0 && SetRNG < RNGMax)
                 RNG = SetRNG;
             else
                 RNG = rand.Next(0, RNGMax);
@@ -218,6 +199,7 @@ namespace Levante
 
         public async void DailyResetChanges(Object o = null)
         {
+            await Task.Run(CountdownConfig.CheckCountdowns);
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
@@ -425,8 +407,8 @@ namespace Levante
                     }
                     else if (updatedLevel > tempAau.LastLevel)
                     {
-                        await LogHelper.Log(logChannel, $"Level up!: {tempAau.LastLevel} -> {updatedLevel} ({String.Format("{0:n0}", updatedProgression)}/100,000 XP). " +
-                            $"Start: {tempAau.StartLevel} ({String.Format("{0:n0}", tempAau.StartLevelProgress)}/100,000 XP).");
+                        await LogHelper.Log(logChannel, $"Level up!: {tempAau.LastLevel} -> {updatedLevel} ({updatedProgression:n0}/100,000 XP). " +
+                            $"Start: {tempAau.StartLevel} ({tempAau.StartLevelProgress:n0}/100,000 XP).");
 
                         actualUser.LastLevel = updatedLevel;
                         actualUser.LastLevelProgress = updatedProgression;
@@ -466,7 +448,7 @@ namespace Levante
                     {
                         int levelsGained = aau.LastLevel - aau.StartLevel;
                         long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
-                        await LogHelper.Log(logChannel, $"Refreshed: {String.Format("{0:n0}", tempAau.LastLevelProgress)} XP -> {String.Format("{0:n0}", updatedProgression)} XP. Level: {updatedLevel} | Power Bonus: +{powerBonus} | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours):n0} XP/Hour");
+                        await LogHelper.Log(logChannel, $"Refreshed: {tempAau.LastLevelProgress:n0} XP -> {updatedProgression:n0} XP. Level: {updatedLevel} | Power Bonus: +{powerBonus} | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours):n0} XP/Hour");
 
                         actualUser.LastLevel = updatedLevel;
                         actualUser.LastLevelProgress = updatedProgression;
@@ -517,11 +499,11 @@ namespace Levante
                 bool nameChange = false;
                 foreach (var link in DataConfig.DiscordIDLinks.ToList()) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
                 {
-                    string errorReason = "ResponseError";
                     int Level = 0;
                     int PowerLevel = -1;
                     using (var client = new HttpClient())
                     {
+                        string errorReason = "ResponseError";
                         client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
                         var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + link.BungieMembershipType + "/Profile/" + link.BungieMembershipID + "/?components=100,200,202").Result;
@@ -544,6 +526,9 @@ namespace Levante
 
                             if (item.Response.profile.privacy != 1) continue;
                             if (item.Response.characters.privacy != 1) continue;
+
+                            if (item.Response.profile.data.characterIds.Count <= 0)
+                                continue;
 
                             for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
                             {
@@ -607,7 +592,7 @@ namespace Levante
             await _interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
             int readyShards = 0;
-            _client.ShardReady += async (DiscordSocketClient shard) =>
+            _client.ShardReady += async shard =>
             {
                 //var guild = _client.GetGuild(915020047154565220);
                 //await guild.DeleteApplicationCommandsAsync();
@@ -629,7 +614,7 @@ namespace Levante
                         //397846250797662208
                         //915020047154565220
                         //1011700865087852585
-                        await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
+                        await _interaction.RegisterCommandsToGuildAsync(915020047154565220);
                     }
                     else
                     {
@@ -726,7 +711,7 @@ namespace Levante
         {
             string trackerType = interaction.Data.Values.First();
 
-            if (trackerType.Equals("ada-1"))
+            /*if (trackerType.Equals("ada-1"))
             {
                 if (Ada1Rotation.GetUserTracking(interaction.User.Id, out var ModHash) == null)
                 {
@@ -739,13 +724,15 @@ namespace Levante
             }
             else if (trackerType.Equals("altars-of-sorrow"))
             {
-                if (AltarsOfSorrowRotation.GetUserTracking(interaction.User.Id, out var Weapon) == null)
+                var tracker = CurrentRotations.AltarsOfSorrow.GetUserTracking(interaction.User.Id);
+                if (tracker == null)
                 {
                     await interaction.RespondAsync($"No Altars of Sorrow tracking enabled.", ephemeral: true);
                     return;
                 }
-                AltarsOfSorrowRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Altars of Sorrow tracking, you will not be notified when {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType}) is available.", ephemeral: true);
+                var trackerRotation = CurrentRotations.AltarsOfSorrow.Rotations[tracker.WeaponDrop];
+                CurrentRotations.AltarsOfSorrow.RemoveUserTracking(interaction.User.Id);
+                await interaction.RespondAsync($"Removed your Altars of Sorrow tracking, you will not be notified when {trackerRotation.Weapon} ({trackerRotation.WeaponType}) is available.", ephemeral: true);
                 return;
             }
             else if (trackerType.Equals("ascendant-challenge"))
@@ -926,7 +913,7 @@ namespace Levante
                 WellspringRotation.RemoveUserTracking(interaction.User.Id);
                 await interaction.RespondAsync($"Removed your Wellspring tracking, you will not be notified when The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} is dropping {WellspringRotation.GetWeaponNameString(Wellspring)}.", ephemeral: true);
                 return;
-            }
+            }*/
         }
 
         //private async Task HandleMessageAsync(SocketMessage arg)

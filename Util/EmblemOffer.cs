@@ -1,26 +1,22 @@
-﻿using Levante.Configs;
-using Discord;
+﻿using Discord;
+using Levante.Configs;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Levante.Helpers;
 using System.Linq;
-using Serilog;
 
 namespace Levante.Util
 {
     public class EmblemOffer
     {
-        public static List<EmblemOffer> CurrentOffers = new List<EmblemOffer>();
+        public static List<EmblemOffer> CurrentOffers = new();
 
         [JsonProperty("EmblemHashCode")]
         public readonly long EmblemHashCode;
 
         public readonly Emblem OfferedEmblem;
-
-        [JsonProperty("OfferType")]
-        public readonly EmblemOfferType OfferType;
 
         [JsonProperty("StartDate")]
         public readonly DateTime StartDate;
@@ -37,36 +33,35 @@ namespace Levante.Util
         public readonly string SpecialUrl;
 
         public readonly bool IsActive;
+        public readonly bool IsEnded;
 
         [JsonConstructor]
-        public EmblemOffer(long emblemHashCode, EmblemOfferType offerType, DateTime startDate, DateTime? endDate, string description, string specialUrl = null)
+        public EmblemOffer(long emblemHashCode, DateTime startDate, DateTime? endDate, string description, string specialUrl = null)
         {
             EmblemHashCode = emblemHashCode;
             OfferedEmblem = new Emblem(EmblemHashCode);
-            OfferType = offerType;
             StartDate = startDate;
             EndDate = endDate;
             Description = description;
             ImageUrl = OfferedEmblem.GetBackgroundUrl();
             SpecialUrl = specialUrl;
-            if (DateTime.Now < startDate)
-                IsActive = false;
-            else
-                IsActive = true;
+            IsActive = DateTime.Now >= startDate;
+            IsEnded = DateTime.Now >= endDate;
         }
 
         public EmbedBuilder BuildEmbed()
         {
             // Appends the word "Soon" to an offer that is not yet available.
             string s = !IsActive ? " Soon" : "";
+            string avail = !IsEnded ? $"Available{s}" : "Not Available";
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"Emblem Available{s}: {OfferedEmblem.GetName()}",
+                Name = $"Emblem {avail}: {OfferedEmblem.GetName()}",
                 IconUrl = OfferedEmblem.GetIconUrl(),
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             int[] emblemRGB = OfferedEmblem.GetRGBAsIntArray();
             var embed = new EmbedBuilder()
@@ -78,57 +73,54 @@ namespace Levante.Util
             // Final line logic.
             string end = EndDate != null ? $"End{(EndDate > DateTime.Now ? "s" : "ed")} {TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.Relative)}." : "There is no apparent end to this offer.";
             end = !IsActive ? $"Starts {TimestampTag.FromDateTime(StartDate, TimestampTagStyles.Relative)}." : end;
-            
+
+            embed.Url = OfferedEmblem.GetDECUrl();
             embed.ThumbnailUrl = OfferedEmblem.GetIconUrl();
             embed.ImageUrl = ImageUrl;
             embed.AddField(x =>
             {
                 x.Name = "How To Obtain";
-                x.Value = $"{Description} {(SpecialUrl != null ? $"\n[LINK]({SpecialUrl})" : "")}";
+                x.Value = $"{Description}{(!String.IsNullOrEmpty(SpecialUrl) ? $"\n[Get {OfferedEmblem.GetName()}]({SpecialUrl})" : "")}";
                 x.IsInline = false;
             }).AddField(x =>
             {
-                x.Name = "Offer Type";
-                x.Value = GetOfferTypeString(OfferType);
-                x.IsInline = true;
-            }).AddField(x =>
-            {
-                x.Name = "Hash Code";
-                x.Value = $"{EmblemHashCode}";
-                x.IsInline = true;
-            }).AddField(x =>
-            {
                 x.Name = "Time Window";
-                x.Value = $"{GetDateRange()}\n{end}";
+                x.Value = $"{GetDateRange()}\n**{end}**";
                 x.IsInline = false;
             });
             return embed;
         }
 
+        public ComponentBuilder BuildExternalButton()
+        {
+            if (String.IsNullOrEmpty(SpecialUrl))
+                return new ComponentBuilder();
+
+            return new ComponentBuilder()
+                    .WithButton($"Get {OfferedEmblem.GetName()}", style: ButtonStyle.Link, url: SpecialUrl, emote: Emote.Parse(DestinyEmote.Emblem), row: 0);
+        }
+
         public string GetDateRange() => $"{TimestampTag.FromDateTime(StartDate, TimestampTagStyles.ShortDate)} - {(EndDate != null ? $"{TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.ShortDate)}" : "UNKNOWN")}";
 
-        public static EmbedBuilder GetRandomOfferEmbed()
+        public static EmblemOffer GetRandomOffer()
         {
-            Random rng = new Random();
-            if (CurrentOffers.Count != 0)
-                return CurrentOffers[rng.Next(0, CurrentOffers.Count)].BuildEmbed();
-            else
-                return null;
+            var rng = new Random();
+            return CurrentOffers.Count != 0 ? CurrentOffers[rng.Next(0, CurrentOffers.Count)] : null;
         }
 
         public static EmbedBuilder GetOfferListEmbed(int Page = 0)
         {
             var auth = new EmbedAuthorBuilder()
             {
-                Name = $"List of Available Emblem Offers",
+                Name = "List of Available Emblem Offers",
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"This command only tracks emblems that are available for a limited time."
+                Text = "This command only tracks select emblems that are available for a limited time."
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -136,9 +128,15 @@ namespace Levante.Util
             string desc = $"__Offers ({(10 * Page) + 1}-{((10 * Page) + 10 > CurrentOffers.Count ? CurrentOffers.Count : (10 * Page) + 10)})__\n";
             if (CurrentOffers.Count != 0)
             {
-                foreach (var Offer in CurrentOffers.GetRange(10*Page, (10 * Page) + 10 > CurrentOffers.Count ? CurrentOffers.Count - (10 * Page) : 10))
-                    desc += $"> [{Offer.OfferedEmblem.GetName()}]({Offer.SpecialUrl}) [[IMAGE]({Offer.ImageUrl})]\n";
-                desc += $"\n*Want specific details? Use the command \"/current-offers [EMBLEM NAME]\".*";
+                foreach (var Offer in CurrentOffers.GetRange(10 * Page, (10 * Page) + 10 > CurrentOffers.Count ? CurrentOffers.Count - (10 * Page) : 10))
+                {
+                    string s = Offer.SpecialUrl != null
+                        ? $"[{Offer.OfferedEmblem.GetName()}]({Offer.SpecialUrl})"
+                        : Offer.OfferedEmblem.GetName();
+                    desc += $"> {s} [[IMAGE]({Offer.ImageUrl})]\n";
+                }
+                    
+                desc += $"\n*Want specific details? Use the command `/current-offers [EMBLEM NAME]`.*";
             }
             else
                 desc = "There are currently no limited time emblem offers; you are all caught up!";
@@ -198,29 +196,5 @@ namespace Levante.Util
             File.Delete(emblemOfferPath + @"/" + offerToDelete.EmblemHashCode + @".json");
             Log.Information("[{Type}] Deleted Emblem Offer for emblem: {Name} ({Hash}).", "Offers", offerToDelete.OfferedEmblem.GetName(), offerToDelete.EmblemHashCode);
         }
-
-        public static string GetOfferTypeString(EmblemOfferType OfferType)
-        {
-            switch (OfferType)
-            {
-                case EmblemOfferType.InGame: return "In-Game";
-                case EmblemOfferType.BungieStore: return "Bungie Store";
-                case EmblemOfferType.BungieRewards: return "Bungie Rewards";
-                case EmblemOfferType.Donation: return "Donation";
-                case EmblemOfferType.ThirdParty: return "Third Party";
-                case EmblemOfferType.Other: return "Other";
-                default: return "Emblem Offer Type";
-            }
-        }
-    }
-
-    public enum EmblemOfferType
-    {
-        InGame,
-        BungieStore,
-        BungieRewards,
-        Donation,
-        ThirdParty,
-        Other,
     }
 }

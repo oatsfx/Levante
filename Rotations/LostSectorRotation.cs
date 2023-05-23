@@ -11,47 +11,59 @@ using BungieSharper.Entities.Destiny;
 using Levante.Helpers;
 using System.Linq;
 using System.Net.Http;
+using Levante.Rotations.Abstracts;
+using Levante.Rotations.Interfaces;
+using System.Runtime.CompilerServices;
+using Serilog;
 
 namespace Levante.Rotations
 {
-    public class LostSectorRotation
+    public class LostSectorRotation : SetRotation<LostSector, LostSectorLink, LostSectorPrediction>
     {
-        public static readonly string FilePath = @"Trackers/lostSector.json";
-        public static readonly string RotationFilePath = @"Rotations/lostSector.json";
+        private string ArmorRotationFilePath;
 
-        [JsonProperty("LostSectorLinks")]
-        public static List<LostSectorLink> LostSectorLinks { get; set; } = new List<LostSectorLink>();
+        public List<ExoticArmor> ArmorRotations = new();
 
-        [JsonProperty("LostSectors")]
-        public static List<LostSector> LostSectors { get; set; } = new List<LostSector>();
-
-        public class LostSectorLink
+        public LostSectorRotation()
         {
-            [JsonProperty("DiscordID")]
-            public ulong DiscordID { get; set; } = 0;
+            FilePath = @"Trackers/lostSector.json";
+            RotationFilePath = @"Rotations/lostSector.json";
+            ArmorRotationFilePath = @"Rotations/lostSectorArmor.json";
 
-            [JsonProperty("LostSector")]
-            public int LostSector { get; set; } = 0;
+            IsDaily = true;
 
-            [JsonProperty("ArmorDrop")]
-            public ExoticArmorType? ArmorDrop { get; set; } = ExoticArmorType.Helmet;
+            GetRotationJSON();
+            GetTrackerJSON();
         }
 
-        public static string GetArmorEmote(ExoticArmorType EAT)
+        public new void GetRotationJSON()
         {
-            return EAT switch
+            if (File.Exists(RotationFilePath))
             {
-                ExoticArmorType.Helmet => $"{DestinyEmote.Helmet}",
-                ExoticArmorType.Legs => $"{DestinyEmote.Legs}",
-                ExoticArmorType.Arms => $"{DestinyEmote.Arms}",
-                ExoticArmorType.Chest => $"{DestinyEmote.Chest}",
-                _ => "Lost Sector Armor Emote",
-            };
+                string json = File.ReadAllText(RotationFilePath);
+                Rotations = JsonConvert.DeserializeObject<List<LostSector>>(json);
+            }
+            else
+            {
+                File.WriteAllText(RotationFilePath, JsonConvert.SerializeObject(Rotations, Formatting.Indented));
+                Log.Warning("No {RotationFilePath} file detected; it has been created for you. No action is needed.", RotationFilePath);
+            }
+
+            if (File.Exists(ArmorRotationFilePath))
+            {
+                string json = File.ReadAllText(ArmorRotationFilePath);
+                ArmorRotations = JsonConvert.DeserializeObject<List<ExoticArmor>>(json);
+            }
+            else
+            {
+                File.WriteAllText(ArmorRotationFilePath, JsonConvert.SerializeObject(ArmorRotations, Formatting.Indented));
+                Log.Warning("No {ArmorRotationFilePath} file detected; it has been created for you. No action is needed.", ArmorRotationFilePath);
+            }
         }
 
-        public static EmbedBuilder GetLostSectorEmbed(int LS, LostSectorDifficulty LSD)
+        public EmbedBuilder GetLostSectorEmbed(int LS, LostSectorDifficulty LSD)
         {
-            var LostSector = LostSectors[LS];
+            var LostSector = Rotations[LS];
 
             var auth = new EmbedAuthorBuilder()
             {
@@ -63,7 +75,7 @@ namespace Levante.Rotations
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -110,130 +122,68 @@ namespace Levante.Rotations
             };
         }
 
-        public static void AddUserTracking(ulong DiscordID, int LS, ExoticArmorType? EAT = null)
+        public LostSectorPrediction DatePrediction(int LS, int ArmorType, int Skip)
         {
-            LostSectorLinks.Add(new LostSectorLink() { DiscordID = DiscordID, LostSector = LS, ArmorDrop = EAT });
-            UpdateJSON();
-        }
-
-        public static void RemoveUserTracking(ulong DiscordID)
-        {
-            LostSectorLinks.Remove(GetUserTracking(DiscordID, out _, out _));
-            UpdateJSON();
-        }
-
-        // Returns null if no tracking is found.
-        public static LostSectorLink GetUserTracking(ulong DiscordID, out int LS, out ExoticArmorType? EAT)
-        {
-            foreach (var Link in LostSectorLinks)
-                if (Link.DiscordID == DiscordID)
-                {
-                    LS = Link.LostSector;
-                    EAT = Link.ArmorDrop;
-                    return Link;
-                }
-            LS = -1;
-            EAT = null;
-            return null;
-        }
-
-        public static void CreateJSON()
-        {
-            LostSectorRotation obj;
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                LostSectorLinks = JsonConvert.DeserializeObject<List<LostSectorLink>>(json);
-            }
-            else
-            {
-                File.WriteAllText(FilePath, JsonConvert.SerializeObject(LostSectorLinks, Formatting.Indented));
-                Console.WriteLine($"No {FilePath} file detected. No action needed.");
-            }
-
-            if (File.Exists(RotationFilePath))
-            {
-                string json = File.ReadAllText(RotationFilePath);
-                LostSectors = JsonConvert.DeserializeObject<List<LostSector>>(json);
-            }
-            else
-            {
-                File.WriteAllText(RotationFilePath, JsonConvert.SerializeObject(LostSectors, Formatting.Indented));
-                Console.WriteLine($"No {RotationFilePath} file detected. No action needed.");
-            }
-        }
-
-        public static void UpdateJSON()
-        {
-            string output = JsonConvert.SerializeObject(LostSectorLinks, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
-        }
-
-        public static LostSectorPrediction DatePrediction(int LS, ExoticArmorType? ArmorType, int skip)
-        {
-            ExoticArmorType iterationEAT = CurrentRotations.LostSectorArmorDrop;
-            int iterationLS = CurrentRotations.LostSector;
+            int iterationEAT = CurrentRotations.Actives.LostSectorArmorDrop;
+            int iterationLS = CurrentRotations.Actives.LostSector;
             int correctIterations = -1;
             int DaysUntil = 0;
 
-            if (LS == -1 && ArmorType != null)
+            if (LS == -1 && ArmorType != -1)
             {
                 do
                 {
-                    iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
-                    iterationLS = iterationLS == LostSectors.Count - 1 ? 0 : iterationLS + 1;
+                    iterationEAT = iterationEAT == ArmorRotations.Count - 1 ? 0 : iterationEAT + 1;
+                    iterationLS = iterationLS == Rotations.Count - 1 ? 0 : iterationLS + 1;
                     DaysUntil++;
                     if (iterationEAT == ArmorType)
                         correctIterations++;
 
-                } while (skip != correctIterations);
+                } while (Skip != correctIterations);
             }
-            else if (ArmorType == null && LS != -1)
+            else if (ArmorType == -1 && LS != -1)
             {
                 do
                 {
-                    iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
-                    iterationLS = iterationLS == LostSectors.Count - 1 ? 0 : iterationLS + 1;
+                    iterationEAT = iterationEAT == ArmorRotations.Count - 1 ? 0 : iterationEAT + 1;
+                    iterationLS = iterationLS == Rotations.Count - 1 ? 0 : iterationLS + 1;
                     DaysUntil++;
                     if (iterationLS == LS)
                         correctIterations++;
 
-                } while (skip != correctIterations);
+                } while (Skip != correctIterations);
             }
-            else if (ArmorType != null && LS != -1)
+            else if (ArmorType != -1 && LS != -1)
             {
                 do
                 {
-                    iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
-                    iterationLS = iterationLS == LostSectors.Count - 1 ? 0 : iterationLS + 1;
+                    iterationEAT = iterationEAT == ArmorRotations.Count - 1 ? 0 : iterationEAT + 1;
+                    iterationLS = iterationLS == Rotations.Count - 1 ? 0 : iterationLS + 1;
                     DaysUntil++;
                     if (iterationEAT == ArmorType && iterationLS == LS)
                         correctIterations++;
 
-                } while (skip != correctIterations);
+                } while (Skip != correctIterations);
             }
-            return new LostSectorPrediction { LostSector = LostSectors[iterationLS], ArmorDrop = iterationEAT, Date = CurrentRotations.DailyResetTimestamp.AddDays(DaysUntil) };
+            return new LostSectorPrediction { LostSector = Rotations[iterationLS], ExoticArmor = ArmorRotations[iterationEAT], Date = CurrentRotations.Actives.DailyResetTimestamp.AddDays(DaysUntil) };
         }
 
-        public static KeyValuePair<LostSector, ExoticArmorType> GetLostSectorAtDate(DateTime date)
+        public override bool IsTrackerInRotation(LostSectorLink Tracker)
         {
-            ExoticArmorType iterationEAT = CurrentRotations.LostSectorArmorDrop;
-            int iterationLS = CurrentRotations.LostSector;
-            var today = DateTime.UtcNow;
-
-            if (today.Hour < 17)
-                today = today.AddDays(-1);
-
-            do
-            {
-                iterationEAT = iterationEAT == ExoticArmorType.Chest ? ExoticArmorType.Helmet : iterationEAT + 1;
-                iterationLS = iterationLS == LostSectors.Count - 1 ? 0 : iterationLS + 1;
-                today = today.AddDays(1);
-                Console.WriteLine($"{today.Date} {date.Date}");
-            } while (today.Date != date.Date);
-
-            return new KeyValuePair<LostSector, ExoticArmorType>(LostSectors[iterationLS], iterationEAT);
+            if (Tracker.LostSector == -1)
+                return Tracker.ArmorDrop == CurrentRotations.Actives.LostSectorArmorDrop;
+            else if (Tracker.ArmorDrop == -1)
+                return Tracker.LostSector == CurrentRotations.Actives.LostSector;
+            else
+                return Tracker.LostSector == CurrentRotations.Actives.LostSector && Tracker.ArmorDrop == CurrentRotations.Actives.LostSectorArmorDrop;
         }
+
+        public override LostSectorPrediction DatePrediction(int Rotation, int Skip)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override string ToString() => "Lost Sector";
     }
 
     public class LostSector
@@ -299,50 +249,9 @@ namespace Levante.Rotations
 
             return result;
         }
+
+        public override string ToString() => $"{Name} ({Location})";
     }
-
-    //public enum LostSector
-    //{
-    //    // Cosmodrome
-    //    //VelesLabyrinth,
-    //    //ExodusGarden2A,
-    //    // Dreaming City
-    //    //AphelionsRest,
-    //    //BayOfDrownedWishes,
-    //    //ChamberOfStarlight,
-    //    // Tangled Shore
-    //    //TheEmptyTank, // Gone
-    //    // Luna
-    //    //K1Revelation,
-    //    //K1CrewQuarters,
-    //    //K1Logistics,
-    //    //K1Communion, // Gone
-    //    // Throne World
-    //    //Metamorphosis,
-    //    //Sepulcher,
-    //    //Extraction,
-    //    // Europa
-    //    //ConcealedVoid,
-    //    //BunkerE15,
-    //    //Perdition,
-
-    //    // Season 17 (Season of the Haunted)
-    //    // Luna
-    //    K1CrewQuarters,
-    //    K1Logistics,
-    //    K1Revelation,
-    //    K1Communion,
-    //    // Nessus
-    //    TheConflux,
-    //    // Throne World
-    //    Metamorphosis,
-    //    Sepulcher,
-    //    Extraction,
-    //    // EDZ
-    //    ExcavationSiteXII,
-    //    SkydockIV,
-    //    TheQuarry,
-    //}
 
     public enum LostSectorDifficulty
     {
@@ -350,18 +259,45 @@ namespace Levante.Rotations
         Master
     }
 
-    public enum ExoticArmorType
+    public class ExoticArmor
     {
-        Helmet,
-        Legs,
-        Arms,
-        Chest
+        [JsonProperty("Type")]
+        public readonly string Type;
+
+        [JsonProperty("ArmorEmote")]
+        public readonly string ArmorEmote;
+
+        public override string ToString() => $"{Type} {ArmorEmote}";
     }
 
-    public class LostSectorPrediction
+    public class LostSectorLink : IRotationTracker
     {
-        public LostSector LostSector;
-        public ExoticArmorType ArmorDrop;
-        public DateTime Date;
+        [JsonProperty("DiscordID")]
+        public ulong DiscordID { get; set; } = 0;
+
+        [JsonProperty("Encounter")]
+        public int LostSector { get; set; } = 0;
+
+        [JsonProperty("ArmorDrop")]
+        public int ArmorDrop { get; set; } = 0;
+
+        public override string ToString()
+        {
+            string result = "Lost Sector";
+            if (LostSector >= 0)
+                result = $"{CurrentRotations.LostSector.Rotations[LostSector]}";
+
+            if (ArmorDrop >= 0)
+                result += $" dropping {CurrentRotations.LostSector.ArmorRotations[ArmorDrop]}";
+
+            return result;
+        }
+    }
+
+    public class LostSectorPrediction : IRotationPrediction
+    {
+        public DateTime Date { get; set; }
+        public LostSector LostSector { get; set; }
+        public ExoticArmor ExoticArmor { get; set; }
     }
 }

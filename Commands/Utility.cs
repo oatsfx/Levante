@@ -15,17 +15,21 @@ using System.Collections.Generic;
 using System.Linq;
 using Levante.Util.Attributes;
 using System.Xml.Linq;
+using Levante.Rotations.Interfaces;
+using System.Diagnostics.Metrics;
+using Microsoft.VisualBasic;
+using System.Diagnostics;
 
 namespace Levante.Commands
 {
     public class Utility : InteractionModuleBase<ShardedInteractionContext>
     {
-        [SlashCommand("link", "Link your Bungie account to your Discord account.")]
+        [SlashCommand("link", "Link your Bungie account to your Discord account through Levante.")]
         public async Task Link()
         {
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
             };
             var auth = new EmbedAuthorBuilder()
             {
@@ -34,7 +38,7 @@ namespace Levante.Commands
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                 Footer = foot,
                 Author = auth
             };
@@ -48,7 +52,7 @@ namespace Levante.Commands
                 $"- Experienced a name change? Relinking will update your name with our data.";
 
             var buttonBuilder = new ComponentBuilder()
-                .WithButton("Link with Levante", style: ButtonStyle.Link, url: $"https://www.bungie.net/en/OAuth/Authorize?client_id={BotConfig.BungieClientID}&response_type=code&state={state}", emote: Emote.Parse("<:LevanteLogo:941054754900041769>"), row: 0);
+                .WithButton("Link with Levante", style: ButtonStyle.Link, url: $"https://www.bungie.net/en/OAuth/Authorize?client_id={BotConfig.BungieClientID}&response_type=code&state={state}", emote: Emote.Parse(Emotes.Logo), row: 0);
 
             await RespondAsync(embed: embed.Build(), components: buttonBuilder.Build(), ephemeral: true);
         }
@@ -56,8 +60,8 @@ namespace Levante.Commands
         [Group("notify", "Be notified when a specific rotation is active.")]
         public class Notify : InteractionModuleBase<ShardedInteractionContext>
         {
-            [SlashCommand("ada-1", "Be notified when an armor mod is for sale at Ada-1.")]
-            public async Task Ada1([Summary("name", "Item to be alerted for."), Autocomplete(typeof(ArmorModsAutocomplete))] string Hash)
+            [SlashCommand("ada-1", "Be notified when a shader is for sale at Ada-1.")]
+            public async Task Ada1([Summary("name", "Item to be alerted for."), Autocomplete(typeof(Ada1ItemsAutocomplete))] string Hash)
             {
                 if (!long.TryParse(Hash, out long HashArg))
                 {
@@ -68,866 +72,1747 @@ namespace Levante.Commands
                     return;
                 }
 
-                if (Ada1Rotation.GetUserTracking(Context.User.Id, out var ModHash) != null)
+                var tracking = CurrentRotations.Ada1.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Ada-1 Items. I am watching for {ManifestHelper.Ada1Items[ModHash]}.", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Ada-1 Items. I am watching for {ManifestHelper.Ada1Items[tracking.Hash]}.", ephemeral: true);
                     return;
                 }
 
-                Ada1Rotation.AddUserTracking(Context.User.Id, HashArg);
-                await RespondAsync($"I will remind you when {ManifestHelper.Ada1Items[HashArg]} is being sold at Ada-1; I cannot provide a prediction for when it will return.", ephemeral: true);
-                return;
+                tracking = new Ada1Link { DiscordID = Context.User.Id, Hash = HashArg };
+                CurrentRotations.Ada1.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is being sold at Ada-1; I cannot provide a prediction for when it will return.", ephemeral: true);
             }
 
             [SlashCommand("altars-of-sorrow", "Be notified when an Altars of Sorrow weapon is active.")]
-            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to be alerted for."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int ArgWeapon)
+            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to be alerted for."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int Weapon)
             {
-                if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Weapon) != null)
+                var tracking = CurrentRotations.AltarsOfSorrow.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Altars of Sorrow. I am watching for {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Altars of Sorrow. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Weapon = ArgWeapon;
 
-                AltarsOfSorrowRotation.AddUserTracking(Context.User.Id, Weapon);
-                await RespondAsync($"I will remind you when {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType}) is in rotation, which will be on {TimestampTag.FromDateTime(AltarsOfSorrowRotation.DatePrediction(Weapon), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new AltarsOfSorrowLink { DiscordID = Context.User.Id, WeaponDrop = Weapon };
+                CurrentRotations.AltarsOfSorrow.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.AltarsOfSorrow.DatePrediction(Weapon, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
-
+            
             [SlashCommand("ascendant-challenge", "Be notified when an Ascendant Challenge is active.")]
-            public async Task AscendantChallenge([Summary("ascendant-challenge", "Ascendant Challenge to be alerted for."),
-                Choice("Agonarch Abyss (Bay of Drowned Wishes)", 0), Choice("Cimmerian Garrison (Chamber of Starlight)", 1),
-                Choice("Ouroborea (Aphelion's Rest)", 2), Choice("Forfeit Shrine (Gardens of Esila)", 3),
-                Choice("Shattered Ruins (Spine of Keres)", 4), Choice("Keep of Honed Edges (Harbinger's Seclude)", 5)] int ArgAscendantChallenge)
+            public async Task AscendantChallenge([Summary("ascendant-challenge", "Ascendant Challenge to be alerted for."), Autocomplete(typeof(AscendantChallengeAutocomplete))] int AscendantChallenge)
             {
-                if (AscendantChallengeRotation.GetUserTracking(Context.User.Id, out var AscendantChallenge) != null)
+                var tracking = CurrentRotations.AscendantChallenge.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Ascendant Challenges. I am watching for {AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Ascendant Challenges. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                AscendantChallenge = (AscendantChallenge)ArgAscendantChallenge;
 
-                AscendantChallengeRotation.AddUserTracking(Context.User.Id, AscendantChallenge);
-                await RespondAsync($"I will remind you when {AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)} ({AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}) is in rotation, which will be on {TimestampTag.FromDateTime(AscendantChallengeRotation.DatePrediction(AscendantChallenge), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new AscendantChallengeLink { DiscordID = Context.User.Id, AscendantChallenge = AscendantChallenge };
+                CurrentRotations.AscendantChallenge.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.AscendantChallenge.DatePrediction(AscendantChallenge, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("curse-week", "Be notified when a Curse Week strength is active.")]
-            public async Task CurseWeek([Summary("strength", "Curse Week strength to be alerted for.")] CurseWeek ArgCurseWeek)
+            public async Task CurseWeek([Summary("strength", "Curse Week strength to be alerted for."), Autocomplete(typeof(CurseWeekAutocomplete))] int CurseWeek)
             {
-                if (CurseWeekRotation.GetUserTracking(Context.User.Id, out var CurseWeek) != null)
+                var tracking = CurrentRotations.CurseWeek.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Curse Weeks. I am watching for {CurseWeek} Strength.", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Dreaming City Curse Weeks. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                CurseWeek = ArgCurseWeek;
 
-                CurseWeekRotation.AddUserTracking(Context.User.Id, CurseWeek);
-                await RespondAsync($"I will remind you when {CurseWeek} Strength is in rotation, which will be on {TimestampTag.FromDateTime(CurseWeekRotation.DatePrediction(CurseWeek), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new CurseWeekLink { DiscordID = Context.User.Id, Strength = CurseWeek };
+                CurrentRotations.CurseWeek.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.CurseWeek.DatePrediction(CurseWeek, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("deep-stone-crypt", "Be notified when a Deep Stone Crypt challenge is active.")]
-            public async Task DeepStoneCrypt([Summary("challenge", "Deep Stone Crypt challenge to be alerted for."),
-                Choice("Crypt Security (Red Rover)", 0), Choice("Atraks-1 (Copies of Copies)", 1),
-                Choice("The Descent (Of All Trades)", 2), Choice("Taniks (The Core Four)", 3)] int ArgEncounter)
+            public async Task DeepStoneCrypt([Summary("challenge", "Deep Stone Crypt challenge to be alerted for."), Autocomplete(typeof(DeepStoneCryptAutocomplete))] int Encounter)
             {
-                if (DeepStoneCryptRotation.GetUserTracking(Context.User.Id, out var Encounter) != null)
+                var tracking = CurrentRotations.DeepStoneCrypt.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Deep Stone Crypt challenges. I am watching for {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Deep Stone Crypt challenges. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Encounter = (DeepStoneCryptEncounter)ArgEncounter;
 
-                var predictedDate = DeepStoneCryptRotation.DatePrediction(Encounter);
-                if (predictedDate >= FeaturedRaidRotation.DatePrediction(Raid.DeepStoneCrypt))
-                    predictedDate = FeaturedRaidRotation.DatePrediction(Raid.DeepStoneCrypt);
-
-                DeepStoneCryptRotation.AddUserTracking(Context.User.Id, Encounter);
-                await RespondAsync($"I will remind you when {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new DeepStoneCryptLink { DiscordID = Context.User.Id, Encounter = Encounter };
+                CurrentRotations.DeepStoneCrypt.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.DeepStoneCrypt.DatePrediction(Encounter, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("empire-hunt", "Be notified when an Empire Hunt is active.")]
-            public async Task EmpireHunt([Summary("empire-hunt", "Empire Hunt boss to be alerted for."),
-                Choice("Phylaks, the Warrior", 0), Choice("Praksis, the Technocrat", 1), Choice("Kridis, the Dark Priestess", 2)] int ArgHunt)
+            public async Task EmpireHunt([Summary("empire-hunt", "Empire Hunt boss to be alerted for."), Autocomplete(typeof(EmpireHuntAutocomplete))] int Hunt)
             {
-                if (EmpireHuntRotation.GetUserTracking(Context.User.Id, out var Hunt) != null)
+                var tracking = CurrentRotations.EmpireHunt.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Empire Hunts. I am watching for {EmpireHuntRotation.GetHuntBossString(Hunt)}.", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Deep Stone Crypt challenges. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Hunt = (EmpireHunt)ArgHunt;
 
-                EmpireHuntRotation.AddUserTracking(Context.User.Id, Hunt);
-                await RespondAsync($"I will remind you when {EmpireHuntRotation.GetHuntBossString(Hunt)} is in rotation, which will be on {TimestampTag.FromDateTime(EmpireHuntRotation.DatePrediction(Hunt), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new EmpireHuntLink { DiscordID = Context.User.Id, EmpireHunt = Hunt };
+                CurrentRotations.EmpireHunt.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.EmpireHunt.DatePrediction(Hunt, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("featured-raid", "Be notified when a raid is featured.")]
-            public async Task FeaturedRaid([Summary("raid", "Legacy raid activity to be alerted for."),
-                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3), Choice("Vow of the Disciple", 4), Choice("King's Fall", 5)] int ArgRaid)
+            public async Task FeaturedRaid([Summary("raid", "Legacy raid activity to be alerted for."), Autocomplete(typeof(FeaturedRaidAutocomplete))] int Raid)
             {
-                if (FeaturedRaidRotation.GetUserTracking(Context.User.Id, out var Raid) != null)
+                var tracking = CurrentRotations.FeaturedRaid.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Featured Raids. I am watching for {FeaturedRaidRotation.GetRaidString(Raid)}.", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Featured Raids. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Raid = (Raid)ArgRaid;
 
-                FeaturedRaidRotation.AddUserTracking(Context.User.Id, Raid);
-                await RespondAsync($"I will remind you when {FeaturedRaidRotation.GetRaidString(Raid)} is the featured raid, which will be on {TimestampTag.FromDateTime(FeaturedRaidRotation.DatePrediction(Raid), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new FeaturedRaidLink { DiscordID = Context.User.Id, Raid = Raid };
+                CurrentRotations.FeaturedRaid.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.FeaturedRaid.DatePrediction(Raid, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+            }
+
+            [SlashCommand("featured-dungeon", "Be notified when a dungeon is featured.")]
+            public async Task FeaturedDungeon([Summary("dungeon", "Legacy dungeon activity to be alerted for."), Autocomplete(typeof(FeaturedDungeonAutocomplete))] int Dungeon)
+            {
+                var tracking = CurrentRotations.FeaturedDungeon.GetUserTracking(Context.User.Id);
+                if (tracking != null)
+                {
+                    await RespondAsync($"You already have tracking for Featured Dungeons. I am watching for {tracking}.", ephemeral: true);
+                    return;
+                }
+
+                tracking = new FeaturedDungeonLink { DiscordID = Context.User.Id, Dungeon = Dungeon };
+                CurrentRotations.FeaturedDungeon.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.FeaturedRaid.DatePrediction(Dungeon, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("garden-of-salvation", "Be notified when a Garden of Salvation challenge is active.")]
-            public async Task GardenOfSalvation([Summary("challenge", "Garden of Salvation challenge to be alerted for."),
-                Choice("Evade the Consecrated Mind (Staying Alive)", 0), Choice("Summon the Consecrated Mind (A Link to the Chain)", 1),
-                Choice("Consecrated Mind (To the Top)", 2), Choice("Sanctified Mind (Zero to One Hundred)", 3)] int ArgEncounter)
+            public async Task GardenOfSalvation([Summary("challenge", "Garden of Salvation challenge to be alerted for."), Autocomplete(typeof(GardenOfSalvationAutocomplete))] int Encounter)
             {
-                if (GardenOfSalvationRotation.GetUserTracking(Context.User.Id, out var Encounter) != null)
+                var tracking = CurrentRotations.GardenOfSalvation.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Garden of Salvation challenges. I am watching for {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Featured Raids. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Encounter = (GardenOfSalvationEncounter)ArgEncounter;
 
-                var predictedDate = GardenOfSalvationRotation.DatePrediction(Encounter);
-                if (predictedDate >= FeaturedRaidRotation.DatePrediction(Raid.GardenOfSalvation))
-                    predictedDate = FeaturedRaidRotation.DatePrediction(Raid.GardenOfSalvation);
-
-                GardenOfSalvationRotation.AddUserTracking(Context.User.Id, Encounter);
-                await RespondAsync($"I will remind you when {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new GardenOfSalvationLink { DiscordID = Context.User.Id, Encounter = Encounter };
+                CurrentRotations.GardenOfSalvation.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.GardenOfSalvation.DatePrediction(Encounter, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("kings-fall", "Be notified when a King's Fall challenge is active.")]
-            public async Task KingsFall([Summary("challenge", "King's Fall challenge to be alerted for."),
-                Choice("Basilica (The Grass Is Always Greener)", 0), Choice("Warpriest (Devious Thievery)", 1), Choice("Golgoroth (Gaze Amaze)", 2),
-                Choice("Daughters (Under Construction)", 3), Choice("Oryx (Hands Off)", 4)] int ArgEncounter)
+            public async Task KingsFall([Summary("challenge", "King's Fall challenge to be alerted for."), Autocomplete(typeof(KingsFallAutocomplete))] int Encounter)
             {
-                if (KingsFallRotation.GetUserTracking(Context.User.Id, out var Encounter) != null)
+                var tracking = CurrentRotations.KingsFall.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for King's Fall challenges. I am watching for {Encounter} ({KingsFallRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Deep Stone Crypt challenges. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Encounter = (KingsFallEncounter)ArgEncounter;
 
-                var predictedDate = KingsFallRotation.DatePrediction(Encounter);
-
-                KingsFallRotation.AddUserTracking(Context.User.Id, Encounter);
-                await RespondAsync($"I will remind you when {Encounter} ({KingsFallRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new KingsFallLink { DiscordID = Context.User.Id, Encounter = Encounter };
+                CurrentRotations.KingsFall.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.KingsFall.DatePrediction(Encounter, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("last-wish", "Be notified when a Last Wish challenge is active.")]
-            public async Task LastWish([Summary("challenge", "Last Wish challenge to be alerted for."),
-                Choice("Kalli (Summoning Ritual)", 0), Choice("Shuro Chi (Which Witch)", 1), Choice("Morgeth (Forever Fight)", 2),
-                Choice("Vault (Keep Out)", 3), Choice("Riven (Strength of Memory)", 4)] int ArgEncounter)
+            public async Task LastWish([Summary("challenge", "Last Wish challenge to be alerted for."), Autocomplete(typeof(LastWishAutocomplete))] int Encounter)
             {
-                if (LastWishRotation.GetUserTracking(Context.User.Id, out var Encounter) != null)
+                var tracking = CurrentRotations.LastWish.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Last Wish challenges. I am watching for {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Deep Stone Crypt challenges. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Encounter = (LastWishEncounter)ArgEncounter;
 
-                var predictedDate = LastWishRotation.DatePrediction(Encounter);
-                if (predictedDate >= FeaturedRaidRotation.DatePrediction(Raid.LastWish))
-                    predictedDate = FeaturedRaidRotation.DatePrediction(Raid.LastWish);
-
-                LastWishRotation.AddUserTracking(Context.User.Id, Encounter);
-                await RespondAsync($"I will remind you when {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new LastWishLink { DiscordID = Context.User.Id, Encounter = Encounter };
+                CurrentRotations.LastWish.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.LastWish.DatePrediction(Encounter, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("lost-sector", "Be notified when a Lost Sector and/or Armor Drop is active.")]
-            public async Task LostSector([Summary("lost-sector", "Lost Sector to be alerted for."), Autocomplete(typeof(LostSectorAutocomplete))] int ArgLS = -1,
-                [Summary("armor-drop", "Lost Sector Exotic armor drop to be alerted for.")] ExoticArmorType? ArgEAT = null)
+            public async Task LostSector([Summary("lost-sector", "Lost Sector to be alerted for."), Autocomplete(typeof(LostSectorAutocomplete))] int LS = -1,
+                [Summary("armor-drop", "Lost Sector Exotic armor drop to be alerted for."), Autocomplete(typeof(ExoticArmorAutocomplete))] int EAT = -1)
             {
-                //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-                //return;
-
-                if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
+                var tracking = CurrentRotations.LostSector.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    if (LS == -1 && EAT == null)
+                    if (LS == -1 && EAT == -1)
                         await RespondAsync($"An error has occurred.", ephemeral: true);
-                    else if (LS != -1 && EAT == null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.LostSectors[LS].Name}.", ephemeral: true);
-                    else if (LS == -1 && EAT != null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {EAT} armor drop.", ephemeral: true);
-                    else if (LS != -1 && EAT != null)
-                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {LostSectorRotation.LostSectors[LS].Name} dropping {EAT}.", ephemeral: true);
+                    else 
+                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {tracking}.", ephemeral: true);
 
                     return;
                 }
-                LS = ArgLS;
-                EAT = ArgEAT;
 
-                if (LS == -1 && EAT == null)
+                if (LS == -1 && EAT == -1)
                 {
                     await RespondAsync($"You left both arguments blank; I can't track nothing!", ephemeral: true);
                     return;
                 }
 
-                /*LostSectorRotation.AddUserTracking(Context.User.Id, LS, EAT);
-                if (LS != -1 && EAT == null)
-                    await RespondAsync($"I will remind you when {LostSectorRotation.LostSectors[LS].Name} is in rotation, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (LS == -1 && EAT != null)
-                    await RespondAsync($"I will remind you when Lost Sectors are dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (LS != -1 && EAT != null)
-                    await RespondAsync($"I will remind you when {LostSectorRotation.LostSectors[LS].Name} is dropping {EAT}, which will be on {TimestampTag.FromDateTime(LostSectorRotation.DatePrediction(LS, EAT), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                */
-                return;
+                tracking = new LostSectorLink { DiscordID = Context.User.Id, LostSector = LS, ArmorDrop = EAT };
+                CurrentRotations.LostSector.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.LostSector.DatePrediction(LS, EAT, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
-            [SlashCommand("nightfall", "Be notified when a Nightfall and/or Weapon is active.")]
-            public async Task Nightfall([Summary("nightfall", "Nightfall Strike to be alerted for."), Autocomplete(typeof(NightfallAutocomplete))] int? ArgNF = null,
-                [Summary("weapon", "Nightfall Strike weapon drop to be alerted for."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int? ArgWeapon = null)
-            {
-                //await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
-                //return;
+            //[SlashCommand("lightfall-mission", "Be notified when a featured Lightfall story mission is active.")]
+            //public async Task LightfallMission([Summary("mission", "Lightfall story mission to be alerted for."), Autocomplete(typeof(LightfallMissionAutocomplete))] int Mission)
+            //{
+            //    var tracking = CurrentRotations.LightfallMission.GetUserTracking(Context.User.Id);
+            //    if (tracking != null)
+            //    {
+            //        await RespondAsync($"You already have tracking for featured Lightfall story missions. I am watching for {tracking}.", ephemeral: true);
+            //        return;
+            //    }
 
-                if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var Weapon) != null)
+            //    tracking = new LightfallMissionLink { DiscordID = Context.User.Id, Mission = Mission };
+            //    CurrentRotations.LightfallMission.AddUserTracking(tracking);
+            //    await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.LightfallMission.DatePrediction(Mission, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+            //}
+
+            [SlashCommand("nightfall", "Be notified when a Nightfall and/or Weapon is active.")]
+            public async Task Nightfall([Summary("nightfall", "Nightfall Strike to be alerted for."), Autocomplete(typeof(NightfallAutocomplete))] int NF = -1,
+                [Summary("weapon", "Nightfall Strike weapon drop to be alerted for."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int Weapon = -1)
+            {
+                var tracking = CurrentRotations.Nightfall.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    if (NF == null && Weapon == null)
+                    if (NF == -1 && Weapon == -1)
                         await RespondAsync($"An error has occurred.", ephemeral: true);
-                    else if (NF != null && Weapon == null)
-                        await RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.Nightfalls[(int)NF]}.", ephemeral: true);
-                    else if (NF == null && Weapon != null)
-                        await RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.NightfallWeapons[(int)Weapon].Name} weapon drops.", ephemeral: true);
-                    else if (NF != null && Weapon != null)
-                        await RespondAsync($"You already have tracking for Nightfalls. I am watching for {NightfallRotation.Nightfalls[(int)NF]} with {NightfallRotation.NightfallWeapons[(int)Weapon].Name} weapon drops.", ephemeral: true);
+                    else
+                        await RespondAsync($"You already have tracking for Lost Sectors. I am watching for {tracking}.", ephemeral: true);
+
                     return;
                 }
-                NF = ArgNF;
-                Weapon = ArgWeapon;
 
-                if (NF == null && Weapon == null)
+                if (NF == -1 && Weapon == -1)
                 {
                     await RespondAsync($"You left both arguments blank; I can't track nothing!", ephemeral: true);
                     return;
                 }
-                var predictDate = NightfallRotation.DatePrediction(NF, Weapon);
-                if (predictDate < DateTime.Now)
-                {
-                    await RespondAsync($"This rotation is not possible this season.", ephemeral: true);
-                    return;
-                }
 
-                NightfallRotation.AddUserTracking(Context.User.Id, NF, Weapon);
-                if (NF != null && Weapon == null)
-                    await RespondAsync($"I will remind you when {NightfallRotation.Nightfalls[(int)NF]} is in rotation, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (NF == null && Weapon != null)
-                    await RespondAsync($"I will remind you when {NightfallRotation.NightfallWeapons[(int)Weapon].Name} is in rotation, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                else if (NF != null && Weapon != null)
-                    await RespondAsync($"I will remind you when {NightfallRotation.Nightfalls[(int)NF]} is dropping {NightfallRotation.NightfallWeapons[(int)Weapon].Name}, which will be on {TimestampTag.FromDateTime(predictDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+                tracking = new NightfallLink { DiscordID = Context.User.Id, Nightfall = NF, WeaponDrop = Weapon };
+                CurrentRotations.Nightfall.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.Nightfall.DatePrediction(NF, Weapon, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("nightmare-hunt", "Be notified when an Nightmare Hunt is active.")]
-            public async Task NightmareHunt([Summary("nightmare-hunt", "Nightmare Hunt boss to be alerted for."),
-                Choice("Despair (Crota, Son of Oryx)", 0), Choice("Fear (Phogoth, the Untamed)", 1), Choice("Rage (Dominus Ghaul)", 2),
-                Choice("Isolation (Taniks, the Scarred)", 3), Choice("Servitude (Zydron, Gate Lord)", 4),
-                Choice("Pride (Skolas, Kell of Kells)", 5), Choice("Anguish (Omnigul, Will of Crota)", 5),
-                Choice("Insanity (Fikrul, the Fanatic)", 7)] int ArgHunt)
+            public async Task NightmareHunt([Summary("nightmare-hunt", "Nightmare Hunt to be alerted for."), Autocomplete(typeof(NightmareHuntAutocomplete))] int Hunt)
             {
-                if (NightmareHuntRotation.GetUserTracking(Context.User.Id, out var Hunt) != null)
+                var tracking = CurrentRotations.NightmareHunt.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Nightmare Hunts. I am watching for {NightmareHuntRotation.GetHuntNameString(Hunt)} ({NightmareHuntRotation.GetHuntBossString(Hunt)}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Nightmare Hunts. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Hunt = (NightmareHunt)ArgHunt;
 
-                NightmareHuntRotation.AddUserTracking(Context.User.Id, Hunt);
-                await RespondAsync($"I will remind you when {NightmareHuntRotation.GetHuntNameString(Hunt)} ({NightmareHuntRotation.GetHuntBossString(Hunt)}) is in rotation, which will be on {TimestampTag.FromDateTime(NightmareHuntRotation.DatePrediction(Hunt), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new NightmareHuntLink { DiscordID = Context.User.Id, Hunt = Hunt };
+                CurrentRotations.NightmareHunt.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.NightmareHunt.DatePrediction(Hunt, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
-            [SlashCommand("terminal-overload", "Be notified when a Terminal Overload location is active.")]
-            public async Task TerminalOverload([Summary("location", "Terminal Overload location to be alerted for."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int ArgLocation)
+            [SlashCommand("root-of-nightmares", "Be notified when a Root of Nightmares challenge is active.")]
+            public async Task RootOfNightmares([Summary("challenge", "Root of Nightmares challenge to be alerted for."), Autocomplete(typeof(RootOfNightmaresAutocomplete))] int Encounter)
             {
-                if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Location) != null)
+                var tracking = CurrentRotations.RootOfNightmares.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Terminal Overload. I am watching for {TerminalOverloadRotation.TerminalOverloads[Location].Location}, {TerminalOverloadRotation.TerminalOverloads[Location].WeaponEmote}{TerminalOverloadRotation.TerminalOverloads[Location].Weapon}.", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Root of Nightmares challenges. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Location = ArgLocation;
 
-                AltarsOfSorrowRotation.AddUserTracking(Context.User.Id, Location);
-                await RespondAsync($"I will remind you when {TerminalOverloadRotation.TerminalOverloads[Location].Location}, {TerminalOverloadRotation.TerminalOverloads[Location].WeaponEmote}{TerminalOverloadRotation.TerminalOverloads[Location].Weapon} is in rotation, which will be on {TimestampTag.FromDateTime(TerminalOverloadRotation.DatePrediction(Location), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new RootOfNightmaresLink { DiscordID = Context.User.Id, Encounter = Encounter };
+                CurrentRotations.RootOfNightmares.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.RootOfNightmares.DatePrediction(Encounter, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+            }
+
+            //[SlashCommand("shadowkeep-mission", "Be notified when a featured Shadowkeep story mission is active.")]
+            //public async Task ShadowkeepMission([Summary("mission", "Shadowkeep story mission to be alerted for."), Autocomplete(typeof(ShadowkeepMissionAutocomplete))] int Mission)
+            //{
+            //    var tracking = CurrentRotations.ShadowkeepMission.GetUserTracking(Context.User.Id);
+            //    if (tracking != null)
+            //    {
+            //        await RespondAsync($"You already have tracking for featured Shadowkeep story missions. I am watching for {tracking}.", ephemeral: true);
+            //        return;
+            //    }
+
+            //    tracking = new ShadowkeepMissionLink { DiscordID = Context.User.Id, Mission = Mission };
+            //    CurrentRotations.ShadowkeepMission.AddUserTracking(tracking);
+            //    await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.ShadowkeepMission.DatePrediction(Mission, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+            //}
+
+            [SlashCommand("terminal-overload", "Be notified when a Terminal Overload location is active.")]
+            public async Task TerminalOverload([Summary("location", "Terminal Overload location to be alerted for."), Autocomplete(typeof(TerminalOverloadAutocomplete))] int Location)
+            {
+                var tracking = CurrentRotations.TerminalOverload.GetUserTracking(Context.User.Id);
+                if (tracking != null)
+                {
+                    await RespondAsync($"You already have tracking for Terminal Overloads. I am watching for {tracking}.", ephemeral: true);
+                    return;
+                }
+
+                tracking = new TerminalOverloadLink { DiscordID = Context.User.Id, Location = Location };
+                CurrentRotations.TerminalOverload.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.TerminalOverload.DatePrediction(Location, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("vault-of-glass", "Be notified when a Vault of Glass challenge is active.")]
-            public async Task VaultOfGlass([Summary("challenge", "Vault of Glass challenge to be alerted for."),
-                Choice("Confluxes (Wait for It...)", 0), Choice("Oracles (The Only Oracle for You)", 1), Choice("Templar (Out of Its Way)", 2),
-                Choice("Gatekeepers (Strangers in Time)", 3), Choice("Atheon (Ensemble's Refrain)", 4)] int ArgEncounter)
+            public async Task VaultOfGlass([Summary("challenge", "Vault of Glass challenge to be alerted for."), Autocomplete(typeof(VaultOfGlassAutocomplete))] int Encounter)
             {
-                if (VaultOfGlassRotation.GetUserTracking(Context.User.Id, out var Encounter) != null)
+                var tracking = CurrentRotations.VaultOfGlass.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Vault of Glass challenges. I am watching for {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Vault of Glass challenges. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Encounter = (VaultOfGlassEncounter)ArgEncounter;
 
-                var predictedDate = VaultOfGlassRotation.DatePrediction(Encounter);
-                if (predictedDate >= FeaturedRaidRotation.DatePrediction(Raid.VaultOfGlass))
-                    predictedDate = FeaturedRaidRotation.DatePrediction(Raid.VaultOfGlass);
-
-                VaultOfGlassRotation.AddUserTracking(Context.User.Id, Encounter);
-                await RespondAsync($"I will remind you when {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new VaultOfGlassLink { DiscordID = Context.User.Id, Encounter = Encounter };
+                CurrentRotations.VaultOfGlass.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.VaultOfGlass.DatePrediction(Encounter, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("vow-of-the-disciple", "Be notified when a Vow of the Disciple challenge is active.")]
-            public async Task VowOfTheDisciple([Summary("challenge", "Vow of the Disciple challenge to be alerted for."),
-                Choice("Acquisition (Swift Destruction)", 0), Choice("Caretaker (Base Information)", 1),
-                Choice("Exhibition (Defenses Down)", 2), Choice("Rhulk (Looping Catalyst)", 3)] int ArgEncounter)
+            public async Task VowOfTheDisciple([Summary("challenge", "Vow of the Disciple challenge to be alerted for."), Autocomplete(typeof(VowOfTheDiscipleAutocomplete))] int Encounter)
             {
-                if (VowOfTheDiscipleRotation.GetUserTracking(Context.User.Id, out var Encounter) != null)
+                var tracking = CurrentRotations.VowOfTheDisciple.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for Vow of the Disciple challenges. I am watching for {VowOfTheDiscipleRotation.GetEncounterString(Encounter)} ({VowOfTheDiscipleRotation.GetChallengeString(Encounter)}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Vow of the Disciple challenges. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Encounter = (VowOfTheDiscipleEncounter)ArgEncounter;
 
-                VowOfTheDiscipleRotation.AddUserTracking(Context.User.Id, Encounter);
-                await RespondAsync($"I will remind you when {VowOfTheDiscipleRotation.GetEncounterString(Encounter)} ({VowOfTheDiscipleRotation.GetChallengeString(Encounter)}) is in rotation, which will be on {TimestampTag.FromDateTime(VowOfTheDiscipleRotation.DatePrediction(Encounter), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new VowOfTheDiscipleLink { DiscordID = Context.User.Id, Encounter = Encounter };
+                CurrentRotations.VowOfTheDisciple.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.VowOfTheDisciple.DatePrediction(Encounter, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
             [SlashCommand("wellspring", "Be notified when a Wellspring boss/weapon is active.")]
-            public async Task Wellspring([Summary("wellspring", "Wellspring weapon drop to be alerted for."),
-                Choice("Come to Pass (Auto)", 0), Choice("Tarnation (Grenade Launcher)", 1), Choice("Fel Taradiddle (Bow)", 2), Choice("Father's Sins (Sniper)", 3)] int ArgWellspring)
+            public async Task Wellspring([Summary("wellspring", "Wellspring weapon drop to be alerted for."), Autocomplete(typeof(WellspringAutocomplete))] int Wellspring)
             {
-                if (WellspringRotation.GetUserTracking(Context.User.Id, out var Wellspring) != null)
+                var tracking = CurrentRotations.Wellspring.GetUserTracking(Context.User.Id);
+                if (tracking != null)
                 {
-                    await RespondAsync($"You already have tracking for The Wellspring. I am watching for The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}), " +
-                        $"which drops {WellspringRotation.GetWeaponNameString(Wellspring)} ({WellspringRotation.GetWeaponTypeString(Wellspring)}).", ephemeral: true);
+                    await RespondAsync($"You already have tracking for Wellsprings. I am watching for {tracking}.", ephemeral: true);
                     return;
                 }
-                Wellspring = (Wellspring)ArgWellspring;
 
-                WellspringRotation.AddUserTracking(Context.User.Id, Wellspring);
-                await RespondAsync($"I will remind you when The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}), " +
-                    $"which drops {WellspringRotation.GetWeaponNameString(Wellspring)} ({WellspringRotation.GetWeaponTypeString(Wellspring)}), is in rotation, " +
-                    $"which will be on {TimestampTag.FromDateTime(WellspringRotation.DatePrediction(Wellspring), TimestampTagStyles.ShortDate)}.", ephemeral: true);
-                return;
+                tracking = new WellspringLink { DiscordID = Context.User.Id, Wellspring = Wellspring };
+                CurrentRotations.Wellspring.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.Wellspring.DatePrediction(Wellspring, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
+            //[SlashCommand("witch-queen-mission", "Be notified when a featured Witch Queen story mission is active.")]
+            //public async Task WitchQueenMission([Summary("mission", "Witch Queen story mission to be alerted for."), Autocomplete(typeof(WitchQueenMissionAutocomplete))] int Mission)
+            //{
+            //    var tracking = CurrentRotations.WitchQueenMission.GetUserTracking(Context.User.Id);
+            //    if (tracking != null)
+            //    {
+            //        await RespondAsync($"You already have tracking for featured Witch Queen story missions. I am watching for {tracking}.", ephemeral: true);
+            //        return;
+            //    }
+
+            //    tracking = new WitchQueenMissionLink { DiscordID = Context.User.Id, Mission = Mission };
+            //    CurrentRotations.WitchQueenMission.AddUserTracking(tracking);
+            //    await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.WitchQueenMission.DatePrediction(Mission, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+            //}
+
             [SlashCommand("remove", "Remove an active tracking notification.")]
-            public async Task Remove() /* TODO: Use an autocomplete for this. */
+            public async Task Remove([Summary("tracker", "Rotation tracker to remove. This list will be empty if you have no active trackers."), Autocomplete(typeof(TrackersAutocomplete))] string trackerType)
             {
-                // Build a selection menu with a list of all of the active trackings a user has.
-                var menuBuilder = new SelectMenuBuilder()
-                    .WithPlaceholder("Select one of your active trackers")
-                    .WithCustomId("notifyRemovalMenu")
-                    .WithMinValues(1)
-                    .WithMaxValues(1);
-
-                if (Ada1Rotation.GetUserTracking(Context.User.Id, out var Hash) != null)
-                    menuBuilder.AddOption("Ada-1", "ada-1", $"{ManifestHelper.Ada1Items[Hash]}");
-
-                if (AltarsOfSorrowRotation.GetUserTracking(Context.User.Id, out var Weapon) != null)
-                    menuBuilder.AddOption("Altars of Sorrow", "altars-of-sorrow", $"{AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} ({AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponType})");
-
-                if (AscendantChallengeRotation.GetUserTracking(Context.User.Id, out var Challenge) != null)
-                    menuBuilder.AddOption("Ascendant Challenge", "ascendant-challenge", $"{AscendantChallengeRotation.GetChallengeNameString(Challenge)} ({AscendantChallengeRotation.GetChallengeLocationString(Challenge)})");
-
-                if (CurseWeekRotation.GetUserTracking(Context.User.Id, out var Strength) != null)
-                    menuBuilder.AddOption("Curse Week", "curse-week", $"{Strength} Strength");
-
-                if (DeepStoneCryptRotation.GetUserTracking(Context.User.Id, out var DSCEncounter) != null)
-                    menuBuilder.AddOption("Deep Stone Crypt Challenge", "dsc-challenge", $"{DeepStoneCryptRotation.GetEncounterString(DSCEncounter)} ({DeepStoneCryptRotation.GetChallengeString(DSCEncounter)})");
-
-                if (EmpireHuntRotation.GetUserTracking(Context.User.Id, out var EmpireHunt) != null)
-                    menuBuilder.AddOption("Empire Hunt", "empire-hunt", $"{EmpireHuntRotation.GetHuntBossString(EmpireHunt)}");
-                
-                if (FeaturedRaidRotation.GetUserTracking(Context.User.Id, out var FeaturedRaid) != null)
-                    menuBuilder.AddOption("Featured Raid", "featured-raid", $"{FeaturedRaidRotation.GetRaidString(FeaturedRaid)}");
-
-                if (GardenOfSalvationRotation.GetUserTracking(Context.User.Id, out var GoSEncounter) != null)
-                    menuBuilder.AddOption("Garden of Salvation Challenge", "gos-challenge", $"{GardenOfSalvationRotation.GetEncounterString(GoSEncounter)} ({GardenOfSalvationRotation.GetChallengeString(GoSEncounter)})");
-
-                if (KingsFallRotation.GetUserTracking(Context.User.Id, out var KFEncounter) != null)
-                    menuBuilder.AddOption("King's Fall Challenge", "kf-challenge", $"{KFEncounter} ({KingsFallRotation.GetChallengeString(KFEncounter)})");
-
-                if (LastWishRotation.GetUserTracking(Context.User.Id, out var LWEncounter) != null)
-                    menuBuilder.AddOption("Last Wish Challenge", "lw-challenge", $"{LastWishRotation.GetEncounterString(LWEncounter)} ({LastWishRotation.GetChallengeString(LWEncounter)})");
-
-                if (LostSectorRotation.GetUserTracking(Context.User.Id, out var LS, out var EAT) != null)
+                if (trackerType.Equals("ada-1"))
                 {
-                    if (LS == -1 && EAT == null)
-                        menuBuilder.AddOption("Lost Sector", "remove-error", $"Nothing found");
-                    else if (LS != -1 && EAT == null)
-                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.LostSectors[LS].Name}");
-                    else if (LS == -1 && EAT != null)
-                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{EAT} Drop");
-                    else if (LS != -1 && EAT != null)
-                        menuBuilder.AddOption("Lost Sector", "lost-sector", $"{LostSectorRotation.LostSectors[LS].Name} dropping {EAT}");
+                    var tracker = CurrentRotations.Ada1.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Ada-1 tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.Ada1.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Ada-1 tracking, you will not be notified when {tracker} is available.", ephemeral: true);
                 }
-
-                if (NightfallRotation.GetUserTracking(Context.User.Id, out var NF, out var NFWeapon) != null)
+                else if (trackerType.Equals("altars-of-sorrow"))
                 {
-                    if (NF == null && NFWeapon == null)
-                        menuBuilder.AddOption("Nightfall", "remove-error", $"Nothing found");
-                    else if (NF != null && NFWeapon == null)
-                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.Nightfalls[(int)NF]}");
-                    else if (NF == null && NFWeapon != null)
-                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.NightfallWeapons[(int)Weapon].Name} Drop");
-                    else if (NF != null && NFWeapon != null)
-                        menuBuilder.AddOption("Nightfall", "nightfall", $"{NightfallRotation.Nightfalls[(int)NF]} dropping {NightfallRotation.NightfallWeapons[(int)Weapon].Name}");
+                    var tracker = CurrentRotations.AltarsOfSorrow.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Altars of Sorrow tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.AltarsOfSorrow.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Altars of Sorrow tracking, you will not be notified when {tracker} is available.", ephemeral: true);
                 }
-
-                if (NightmareHuntRotation.GetUserTracking(Context.User.Id, out var NightmareHunt) != null)
-                    menuBuilder.AddOption("Nightmare Hunt", "nightmare-hunt", $"{NightmareHuntRotation.GetHuntNameString(NightmareHunt)} ({NightmareHuntRotation.GetHuntBossString(NightmareHunt)})");
-
-                if (TerminalOverloadRotation.GetUserTracking(Context.User.Id, out var Location) != null)
-                    menuBuilder.AddOption("Terminal Overload", "terminal-overload", $"{TerminalOverloadRotation.TerminalOverloads[Location].Weapon} ({TerminalOverloadRotation.TerminalOverloads[Location].WeaponType})");
-
-                if (VaultOfGlassRotation.GetUserTracking(Context.User.Id, out var VoGEncounter) != null)
-                    menuBuilder.AddOption("Vault of Glass Challenge", "vog-challenge", $"{VaultOfGlassRotation.GetEncounterString(VoGEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGEncounter)})");
-
-                if (VowOfTheDiscipleRotation.GetUserTracking(Context.User.Id, out var VowEncounter) != null)
-                    menuBuilder.AddOption("Vow of the Disciple Challenge", "vow-challenge", $"{VowOfTheDiscipleRotation.GetEncounterString(VowEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(VowEncounter)})");
-
-                if (WellspringRotation.GetUserTracking(Context.User.Id, out var WellspringBoss) != null)
-                    menuBuilder.AddOption($"The Wellspring: {WellspringRotation.GetWellspringTypeString(WellspringBoss)}", "wellspring", $"{WellspringRotation.GetWeaponNameString(WellspringBoss)} ({WellspringRotation.GetWeaponTypeString(WellspringBoss)})");
-
-                var builder = new ComponentBuilder()
-                    .WithSelectMenu(menuBuilder);
-
-                try
+                else if (trackerType.Equals("ascendant-challenge"))
                 {
-                    await RespondAsync($"Which rotation tracker did you want me to remove? Please dismiss this message after you are done.", ephemeral: true, components: builder.Build());
+                    var tracker = CurrentRotations.AscendantChallenge.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Ascendant Challenge tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.AscendantChallenge.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Ascendant Challenge tracking, you will not be notified when {tracker} is available.", ephemeral: true);
                 }
-                catch
+                else if (trackerType.Equals("curse-week"))
                 {
-                    await RespondAsync($"You do not have any active trackers. Use \"/notify\" to activate your first one!", ephemeral: true);
+                    var tracker = CurrentRotations.CurseWeek.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Curse Week tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.CurseWeek.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Curse Week tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("deep-stone-crypt"))
+                {
+                    var tracker = CurrentRotations.DeepStoneCrypt.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Deep Stone Crypt tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.DeepStoneCrypt.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Deep Stone Crypt tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("empire-hunt"))
+                {
+                    var tracker = CurrentRotations.EmpireHunt.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Empire Hunt tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.EmpireHunt.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Empire Hunt tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("featured-dungeon"))
+                {
+                    var tracker = CurrentRotations.FeaturedDungeon.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Featured Dungeon tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.FeaturedDungeon.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Featured Dungeon tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("featured-raid"))
+                {
+                    var tracker = CurrentRotations.FeaturedRaid.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Featured Raid tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.FeaturedRaid.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Featured Raid tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("garden-of-salvation"))
+                {
+                    var tracker = CurrentRotations.GardenOfSalvation.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Garden of Salvation tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.GardenOfSalvation.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Garden of Salvation tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("kings-fall"))
+                {
+                    var tracker = CurrentRotations.KingsFall.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No King's Fall tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.KingsFall.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your King's Fall tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("last-wish"))
+                {
+                    var tracker = CurrentRotations.LastWish.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Last Wish tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.LastWish.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Last Wish tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("lightfall-mission"))
+                {
+                    var tracker = CurrentRotations.LightfallMission.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Lightfall Weekly Mission tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.LightfallMission.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Lightfall Weekly Mission tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("lost-sector"))
+                {
+                    var tracker = CurrentRotations.LostSector.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Lost Sector tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.LostSector.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("nightfall"))
+                {
+                    var tracker = CurrentRotations.Nightfall.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Nightfall tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.Nightfall.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Nightfall tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("nightmare-hunt"))
+                {
+                    var tracker = CurrentRotations.NightmareHunt.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Nightmare Hunt tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.NightmareHunt.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Nightmare Hunt tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("root-of-nightmares"))
+                {
+                    var tracker = CurrentRotations.RootOfNightmares.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Root of Nightmares tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.RootOfNightmares.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Root of Nightmares tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("shadowkeep-mission"))
+                {
+                    var tracker = CurrentRotations.ShadowkeepMission.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Shadowkeep Weekly Mission tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.ShadowkeepMission.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Shadowkeep Weekly Mission tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("terminal-overload"))
+                {
+                    var tracker = CurrentRotations.TerminalOverload.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Terminal Overload tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.TerminalOverload.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Terminal Overload tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("vault-of-glass"))
+                {
+                    var tracker = CurrentRotations.VaultOfGlass.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Vault of Glass tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.VaultOfGlass.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Vault of Glass tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("vow-of-the-disciple"))
+                {
+                    var tracker = CurrentRotations.VowOfTheDisciple.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Vow of the Disciple tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.VowOfTheDisciple.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Vow of the Disciple tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("wellspring"))
+                {
+                    var tracker = CurrentRotations.Wellspring.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Wellspring tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.Wellspring.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Wellspring tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else if (trackerType.Equals("witch-queen-mission"))
+                {
+                    var tracker = CurrentRotations.WitchQueenMission.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Witch Queen Weekly Mission tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.WitchQueenMission.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Witch Queen Weekly Mission tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
+                else
+                {
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = "Unable to parse parameters, make sure you're using one of the autocomplete options!";
+                    await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
                 }
             }
         }
 
-        [Group("next", "Be notified when a specific rotation is active.")]
+        [Group("next", "Predict when a specific rotation is active next.")]
         public class Next : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("altars-of-sorrow", "Find out when an Altars of Sorrow weapon is active next.")]
-            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to predict its next appearance."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int Weapon)
+            public async Task AltarsOfSorrow([Summary("weapon", "Altars of Sorrow weapon to predict its next appearance."), Autocomplete(typeof(AltarsOfSorrowAutocomplete))] int Weapon,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                var predictedDate = AltarsOfSorrowRotation.DatePrediction(Weapon);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Altars of Sorrow";
-                embed.Description =
-                    $"Next occurrance of {AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].WeaponEmote}{AltarsOfSorrowRotation.AltarsOfSorrows[Weapon].Weapon} " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<AltarsOfSorrowPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.AltarsOfSorrow.DatePrediction(Weapon, i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Altars of Sorrow",
+                    Description = $"Requested: {CurrentRotations.AltarsOfSorrow.Rotations[Weapon].WeaponEmote}{CurrentRotations.AltarsOfSorrow.Rotations[Weapon]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.AltarsOfSorrow.WeaponEmote}{prediction.AltarsOfSorrow} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Occurrence is beyond {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/58bf5b93ae8cfefc55852fe664179757.png";
+                await RespondAsync(embed: embed.Build());
             }
-
+            
             [SlashCommand("ascendant-challenge", "Find out when an Ascendant Challenge is active next.")]
-            public async Task AscendantChallenge([Summary("ascendant-challenge", "Ascendant Challenge to predict its next appearance."),
-                Choice("Agonarch Abyss (Bay of Drowned Wishes)", 0), Choice("Cimmerian Garrison (Chamber of Starlight)", 1),
-                Choice("Ouroborea (Aphelion's Rest)", 2), Choice("Forfeit Shrine (Gardens of Esila)", 3),
-                Choice("Shattered Ruins (Spine of Keres)", 4), Choice("Keep of Honed Edges (Harbinger's Seclude)", 5)] int ArgAscendantChallenge)
+            public async Task AscendantChallenge([Summary("ascendant-challenge", "Ascendant Challenge to predict its next appearance."), Autocomplete(typeof(AscendantChallengeAutocomplete))] int AscendantChallenge,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                AscendantChallenge AscendantChallenge = (AscendantChallenge)ArgAscendantChallenge;
-
-                var predictedDate = AscendantChallengeRotation.DatePrediction(AscendantChallenge);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Ascendant Challenge";
-                embed.Description =
-                    $"Next occurrance of {AscendantChallengeRotation.GetChallengeNameString(AscendantChallenge)} " +
-                        $"({AscendantChallengeRotation.GetChallengeLocationString(AscendantChallenge)}) is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<AscendantChallengePrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.AscendantChallenge.DatePrediction(AscendantChallenge, i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Ascendant Challenge",
+                    Description = $"Requested: {CurrentRotations.AscendantChallenge.Rotations[AscendantChallenge]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.AscendantChallenge} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/2f9e7dd03c415eb158c16bb59cc24c84.jpg";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("curse-week", "Find out when a Curse Week strength is active.")]
-            public async Task CurseWeek([Summary("strength", "Curse Week strength.")] CurseWeek ArgCurseWeek)
+            public async Task CurseWeek([Summary("strength", "Curse Week strength."), Autocomplete(typeof(CurseWeekAutocomplete))] int CurseWeek,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                CurseWeek CurseWeek = ArgCurseWeek;
-
-                var predictedDate = CurseWeekRotation.DatePrediction(CurseWeek);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Curse Week";
-                embed.Description =
-                    $"Next occurrance of {CurseWeek} Curse Strength " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<CurseWeekPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.CurseWeek.DatePrediction(CurseWeek, i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Curse Week",
+                    Description = $"Requested: {CurrentRotations.CurseWeek.Rotations[CurseWeek]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.CurseWeek} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/e76dac4b765f694bd2e50eef00aa95d4.png";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("deep-stone-crypt", "Find out when a Deep Stone Crypt challenge is active next.")]
-            public async Task DeepStoneCrypt([Summary("challenge", "Deep Stone Crypt challenge to predict its next appearance."),
-                Choice("Crypt Security (Red Rover)", 0), Choice("Atraks-1 (Copies of Copies)", 1),
-                Choice("The Descent (Of All Trades)", 2), Choice("Taniks (The Core Four)", 3)] int ArgEncounter)
+            public async Task DeepStoneCrypt([Summary("challenge", "Deep Stone Crypt challenge to predict its next appearance."), Autocomplete(typeof(DeepStoneCryptAutocomplete))] int Encounter,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                DeepStoneCryptEncounter Encounter = (DeepStoneCryptEncounter)ArgEncounter;
-
-                var predictedDate = DeepStoneCryptRotation.DatePrediction(Encounter);
-                var predictedFeaturedDate = FeaturedRaidRotation.DatePrediction(Raid.DeepStoneCrypt);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Deep Stone Crypt";
-                if (predictedDate < predictedFeaturedDate)
-                    embed.Description =
-                        $"Next occurrance of {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else
-                    embed.Description =
-                        $"Next occurrance of {DeepStoneCryptRotation.GetEncounterString(Encounter)} ({DeepStoneCryptRotation.GetChallengeString(Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedFeaturedDate, TimestampTagStyles.ShortDate)}. Deep Stone Crypt will be the featured raid, making this challenge, and all others, available.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<DeepStoneCryptPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.DeepStoneCrypt.DatePrediction(Encounter, i));
+
+                var featuredRaidPredictions = new List<FeaturedRaidPrediction>();
+                for (int i = 0; i < show; i++)
+                    featuredRaidPredictions.Add(CurrentRotations.FeaturedRaid.DatePrediction(CurrentRotations.FeaturedRaid.Rotations.FindIndex(x => x.Raid.Equals("Deep Stone Crypt")), i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Deep Stone Crypt",
+                    Description = $"Requested: {CurrentRotations.DeepStoneCrypt.Rotations[Encounter]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    var nextFeatured = featuredRaidPredictions.ElementAt(0);
+                    bool isPastSeasonEnd = nextFeatured.Date.ToUniversalTime() >= seasonEndDate;
+                    if (prediction.Date >= nextFeatured.Date)
+                    {
+                        featuredRaidPredictions.RemoveAt(0);
+                        embed.AddField(x =>
+                        {
+                            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                            x.Value = $"{prediction.DeepStoneCrypt} on {TimestampTag.FromDateTime(nextFeatured.Date, TimestampTagStyles.ShortDate)} (Featured Raid)";
+                            x.IsInline = false;
+                        });
+                        occurrences++;
+
+                        // Don't show duplicate weeks.
+                        if (prediction.Date == nextFeatured.Date)
+                            continue;
+                    }
+
+                    isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.DeepStoneCrypt} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                embed.Fields = embed.Fields.Take(4).ToList();
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_427561ad3d02d80a76a9cce7802c1323.png";
+                await RespondAsync(embed: embed.Build());
             }
-
+            
             [SlashCommand("empire-hunt", "Find out when an Empire Hunt is active next.")]
-            public async Task EmpireHunt([Summary("empire-hunt", "Empire Hunt boss to predict its next appearance."),
-                Choice("Phylaks, the Warrior", 0), Choice("Praksis, the Technocrat", 1), Choice("Kridis, the Dark Priestess", 2)] int ArgHunt)
+            public async Task EmpireHunt([Summary("empire-hunt", "Empire Hunt boss to predict its next appearance."), Autocomplete(typeof(EmpireHuntAutocomplete))] int Hunt,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                EmpireHunt Hunt = (EmpireHunt)ArgHunt;
-
-                var predictedDate = EmpireHuntRotation.DatePrediction(Hunt);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Empire Hunt";
-                embed.Description =
-                    $"Next occurrance of {EmpireHuntRotation.GetHuntNameString(Hunt)} " +
-                        $"({EmpireHuntRotation.GetHuntBossString(Hunt)}) is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<EmpireHuntPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.EmpireHunt.DatePrediction(Hunt, i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Empire Hunt",
+                    Description = $"Requested: {CurrentRotations.EmpireHunt.Rotations[Hunt]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.EmpireHunt} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/f3e9c2260e639dcea4a3135df40e6e5e.png";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("featured-raid", "Find out when a raid is being featured next.")]
-            public async Task FeaturedRaid([Summary("raid", "Legacy raid activity to predict its next appearance."),
-                Choice("Last Wish", 0), Choice("Garden of Salvation", 1), Choice("Deep Stone Crypt", 2), Choice("Vault of Glass", 3), Choice("Vow of the Disciple", 4), Choice("King's Fall", 5)] int ArgRaid)
+            public async Task FeaturedRaid([Summary("raid", "Legacy raid activity to predict its next appearance."), Autocomplete(typeof(FeaturedRaidAutocomplete))] int Raid,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                Raid Raid = (Raid)ArgRaid;
-
-                var predictedDate = FeaturedRaidRotation.DatePrediction(Raid);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Featured Raid";
-                embed.Description =
-                    $"Next occurrance of {FeaturedRaidRotation.GetRaidString(Raid)} " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<FeaturedRaidPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.FeaturedRaid.DatePrediction(Raid, i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Featured Raid",
+                    Description = $"Requested: {CurrentRotations.FeaturedRaid.Rotations[Raid]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.FeaturedRaid} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/8b1bfd1c1ce1cab51d23c78235a6e067.png";
+                await RespondAsync(embed: embed.Build());
+            }
+
+            [SlashCommand("featured-dungeon", "Find out when a dungeon is being featured next.")]
+            public async Task FeaturedDungeon([Summary("raid", "Legacy dungeon activity to predict its next appearance."), Autocomplete(typeof(FeaturedDungeonAutocomplete))] int Dungeon,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            {
+                show = show switch
+                {
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
+                };
+
+                var predictions = new List<FeaturedDungeonPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.FeaturedDungeon.DatePrediction(Dungeon, i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Featured Dungeon",
+                    Description = $"Requested: {CurrentRotations.FeaturedDungeon.Rotations[Dungeon]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.FeaturedDungeon} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyActivityModeDefinition_f20ebb76bee675ca429e470cec58cc7b.png";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("garden-of-salvation", "Find out when a Garden of Salvation challenge is active next.")]
-            public async Task GardenOfSalvation([Summary("challenge", "Garden of Salvation challenge to predict its next appearance."),
-                Choice("Evade the Consecrated Mind (Staying Alive)", 0), Choice("Summon the Consecrated Mind (A Link to the Chain)", 1),
-                Choice("Consecrated Mind (To the Top)", 2), Choice("Sanctified Mind (Zero to One Hundred)", 3)] int ArgEncounter)
+            public async Task GardenOfSalvation([Summary("challenge", "Garden of Salvation challenge to predict its next appearance."), Autocomplete(typeof(GardenOfSalvationAutocomplete))] int Encounter,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                GardenOfSalvationEncounter Encounter = (GardenOfSalvationEncounter)ArgEncounter;
-
-                var predictedDate = GardenOfSalvationRotation.DatePrediction(Encounter);
-                var predictedFeaturedDate = FeaturedRaidRotation.DatePrediction(Raid.GardenOfSalvation);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Garden of Salvation";
-                if (predictedDate < predictedFeaturedDate)
-                    embed.Description =
-                        $"Next occurrance of {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else
-                    embed.Description =
-                        $"Next occurrance of {GardenOfSalvationRotation.GetEncounterString(Encounter)} ({GardenOfSalvationRotation.GetChallengeString(Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedFeaturedDate, TimestampTagStyles.ShortDate)}. Garden of Salvation will be the featured raid, making this challenge, and all others, available.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<GardenOfSalvationPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.GardenOfSalvation.DatePrediction(Encounter, i));
+
+                var featuredRaidPredictions = new List<FeaturedRaidPrediction>();
+                for (int i = 0; i < show; i++)
+                    featuredRaidPredictions.Add(CurrentRotations.FeaturedRaid.DatePrediction(CurrentRotations.FeaturedRaid.Rotations.FindIndex(x => x.Raid.Equals("Garden of Salvation")), i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Garden of Salvation",
+                    Description = $"Requested: {CurrentRotations.GardenOfSalvation.Rotations[Encounter]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    var nextFeatured = featuredRaidPredictions.ElementAt(0);
+                    bool isPastSeasonEnd = nextFeatured.Date.ToUniversalTime() >= seasonEndDate;
+                    if (prediction.Date >= nextFeatured.Date)
+                    {
+                        featuredRaidPredictions.RemoveAt(0);
+                        embed.AddField(x =>
+                        {
+                            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                            x.Value = $"{prediction.GardenOfSalvation} on {TimestampTag.FromDateTime(nextFeatured.Date, TimestampTagStyles.ShortDate)} (Featured Raid)";
+                            x.IsInline = false;
+                        });
+                        occurrences++;
+
+                        // Don't show duplicate weeks.
+                        if (prediction.Date == nextFeatured.Date)
+                            continue;
+                    }
+
+                    isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.GardenOfSalvation} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                embed.Fields = embed.Fields.Take(4).ToList();
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_eb9f4e265e29cb5e50559b6bf814a9c9.png";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("kings-fall", "Find out when a King's Fall challenge is active next.")]
-            public async Task KingsFall([Summary("challenge", "King's Fall challenge to predict its next appearance."),
-                Choice("Basilica (The Grass Is Always Greener)", 0), Choice("Warpriest (Devious Thievery)", 1), Choice("Golgoroth (Gaze Amaze)", 2),
-                Choice("Daughters (Under Construction)", 3), Choice("Oryx (Hands Off)", 4)] int ArgEncounter)
+            public async Task KingsFall([Summary("challenge", "King's Fall challenge to predict its next appearance."), Autocomplete(typeof(KingsFallAutocomplete))] int Encounter,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                KingsFallEncounter Encounter = (KingsFallEncounter)ArgEncounter;
-
-                var predictedDate = KingsFallRotation.DatePrediction(Encounter);
-
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "King's Fall";
-                embed.Description =
-                    $"Next occurrance of {Encounter} ({KingsFallRotation.GetChallengeString(Encounter)}) " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<KingsFallPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.KingsFall.DatePrediction(Encounter, i));
+
+                var featuredRaidPredictions = new List<FeaturedRaidPrediction>();
+                for (int i = 0; i < show; i++)
+                    featuredRaidPredictions.Add(CurrentRotations.FeaturedRaid.DatePrediction(CurrentRotations.FeaturedRaid.Rotations.FindIndex(x => x.Raid.Equals("King's Fall")), i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "King's Fall",
+                    Description = $"Requested: {CurrentRotations.KingsFall.Rotations[Encounter]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    var nextFeatured = featuredRaidPredictions.ElementAt(0);
+                    bool isPastSeasonEnd = nextFeatured.Date.ToUniversalTime() >= seasonEndDate;
+                    if (prediction.Date >= nextFeatured.Date)
+                    {
+                        featuredRaidPredictions.RemoveAt(0);
+                        embed.AddField(x =>
+                        {
+                            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                            x.Value = $"{prediction.KingsFall} on {TimestampTag.FromDateTime(nextFeatured.Date, TimestampTagStyles.ShortDate)} (Featured Raid)";
+                            x.IsInline = false;
+                        });
+                        occurrences++;
+
+                        // Don't show duplicate weeks.
+                        if (prediction.Date == nextFeatured.Date)
+                            continue;
+                    }
+
+                    isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.KingsFall} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                embed.Fields = embed.Fields.Take(4).ToList();
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_58109af839b023d7bf44c7b734818e47.png";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("last-wish", "Find out when a Last Wish challenge is active next.")]
-            public async Task LastWish([Summary("challenge", "Last Wish challenge to predict its next appearance."),
-                Choice("Kalli (Summoning Ritual)", 0), Choice("Shuro Chi (Which Witch)", 1), Choice("Morgeth (Forever Fight)", 2),
-                Choice("Vault (Keep Out)", 3), Choice("Riven (Strength of Memory)", 4)] int ArgEncounter)
+            public async Task LastWish([Summary("challenge", "Last Wish challenge to predict its next appearance."), Autocomplete(typeof(LastWishAutocomplete))] int Encounter,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                LastWishEncounter Encounter = (LastWishEncounter)ArgEncounter;
-
-                var predictedDate = LastWishRotation.DatePrediction(Encounter);
-                var predictedFeaturedDate = FeaturedRaidRotation.DatePrediction(Raid.LastWish);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Last Wish";
-                if (predictedDate < predictedFeaturedDate)
-                    embed.Description =
-                        $"Next occurrance of {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else
-                    embed.Description =
-                        $"Next occurrance of {LastWishRotation.GetEncounterString(Encounter)} ({LastWishRotation.GetChallengeString(Encounter)}) " +
-                            $"is: {TimestampTag.FromDateTime(predictedFeaturedDate, TimestampTagStyles.ShortDate)}. Last Wish will be the featured raid, making this challenge, and all others, available.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
-            }
-
-            [SlashCommand("lost-sector", "Find out when a Lost Sector and/or Armor Drop is active.")]
-            public async Task LostSector([Summary("lost-sector", "Lost Sector to predict its next appearance."), Autocomplete(typeof(LostSectorAutocomplete))] int ArgLS = -1,
-                [Summary("armor-drop", "Lost Sector Exotic armor drop to predict its next appearance.")] ExoticArmorType? ArgEAT = null,
-                [Summary("show-next", "Number of next occurrances to show.")] int show = 1)
-            {
-                //await RespondAsync($"Gathering data on new Lost Sectors. Check back later!", ephemeral: true);
-                //return;
-                await DeferAsync();
-
-                // TODO: Implement a way to show the next X lost sectors. Requires modification of the DatePrediction method.
-                int LS = ArgLS;
-                ExoticArmorType? EAT = ArgEAT;
-
-                if (LS == -1 && EAT == null)
-                {
-                    var errEmbed = Embeds.GetErrorEmbed();
-                    errEmbed.Description = $"An error has occurred. No parameters.";
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errEmbed.Build(); });
-                    return;
-                }
-
-                var predictions = new List<LostSectorPrediction>();
-
-                if (show < 1)
-                    show = 1;
-                else if (show > 4)
-                    show = 4;
-
+                var predictions = new List<LastWishPrediction>();
                 for (int i = 0; i < show; i++)
-                {
-                    predictions.Add(LostSectorRotation.DatePrediction(LS, EAT, i));
-                }
+                    predictions.Add(CurrentRotations.LastWish.DatePrediction(Encounter, i));
 
-                var embed = new EmbedBuilder()
-                {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-                };
+                var featuredRaidPredictions = new List<FeaturedRaidPrediction>();
+                for (int i = 0; i < show; i++)
+                    featuredRaidPredictions.Add(CurrentRotations.FeaturedRaid.DatePrediction(CurrentRotations.FeaturedRaid.Rotations.FindIndex(x => x.Raid.Equals("Last Wish")), i));
 
-                int occurrances = 1;
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Last Wish",
+                    Description = $"Requested: {CurrentRotations.LastWish.Rotations[Encounter]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
                 foreach (var prediction in predictions)
                 {
+                    var nextFeatured = featuredRaidPredictions.ElementAt(0);
+                    bool isPastSeasonEnd = nextFeatured.Date.ToUniversalTime() >= seasonEndDate;
+                    if (prediction.Date >= nextFeatured.Date)
+                    {
+                        featuredRaidPredictions.RemoveAt(0);
+                        embed.AddField(x =>
+                        {
+                            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                            x.Value = $"{prediction.LastWish} on {TimestampTag.FromDateTime(nextFeatured.Date, TimestampTagStyles.ShortDate)} (Featured Raid)";
+                            x.IsInline = false;
+                        });
+                        occurrences++;
+
+                        // Don't show duplicate weeks.
+                        if (prediction.Date == nextFeatured.Date)
+                            continue;
+                    }
+
+                    isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
                     embed.AddField(x =>
                     {
-                        x.Name = $"Occurrance {occurrances}";
-                        x.Value = $"{prediction.LostSector.Name} dropping {prediction.ArmorDrop} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.LastWish} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
                         x.IsInline = false;
                     });
-                    occurrances++;
+                    occurrences++;
                 }
 
-                embed.Title = "Lost Sectors";
-                if (LS != -1 && EAT == null)
-                    embed.Description = $"Requested: {LostSectorRotation.LostSectors[LS].Name}";
-                else if (LS == -1 && EAT != null)
-                    embed.Description = $"Requested: Lost Sectors dropping {EAT}";
-                else if (LS != -1 && EAT != null)
-                    embed.Description = $"Requested: {LostSectorRotation.LostSectors[LS].Name} dropping {EAT}";
+                embed.Fields = embed.Fields.Take(4).ToList();
 
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
-                return;
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_56d1f52f0cb40248a990408d7ac84bd3.png";
+                await RespondAsync(embed: embed.Build());
+            }
+
+            //[SlashCommand("lightfall-mission", "Find out when a featured Lightfall mission is active next.")]
+            //public async Task LightfallMission([Summary("mission", "Lightfall mission to predict its next appearance."), Autocomplete(typeof(LightfallMissionAutocomplete))] int Mission,
+            //    [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            //{
+            //    show = show switch
+            //    {
+            //        < 1 => 1,
+            //        > 4 => 4,
+            //        _ => show
+            //    };
+
+            //    var predictions = new List<LightfallMissionPrediction>();
+            //    for (int i = 0; i < show; i++)
+            //        predictions.Add(CurrentRotations.LightfallMission.DatePrediction(Mission, i));
+
+            //    var embed = new EmbedBuilder
+            //    {
+            //        Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+            //        Title = "Lightfall Mission",
+            //        Description = $"Requested: {CurrentRotations.LightfallMission.Rotations[Mission]}"
+            //    }.WithCurrentTimestamp();
+
+            //    var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+            //    int occurrences = 1;
+            //    foreach (var prediction in predictions)
+            //    {
+            //        bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+            //        embed.AddField(x =>
+            //        {
+            //            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+            //            x.Value = $"{prediction.LightfallMission} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+            //            x.IsInline = false;
+            //        });
+            //        occurrences++;
+            //    }
+
+            //    if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+            //        embed.Description +=
+            //            $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+            //    embed.ThumbnailUrl =
+            //        "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_67326996f903b5961421421e60ba128c.png";
+            //    await RespondAsync(embed: embed.Build());
+            //}
+
+            [SlashCommand("lost-sector", "Find out when a Lost Sector and/or Armor Drop is active.")]
+            public async Task LostSector([Summary("lost-sector", "Lost Sector to predict its next appearance."), Autocomplete(typeof(LostSectorAutocomplete))] int LS = -1,
+                [Summary("armor-drop", "Lost Sector Exotic armor drop to predict its next appearance."), Autocomplete(typeof(ExoticArmorAutocomplete))] int EAT = -1,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            {
+                show = show switch
+                {
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
+                };
+
+                var predictions = new List<LostSectorPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.LostSector.DatePrediction(LS, EAT, i));
+
+                string requested = "Lost Sector";
+                if (LS >= 0)
+                    requested = $"{CurrentRotations.LostSector.Rotations[LS]}";
+
+                if (EAT >= 0)
+                    requested += $" dropping {CurrentRotations.LostSector.ArmorRotations[EAT]}";
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Lost Sector",
+                    Description = $"Requested: {requested}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.LostSector} dropping {prediction.ExoticArmor} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/6a2761d2475623125d896d1a424a91f9.png";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("nightfall", "Find out when a Nightfall and/or Weapon is active next.")]
-            public async Task Nightfall([Summary("nightfall", "Nightfall Strike to predict its next appearance."), Autocomplete(typeof(NightfallAutocomplete))] int? ArgNF = null,
-                [Summary("weapon", "Nightfall Strike Weapon drop."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int? ArgWeapon = null)
+            public async Task Nightfall([Summary("nightfall", "Nightfall Strike to predict its next appearance."), Autocomplete(typeof(NightfallAutocomplete))] int NF = -1,
+                [Summary("weapon", "Nightfall Strike Weapon drop."), Autocomplete(typeof(NightfallWeaponAutocomplete))] int Weapon = -1,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                //await RespondAsync($"Gathering data on new Nightfalls. Check back later!", ephemeral: true);
-                //return;
-
-                int? NF = ArgNF;
-                int? Weapon = ArgWeapon;
-
-                var predictedDate = NightfallRotation.DatePrediction(NF, Weapon);
-
-                if (NF == null && Weapon == null)
+                show = show switch
                 {
-                    await RespondAsync($"You left both arguments blank; I can't predict nothing!", ephemeral: true);
-                    return;
-                }
-                var predictDate = NightfallRotation.DatePrediction(NF, Weapon);
-                if (predictDate < DateTime.Now)
-                {
-                    await RespondAsync($"This rotation is not possible this season.", ephemeral: true);
-                    return;
-                }
-
-                var embed = new EmbedBuilder()
-                {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Nightfall";
-                if (NF != null && Weapon == null)
-                    embed.Description =
-                        $"Next occurrance of {NightfallRotation.Nightfalls[(int)NF]} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (NF == null && Weapon != null)
-                    embed.Description =
-                        $"Next occurrance of Nightfalls" +
-                            $"{(Weapon != null ? $" dropping {NightfallRotation.NightfallWeapons[(int)Weapon].Name}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else if (NF != null && Weapon != null)
-                    embed.Description =
-                        $"Next occurrance of {NightfallRotation.Nightfalls[(int)NF]}" +
-                            $"{(Weapon != null ? $" dropping {NightfallRotation.NightfallWeapons[(int)Weapon].Name}" : "")} is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}."; 
 
-                await RespondAsync($"", embed: embed.Build());
-                //await RespondAsync($"Gathering data on new Nightfalls. Check back later!");
-                //return;
+                var predictions = new List<NightfallPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.Nightfall.DatePrediction(NF, Weapon, i));
+
+                string requested = "Nightfall";
+                if (NF >= 0)
+                    requested = $"{CurrentRotations.Nightfall.Rotations[NF]}";
+
+                if (Weapon >= 0)
+                    requested += $" dropping {CurrentRotations.Nightfall.WeaponRotations[Weapon]}";
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Nightfall",
+                    Description = $"Requested: {requested}"
+                }.WithCurrentTimestamp();
+
+                if (predictions.Contains(null))
+                {
+                    embed.Description += "\nThis rotation is not possible.";
+                    await RespondAsync(embed: embed.Build(), ephemeral: true);
+                    return;
+                }
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.Nightfall} dropping {prediction.NightfallWeapon} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/f2154b781b36b19760efcb23695c66fe.png";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("nightmare-hunt", "Find out when an Nightmare Hunt is active next.")]
-            public async Task NightmareHunt([Summary("nightmare-hunt", "Nightmare Hunt boss to predict its next appearance."),
-                Choice("Despair (Crota, Son of Oryx)", 0), Choice("Fear (Phogoth, the Untamed)", 1), Choice("Rage (Dominus Ghaul)", 2),
-                Choice("Isolation (Taniks, the Scarred)", 3), Choice("Servitude (Zydron, Gate Lord)", 4),
-                Choice("Pride (Skolas, Kell of Kells)", 5), Choice("Anguish (Omnigul, Will of Crota)", 5),
-                Choice("Insanity (Fikrul, the Fanatic)", 7)] int ArgHunt)
+            public async Task NightmareHunt([Summary("nightmare-hunt", "Nightmare Hunt boss to predict its next appearance."), Autocomplete(typeof(NightmareHuntAutocomplete))] int Hunt,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                NightmareHunt Hunt = (NightmareHunt)ArgHunt;
-
-                var predictedDate = NightmareHuntRotation.DatePrediction(Hunt);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Nightmare Hunt";
-                embed.Description =
-                    $"Next occurrance of {NightmareHuntRotation.GetHuntNameString(Hunt)} " +
-                        $"({NightmareHuntRotation.GetHuntBossString(Hunt)}) is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<NightmareHuntPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.NightmareHunt.DatePrediction(Hunt, i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Nightmare Hunt",
+                    Description = $"Requested: {CurrentRotations.NightmareHunt.Rotations[Hunt]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.NightmareHunt} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyActivityModeDefinition_48ad57129cd0c46a355ef8bcaa1acd04.png";
+                await RespondAsync(embed: embed.Build());
             }
 
-            [SlashCommand("terminal-overload", "Find out when a Terminal Overload location is active next.")]
-            public async Task TerminalOverload([Summary("location", "Terminal Overload location to predict its next appearance."), Autocomplete(typeof(TerminalOverloadAutocomplete))] int Location)
+            [SlashCommand("root-of-nightmares", "Find out when a Root of Nightmares challenge is active next.")]
+            public async Task RootOfNightmares([Summary("challenge", "Root of Nightmares challenge to predict its next appearance."), Autocomplete(typeof(RootOfNightmaresAutocomplete))] int Encounter,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                var predictedDate = TerminalOverloadRotation.DatePrediction(Location);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Terminal Overload";
-                embed.Description =
-                    $"Next occurrance of {TerminalOverloadRotation.TerminalOverloads[Location].Location}, {TerminalOverloadRotation.TerminalOverloads[Location].WeaponEmote}{TerminalOverloadRotation.TerminalOverloads[Location].Weapon} " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<RootOfNightmaresPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.RootOfNightmares.DatePrediction(Encounter, i));
+
+                var featuredRaidPredictions = new List<FeaturedRaidPrediction>();
+                for (int i = 0; i < show; i++)
+                    featuredRaidPredictions.Add(CurrentRotations.FeaturedRaid.DatePrediction(CurrentRotations.FeaturedRaid.Rotations.FindIndex(x => x.Raid.Equals("Root of Nightmares")), i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Root of Nightmares",
+                    Description = $"Requested: {CurrentRotations.RootOfNightmares.Rotations[Encounter]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    var nextFeatured = featuredRaidPredictions.ElementAt(0);
+                    bool isPastSeasonEnd = nextFeatured.Date.ToUniversalTime() >= seasonEndDate;
+                    if (prediction.Date >= nextFeatured.Date)
+                    {
+                        featuredRaidPredictions.RemoveAt(0);
+                        embed.AddField(x =>
+                        {
+                            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                            x.Value = $"{prediction.RootOfNightmares} on {TimestampTag.FromDateTime(nextFeatured.Date, TimestampTagStyles.ShortDate)} (Featured Raid)";
+                            x.IsInline = false;
+                        });
+                        occurrences++;
+
+                        // Don't show duplicate weeks.
+                        if (prediction.Date == nextFeatured.Date)
+                            continue;
+                    }
+
+                    isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.RootOfNightmares} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                embed.Fields = embed.Fields.Take(4).ToList();
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_d3dc8747ee63f991c6a56ac7908047ba.png";
+                await RespondAsync(embed: embed.Build());
+            }
+
+            //[SlashCommand("shadowkeep-mission", "Find out when a featured Shadowkeep mission is active next.")]
+            //public async Task ShadowkeepMission([Summary("mission", "Shadowkeep mission to predict its next appearance."), Autocomplete(typeof(ShadowkeepMissionAutocomplete))] int Mission,
+            //    [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            //{
+            //    show = show switch
+            //    {
+            //        < 1 => 1,
+            //        > 4 => 4,
+            //        _ => show
+            //    };
+
+            //    var predictions = new List<ShadowkeepMissionPrediction>();
+            //    for (int i = 0; i < show; i++)
+            //        predictions.Add(CurrentRotations.ShadowkeepMission.DatePrediction(Mission, i));
+
+            //    var embed = new EmbedBuilder
+            //    {
+            //        Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+            //        Title = "Shadowkeep Mission",
+            //        Description = $"Requested: {CurrentRotations.ShadowkeepMission.Rotations[Mission]}"
+            //    }.WithCurrentTimestamp();
+
+            //    var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+            //    int occurrences = 1;
+            //    foreach (var prediction in predictions)
+            //    {
+            //        bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+            //        embed.AddField(x =>
+            //        {
+            //            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+            //            x.Value = $"{prediction.ShadowkeepMission} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+            //            x.IsInline = false;
+            //        });
+            //        occurrences++;
+            //    }
+
+            //    if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+            //        embed.Description +=
+            //            $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+            //    embed.ThumbnailUrl =
+            //        "https://www.bungie.net/common/destiny2_content/icons/DestinyActivityModeDefinition_48ad57129cd0c46a355ef8bcaa1acd04.png";
+            //    await RespondAsync(embed: embed.Build());
+            //}
+
+            [SlashCommand("terminal-overload", "Find out when a Terminal Overload location is active next.")]
+            public async Task TerminalOverload([Summary("location", "Terminal Overload location to predict its next appearance."), Autocomplete(typeof(TerminalOverloadAutocomplete))] int Location,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            {
+                show = show switch
+                {
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
+                };
+
+                var predictions = new List<TerminalOverloadPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.TerminalOverload.DatePrediction(Location, i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Terminal Overload",
+                    Description = $"Requested: {CurrentRotations.TerminalOverload.Rotations[Location]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.TerminalOverload} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/70cbe108aa054523eac9defadfa27a57.png";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("vault-of-glass", "Find out when a Vault of Glass challenge is active next.")]
-            public async Task VaultOfGlass([Summary("challenge", "Vault of Glass challenge to predict its next appearance."),
-                Choice("Confluxes (Wait for It...)", 0), Choice("Oracles (The Only Oracle for You)", 1), Choice("Templar (Out of Its Way)", 2),
-                Choice("Gatekeepers (Strangers in Time)", 3), Choice("Atheon (Ensemble's Refrain)", 4)] int ArgEncounter)
+            public async Task VaultOfGlass([Summary("challenge", "Vault of Glass challenge to predict its next appearance."), Autocomplete(typeof(LastWishAutocomplete))] int Encounter,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                VaultOfGlassEncounter Encounter = (VaultOfGlassEncounter)ArgEncounter;
-
-                var predictedDate = VaultOfGlassRotation.DatePrediction(Encounter);
-                var predictedFeaturedDate = FeaturedRaidRotation.DatePrediction(Raid.VaultOfGlass);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Vault of Glass";
-                if (predictedDate < predictedFeaturedDate)
-                    embed.Description =
-                        $"Next occurrance of {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}), " +
-                            $"which drops {VaultOfGlassRotation.GetChallengeRewardString(Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-                else
-                    embed.Description =
-                        $"Next occurrance of {VaultOfGlassRotation.GetEncounterString(Encounter)} ({VaultOfGlassRotation.GetChallengeString(Encounter)}), " +
-                            $"which drops {VaultOfGlassRotation.GetChallengeRewardString(Encounter)} on Master, is: {TimestampTag.FromDateTime(predictedFeaturedDate, TimestampTagStyles.ShortDate)}. " +
-                            $"Vault of Glass will be the featured raid, making this challenge, and all others, available.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<LastWishPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.LastWish.DatePrediction(Encounter, i));
+
+                var featuredRaidPredictions = new List<FeaturedRaidPrediction>();
+                for (int i = 0; i < show; i++)
+                    featuredRaidPredictions.Add(CurrentRotations.FeaturedRaid.DatePrediction(CurrentRotations.FeaturedRaid.Rotations.FindIndex(x => x.Raid.Equals("Vault of Glass")), i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Vault of Glass",
+                    Description = $"Requested: {CurrentRotations.LastWish.Rotations[Encounter]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    var nextFeatured = featuredRaidPredictions.ElementAt(0);
+                    bool isPastSeasonEnd = nextFeatured.Date.ToUniversalTime() >= seasonEndDate;
+                    if (prediction.Date >= nextFeatured.Date)
+                    {
+                        featuredRaidPredictions.RemoveAt(0);
+                        embed.AddField(x =>
+                        {
+                            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                            x.Value = $"{prediction.LastWish} on {TimestampTag.FromDateTime(nextFeatured.Date, TimestampTagStyles.ShortDate)} (Featured Raid)";
+                            x.IsInline = false;
+                        });
+                        occurrences++;
+
+                        // Don't show duplicate weeks.
+                        if (prediction.Date == nextFeatured.Date)
+                            continue;
+                    }
+
+                    isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.LastWish} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                embed.Fields = embed.Fields.Take(4).ToList();
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_44a010ae763cd975d56c632ff72c48a1.png";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("vow-of-the-disciple", "Be notified when a Vow of the Disciple challenge is active.")]
-            public async Task VowOfTheDisciple([Summary("challenge", "Vow of the Disciple challenge to predict its next appearance."),
-                Choice("Acquisition (Swift Destruction)", 0), Choice("Caretaker (Base Information)", 1),
-                Choice("Exhibition (Defenses Down)", 2), Choice("Rhulk (Looping Catalyst)", 3)] int ArgEncounter)
+            public async Task VowOfTheDisciple([Summary("challenge", "Vow of the Disciple challenge to predict its next appearance."), Autocomplete(typeof(VowOfTheDiscipleAutocomplete))] int Encounter,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                VowOfTheDiscipleEncounter Encounter = (VowOfTheDiscipleEncounter)ArgEncounter;
-
-                var predictedDate = VowOfTheDiscipleRotation.DatePrediction(Encounter);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "Vow of the Disciple";
-                embed.Description =
-                    $"Next occurrance of {VowOfTheDiscipleRotation.GetEncounterString(Encounter)} ({VowOfTheDiscipleRotation.GetChallengeString(Encounter)}) " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<LastWishPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.LastWish.DatePrediction(Encounter, i));
+
+                var featuredRaidPredictions = new List<FeaturedRaidPrediction>();
+                for (int i = 0; i < show; i++)
+                    featuredRaidPredictions.Add(CurrentRotations.FeaturedRaid.DatePrediction(CurrentRotations.FeaturedRaid.Rotations.FindIndex(x => x.Raid.Equals("Vow of the Disciple")), i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Vow of the Disciple",
+                    Description = $"Requested: {CurrentRotations.LastWish.Rotations[Encounter]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    var nextFeatured = featuredRaidPredictions.ElementAt(0);
+                    bool isPastSeasonEnd = nextFeatured.Date.ToUniversalTime() >= seasonEndDate;
+                    if (prediction.Date >= nextFeatured.Date)
+                    {
+                        featuredRaidPredictions.RemoveAt(0);
+                        embed.AddField(x =>
+                        {
+                            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                            x.Value = $"{prediction.LastWish} on {TimestampTag.FromDateTime(nextFeatured.Date, TimestampTagStyles.ShortDate)} (Featured Raid)";
+                            x.IsInline = false;
+                        });
+                        occurrences++;
+
+                        // Don't show duplicate weeks.
+                        if (prediction.Date == nextFeatured.Date)
+                            continue;
+                    }
+
+                    isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.LastWish} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                embed.Fields = embed.Fields.Take(4).ToList();
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_bc5d4a8377955b809dbbe0fb71645e6e.png";
+                await RespondAsync(embed: embed.Build());
             }
 
             [SlashCommand("wellspring", "Find out when a Wellspring boss/weapon is active next.")]
-            public async Task Wellspring([Summary("wellspring", "Wellspring weapon drop to predict its next appearance."),
-                Choice("Come to Pass (Auto)", 0), Choice("Tarnation (Grenade Launcher)", 1), Choice("Fel Taradiddle (Bow)", 2), Choice("Father's Sins (Sniper)", 3)] int ArgWellspring)
+            public async Task Wellspring([Summary("wellspring", "Wellspring weapon drop to predict its next appearance."), Autocomplete(typeof(WellspringAutocomplete))] int Wellspring,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
-                Wellspring Wellspring = (Wellspring)ArgWellspring;
-
-                var predictedDate = WellspringRotation.DatePrediction(Wellspring);
-                var embed = new EmbedBuilder()
+                show = show switch
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
                 };
-                embed.Title = "The Wellspring";
-                embed.Description =
-                    $"Next occurrance of The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} ({WellspringRotation.GetWellspringBossString(Wellspring)}) which drops {WellspringRotation.GetWeaponNameString(Wellspring)} ({WellspringRotation.GetWeaponTypeString(Wellspring)}) " +
-                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
 
-                await RespondAsync($"", embed: embed.Build());
-                return;
+                var predictions = new List<WellspringPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.Wellspring.DatePrediction(Wellspring, i));
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = $"Wellspring: {CurrentRotations.Wellspring.Rotations[Wellspring].Type}",
+                    Description = $"Requested: {CurrentRotations.Wellspring.Rotations[Wellspring].WeaponEmote}{CurrentRotations.Wellspring.Rotations[Wellspring]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.Wellspring.WeaponEmote}{prediction.Wellspring} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/e17d13013bad7d53c47b0231b9784e1e.png";
+                await RespondAsync(embed: embed.Build());
             }
+
+            //[SlashCommand("witch-queen-mission", "Find out when a featured Shadowkeep mission is active next.")]
+            //public async Task WitchQueenMission([Summary("mission", "Witch Queen mission to predict its next appearance."), Autocomplete(typeof(WitchQueenMissionAutocomplete))] int Mission,
+            //    [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            //{
+            //    show = show switch
+            //    {
+            //        < 1 => 1,
+            //        > 4 => 4,
+            //        _ => show
+            //    };
+
+            //    var predictions = new List<WitchQueenMissionPrediction>();
+            //    for (int i = 0; i < show; i++)
+            //        predictions.Add(CurrentRotations.WitchQueenMission.DatePrediction(Mission, i));
+
+            //    var embed = new EmbedBuilder
+            //    {
+            //        Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+            //        Title = "Witch Queen Mission",
+            //        Description = $"Requested: {CurrentRotations.WitchQueenMission.Rotations[Mission]}"
+            //    }.WithCurrentTimestamp();
+
+            //    var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+            //    int occurrences = 1;
+            //    foreach (var prediction in predictions)
+            //    {
+            //        bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+            //        embed.AddField(x =>
+            //        {
+            //            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+            //            x.Value = $"{prediction.WitchQueenMission} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+            //            x.IsInline = false;
+            //        });
+            //        occurrences++;
+            //    }
+
+            //    if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+            //        embed.Description +=
+            //            $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+            //    embed.ThumbnailUrl =
+            //        "https://www.bungie.net/common/destiny2_content/icons/e17d13013bad7d53c47b0231b9784e1e.png";
+            //    await RespondAsync(embed: embed.Build());
+            //}
         }
 
         [SlashCommand("rank", "Display a Destiny 2 leaderboard of choice.")]
@@ -936,7 +1821,8 @@ namespace Levante.Commands
             Choice("Total XP Logging Time", 3), Choice("Equipped Power Level", 4)] int ArgLeaderboard,
             [Summary("season", "Season of the specific leaderboard. Defaults to the current season."),
             Choice("Season of the Lost", 15), Choice("Season of the Risen", 16), Choice("Season of the Haunted", 17),
-            Choice("Season of Plunder", 18), Choice("Season of the Seraph", 19), Choice("Season of Defiance", 20)] int Season = 20)
+            Choice("Season of Plunder", 18), Choice("Season of the Seraph", 19), Choice("Season of Defiance", 20),
+            Choice("Season of the Deep", 21)] int Season = 21)
         {
             Leaderboard LeaderboardType = (Leaderboard)ArgLeaderboard;
 
@@ -1039,7 +1925,7 @@ namespace Levante.Commands
         }
 
         [RequireBungieOauth]
-        [SlashCommand("unlink", "Unlink your Bungie tag from your Discord account.")]
+        [SlashCommand("unlink", "Unlink your Bungie tag from your Discord account through Levante.")]
         public async Task Unlink([Summary("delete-leaderboards", "Delete your leaderboard stats when you unlink. This is true by default.")] bool RemoveLeaderboard = true)
         {
             var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
@@ -1057,167 +1943,5 @@ namespace Levante.Commands
 
             await RespondAsync($"Your Bungie account: {linkedUser.UniqueBungieName} has been unlinked. Use the command \"/link\" if you want to re-link!", ephemeral: true);
         }
-
-        // Attempt to add Autocomplete to /next and /notify. Ran into issue with activities that have 2 rotations, like Lost Sectors and Nightfalls.
-
-        //[SlashCommand("notify-test", "Display a Destiny 2 leaderboard of choice.")]
-        //public async Task Test([Summary("rotation-type", "The activity with rotations of interest."), Autocomplete(typeof(RotationAutocomplete))] string Rotation,
-        //    [Summary("rotation", "The rotation of interest."), Autocomplete(typeof(RotationArgAutocomplete))] string Arg)
-        //{
-        //    var next = new Next();
-        //    switch (Rotation)
-        //    {
-        //        case "Altars of Sorrow":
-        //            {
-        //                AltarsOfSorrow Weapon = Enum.Parse<AltarsOfSorrow>(Arg);
-
-        //                var predictedDate = AltarsOfSorrowRotation.DatePrediction(Weapon);
-        //                var embed = new EmbedBuilder()
-        //                {
-        //                    Color = new Discord.Color(BotConfig.EmbedColorGroup.R, BotConfig.EmbedColorGroup.G, BotConfig.EmbedColorGroup.B),
-        //                };
-        //                embed.Title = "Altars of Sorrow";
-        //                embed.Description =
-        //                    $"Next occurrance of {AltarsOfSorrowRotation.GetWeaponNameString(Weapon)} ({Weapon}) " +
-        //                        $"is: {TimestampTag.FromDateTime(predictedDate, TimestampTagStyles.ShortDate)}.";
-
-        //                await RespondAsync($"", embed: embed.Build());
-        //                return;
-        //            }
-        //        default: return;
-        //    }
-        //}
-
-        //public class RotationAutocomplete : AutocompleteHandler
-        //{
-        //    List<AutocompleteResult> resultOptions = new()
-        //    {
-        //        new AutocompleteResult("Altars of Sorrow", "Altars of Sorrow"),
-        //        new AutocompleteResult("Ascendant Challenge", "Ascendant Challenge"),
-        //        new AutocompleteResult("Dreaming City Curse Strength", "Dreaming City Curse Strength"),
-        //        new AutocompleteResult("Deep Stone Crypt Challenge", "Deep Stone Crypt Challenge"),
-        //        new AutocompleteResult("Empire Hunt", "Empire Hunt"),
-        //        new AutocompleteResult("Featured Raid", "Featured Raid"),
-        //        //new AutocompleteResult("Featured Dungeon", "Featured Dungeon"),
-        //        new AutocompleteResult("Garden of Salvation Challenge", "Garden of Salvation Challenge"),
-        //        new AutocompleteResult("Last Wish Challenge", "Last Wish Challenge"),
-        //        new AutocompleteResult("Lost Sector", "Lost Sector"),
-        //        new AutocompleteResult("Nightfall", "Nightfall"),
-        //        new AutocompleteResult("Nightmare Hunt", "Nightmare Hunt"),
-        //        //new AutocompleteResult("Shadowkeep Mission Rotation", "Shadowkeep Mission Rotation"),
-        //        new AutocompleteResult("Vault of Glass Challenge", "Vault of Glass Challenge"),
-        //        new AutocompleteResult("Vow of the Disciple Challenge", "Vow of the Disciple Challenge"),
-        //        new AutocompleteResult("Wellspring", "Wellspring"),
-        //        new AutocompleteResult("Witch Queen Mission Rotation", "Witch Queen Mission Rotation"),
-        //    };
-
-        //    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
-        //    {
-        //        await Task.Delay(0);
-        //        // Create a collection with suggestions for autocomplete
-
-        //        List<AutocompleteResult> results = new();
-        //        string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
-
-        //        if (String.IsNullOrWhiteSpace(SearchQuery))
-        //            results = resultOptions;
-        //        else
-        //            foreach (var Rotation in resultOptions)
-        //                if (Rotation.Name.ToLower().Contains(SearchQuery.ToLower()))
-        //                    results.Add(Rotation);
-
-        //        results = results.OrderBy(x => x.Name).ToList();
-
-        //        // max - 25 suggestions at a time (API limit)
-        //        Console.WriteLine($"Completion Success");
-        //        return AutocompletionResult.FromSuccess(results);
-        //    }
-        //}
-
-        //public class RotationArgAutocomplete : AutocompleteHandler
-        //{
-        //    public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
-        //    {
-        //        await Task.Delay(0);
-        //        // Create a collection with suggestions for autocomplete
-
-        //        List<AutocompleteResult> results = new();
-        //        string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
-
-        //        var rotation = autocompleteInteraction.Data.Options.FirstOrDefault(x => x.Name.Equals("rotation-type")).Value.ToString();
-        //        Console.WriteLine($"Parsing: {rotation}");
-        //        switch ($"{rotation}")
-        //        {
-        //            case "Altars of Sorrow":
-        //                {
-        //                    Console.WriteLine("Altars of Sorrow");
-        //                    for (int i = 0; i < AltarsOfSorrowRotation.AltarWeaponCount; i++)
-        //                        results.Add(new AutocompleteResult($"{AltarsOfSorrowRotation.GetWeaponNameString((AltarsOfSorrow)i)} ({(AltarsOfSorrow)i})", $"{(AltarsOfSorrow)i}"));
-        //                    break;
-        //                }
-        //            case "Ascendant Challenge":
-        //                {
-        //                    Console.WriteLine("Ascendant Challenge");
-        //                    for (int i = 0; i < AscendantChallengeRotation.AscendantChallengeCount; i++)
-        //                        results.Add(new AutocompleteResult($"{AscendantChallengeRotation.GetChallengeNameString((AscendantChallenge)i)} ({AscendantChallengeRotation.GetChallengeLocationString((AscendantChallenge)i)})", $"{(AscendantChallenge)i}"));
-        //                    break;
-        //                }
-        //            case "Dreaming City Curse Strength":
-        //                {
-        //                    Console.WriteLine("Dreaming City Curse Strength");
-        //                    for (int i = 0; i < CurseWeekRotation.CurseWeekCount; i++)
-        //                        results.Add(new AutocompleteResult($"{(CurseWeek)i}", $"{(CurseWeek)i}"));
-        //                    break;
-        //                }
-        //            case "Deep Stone Crypt Challenge":
-        //                {
-        //                    Console.WriteLine("Deep Stone Crypt Challenge");
-        //                    for (int i = 0; i < DeepStoneCryptRotation.DeepStoneCryptEncounterCount; i++)
-        //                        results.Add(new AutocompleteResult($"{DeepStoneCryptRotation.GetEncounterString((DeepStoneCryptEncounter)i)} ({DeepStoneCryptRotation.GetChallengeString((DeepStoneCryptEncounter)i)})", $"{(DeepStoneCryptEncounter)i}"));
-        //                    break;
-        //                }
-        //            case "Empire Hunt":
-        //                {
-        //                    Console.WriteLine("Empire Hunt");
-        //                    for (int i = 0; i < EmpireHuntRotation.EmpireHuntCount; i++)
-        //                        results.Add(new AutocompleteResult($"{EmpireHuntRotation.GetHuntNameString((EmpireHunt)i)} ({EmpireHuntRotation.GetHuntBossString((EmpireHunt)i)})", $"{(EmpireHunt)i}"));
-        //                    break;
-        //                }
-        //            case "Featured Raid":
-        //                {
-        //                    Console.WriteLine("Featured Raid");
-        //                    for (int i = 0; i < FeaturedRaidRotation.FeaturedRaidCount; i++)
-        //                        results.Add(new AutocompleteResult($"{FeaturedRaidRotation.GetRaidString((Raid)i)}", $"{(Raid)i}"));
-        //                    break;
-        //                }
-        //            case "Garden of Salvation Challenge":
-        //                {
-        //                    Console.WriteLine("Garden of Salvation Challenge");
-        //                    for (int i = 0; i < GardenOfSalvationRotation.GardenOfSalvationEncounterCount; i++)
-        //                        results.Add(new AutocompleteResult($"{GardenOfSalvationRotation.GetEncounterString((GardenOfSalvationEncounter)i)} ({GardenOfSalvationRotation.GetChallengeString((GardenOfSalvationEncounter)i)})", $"{(GardenOfSalvationEncounter)i}"));
-        //                    break;
-        //                }
-        //            case "Last Wish Challenge":
-        //                {
-        //                    Console.WriteLine("Last Wish Challenge");
-        //                    for (int i = 0; i < LastWishRotation.LastWishEncounterCount; i++)
-        //                        results.Add(new AutocompleteResult($"{LastWishRotation.GetEncounterString((LastWishEncounter)i)} ({LastWishRotation.GetChallengeString((LastWishEncounter)i)})", $"{(LastWishEncounter)i}"));
-        //                    break;
-        //                }
-        //            case "Lost Sector":
-        //                {
-        //                    Console.WriteLine("Lost Sector");
-        //                    for (int i = 0; i < LastWishRotation.LastWishEncounterCount; i++)
-        //                        results.Add(new AutocompleteResult($"{LastWishRotation.GetEncounterString((LastWishEncounter)i)} ({LastWishRotation.GetChallengeString((LastWishEncounter)i)})", $"{(LastWishEncounter)i}"));
-        //                    break;
-        //                }
-        //            default: break;
-        //        }
-
-        //        // max - 25 suggestions at a time (API limit)
-        //        Console.WriteLine($"Completion Success");
-        //        return AutocompletionResult.FromSuccess(results);
-        //    }
-        //}
     }
 }

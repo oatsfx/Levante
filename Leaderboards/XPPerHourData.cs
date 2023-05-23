@@ -11,10 +11,11 @@ namespace Levante.Leaderboards
         public static readonly string FilePathS17 = @"Data/S17/xpPerHourData.json";
         public static readonly string FilePathS18 = @"Data/S18/xpPerHourData.json";
         public static readonly string FilePathS19 = @"Data/S19/xpPerHourData.json";
-        public static readonly string FilePath = @"Data/S20/xpPerHourData.json";
+        public static readonly string FilePathS20 = @"Data/S20/xpPerHourData.json";
+        public static readonly string FilePath = @"Data/S21/xpPerHourData.json";
 
         [JsonProperty("XPPerHourEntries")]
-        public List<XPPerHourEntry> XPPerHourEntries { get; set; } = new List<XPPerHourEntry>();
+        public List<XPPerHourEntry> XPPerHourEntries { get; set; } = new();
 
         public partial class XPPerHourEntry : LeaderboardEntry
         {

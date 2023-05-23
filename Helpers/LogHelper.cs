@@ -12,7 +12,7 @@ namespace Levante.Helpers
 {
     public static class LogHelper
     {
-        public async static Task Log(IMessageChannel Channel, string Message)
+        public static async Task Log(IMessageChannel Channel, string Message)
         {
             if (Channel == null) return;
             try
@@ -25,7 +25,7 @@ namespace Levante.Helpers
             }
         }
 
-        public async static Task Log(IMessageChannel Channel, string Message, ComponentBuilder CB)
+        public static async Task Log(IMessageChannel Channel, string Message, ComponentBuilder CB)
         {
             if (Channel == null) return;
             try
@@ -38,7 +38,7 @@ namespace Levante.Helpers
             }
         }
 
-        public async static Task Log(IMessageChannel Channel, string Message, EmbedBuilder Embed)
+        public static async Task Log(IMessageChannel Channel, string Message, EmbedBuilder Embed)
         {
             if (Channel == null) return;
             try
@@ -51,7 +51,7 @@ namespace Levante.Helpers
             }
         }
 
-        public async static Task Log(IMessageChannel Channel, string Message, EmbedBuilder Embed, ComponentBuilder CB)
+        public static async Task Log(IMessageChannel Channel, string Message, EmbedBuilder Embed, ComponentBuilder CB)
         {
             if (Channel == null) return;
             try
