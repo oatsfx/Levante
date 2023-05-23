@@ -120,7 +120,7 @@ namespace Levante.Commands
             await RespondAsync(embed: embed.Build(), components: new ComponentBuilder().WithButton("Invite Levante", style: ButtonStyle.Link, url: "https://invite.levante.dev", emote: Emote.Parse(Emotes.Logo), row: 0).Build(), ephemeral: hide);
         }
 
-        [SlashCommand("ping", "Replies with latency in milliseconds.")]
+        [SlashCommand("ping", "Replies with Levante's latency to Discord in milliseconds.")]
         public async Task PingAsync([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
             var foot = new EmbedFooterBuilder()

@@ -24,7 +24,7 @@ namespace Levante.Commands
 {
     public class Utility : InteractionModuleBase<ShardedInteractionContext>
     {
-        [SlashCommand("link", "Link your Bungie account to your Discord account.")]
+        [SlashCommand("link", "Link your Bungie account to your Discord account through Levante.")]
         public async Task Link()
         {
             var foot = new EmbedFooterBuilder()
@@ -675,7 +675,7 @@ namespace Levante.Commands
             }
         }
 
-        [Group("next", "Be notified when a specific rotation is active.")]
+        [Group("next", "Predict when a specific rotation is active next.")]
         public class Next : InteractionModuleBase<ShardedInteractionContext>
         {
             [SlashCommand("altars-of-sorrow", "Find out when an Altars of Sorrow weapon is active next.")]
@@ -1925,7 +1925,7 @@ namespace Levante.Commands
         }
 
         [RequireBungieOauth]
-        [SlashCommand("unlink", "Unlink your Bungie tag from your Discord account.")]
+        [SlashCommand("unlink", "Unlink your Bungie tag from your Discord account through Levante.")]
         public async Task Unlink([Summary("delete-leaderboards", "Delete your leaderboard stats when you unlink. This is true by default.")] bool RemoveLeaderboard = true)
         {
             var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);

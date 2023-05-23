@@ -24,7 +24,7 @@ namespace Levante.Commands
         public InteractiveService Interactive { get; set; }
 
         [SlashCommand("artifact", "Project what level you need to hit for a specific Power bonus.")]
-        public async Task ArtifactBonusPrediction([Summary("power-bonus", "Projected Power bonus you want to see what level it'll be hit at.")] int PowerBonus)
+        public async Task ArtifactBonusPrediction([Summary("power-bonus", "Project what level you'll hit a specific Power bonus at.")] int PowerBonus)
         {
             await DeferAsync();
 
@@ -157,7 +157,7 @@ namespace Levante.Commands
             await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
         }
 
-        [SlashCommand("current-offers", "Gives a list of emblem offers. If hash code provided, command will return with the specific offer.")]
+        [SlashCommand("current-offers", "Gives a list of emblem offers. If an emblem is provided, you'll get the specific offer.")]
         public async Task CurrentOffers([Summary("emblem-name", "Emblem name of an emblem that is a current offer."), Autocomplete(typeof(CurrentOfferAutocomplete))] string EmblemHash = null)
         {
             if (EmblemHash == null)

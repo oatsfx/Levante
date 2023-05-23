@@ -117,7 +117,7 @@ namespace Levante.Commands
 
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
         [RequireBotPermission(GuildPermission.ManageChannels)]
-        [SlashCommand("create-hub", "Creates a post with buttons so people can start their XP logs.")]
+        [SlashCommand("create-hub", "Creates a post with XP logging buttons so people can start their XP logs.")]
         public async Task CreateHub()
         {
             if (Context.Channel.GetChannelType() == ChannelType.DM)
