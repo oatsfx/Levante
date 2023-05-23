@@ -60,7 +60,7 @@ namespace Levante.Commands
         [Group("notify", "Be notified when a specific rotation is active.")]
         public class Notify : InteractionModuleBase<ShardedInteractionContext>
         {
-            [SlashCommand("ada-1", "Be notified when an armor mod is for sale at Ada-1.")]
+            [SlashCommand("ada-1", "Be notified when a shader is for sale at Ada-1.")]
             public async Task Ada1([Summary("name", "Item to be alerted for."), Autocomplete(typeof(Ada1ItemsAutocomplete))] string Hash)
             {
                 if (!long.TryParse(Hash, out long HashArg))

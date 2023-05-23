@@ -53,9 +53,6 @@ namespace Levante.Configs
         [JsonProperty("Version")]
         public static string Version { get; set; } = "1.0.0";
 
-        [JsonProperty("DefaultCommandPrefix")]
-        public static string DefaultCommandPrefix { get; set; } = "l!";
-
         [JsonProperty("Note")]
         public static List<string> Notes { get; set; } = new();
 
