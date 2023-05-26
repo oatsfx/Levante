@@ -190,20 +190,4 @@ namespace Levante.Util
             return embed;
         }
     }
-
-    public class EmblemSearch
-    {
-        private long HashCode;
-        private string Name;
-
-        public EmblemSearch(long hashCode, string name)
-        {
-            HashCode = hashCode;
-            Name = name;
-        }
-
-        public string GetName() => Name;
-
-        public long GetEmblemHash() => HashCode;
-    }
 }

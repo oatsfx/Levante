@@ -198,10 +198,11 @@ namespace Levante.Commands
             embed.Title = "Support Levante";
             embed.Url = "https://donate.levante.dev/";
             embed.Description =
-                "Levante is available to everyone for free, and will continue to stay this way. " +
+                "Levante is available to everyone for free, and it will continue to stay this way. " +
                 "Anyone who supports Levante and her team by donating will be eligible for [supporter perks](https://www.levante.dev/features/). " +
                 "Those extra perks are a way of saying thank you to all of our generous supporters.\n" +
-                "> You can support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/).";
+                "> You can support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/).\n" +
+                "> *Please note that boosting will grant supporter perks only while the boost is active.*";
 
             var buttonBuilder = new ComponentBuilder()
                 .WithButton("Support Levante", style: ButtonStyle.Link, url: $"https://donate.levante.dev/", emote: Emote.Parse(Emotes.KoFi), row: 0);
