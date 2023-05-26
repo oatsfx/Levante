@@ -251,22 +251,6 @@ namespace Levante.Util
         }
     }
 
-    public class WeaponSearch
-    {
-        private long HashCode;
-        private string Name;
-
-        public WeaponSearch(long hashCode, string name)
-        {
-            HashCode = hashCode;
-            Name = name;
-        }
-
-        public string GetName() => Name;
-
-        public long GetWeaponHash() => HashCode;
-    }
-
     public enum RarityType
     {
         Common,

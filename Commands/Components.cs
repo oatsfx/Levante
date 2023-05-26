@@ -55,7 +55,7 @@ namespace Levante.Commands
             if (!BotConfig.IsSupporter(Context.User.Id) && ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
                 var embed = Embeds.GetErrorEmbed();
-                embed.Description = $"Unfortunately, we've hit the maximum amount of users ({ActiveConfig.MaximumLoggingUsers}) we are allowing to log XP. You'll have to wait for the amount of users to drop.\n" +
+                embed.Description = $"Unfortunately, we've hit the maximum amount of users ({ActiveConfig.MaximumLoggingUsers}) we are allowing to log XP. We understand that this may be frustrating; you'll have to wait for the amount of users to drop.\n" +
                     $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +
                     $"Use the `/support` command for more info!";
 
@@ -269,7 +269,7 @@ namespace Levante.Commands
             if (!BotConfig.IsSupporter(Context.User.Id) && ActiveConfig.ActiveAFKUsers.Count >= ActiveConfig.MaximumLoggingUsers)
             {
                 var embed = Embeds.GetErrorEmbed();
-                embed.Description = $"Unfortunately, we've hit the maximum amount of users ({ActiveConfig.MaximumLoggingUsers}) we are allowing to log XP. You'll have to wait for the amount of users to drop.\n" +
+                embed.Description = $"Unfortunately, we've hit the maximum amount of users ({ActiveConfig.MaximumLoggingUsers}) we are allowing to log XP. We understand that this may be frustrating; you'll have to wait for the amount of users to drop.\n" +
                     $"Want to bypass this limit? Support us at https://donate.levante.dev/ and let us know on Discord: https://support.levante.dev/.\n" +
                     $"Use the `/support` command for more info!";
 

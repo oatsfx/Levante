@@ -38,16 +38,19 @@ namespace Levante.Util
 
                 dynamic item = JsonConvert.DeserializeObject(content);
 
-                for (int i = 0; i < item.Response.sockets.data.sockets.Count; i++)
+                if (item.Response.sockets.data != null && item.Response.sockets.data.sockets.Count > 0)
                 {
-                    var socket = item.Response.sockets.data.sockets[i];
-                    Log.Debug($"{socket.plugHash}");
-                    if (socket.plugHash == null) continue;
-                    long plugHash = (long)socket.plugHash;
-                    if (ManifestHelper.Perks.ContainsKey(plugHash))
-                        Perks.Add(ManifestHelper.Perks[plugHash]);
-                    else if (ManifestHelper.EnhancedPerks.ContainsKey(plugHash))
-                        Perks.Add(ManifestHelper.EnhancedPerks[plugHash]);
+                    for (int i = 0; i < item.Response.sockets.data.sockets.Count; i++)
+                    {
+                        var socket = item.Response.sockets.data.sockets[i];
+                        Log.Debug($"{socket.plugHash}");
+                        if (socket.plugHash == null) continue;
+                        long plugHash = (long)socket.plugHash;
+                        if (ManifestHelper.Perks.ContainsKey(plugHash))
+                            Perks.Add(ManifestHelper.Perks[plugHash]);
+                        else if (ManifestHelper.EnhancedPerks.ContainsKey(plugHash))
+                            Perks.Add(ManifestHelper.EnhancedPerks[plugHash]);
+                    }
                 }
             }
         }

@@ -574,11 +574,11 @@ namespace Levante.Commands
 
         [RequireBungieOauth]
         [SlashCommand("materials", "Gets your Destiny 2 material/currency counts.")]
-        public async Task Materials()
+        public async Task Materials([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
             var User = Context.User;
 
-            await DeferAsync();
+            await DeferAsync(ephemeral: hide);
             var dil = DataConfig.GetLinkedUser(User.Id);
             if (dil == null)
             {

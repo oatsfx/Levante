@@ -431,7 +431,7 @@ namespace Levante
 
                             Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                             //listOfRemovals.Add(tempAau);
-                            // ***Change to remove it from list because file update is called at end of method.***
+
                             ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
                             //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
                             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
