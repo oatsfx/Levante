@@ -575,9 +575,8 @@ namespace Levante.Helpers
                             //if (!invItem.Value.ItemCategoryHashes.Contains(4104513227))
                             //    continue;
 
-                            // No longer works because Shaders got their items merked.
-                            //if (ada1ItemList.Contains(invItem.Value.Hash) && invItem.Value.ItemSubType == DestinyItemSubType.Shader)
-                            //    Ada1Items.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
+                            if (ada1ItemList.Contains(invItem.Value.Hash) && invItem.Value.ItemSubType == DestinyItemSubType.Shader)
+                                Ada1Items.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
 
 
                             if (invItem.Value.ItemSubType == 0 && invItem.Value.ItemTypeDisplayName.Contains("Trait") && !invItem.Value.ItemCategoryHashes.Contains(4104513227) /*Exclude Armor Mods*/)
@@ -616,11 +615,11 @@ namespace Levante.Helpers
                             }
 
                             // LETS GO!!! SHADERS AREN'T SHADERS ANY MORE! (This is a joke because this sucks)
-                            if (ada1ItemList.Contains(invItem.Value.Hash) && invItem.Value.ItemTypeDisplayName.Contains("Shader"))
-                            {
-                                Log.Debug($"{invItem.Value.DisplayProperties.Name}");
-                                Ada1Items.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
-                            }
+                            //if (ada1ItemList.Contains(invItem.Value.Hash) && invItem.Value.ItemTypeDisplayName.Contains("Shader"))
+                            //{
+                            //    Log.Debug($"{invItem.Value.DisplayProperties.Name}");
+                            //    Ada1Items.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name}");
+                            //}
                         }
                     }
                 }
