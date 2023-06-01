@@ -70,15 +70,22 @@ namespace Levante.Rotations
             Actives.VoGChallenge = Actives.VoGChallenge == VaultOfGlass.Rotations.Count - 1 ? 0 : Actives.VoGChallenge + 1;
             Actives.VowChallenge = Actives.VowChallenge == VowOfTheDisciple.Rotations.Count - 1 ? 0 : Actives.VowChallenge + 1;
             Actives.KFChallenge = Actives.KFChallenge == KingsFall.Rotations.Count - 1 ? 0 : Actives.KFChallenge + 1;
+            Actives.RoNChallenge = Actives.RoNChallenge == RootOfNightmares.Rotations.Count - 1 ? 0 : Actives.RoNChallenge + 1;
             Actives.FeaturedRaid = Actives.FeaturedRaid == FeaturedRaid.Rotations.Count - 1 ? 0 : Actives.FeaturedRaid + 1;
             Actives.CurseWeek = Actives.CurseWeek == CurseWeek.Rotations.Count - 1 ? 0 : Actives.CurseWeek + 1;
             Actives.AscendantChallenge = Actives.AscendantChallenge == AscendantChallenge.Rotations.Count - 1 ? 0 : Actives.AscendantChallenge + 1;
             Actives.NightfallWeaponDrop = Actives.NightfallWeaponDrop == Nightfall.WeaponRotations.Count - 1 ? 0 : Actives.NightfallWeaponDrop + 1;
             Actives.EmpireHunt = Actives.EmpireHunt == EmpireHunt.Rotations.Count - 1 ? 0 : Actives.EmpireHunt + 1;
 
+            Actives.FeaturedDungeon = Actives.FeaturedDungeon == FeaturedDungeon.Rotations.Count - 1 ? 0 : Actives.FeaturedDungeon + 1;
+
             Actives.NightmareHunts[0] = Actives.NightmareHunts[0] >= NightmareHunt.Rotations.Count - 3 ? Actives.NightmareHunts[0] - 5 : Actives.NightmareHunts[0] + 3;
             Actives.NightmareHunts[1] = Actives.NightmareHunts[1] >= NightmareHunt.Rotations.Count - 3 ? Actives.NightmareHunts[1] - 5 : Actives.NightmareHunts[1] + 3;
             Actives.NightmareHunts[2] = Actives.NightmareHunts[2] >= NightmareHunt.Rotations.Count - 3 ? Actives.NightmareHunts[2] - 5 : Actives.NightmareHunts[2] + 3;
+
+            Actives.ShadowkeepMission = Actives.ShadowkeepMission >= ShadowkeepMission.Rotations.Count - 1 ? 0 : Actives.ShadowkeepMission + 1;
+            Actives.WitchQueenMission = Actives.WitchQueenMission >= WitchQueenMission.Rotations.Count - 1 ? 0 : Actives.WitchQueenMission + 1;
+            Actives.LightfallMission = Actives.LightfallMission >= LightfallMission.Rotations.Count - 1 ? 0 : Actives.LightfallMission + 1;
 
             Actives.WeeklyResetTimestamp = DateTime.Now;
 
