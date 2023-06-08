@@ -213,6 +213,12 @@ namespace Levante.Commands
         [SlashCommand("free-emblems", "Display a list of universal emblem codes.")]
         public async Task FreeEmblems([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
+            var RewardsUrl = "https://rewards.mijago.net/#/";
+            var LinkedUser = DataConfig.GetLinkedUser(Context.User.Id);
+            
+            if(LinkedUser != null)
+                RewardsUrl += $"{LinkedUser.BungieMembershipType}/{LinkedUser.BungieMembershipID}";
+            
             var paginator = new LazyPaginatorBuilder()
                 .AddUser(Context.User)
                 .WithPageFactory(GeneratePage)
@@ -252,7 +258,9 @@ namespace Levante.Commands
                         $"[{emblem.Name}]({emblem.ImageUrl}): **{emblem.Code}**\n";
                 }
                 embed.Description +=
-                    $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*\n({(10 * index) + 1}-{((10 * index) + 10 > BotConfig.UniversalCodes.Count ? BotConfig.UniversalCodes.Count : (10 * index) + 10)})";
+                    $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*\n"
+                    + $"For a full view of what they look like or check which you already have unlocked, click [here]({RewardsUrl})\n\n"
+                    + $"({(10 * index) + 1}-{((10 * index) + 10 > BotConfig.UniversalCodes.Count ? BotConfig.UniversalCodes.Count : (10 * index) + 10)})";
                 return new PageBuilder()
                     .WithAuthor(embed.Author)
                     .WithDescription(embed.Description)
