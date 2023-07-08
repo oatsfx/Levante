@@ -53,8 +53,11 @@ namespace Levante.Configs
         [JsonProperty("Version")]
         public static string Version { get; set; } = "1.0.0";
 
-        [JsonProperty("Note")]
-        public static List<string> Notes { get; set; } = new();
+        [JsonProperty("PlayingStatuses")]
+        public static List<string> PlayingStatuses { get; set; } = new();
+
+        [JsonProperty("WatchingStatuses")]
+        public static List<string> WatchingStatuses { get; set; } = new();
 
         [JsonProperty("DurationToWaitForNextMessage")]
         public static int DurationToWaitForNextMessage { get; set; } = 20;
@@ -81,7 +84,10 @@ namespace Levante.Configs
         public static EmbedColorGroup EmbedColor { get; set; } = new();
 
         [JsonProperty("ThirdPartyProjects")]
-        public static List<ThirdPartyProject> ThirdPartyProjects { get; set; }
+        public static List<ThirdParty> ThirdPartyProjects { get; set; }
+
+        [JsonProperty("ThirdPartySupport")]
+        public static List<ThirdParty> ThirdPartySupport { get; set; }
 
         [JsonProperty("UniversalCodes")]
         public static List<UniversalCode> UniversalCodes { get; set; } = new();
@@ -156,7 +162,7 @@ namespace Levante.Configs
             public string Above100Ranks { get; set; } = "[HASH]";
         }
 
-        public class ThirdPartyProject
+        public class ThirdParty
         {
             [JsonProperty("Name")]
             public string Name { get; set; }

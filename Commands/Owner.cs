@@ -84,16 +84,6 @@ namespace Levante.Commands
             await RespondAsync(embed: embed.Build());
         }
 
-        [RequireOwner]
-        [SlashCommand("refresh", "[OWNER]: Refreshes the bot's activity.")]
-        public async Task Refresh()
-        {
-            ConfigHelper.CheckAndLoadConfigFiles();
-            await Context.Client.SetActivityAsync(new Game($"{BotConfig.Notes[0]} | v{BotConfig.Version}", ActivityType.Playing));
-
-            await RespondAsync($"Activity refreshed.");
-        }
-
         [RequireBotStaff]
         [SlashCommand("supporter", "[BOT STAFF]: Add or remove a bot supporter.")]
         public async Task AddSupporter([Summary("discord-id", "Discord ID of the user to handle supporter status for.")] IUser User = null)

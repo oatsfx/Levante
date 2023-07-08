@@ -125,9 +125,10 @@ namespace Levante.Util
                 Author = auth,
                 Footer = foot
             };
+            var sourceString = GetSourceString();
             try
             {
-                embed.Description = (GetSourceString().Equals("") ? "No source data provided." : GetSourceString()) + $"\n*{GetFlavorText()}*\n";
+                embed.Description = (sourceString.Equals("") ? "No source data provided." : sourceString) + $"\n*{GetFlavorText()}*\n";
                 embed.ThumbnailUrl = GetIconUrl();
             }
             catch
@@ -157,8 +158,6 @@ namespace Levante.Util
             {
                 var recipeDef = new Weapon((long)Content.Inventory.RecipeItemHash);
                 var plug1 = recipeDef.GetRandomPerks(1);
-                var plug2 = recipeDef.GetRandomPerks(2);
-                var plug3 = recipeDef.GetRandomPerks(3);
                 var plug4 = recipeDef.GetRandomPerks(4);
                 var plug5 = recipeDef.GetRandomPerks(5);
 
@@ -171,6 +170,8 @@ namespace Levante.Util
 
                 if (showMorePerks)
                 {
+                    var plug2 = recipeDef.GetRandomPerks(2);
+                    var plug3 = recipeDef.GetRandomPerks(3);
                     embed.AddField(x =>
                     {
                         x.Name = $"Column 1";
@@ -198,8 +199,7 @@ namespace Levante.Util
             }
             else
             {
-                var plug1 = GetRandomPerks(1);
-                var plug2 = GetRandomPerks(2);
+                
                 var plug3 = GetRandomPerks(3);
                 var plug4 = GetRandomPerks(4);
 
@@ -212,6 +212,8 @@ namespace Levante.Util
 
                 if (showMorePerks)
                 {
+                    var plug1 = GetRandomPerks(1);
+                    var plug2 = GetRandomPerks(2);
                     embed.AddField(x =>
                     {
                         x.Name = $"Column 1";

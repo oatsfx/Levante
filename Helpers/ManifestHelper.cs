@@ -14,6 +14,7 @@ using Levante.Util;
 using System.IO;
 using BungieSharper.Entities.Destiny.Definitions.Seasons;
 using Serilog;
+using System.Threading.Tasks;
 
 namespace Levante.Helpers
 {
@@ -29,8 +30,8 @@ namespace Levante.Helpers
         public static Dictionary<long, string> Activities = new();
         // Seal Hash, Tracker Hash
         public static Dictionary<long, long> GildableSeals = new();
-        // Whatever Hash is found First, Nightfall Name
-        public static Dictionary<long, string> Nightfalls = new();
+
+        public static Dictionary<long, DestinyInventoryItemDefinition> Fish = new();
 
         public static Dictionary<long, string> Perks = new();
         public static Dictionary<long, string> EnhancedPerks = new();
@@ -72,6 +73,8 @@ namespace Levante.Helpers
         {
             if (!Directory.Exists("Data/Manifest/JSONs"))
                 Directory.CreateDirectory("Data/Manifest/JSONs");
+
+            var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(File.ReadAllText(EmoteConfig.FilePath));
 
             Emblems.Clear();
             EmblemsCollectible.Clear();
@@ -440,11 +443,6 @@ namespace Levante.Helpers
                             }
 
                         Activities.Add(activity.Value.Hash, activity.Value.DisplayProperties.Name);
-                        if (CurrentRotations.Nightfall.Rotations.FirstOrDefault(x => x.Name.Equals(activity.Value.DisplayProperties.Description)) != null && !Nightfalls.ContainsValue(activity.Value.DisplayProperties.Description))
-                        {
-                            Nightfalls.Add(activity.Value.Hash, activity.Value.DisplayProperties.Description);
-                            //Console.WriteLine($"{activity.Value.Hash}: {activity.Value.DisplayProperties.Name} ({activity.Value.DisplayProperties.Description})");
-                        }
                         int index = CurrentRotations.LostSector.Rotations.FindIndex(x => activity.Key.Equals($"{x.LegendActivityHash}"));
                         if (index != -1)
                         {
@@ -455,14 +453,27 @@ namespace Levante.Helpers
                                 if (!modifierList.ContainsKey($"{mod.ActivityModifierHash}"))
                                     continue;
 
-                                if (String.IsNullOrEmpty(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name) ||
-                                    modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Champion") ||
-                                    modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Shielded") ||
-                                    modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Modifiers"))
+                                var modifer = modifierList[$"{mod.ActivityModifierHash}"];
+                                if (String.IsNullOrEmpty(modifer.DisplayProperties.Name) ||
+                                    modifer.DisplayProperties.Name.Contains("Champion") ||
+                                    modifer.DisplayProperties.Name.Contains("Shielded") ||
+                                    modifer.DisplayProperties.Name.Contains("Modifiers") ||
+                                    modifer.DisplayProperties.Name.Contains("Threat") ||
+                                    modifer.DisplayProperties.Name.Contains("Surge"))
                                 {
                                     continue;
                                 }
-                                CurrentRotations.LostSector.Rotations[index].LegendModifiers.Add(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name);
+                                CurrentRotations.LostSector.Rotations[index].LegendModifiers.Add(modifer.DisplayProperties.Name);
+
+                                if (String.IsNullOrEmpty(modifer.DisplayProperties.Icon))
+                                    continue;
+
+                                //if (!emoteCfg.Emotes.ContainsKey(modifer.DisplayProperties.Name.Replace(" ", "").Replace("-", "").Replace("'", "")))
+                                //{
+                                //    var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{modifer.DisplayProperties.Icon}").Result;
+                                //    Task.Run(() => emoteCfg.AddEmote(modifer.DisplayProperties.Name.Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                                //    Log.Debug($"Made new Emote for {modifer.DisplayProperties.Name} with icon: {modifer.DisplayProperties.Icon}");
+                                //}
                             }
                         }
                         else
@@ -478,15 +489,28 @@ namespace Levante.Helpers
                                     if (!modifierList.ContainsKey($"{mod.ActivityModifierHash}"))
                                         continue;
 
+                                    var modifer = modifierList[$"{mod.ActivityModifierHash}"];
                                     // Don't want champion modifier(s) because we have those.
-                                    if (String.IsNullOrEmpty(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name) ||
-                                            modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Champion") ||
-                                            modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Shielded") ||
-                                            modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name.Contains("Modifiers"))
+                                    if (String.IsNullOrEmpty(modifer.DisplayProperties.Name) ||
+                                        modifer.DisplayProperties.Name.Contains("Champion") ||
+                                        modifer.DisplayProperties.Name.Contains("Shielded") ||
+                                        modifer.DisplayProperties.Name.Contains("Modifiers") ||
+                                        modifer.DisplayProperties.Name.Contains("Threat") ||
+                                        modifer.DisplayProperties.Name.Contains("Surge"))
                                     {
                                         continue;
                                     }
-                                    CurrentRotations.LostSector.Rotations[index].MasterModifiers.Add(modifierList[$"{mod.ActivityModifierHash}"].DisplayProperties.Name);
+                                    CurrentRotations.LostSector.Rotations[index].MasterModifiers.Add(modifer.DisplayProperties.Name);
+
+                                    if (String.IsNullOrEmpty(modifer.DisplayProperties.Icon))
+                                        continue;
+
+                                    //if (!emoteCfg.Emotes.ContainsKey(modifer.DisplayProperties.Name.Replace(" ", "").Replace("-", "").Replace("'", "")))
+                                    //{
+                                    //    var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{modifer.DisplayProperties.Icon}").Result;
+                                    //    Task.Run(() => emoteCfg.AddEmote(modifer.DisplayProperties.Name.Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                                    //    Log.Debug($"Made new Emote for {modifer.DisplayProperties.Name} with icon: {modifer.DisplayProperties.Icon}");
+                                    //}
                                 }
                             }
                         }
@@ -496,8 +520,16 @@ namespace Levante.Helpers
 
                     foreach (var invItem in invItemList)
                     {
-                        if (invItem.Value == null ||
-                            string.IsNullOrWhiteSpace(invItem.Value.DisplayProperties.Name) ||
+                        if (invItem.Value == null) continue;
+
+                        if (invItem.Value.Inventory != null
+                            && invItem.Value.Inventory.StackUniqueLabel != null
+                            && invItem.Value.Inventory.StackUniqueLabel.Contains("fishing.proxies.fish"))
+                        {
+                            Fish.Add(long.Parse(invItem.Key), invItem.Value);
+                        }
+
+                        if (string.IsNullOrWhiteSpace(invItem.Value.DisplayProperties.Name) ||
                             string.IsNullOrWhiteSpace(invItem.Value.ItemTypeDisplayName)) continue;
 
                         //Console.WriteLine($"{invItem.Value.DisplayProperties.Name}");

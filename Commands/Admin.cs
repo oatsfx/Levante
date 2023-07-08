@@ -194,7 +194,7 @@ namespace Levante.Commands
 
             await hubChannel.SendMessageAsync($"", false, embed.Build(), components: buttonBuilder.Build());
 
-            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Hub created at {hubChannel.Mention}. Feel free to move that Category anywhere!"; });
+            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Hub created at {hubChannel.Mention}. Feel free to move that Category anywhere! Do not remove the \"XP Logging\" string from the category name - that's how I know where to place channels!"; });
         }
 
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]

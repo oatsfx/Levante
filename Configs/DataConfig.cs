@@ -303,6 +303,9 @@ namespace Levante.Configs
             if (user.AccessToken == null || user.AccessToken.Equals("[ACCESS TOKEN]"))
                 return false;
 
+            if (user.RefreshExpiration > DateTime.Now)
+                return false;
+
             return true;
         }
 

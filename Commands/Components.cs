@@ -141,7 +141,7 @@ namespace Levante.Commands
                         new Overwrite(Context.Client.CurrentUser.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
                         new Overwrite(guild.Id, PermissionTarget.Role, new OverwritePermissions(viewChannel: PermValue.Deny)),
                 };
-            }, options: new RequestOptions() { AuditLogReason = "XP Logging Session Channel Edit" });
+            }, options: new RequestOptions { AuditLogReason = "XP Logging Session Channel Edit" });
 
             string privacy = "";
             switch (fireteamPrivacy)

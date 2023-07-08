@@ -91,7 +91,6 @@ namespace Levante.Util
         public string BuildStringList(bool makeEmote = true)
         {
             string result = "";
-            DestinyPlugSetDefinition item = JsonConvert.DeserializeObject<DestinyPlugSetDefinition>(Content);
 
             // Name, Level, Enhanced Level
             Dictionary<string, KeyValuePair<int, int>> perkCraftLevels = new();
@@ -110,18 +109,18 @@ namespace Levante.Util
             {
                 if (makeEmote)
                 {
-                    if (!emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
+                    if (!emoteCfg.HasEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
                     {
                         var byteArray = new HttpClient().GetByteArrayAsync($"{Perk.GetIconUrl()}").Result;
                         Task.Run(() => emoteCfg.AddEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
                     }
-                    result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}{Perk.GetName()}";
+                    result += $"{emoteCfg.GetEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""))}{Perk.GetName()}";
                 }
                 else
                 {
-                    if (emoteCfg.Emotes.ContainsKey(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
+                    if (emoteCfg.HasEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")))
                     {
-                        result += $"{emoteCfg.Emotes[Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", "")]}";
+                        result += $"{emoteCfg.GetEmote(Perk.GetName().Replace(" ", "").Replace("-", "").Replace("'", ""))}";
                     }
                     result += $"{Perk.GetName()}";
                 }

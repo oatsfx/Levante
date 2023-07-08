@@ -7,22 +7,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Levante.Util;
 
 namespace Levante.Configs
 {
     public class EmoteConfig
     {
-        public static string FilePath { get; } = @"Configs/emoteConfig.json";
+        public static string FilePath = @"Configs/emoteConfig.json";
 
         [JsonProperty("EmoteServers")]
         public List<ulong> EmoteServers { get; internal set; } = new();
 
         [JsonProperty("Emotes")]
-        public Dictionary<string, string> Emotes { get; internal set; } = new();
+        private Dictionary<string, string> Emotes { get; set; } = new();
 
         public async Task<bool> AddEmote(string name, Image image)
         {
-            bool success = false;
+            // Don't make an emote when debugging.
+            if (BotConfig.IsDebug)
+            {
+                Log.Debug("[{Type}] Would've made an emote for {Name}", "Emotes", name);
+                return true;
+            }
+
+                bool success = false;
             foreach (var guildId in EmoteServers)
             {
                 var guild = LevanteCordInstance.Client.GetGuild(guildId);
@@ -47,6 +55,16 @@ namespace Levante.Configs
             image.Dispose();
             return success;
         }
+
+        public string GetEmote(string name)
+        {
+            if (Emotes.ContainsKey(name))
+                return Emotes[name];
+
+            return DestinyEmote.Classified;
+        }
+
+        public bool HasEmote(string name) => Emotes.ContainsKey(name);
 
         public void UpdateJSON()
         {

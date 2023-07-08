@@ -1,20 +1,15 @@
-﻿using Levante.Configs;
+﻿using Discord;
+using Levante.Configs;
+using Levante.Rotations.Abstracts;
+using Levante.Rotations.Interfaces;
 using Levante.Util;
-using Discord;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using BungieSharper.Entities.Destiny.Definitions;
-using BungieSharper.Entities.Destiny.Definitions.Records;
-using BungieSharper.Entities.Destiny;
-using Levante.Helpers;
-using System.Linq;
 using System.Net.Http;
-using Levante.Rotations.Abstracts;
-using Levante.Rotations.Interfaces;
-using System.Runtime.CompilerServices;
-using Serilog;
+using System.Threading.Tasks;
 
 namespace Levante.Rotations
 {
@@ -83,7 +78,7 @@ namespace Levante.Rotations
             {
                 y.Name = LSD == LostSectorDifficulty.Legend ? "Legend" : "Master";
                 y.Value = $"Recommended Power: {DestinyEmote.Light}{GetLostSectorDifficultyLight(LSD)}\n" +
-                    $"Burn: {DestinyEmote.MatchEmote(LostSector.Burn)}{LostSector.Burn}";
+                    $"Threat: {DestinyEmote.MatchEmote(LostSector.Burn)}{LostSector.Burn}";
                 y.IsInline = false;
             })
             .AddField(y =>
@@ -213,14 +208,13 @@ namespace Levante.Rotations
 
         public string GetModifiers(LostSectorDifficulty Difficulty)
         {
+            string json = File.ReadAllText(EmoteConfig.FilePath);
+            var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
             string result = "";
-            if (Difficulty == LostSectorDifficulty.Legend)
-                foreach (var modifier in LegendModifiers)
-                    result += $"{DestinyEmote.MatchEmote(modifier.Replace(" ", "").Replace("-", "").Replace("'", "").Replace("!", ""))}{modifier}\n";
-            else
-                foreach (var modifier in MasterModifiers)
-                    result += $"{DestinyEmote.MatchEmote(modifier.Replace(" ", "").Replace("-", "").Replace("'", "").Replace("!", ""))}{modifier}\n";
 
+            var modifers = Difficulty == LostSectorDifficulty.Legend ? LegendModifiers : MasterModifiers;
+            foreach (var modifier in modifers)
+                result += $"{emoteCfg.GetEmote(modifier.Replace(" ", "").Replace("-", "").Replace("'", ""))}{modifier}\n";
             return result;
         }
 
@@ -267,7 +261,7 @@ namespace Levante.Rotations
         [JsonProperty("ArmorEmote")]
         public readonly string ArmorEmote;
 
-        public override string ToString() => $"{Type} {ArmorEmote}";
+        public override string ToString() => $"{Type}";
     }
 
     public class LostSectorLink : IRotationTracker

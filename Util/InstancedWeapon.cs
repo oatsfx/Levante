@@ -62,8 +62,8 @@ namespace Levante.Util
             string result = "";
             foreach (var perk in Perks)
             {
-                if (Emotes.Emotes.ContainsKey(perk.Replace(" ", "").Replace("-", "").Replace("'", "")))
-                    result += $"{Emotes.Emotes[perk.Replace(" ", "").Replace("-", "").Replace("'", "")]}";
+                if (Emotes.HasEmote(perk.Replace(" ", "").Replace("-", "").Replace("'", "")))
+                    result += $"{Emotes.GetEmote(perk.Replace(" ", "").Replace("-", "").Replace("'", ""))}";
                 else
                     result += $"{DestinyEmote.Classified}";
             }

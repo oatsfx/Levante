@@ -64,6 +64,7 @@ namespace Levante.Util
         // Misc
         public static readonly string Ada1 = "<:Ada1:1009837298814288003>";
         public static readonly string AscendantChallengeBounty = "<:ACBounty:934478080737693787>";
+        public static readonly string Bait = "<:Bait:1115561961980186694>";
         public static readonly string Classified = "<:Classified:1014305658390184006>";
         public static readonly string Commendations = "<:Commendations:1082135754320384001>";
         public static readonly string Dungeon = "<:Dungeon:1109018943525507102>";

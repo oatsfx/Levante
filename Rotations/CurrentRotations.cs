@@ -61,7 +61,6 @@ namespace Levante.Rotations
 
         public static void WeeklyRotation()
         {
-            Nightfall.GetCurrentNightfall();
             Ada1.GetAda1Inventory();
 
             Actives.LWChallenge = Actives.LWChallenge == LastWish.Rotations.Count - 1 ? 0 : Actives.LWChallenge + 1;
@@ -75,6 +74,7 @@ namespace Levante.Rotations
             Actives.CurseWeek = Actives.CurseWeek == CurseWeek.Rotations.Count - 1 ? 0 : Actives.CurseWeek + 1;
             Actives.AscendantChallenge = Actives.AscendantChallenge == AscendantChallenge.Rotations.Count - 1 ? 0 : Actives.AscendantChallenge + 1;
             Actives.NightfallWeaponDrop = Actives.NightfallWeaponDrop == Nightfall.WeaponRotations.Count - 1 ? 0 : Actives.NightfallWeaponDrop + 1;
+            Actives.Nightfall = Actives.Nightfall == Nightfall.Rotations.Count - 1 ? 0 : Actives.Nightfall + 1;
             Actives.EmpireHunt = Actives.EmpireHunt == EmpireHunt.Rotations.Count - 1 ? 0 : Actives.EmpireHunt + 1;
 
             Actives.FeaturedDungeon = Actives.FeaturedDungeon == FeaturedDungeon.Rotations.Count - 1 ? 0 : Actives.FeaturedDungeon + 1;
@@ -135,7 +135,6 @@ namespace Levante.Rotations
         public static void UpdateRotationsJSON()
         {
             Ada1.GetAda1Inventory();
-            Nightfall.GetCurrentNightfall();
             File.WriteAllText(FilePath, JsonConvert.SerializeObject(Actives, Formatting.Indented));
         }
 

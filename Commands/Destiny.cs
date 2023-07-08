@@ -210,6 +210,263 @@ namespace Levante.Commands
             await RespondAsync(embed: CurrentRotations.DailyResetEmbed().Build());
         }
 
+        [SlashCommand("fishing", "Get a player's Destiny 2 fishing information.")]
+        public async Task Fishing([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
+        {
+            var User = Context.User;
+
+            await DeferAsync(ephemeral: hide);
+            var dil = DataConfig.GetLinkedUser(User.Id);
+            if (dil == null)
+            {
+                var errorEmbed = Embeds.GetErrorEmbed();
+                errorEmbed.Description = "Unable to pull user data. I may have lost access to their information, likely, they'll have to link again.";
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errorEmbed.Build(); });
+                return;
+            }
+
+            int TotalFish, ExoticHeld, LegendaryHeld, RareHeld, UncommonHeld, Bait, MaxBait;
+            double LargestFish;
+
+            // ???????????????????????????????????????????????????
+            var exoticFishCharacter = new Dictionary<long, string>
+            {
+                // Exotic
+                { 3215008487, "Aeonian Alpha-Betta" },
+                { 3821744120, "Whispering Mothcarp" },
+                { 4065264321, "Vexing Placoderm" },
+            };
+
+            var exoticFish = new Dictionary<long, string>
+            {
+                // Exotic
+                { 3045091722, "Kheprian Axehead" },
+            };
+
+            var legendFish = new Dictionary<long, string>
+            {
+                // Legendary
+                { 2295044628, "Drangelfish (Baroque)" },
+                { 4013700867, "Salvager's Salmon" },
+                { 729316630, "Gnawing Hun Gar" },
+                { 307419853, "No Turning Jack" },
+                { 938043848, "Cod Duello" },
+                { 686316983, "Temptation's Haddock" },
+                { 3824155546, "Ignition Toad" },
+                { 2440190801, "Deafening Whisker" },
+                { 2811057884, "Servant Lobster" },
+                { 3982872811, "Galliard Trevally" },
+            };
+
+            var rareFish = new Dictionary<long, string>
+            {
+                // Rare
+                { 3821517233, "Aachen Cichlid" },
+                { 3420416378, "Chiron's Carp" },
+                { 3914115223, "Koi Cirrus" },
+                { 4165738920, "Madrugadan Mackerel" },
+                { 583260973, "Golden Trevallyhoo" },
+                { 3998588662, "Agronatlantic Salmon" },
+                { 1504217571, "Traxian Toad" },
+                { 2612359540, "Hardcase Haddock" },
+                { 1099115065, "Lamian Lobster" },
+                { 2310653154, "Azimuth Angelfish" },
+                { 2468256932, "Cup Bearer Catfish" },
+                { 305477331, "Allegrian Jack" },
+                { 1820537638, "Cuboid Cod" },
+                { 151832733, "Gusevian Gar" },
+            };
+
+            var uncommonFish = new Dictionary<long, string>
+            {
+                // Uncommon
+                { 3775818187, "Cydonian Cichlid" },
+                { 1136707388, "At Least It's a Carp" },
+                { 1184450997, "Hadrian Koi" },
+                { 3081348702, "Minueting Mackerel" },
+            };
+
+            using var client = new HttpClient();
+
+            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
+
+            var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,102,103,200,900,1100,1200").Result;
+            var content = response.Content.ReadAsStringAsync().Result;
+            dynamic item = JsonConvert.DeserializeObject(content);
+
+            TotalFish = int.Parse($"{item.Response.metrics.data.metrics["24768693"].objectiveProgress.progress}");
+
+            Bait = int.Parse($"{item.Response.profileStringVariables.data.integerValuesByHash["3758904843"]}");
+            MaxBait = int.Parse($"{item.Response.profileStringVariables.data.integerValuesByHash["1523938882"]}");
+
+            ExoticHeld = int.Parse($"{item.Response.profileStringVariables.data.integerValuesByHash["1423773299"]}");
+            LegendaryHeld = int.Parse($"{item.Response.profileStringVariables.data.integerValuesByHash["3064136636"]}");
+            RareHeld = int.Parse($"{item.Response.profileStringVariables.data.integerValuesByHash["9025129"]}");
+            UncommonHeld = int.Parse($"{item.Response.profileStringVariables.data.integerValuesByHash["2934707299"]}");
+
+            LargestFish = int.Parse($"{item.Response.metrics.data.metrics["2691615711"].objectiveProgress.progress}")/(double)100;
+
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"{dil.UniqueBungieName} Fishing Stats",
+                IconUrl = User.GetAvatarUrl(),
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = "Powered by the Bungie API"
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Author = auth,
+                Footer = foot,
+            };
+
+            embed.Description = $"Total Fish Caught: **{TotalFish:n0}**\n" +
+                                $"Largest Fish Caught: **{LargestFish:0.00} kg**\n" +
+                                $"{DestinyEmote.Bait} **{Bait}**/**{MaxBait}**{(Bait == MaxBait ? " (Go Fishing Guardian!)" : "")}";
+
+            string heldFishString = "";
+
+            if (ExoticHeld != 0)
+                heldFishString += $"Exotic: **{ExoticHeld:n0}**\n";
+
+            if (LegendaryHeld != 0)
+                heldFishString += $"Legendary: **{LegendaryHeld:n0}**\n";
+
+            if (RareHeld != 0)
+                heldFishString += $"Rare: **{RareHeld:n0}**\n";
+
+            if (UncommonHeld != 0)
+                heldFishString += $"Uncommon: **{UncommonHeld:n0}**";
+
+            embed.AddField(x =>
+            {
+                x.Name = "Fish Held";
+                x.Value = String.IsNullOrEmpty(heldFishString) ? $"No fish held. Go catch some fish!{(Bait <= 0 ? "Wait... you have no bait... Go get bait first!" : "")}" : heldFishString;
+                x.IsInline = true;
+            });
+
+            string json = File.ReadAllText(EmoteConfig.FilePath);
+            var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
+
+            List<string> charIds = new();
+            for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+            {
+                try
+                {
+                    charIds.Add($"{item.Response.profile.data.characterIds[i]}");
+                }
+                catch (Exception x)
+                {
+                    Console.WriteLine($"{x}");
+                }
+            }
+
+            string exoticFishString = "";
+            foreach (var fish in exoticFishCharacter)
+            {
+                var newFishString = fish.Value.Replace(" ", "").Replace("-", "").Replace("'", "").Replace("(", "").Replace(")", "");
+                var fishItem = ManifestHelper.Fish.First(x => x.Value.DisplayProperties.Name.Equals(fish.Value));
+                if (!emoteCfg.HasEmote(newFishString))
+                {
+                    var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{fishItem.Value.DisplayProperties.Icon}").Result;
+                    Task.Run(() => emoteCfg.AddEmote(newFishString, new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                }
+                // Yeah, let's just make these character records even though they are the same number regardless.
+                var fishRecord = item.Response.characterRecords.data[charIds.First()].records[$"{fish.Key}"];
+                exoticFishString += $"{emoteCfg.GetEmote(newFishString)}{fishRecord.intervalObjectives[0].progress} ";
+            }
+
+            foreach (var fish in exoticFish)
+            {
+                var newFishString = fish.Value.Replace(" ", "").Replace("-", "").Replace("'", "").Replace("(", "").Replace(")", "");
+                var fishItem = ManifestHelper.Fish.First(x => x.Value.DisplayProperties.Name.Equals(fish.Value));
+                if (!emoteCfg.HasEmote(newFishString))
+                {
+                    var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{fishItem.Value.DisplayProperties.Icon}").Result;
+                    Task.Run(() => emoteCfg.AddEmote(newFishString, new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                }
+
+                var fishRecord = item.Response.profileRecords.data.records[$"{fish.Key}"];
+                exoticFishString += $"{emoteCfg.GetEmote(newFishString)}{fishRecord.intervalObjectives[0].progress}";
+            }
+
+            string legendFishString = "";
+            foreach (var fish in legendFish)
+            {
+                var newFishString = fish.Value.Replace(" ", "").Replace("-", "").Replace("'", "").Replace("(", "").Replace(")", "");
+                var fishItem = ManifestHelper.Fish.First(x => x.Value.DisplayProperties.Name.Equals(fish.Value));
+                if (!emoteCfg.HasEmote(newFishString))
+                {
+                    var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{fishItem.Value.DisplayProperties.Icon}").Result;
+                    Task.Run(() => emoteCfg.AddEmote(newFishString, new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                }
+
+                var fishRecord = item.Response.profileRecords.data.records[$"{fish.Key}"];
+                legendFishString += $"{emoteCfg.GetEmote(newFishString)}{fishRecord.intervalObjectives[0].progress} ";
+            }
+
+            string rareFishString = "";
+            foreach (var fish in rareFish)
+            {
+                var newFishString = fish.Value.Replace(" ", "").Replace("-", "").Replace("'", "").Replace("(", "").Replace(")", "");
+                var fishItem = ManifestHelper.Fish.First(x => x.Value.DisplayProperties.Name.Equals(fish.Value));
+                if (!emoteCfg.HasEmote(newFishString))
+                {
+                    var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{fishItem.Value.DisplayProperties.Icon}").Result;
+                    Task.Run(() => emoteCfg.AddEmote(newFishString, new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                }
+
+                var fishRecord = item.Response.profileRecords.data.records[$"{fish.Key}"];
+                rareFishString += $"{emoteCfg.GetEmote(newFishString)}{fishRecord.intervalObjectives[0].progress} ";
+            }
+
+            string uncommonFishString = "";
+            foreach (var fish in uncommonFish)
+            {
+                var newFishString = fish.Value.Replace(" ", "").Replace("-", "").Replace("'", "").Replace("(", "").Replace(")", "");
+                var fishItem = ManifestHelper.Fish.First(x => x.Value.DisplayProperties.Name.Equals(fish.Value));
+                if (!emoteCfg.HasEmote(newFishString))
+                {
+                    var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{fishItem.Value.DisplayProperties.Icon}").Result;
+                    Task.Run(() => emoteCfg.AddEmote(newFishString, new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                }
+
+                var fishRecord = item.Response.profileRecords.data.records[$"{fish.Key}"];
+                uncommonFishString += $"{emoteCfg.GetEmote(newFishString)}{fishRecord.intervalObjectives[0].progress} ";
+            }
+            emoteCfg.UpdateJSON();
+
+            embed.AddField(x =>
+            {
+                x.Name = "Exotic Fish";
+                x.Value = String.IsNullOrEmpty(exoticFishString) ? "No Exotic Fish." : exoticFishString;
+                x.IsInline = false;
+            }).AddField(x =>
+            {
+                x.Name = "Legendary Fish";
+                x.Value = String.IsNullOrEmpty(legendFishString) ? "No Legendary Fish." : legendFishString;
+                x.IsInline = false;
+            }).AddField(x =>
+            {
+                x.Name = "Rare Fish";
+                x.Value = String.IsNullOrEmpty(rareFishString) ? "No Rare Fish." : rareFishString;
+                x.IsInline = false;
+            }).AddField(x =>
+            {
+                x.Name = "Uncommon Fish";
+                x.Value = String.IsNullOrEmpty(uncommonFishString) ? "No Uncommon Fish." : uncommonFishString;
+                x.IsInline = false;
+            });
+
+            embed.ThumbnailUrl =
+                "https://www.bungie.net/common/destiny2_content/icons/eefd1ff16bb5c84e188eccd1545084a4.jpg";
+
+            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
+        }
+
         [SlashCommand("free-emblems", "Display a list of universal emblem codes.")]
         public async Task FreeEmblems([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
@@ -792,7 +1049,7 @@ namespace Levante.Commands
                     string result = "";
                     foreach (var seasonalMat in seasonalMats)
                     {
-                        if (!emoteCfg.Emotes.ContainsKey(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", "")))
+                        if (!emoteCfg.HasEmote(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", "")))
                         {
                             response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/" + seasonalMat.Key).Result;
                             content = response.Content.ReadAsStringAsync().Result;
@@ -801,7 +1058,7 @@ namespace Levante.Commands
                             Task.Run(() => emoteCfg.AddEmote(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
                             emoteCfg.UpdateJSON();
                         }
-                        result += $"{emoteCfg.Emotes[BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", "")]} {seasonalMat.Value:n0}\n";
+                        result += $"{emoteCfg.GetEmote(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", ""))} {seasonalMat.Value:n0}\n";
                     }
 
                     embed.AddField(x =>
@@ -827,7 +1084,6 @@ namespace Levante.Commands
                         x.IsInline = true;
                     });
                 }
-                    
 
                 await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
             }

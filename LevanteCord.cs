@@ -114,7 +114,7 @@ namespace Levante
             var commands = _services.GetRequiredService<InteractionService>();
 
             client.Log += LogAsync;
-            
+
             await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
             await _client.StartAsync();
 
@@ -161,7 +161,7 @@ namespace Levante
                     string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
                     await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching)); break;
                 case 1:
-                    await _client.SetActivityAsync(new Game($"{BotConfig.Notes[rand.Next(0, BotConfig.Notes.Count)]} | v{BotConfig.Version}", ActivityType.Playing)); break;
+                    await _client.SetActivityAsync(new Game($"{BotConfig.PlayingStatuses[rand.Next(0, BotConfig.PlayingStatuses.Count)]} | v{BotConfig.Version}", ActivityType.Playing)); break;
                 case 2:
                     await _client.SetActivityAsync(new Game($"for /help | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 3:
@@ -183,7 +183,9 @@ namespace Levante
                 case 11:
                     await _client.SetActivityAsync(new Game($"for /support | v{BotConfig.Version}", ActivityType.Watching)); break;
                 case 12:
-                    await _client.SetActivityAsync(new Game($"{_client.Shards.Count} Shards | v{BotConfig.Version}")); break;
+                    await _client.SetActivityAsync(new Game($"{_client.Shards.Count} Shards | v{BotConfig.Version}", ActivityType.Watching)); break;
+                case 13:
+                    await _client.SetActivityAsync(new Game($"{BotConfig.WatchingStatuses[rand.Next(0, BotConfig.WatchingStatuses.Count)]} | v{BotConfig.Version}", ActivityType.Watching)); break;
                 default: break;
             }
             return;
@@ -614,7 +616,7 @@ namespace Levante
                         //397846250797662208
                         //915020047154565220
                         //1011700865087852585
-                        await _interaction.RegisterCommandsToGuildAsync(915020047154565220);
+                        await _interaction.RegisterCommandsToGuildAsync(1011700865087852585);
                     }
                     else
                     {
@@ -686,7 +688,6 @@ namespace Levante
                 }
             }
             await UpdateBotActivity();
-            return;
         }
 
         private async Task ComponentCommandExecuted(ComponentCommandInfo info, IInteractionContext context, Discord.Interactions.IResult result)

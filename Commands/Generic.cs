@@ -200,9 +200,33 @@ namespace Levante.Commands
             embed.Description =
                 "Levante is available to everyone for free, and it will continue to stay this way. " +
                 "Anyone who supports Levante and her team by donating will be eligible for [supporter perks](https://www.levante.dev/features/). " +
-                "Those extra perks are a way of saying thank you to all of our generous supporters.\n" +
-                "> You can support us by boosting our [support server](https://support.levante.dev/) or by [donating directly](https://donate.levante.dev/).\n" +
-                "> *Please note that boosting will grant supporter perks only while the boost is active.*";
+                "Those extra perks are a way of saying thank you to all our generous supporters.";
+
+            embed.AddField(x =>
+            {
+                x.Name = "> Ways to Support";
+                x.Value = "*Some of the ways you can support Levante.*";
+                x.IsInline = false;
+            });
+
+            embed.Footer = new EmbedFooterBuilder()
+            {
+                Text = "Supported? Let us know in our Support Server!"
+            };
+
+            foreach (var thirdParty in BotConfig.ThirdPartySupport)
+            {
+                string linkBuilder = "";
+                foreach (var link in thirdParty.Links)
+                    linkBuilder += $"\n[{link.Name}]({link.Link})";
+
+                embed.AddField(x =>
+                {
+                    x.Name = thirdParty.Name;
+                    x.Value = $"{thirdParty.Description}{linkBuilder}";
+                    x.IsInline = false;
+                });
+            }
 
             var buttonBuilder = new ComponentBuilder()
                 .WithButton("Support Levante", style: ButtonStyle.Link, url: $"https://donate.levante.dev/", emote: Emote.Parse(Emotes.KoFi), row: 0);
