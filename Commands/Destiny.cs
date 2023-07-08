@@ -210,6 +210,7 @@ namespace Levante.Commands
             await RespondAsync(embed: CurrentRotations.DailyResetEmbed().Build());
         }
 
+        [RequireBungieOauth]
         [SlashCommand("fishing", "Get a player's Destiny 2 fishing information.")]
         public async Task Fishing([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
@@ -291,7 +292,7 @@ namespace Levante.Commands
             client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
             client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
-            var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,102,103,200,900,1100,1200").Result;
+            var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,200,900,1100,1200").Result;
             var content = response.Content.ReadAsStringAsync().Result;
             dynamic item = JsonConvert.DeserializeObject(content);
 
