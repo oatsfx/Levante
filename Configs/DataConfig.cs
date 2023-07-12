@@ -294,6 +294,18 @@ namespace Levante.Configs
             File.WriteAllText(FilePath, output);
         }
 
+        public static bool IsRefreshTokenExpired(ulong DiscordID)
+        {
+            var user = DiscordIDLinks.Find(x => x.DiscordID == DiscordID);
+            if (user == null)
+                return true;
+
+            if (user.RefreshExpiration < DateTime.Now)
+                return true;
+
+            return false;
+        }
+
         public static bool IsExistingLinkedUser(ulong DiscordID)
         {
             var user = DiscordIDLinks.Find(x => x.DiscordID == DiscordID);
@@ -301,9 +313,6 @@ namespace Levante.Configs
                 return false;
             
             if (user.AccessToken == null || user.AccessToken.Equals("[ACCESS TOKEN]"))
-                return false;
-
-            if (user.RefreshExpiration < DateTime.Now)
                 return false;
 
             return true;
