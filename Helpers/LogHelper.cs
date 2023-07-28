@@ -79,7 +79,7 @@ namespace Levante.Helpers
         public void Emit(LogEvent logEvent)
         {
             var message = logEvent.RenderMessage(_formatProvider).Replace("\"", "");
-            if (logEvent.Level >= LogEventLevel.Warning)
+            if (logEvent.Level >= LogEventLevel.Error)
             {
                 if (LevanteCordInstance.Client != null && BotConfig.LoggingChannel != null)
                     BotConfig.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix(logEvent.Timestamp.DateTime)}]: {message}");
