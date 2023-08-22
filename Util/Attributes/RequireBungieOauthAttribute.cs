@@ -16,7 +16,6 @@ namespace Levante.Util.Attributes
             if (DataConfig.IsRefreshTokenExpired(context.User.Id))
                 return Task.FromResult(PreconditionResult.FromError("I have lost privileges to your Destiny 2 data. This is common if you've been using my services for awhile. You'll have to link again with the `/link` command."));
 
-            DataConfig.RefreshCode(DataConfig.GetLinkedUser(context.User.Id));
             return Task.FromResult(PreconditionResult.FromSuccess());
         }
     }

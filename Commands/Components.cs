@@ -190,7 +190,7 @@ namespace Levante.Commands
             if (!ActiveConfig.IsExistingActiveUser(user.Id))
             {
                 var embed = Embeds.GetErrorEmbed();
-                embed.Description = $"You are already using my logging feature.";
+                embed.Description = $"You aren't using my logging feature. Hit the \"Ready\" button to get started!";
 
                 await RespondAsync(embed: embed.Build(), ephemeral: true);
                 return;
