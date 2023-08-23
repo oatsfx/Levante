@@ -81,7 +81,7 @@ namespace Levante.Commands
                 return;
             }
 
-            await RespondAsync($"Getting things ready...", ephemeral: true);
+            await DeferAsync(ephemeral: true);
             var dil = DataConfig.GetLinkedUser(user.Id);
 
             string memId = dil.BungieMembershipID;
@@ -100,7 +100,7 @@ namespace Levante.Commands
                 {
                     if (categoryChan.Channels.Count >= 50)
                     {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"The \"{categoryChan.Name}\" category is full. You may have to invite me to another server and use this feature there if this continues to occur."; });
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"The \"{categoryChan.Name}\" category is full. You may have to invite me to another server and use this feature there if this persists."; });
                         return;
                     }
 
@@ -115,7 +115,18 @@ namespace Levante.Commands
             }
 
             string uniqueName = dil.UniqueBungieName;
-            var userLogChannel = await guild.CreateTextChannelAsync($"{uniqueName.Split('#')[0]}", options: new RequestOptions(){ AuditLogReason = "XP Logging Session Create" });
+            var userLogChannel = await guild.CreateTextChannelAsync($"{uniqueName.Split('#')[0]}", options: new RequestOptions(){ AuditLogReason = "XP Logging Session Create" }, 
+                func: x =>
+                {
+                    x.CategoryId = cc.Id;
+                    x.Topic = $"{uniqueName.Split('#')[0]} (Starting Level: {userLevel} [{lvlProg:n0}/100,000 XP] | Starting Power Bonus: +{powerBonus}) - Time Started: {TimestampTag.FromDateTime(DateTime.Now)}";
+                    x.PermissionOverwrites = new[]
+                    {
+                        new Overwrite(user.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
+                        new Overwrite(Context.Client.CurrentUser.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
+                        new Overwrite(guild.Id, PermissionTarget.Role, new OverwritePermissions(viewChannel: PermValue.Deny)),
+                    };
+                });
 
             ActiveConfig.ActiveAFKUser newUser = new()
             {
@@ -131,7 +142,7 @@ namespace Levante.Commands
                 ActivityHash = activityHash,
             };
 
-            await userLogChannel.ModifyAsync(x =>
+            /* userLogChannel.ModifyAsync(x =>
             {
                 x.CategoryId = cc.Id;
                 x.Topic = $"{uniqueName.Split('#')[0]} (Starting Level: {newUser.StartLevel} [{newUser.StartLevelProgress:n0}/100,000 XP] | Starting Power Bonus: +{newUser.StartPowerBonus}) - Time Started: {TimestampTag.FromDateTime(newUser.TimeStarted)}";
@@ -141,7 +152,7 @@ namespace Levante.Commands
                         new Overwrite(Context.Client.CurrentUser.Id, PermissionTarget.User, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow)),
                         new Overwrite(guild.Id, PermissionTarget.Role, new OverwritePermissions(viewChannel: PermValue.Deny)),
                 };
-            }, options: new RequestOptions { AuditLogReason = "XP Logging Session Channel Edit" });
+            }, options: new RequestOptions { AuditLogReason = "XP Logging Session Channel Edit" */
 
             string privacy = "";
             switch (fireteamPrivacy)
