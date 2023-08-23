@@ -11,17 +11,21 @@ using System.Threading.Tasks;
 using BungieSharper.Entities.Forum;
 using Newtonsoft.Json.Linq;
 using Serilog;
+using Discord.WebSocket;
 
-namespace Levante.Helpers
+namespace Levante.Services
 {
-    public class CreationsHelper
+    public class CreationsService
     {
+        private readonly Timer _timer;
+        private readonly DiscordShardedClient _client;
+
         public static readonly string FilePath = @"Configs/creationsConfig.json";
 
         [JsonProperty("CreationsPosts")]
         private List<string> CreationsPosts = new();
 
-        public CreationsHelper()
+        public CreationsService(DiscordShardedClient client)
         {
             if (File.Exists(FilePath))
             {
@@ -33,10 +37,14 @@ namespace Levante.Helpers
                 File.WriteAllText(FilePath, JsonConvert.SerializeObject(CreationsPosts, Formatting.Indented));
                 Console.WriteLine($"No creationsConfig.json file detected. A new one has been created, no action needed.");
             }
-            Log.Information("[{Type}] Creations Module Loaded.", "Creations");
+
+            _timer = new Timer(CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
+            _client = client;
+
+            Log.Information("[{Type}] Creations Service Loaded.", "Creations");
         }
 
-        public async void CheckCommunityCreationsCallback(Object o) => await CheckCreations().ConfigureAwait(false);
+        public async void CheckCommunityCreationsCallback(object o) => await CheckCreations().ConfigureAwait(false);
 
         private async Task CheckCreations()
         {
@@ -94,7 +102,7 @@ namespace Levante.Helpers
                             };
                             var embed = new EmbedBuilder()
                             {
-                                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                                Color = new Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
                                 Author = auth,
                                 Footer = foot,
                             };
@@ -131,6 +139,7 @@ namespace Levante.Helpers
                     {
                         CreationsPosts = newCreations;
                         File.WriteAllText(FilePath, JsonConvert.SerializeObject(CreationsPosts, Formatting.Indented));
+                        Log.Information("[{Type}] Creations successfully handled.", "Creations");
                     }
                     else
                     {

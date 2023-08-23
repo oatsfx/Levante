@@ -21,6 +21,7 @@ using Levante.Util.Attributes;
 using Serilog;
 using Serilog.Events;
 using BungieSharper.Entities.Destiny.Advanced;
+using Levante.Services;
 
 namespace Levante
 {
@@ -39,7 +40,6 @@ namespace Levante
         private Timer DailyResetTimer;
         private Timer _xpTimer;
         private Timer _leaderboardTimer;
-        private Timer CommunityCreationsTimer;
         private Timer CheckBungieAPI;
 
         public LevanteCord()
@@ -57,6 +57,7 @@ namespace Levante
                 .AddSingleton(_client)
                 .AddSingleton<InteractiveService>()
                 .AddSingleton<InteractionService>()
+                .AddSingleton<CreationsService>()
                 .BuildServiceProvider();
         }
 
@@ -112,6 +113,7 @@ namespace Levante
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordShardedClient>();
             var commands = _services.GetRequiredService<InteractionService>();
+            var creations = _services.GetRequiredService<CreationsService>();
 
             client.Log += LogAsync;
 
@@ -125,7 +127,6 @@ namespace Levante
             await _xpTimer.DisposeAsync();
             await _leaderboardTimer.DisposeAsync();
             await DailyResetTimer.DisposeAsync();
-            await CommunityCreationsTimer.DisposeAsync();
         }
 
         private static async Task LogAsync(LogMessage message)
@@ -163,30 +164,25 @@ namespace Levante
                 case 1:
                     await _client.SetActivityAsync(new Game($"{BotConfig.PlayingStatuses[rand.Next(0, BotConfig.PlayingStatuses.Count)]} | v{BotConfig.Version}", ActivityType.Playing)); break;
                 case 2:
-                    await _client.SetActivityAsync(new Game($"for /help | v{BotConfig.Version}", ActivityType.Watching)); break;
-                case 3:
                     await _client.SetActivityAsync(new Game($"{_client.Guilds.Count:n0} Servers | v{BotConfig.Version}", ActivityType.Watching)); break;
-                case 4:
+                case 3:
                     await _client.SetActivityAsync(new Game($"{_client.Guilds.Sum(x => x.MemberCount):n0} Users | v{BotConfig.Version}", ActivityType.Watching)); break;
-                case 5:
+                case 4:
                     await _client.SetActivityAsync(new Game($"{DataConfig.DiscordIDLinks.Count:n0} Linked Users | v{BotConfig.Version}", ActivityType.Watching)); break;
-                case 6:
+                case 5:
                     await _client.SetActivityAsync(new Game($"{CurrentRotations.GetTotalLinks()} Rotation Trackers | v{BotConfig.Version}", ActivityType.Watching)); break;
-                case 7:
+                case 6:
                     await _client.SetActivityAsync(new Game($"{BotConfig.Website} | v{BotConfig.Version}", ActivityType.Watching)); break;
-                case 8:
+                case 7:
                     await _client.SetActivityAsync(new Game($"{BotConfig.Twitter} on Twitter | v{BotConfig.Version}", ActivityType.Watching)); break;
-                case 9:
+                case 8:
                     await _client.SetActivityAsync(new Game($"{EmblemOffer.CurrentOffers.Count} Available Emblems", ActivityType.Watching)); break;
-                case 10:
-                    await _client.SetActivityAsync(new Game($"this ratio | v{BotConfig.Version}", ActivityType.Watching)); break;
-                case 11:
-                    await _client.SetActivityAsync(new Game($"for /support | v{BotConfig.Version}", ActivityType.Watching)); break;
-                case 12:
+                case 9:
                     await _client.SetActivityAsync(new Game($"{_client.Shards.Count} Shards | v{BotConfig.Version}", ActivityType.Watching)); break;
-                case 13:
+                case 10:
                     await _client.SetActivityAsync(new Game($"{BotConfig.WatchingStatuses[rand.Next(0, BotConfig.WatchingStatuses.Count)]} | v{BotConfig.Version}", ActivityType.Watching)); break;
-                default: break;
+                default:
+                    await _client.SetActivityAsync(new CustomStatusGame("If you haven't used me after August 15th, 2023, relink using the /link command.")); break;
             }
             return;
         }
@@ -636,8 +632,6 @@ namespace Levante
                     BotConfig.LoggingChannel = _client.GetChannel(BotConfig.LogChannel) as SocketTextChannel;
 
                     BotConfig.CreationsLogChannel = _client.GetChannel(BotConfig.CommunityCreationsLogChannel) as SocketTextChannel;
-                    var creationsManager = new CreationsHelper();
-                    CommunityCreationsTimer = new Timer(creationsManager.CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
 
                     _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
                     _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);
