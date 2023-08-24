@@ -113,7 +113,6 @@ namespace Levante
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordShardedClient>();
             var commands = _services.GetRequiredService<InteractionService>();
-            var creations = _services.GetRequiredService<CreationsService>();
 
             client.Log += LogAsync;
 
@@ -445,7 +444,7 @@ namespace Levante
                     else
                     {
                         int levelsGained = aau.LastLevel - aau.StartLevel;
-                        long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
+                        long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + updatedProgression;
                         await LogHelper.Log(logChannel, $"Refreshed: {tempAau.LastLevelProgress:n0} XP -> {updatedProgression:n0} XP. Level: {updatedLevel} | Power Bonus: +{powerBonus} | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours):n0} XP/Hour");
 
                         actualUser.LastLevel = updatedLevel;
@@ -630,8 +629,8 @@ namespace Levante
                     }
 
                     BotConfig.LoggingChannel = _client.GetChannel(BotConfig.LogChannel) as SocketTextChannel;
-
                     BotConfig.CreationsLogChannel = _client.GetChannel(BotConfig.CommunityCreationsLogChannel) as SocketTextChannel;
+                    var creations = _services.GetRequiredService<CreationsService>();
 
                     _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
                     _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);

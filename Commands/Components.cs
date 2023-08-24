@@ -81,8 +81,15 @@ namespace Levante.Commands
                 return;
             }
 
-            await RespondAsync("Getting things ready...", ephemeral: true);
             var dil = DataConfig.GetLinkedUser(user.Id);
+            if (dil == null)
+            {
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again.";
+                await RespondAsync(embed: embed.Build());
+                return;
+            }
+            await RespondAsync("Getting things ready...", ephemeral: true);
 
             string memId = dil.BungieMembershipID;
             string memType = dil.BungieMembershipType;
@@ -306,8 +313,15 @@ namespace Levante.Commands
                 return;
             }
 
-            await RespondAsync("Getting things ready...", ephemeral:true);
             var dil = DataConfig.GetLinkedUser(user.Id);
+            if (dil == null)
+            {
+                var embed = Embeds.GetErrorEmbed();
+                embed.Description = $"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again.";
+                await RespondAsync(embed: embed.Build());
+                return;
+            }
+            await RespondAsync("Getting things ready...", ephemeral: true);
 
             string memId = dil.BungieMembershipID;
             string memType = dil.BungieMembershipType;
