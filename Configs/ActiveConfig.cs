@@ -39,7 +39,7 @@ namespace Levante.Configs
         [JsonProperty("RefreshScaling")]
         public static double RefreshScaling = 0.025;
 
-        public partial class ActiveAFKUser
+        public class ActiveAFKUser
         {
             [JsonProperty("DiscordID")]
             public ulong DiscordID { get; set; } = 0;

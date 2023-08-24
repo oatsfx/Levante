@@ -81,7 +81,7 @@ namespace Levante.Commands
                 return;
             }
 
-            await DeferAsync(ephemeral: true);
+            await RespondAsync("Getting things ready...", ephemeral: true);
             var dil = DataConfig.GetLinkedUser(user.Id);
 
             string memId = dil.BungieMembershipID;
@@ -306,7 +306,7 @@ namespace Levante.Commands
                 return;
             }
 
-            await RespondAsync($"Getting things ready...", ephemeral: true);
+            await RespondAsync("Getting things ready...", ephemeral:true);
             var dil = DataConfig.GetLinkedUser(user.Id);
 
             string memId = dil.BungieMembershipID;
@@ -339,7 +339,7 @@ namespace Levante.Commands
             await userLogChannel.ModifyAsync(x =>
             {
                 x.Topic = $"{uniqueName} (Starting Level: {newUser.StartLevel} [{newUser.StartLevelProgress:n0}/100,000 XP] | Starting Power Bonus: +{newUser.StartPowerBonus}) - Time Started: {TimestampTag.FromDateTime(newUser.TimeStarted)}";
-            }, options: new RequestOptions() { AuditLogReason = "XP Logging Session Channel Edit" });
+            }, options: new RequestOptions() { AuditLogReason = "XP Logging Session Channel Edit" }).ConfigureAwait(false);
 
             string privacy = "";
             switch (fireteamPrivacy)
