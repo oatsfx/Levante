@@ -17,7 +17,6 @@ namespace Levante.Helpers
 
             BotConfig bConfig;
             DataConfig dConfig;
-            ActiveConfig aConfig;
             CountdownConfig cConfig;
 
             bool closeProgram = false;
@@ -47,19 +46,6 @@ namespace Levante.Helpers
                 dConfig = new DataConfig();
                 File.WriteAllText(DataConfig.FilePath, JsonConvert.SerializeObject(dConfig, Formatting.Indented));
                 Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped. No action is needed.", DataConfig.FilePath);
-                closeProgram = true;
-            }
-
-            if (File.Exists(ActiveConfig.FilePath))
-            {
-                string json = File.ReadAllText(ActiveConfig.FilePath);
-                aConfig = JsonConvert.DeserializeObject<ActiveConfig>(json);
-            }
-            else
-            {
-                aConfig = new ActiveConfig();
-                File.WriteAllText(ActiveConfig.FilePath, JsonConvert.SerializeObject(aConfig, Formatting.Indented));
-                Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped. No action is needed.", ActiveConfig.FilePath);
                 closeProgram = true;
             }
 

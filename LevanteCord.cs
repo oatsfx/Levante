@@ -38,7 +38,6 @@ namespace Levante
         private readonly IServiceProvider _services;
 
         private Timer DailyResetTimer;
-        private Timer _xpTimer;
         private Timer _leaderboardTimer;
         private Timer CheckBungieAPI;
 
@@ -58,6 +57,7 @@ namespace Levante
                 .AddSingleton<InteractiveService>()
                 .AddSingleton<InteractionService>()
                 .AddSingleton<CreationsService>()
+                .AddSingleton<XPLoggingService>()
                 .BuildServiceProvider();
         }
 
@@ -112,7 +112,6 @@ namespace Levante
 
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordShardedClient>();
-            var commands = _services.GetRequiredService<InteractionService>();
 
             client.Log += LogAsync;
 
@@ -123,7 +122,6 @@ namespace Levante
                 "Startup", BotConfig.Version);
             await Task.Delay(-1);
 
-            await _xpTimer.DisposeAsync();
             await _leaderboardTimer.DisposeAsync();
             await DailyResetTimer.DisposeAsync();
         }
@@ -157,9 +155,9 @@ namespace Levante
             switch (RNG)
             {
                 case 0:
-                    string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-                    string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
-                    await _client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching)); break;
+                    //string s = XPLoggingConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
+                    //string p = XPLoggingConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{XPLoggingConfig.PriorityActiveAFKUsers.Count})" : "";
+                    //await _client.SetActivityAsync(new Game($"{XPLoggingConfig.ActiveAFKUsers.Count}/{XPLoggingConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching)); break;
                 case 1:
                     await _client.SetActivityAsync(new Game($"{BotConfig.PlayingStatuses[rand.Next(0, BotConfig.PlayingStatuses.Count)]} | v{BotConfig.Version}", ActivityType.Playing)); break;
                 case 2:
@@ -273,216 +271,7 @@ namespace Levante
         #region XPLogging
         private async Task RefreshBungieAPI()
         {
-            if (ActiveConfig.ActiveAFKUsers.Count <= 0 && ActiveConfig.PriorityActiveAFKUsers.Count <= 0)
-            {
-                Log.Information("[{Type}] Skipping refresh, no active logging users...", "XP Sessions");
-                return;
-            }
-
-            // Stop Timer
-            _xpTimer.Change(Timeout.Infinite, Timeout.Infinite);
-            //LogHelper.ConsoleLog($"[XP SESSIONS] Refreshing Bungie API...");
-            //List<ActiveConfig.ActiveAFKUser> listOfRemovals = new List<ActiveConfig.ActiveAFKUser>();
-            //List<ActiveConfig.ActiveAFKUser> newList = new List<ActiveConfig.ActiveAFKUser>();
-            try // XP Logs
-            {
-                Log.Information("[{Type}] Refreshing XP Logging Users...", "XP Sessions");
-                var combinedAFKUsers = ActiveConfig.PriorityActiveAFKUsers.Concat(ActiveConfig.ActiveAFKUsers);
-                foreach (ActiveConfig.ActiveAFKUser aau in combinedAFKUsers.ToList())
-                {
-                    ActiveConfig.ActiveAFKUser tempAau = aau;
-
-                    // If the user has removed themselves from logging while we are refreshing.
-                    if (!(ActiveConfig.ActiveAFKUsers.Exists(x => x.DiscordChannelID == tempAau.DiscordChannelID) ||
-                        ActiveConfig.PriorityActiveAFKUsers.Exists(x => x.DiscordChannelID == tempAau.DiscordChannelID)))
-                        continue;
-
-                    Log.Information("[{Type}] Checking {User}.", "XP Sessions", tempAau.UniqueBungieName);
-                    var actualUser = ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
-                    actualUser ??= ActiveConfig.PriorityActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
-
-                    IUser user = _client.GetUser(tempAau.DiscordID);
-                    if (user == null)
-                    {
-                        var _rClient = _client.Rest;
-                        user = await _rClient.GetUserAsync(tempAau.DiscordID);
-                    }
-
-                    var logChannel = _client.GetChannel(tempAau.DiscordChannelID) as ITextChannel;
-                    var dmChannel = user.CreateDMChannelAsync().Result;
-
-                    if (logChannel == null)
-                    {
-                        await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: LoggingChannelNotFound. Logging will be terminated for {tempAau.UniqueBungieName}.");
-                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
-
-                        Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
-
-                        ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
-                        //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
-                        await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
-                    }
-
-                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out int powerBonus, out string errorStatus, out long activityHash);
-
-                    if (!errorStatus.Equals("Success"))
-                    {
-                        if (tempAau.NoXPGainRefreshes >= ActiveConfig.RefreshesBeforeKick)
-                        {
-                            string uniqueName = tempAau.UniqueBungieName;
-
-                            await LogHelper.Log(logChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
-                            await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
-
-                            //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Logging will be terminated for {uniqueName}.");
-                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
-
-                            Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
-                            //listOfRemovals.Add(tempAau);
-                            // ***Change to remove it from list because file update is called at end of method.***
-                            ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
-                            //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
-                            await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
-                        }
-                        else
-                        {
-                            actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
-                            await LogHelper.Log(logChannel, $"Refresh unsuccessful. Reason: {errorStatus}. Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
-                            Log.Information("[{Type}] Refresh unsuccessful for {User}. Reason: {Reason}", "XP Sessions", tempAau.UniqueBungieName, errorStatus);
-                            // Move onto the next user so everyone gets the message.
-                            //newList.Add(tempAau);
-                        }
-                        continue;
-                    }
-
-                    if (powerBonus > tempAau.LastPowerBonus)
-                    {
-                        await LogHelper.Log(logChannel, $"Power bonus increase!: {tempAau.LastPowerBonus} -> {powerBonus} (Start: {tempAau.StartPowerBonus}).");
-
-                        actualUser.LastPowerBonus = powerBonus;
-                    }
-
-                    /*if (!isPlaying)
-                    {
-                        string uniqueName = tempAau.UniqueBungieName;
-
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player is no longer playing Destiny 2.");
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateDeleteChannelButton());
-
-                        IUser user;
-                        if (_client.GetUser(tempAau.DiscordID) == null)
-                        {
-                            var _rClient = _client.Rest;
-                            user = await _rClient.GetUserAsync(tempAau.DiscordID);
-                        }
-                        else
-                        {
-                            user = _client.GetUser(tempAau.DiscordID);
-                        }
-                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player is no longer playing Destiny 2. Logging will be terminated for {uniqueName}.");
-                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
-
-                        LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {tempAau.UniqueBungieName} via automation.");
-                        //listOfRemovals.Add(tempAau);
-                        //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
-                        ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID));
-                        await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
-                    }
-                    else */
-                    if (activityHash != tempAau.ActivityHash)
-                    {
-                        string uniqueName = tempAau.UniqueBungieName;
-
-                        await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player activity has changed. Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
-
-                        //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
-                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
-
-                        Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
-                        ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
-                        await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
-                    }
-                    else if (updatedLevel > tempAau.LastLevel)
-                    {
-                        await LogHelper.Log(logChannel, $"Level up!: {tempAau.LastLevel} -> {updatedLevel} ({updatedProgression:n0}/100,000 XP). " +
-                            $"Start: {tempAau.StartLevel} ({tempAau.StartLevelProgress:n0}/100,000 XP).");
-
-                        actualUser.LastLevel = updatedLevel;
-                        actualUser.LastLevelProgress = updatedProgression;
-                        actualUser.NoXPGainRefreshes = 0;
-                        //tempAau.LastLoggedLevel = updatedLevel;
-                        //tempAau.LastLevelProgress = updatedProgression;
-                        //tempAau.NoXPGainRefreshes = 0;
-                        //newList.Add(tempAau);
-                    }
-                    else if (updatedProgression <= tempAau.LastLevelProgress)
-                    {
-                        if (tempAau.NoXPGainRefreshes >= ActiveConfig.RefreshesBeforeKick)
-                        {
-                            string uniqueName = tempAau.UniqueBungieName;
-
-                            await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
-
-                            //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
-                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
-
-                            Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
-                            //listOfRemovals.Add(tempAau);
-
-                            ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
-                            //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
-                            await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
-                            //tempAau.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
-                            //newList.Add(tempAau);
-                            await LogHelper.Log(logChannel, $"No XP change detected, waiting for next refresh... Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
-                        }
-                    }
-                    else
-                    {
-                        int levelsGained = aau.LastLevel - aau.StartLevel;
-                        long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + updatedProgression;
-                        await LogHelper.Log(logChannel, $"Refreshed: {tempAau.LastLevelProgress:n0} XP -> {updatedProgression:n0} XP. Level: {updatedLevel} | Power Bonus: +{powerBonus} | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours):n0} XP/Hour");
-
-                        actualUser.LastLevel = updatedLevel;
-                        actualUser.LastLevelProgress = updatedProgression;
-                        actualUser.NoXPGainRefreshes = 0;
-                        //tempAau.LastLoggedLevel = updatedLevel;
-                        //tempAau.LastLevelProgress = updatedProgression;
-                        //tempAau.NoXPGainRefreshes = 0;
-                        //newList.Add(tempAau);
-                    }
-                }
-                ActiveConfig.UpdateActiveAFKUsersConfig();
-
-                // In place if the experimental function decides to break!
-                if (ActiveConfig.RefreshScaling >= 0)
-                {
-                    int msTilNext = (int)Math.Floor((-((ActiveConfig.ActiveAFKUsers.Count + ActiveConfig.PriorityActiveAFKUsers.Count) * ActiveConfig.RefreshScaling) + ActiveConfig.TimeBetweenRefresh) * 60000);
-                    msTilNext = msTilNext < 0 ? 0 : msTilNext;
-                    double minutesTilNext = msTilNext / (double)60000;
-                    
-                    _xpTimer.Change(msTilNext, msTilNext);
-                    Log.Debug("Refreshing in {Time} ms.", msTilNext);
-                    Log.Information("[{Type}] Bungie API Refreshed! Next refresh in: {Time} minute(s).", "XP Sessions", minutesTilNext);
-                }
-                else
-                {
-                    _xpTimer.Change(ActiveConfig.TimeBetweenRefresh * 60000, ActiveConfig.TimeBetweenRefresh * 60000);
-                    Log.Information("[{Type}] Bungie API Refreshed! Next refresh in: {Time} minute(s).", "XP Sessions", ActiveConfig.TimeBetweenRefresh);
-                }
-                
-            }
-            catch (Exception x)
-            {
-                Log.Warning("[{Type}] Refresh failed, trying again! Reason: {Message} ({StackTrace})", "XP Sessions", x.Message, x.StackTrace);
-                await Task.Delay(8000);
-                await RefreshBungieAPI().ConfigureAwait(false);
-                return;
-            }
+            
             await UpdateBotActivity();
         }
 
@@ -632,10 +421,7 @@ namespace Levante
                     BotConfig.CreationsLogChannel = _client.GetChannel(BotConfig.CommunityCreationsLogChannel) as SocketTextChannel;
                     var creations = _services.GetRequiredService<CreationsService>();
 
-                    _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
                     _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);
-                    Log.Information("[{Type}] Continued XP logging for {Count} (+{PriorityCount}) Users.",
-                        "XP Sessions", ActiveConfig.ActiveAFKUsers.Count, ActiveConfig.PriorityActiveAFKUsers.Count);
 
                     await UpdateBotActivity(12);
                 }

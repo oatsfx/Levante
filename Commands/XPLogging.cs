@@ -5,12 +5,21 @@ using System.Threading.Tasks;
 using Levante.Configs;
 using Discord.Interactions;
 using Levante.Helpers;
+using Levante.Services;
 using Levante.Util;
+using Serilog;
 
 namespace Levante.Commands
 {
     public class XPLogging : InteractionModuleBase<ShardedInteractionContext>
     {
+        private readonly XPLoggingService XpLoggingService;
+
+        public XPLogging(XPLoggingService xpLoggingService)
+        {
+            XpLoggingService = xpLoggingService;
+        }
+
         [SlashCommand("active-logging", "Gets the amount of users logging their XP.")]
         public async Task ActiveAFK()
         {
@@ -31,10 +40,13 @@ namespace Levante.Commands
                 Footer = foot,
             };
 
-            if (ActiveConfig.ActiveAFKUsers.Count >= 1)
+            var xpLoggingList = XpLoggingService.GetXpLoggingUsers();
+            var priorityXpLoggingList = XpLoggingService.GetPriorityXpLoggingUsers();
+
+            if (xpLoggingList.Count >= 1)
             {
-                string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
-                embed.Description = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} people are logging their XP.";
+                string p = priorityXpLoggingList.Count != 0 ? $" (+{priorityXpLoggingList.Count})" : "";
+                embed.Description = $"{xpLoggingList.Count}/{XpLoggingService.GetMaxLoggingUsers()}{p} people are logging their XP.";
             }
             else
             {
@@ -47,7 +59,7 @@ namespace Levante.Commands
         [SlashCommand("current-session", "Pulls stats of a current XP session.")]
         public async Task SessionStats([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
-            if (!ActiveConfig.IsExistingActiveUser(Context.User.Id))
+            if (!XpLoggingService.IsExistingActiveUser(Context.User.Id))
             {
                 var embed = Embeds.GetErrorEmbed();
                 embed.Description = $"You are not using my logging feature. Look for an \"#xp-hub\" channel in a Discord I am in to get started.";
@@ -56,8 +68,8 @@ namespace Levante.Commands
                 return;
             }
 
-            var aau = ActiveConfig.GetActiveAFKUser(Context.User.Id);
-            await RespondAsync(embed: XPLoggingHelper.GenerateSessionSummary(aau).Build(), ephemeral: hide);
+            var aau = XpLoggingService.GetXpLoggingUser(Context.User.Id);
+            await RespondAsync(embed: XpLoggingService.GenerateSessionSummary(aau).Build(), ephemeral: hide);
         }
     }
 }

@@ -15,6 +15,7 @@ using Levante.Rotations;
 using System.Collections.Generic;
 using Discord.Interactions;
 using System.Diagnostics;
+using Levante.Services;
 using Levante.Util.Attributes;
 using Serilog;
 
@@ -24,7 +25,14 @@ namespace Levante.Commands
     [DevGuildOnly]
     public class Owner : InteractionModuleBase<ShardedInteractionContext>
     {
-        public InteractiveService Interactive { get; set; }
+        private readonly InteractiveService Interactive;
+        private readonly XPLoggingService XpLoggingService;
+
+        public Owner(XPLoggingService xpLoggingService, InteractiveService interactive)
+        {
+            XpLoggingService = xpLoggingService;
+            Interactive = interactive;
+        }
 
         [RequireOwner]
         [SlashCommand("force", "[OWNER]: Sends a button to force a daily/weekly reset.")]
@@ -43,16 +51,19 @@ namespace Levante.Commands
         [SlashCommand("active-logging-users", "[BOT STAFF]: Gets a list of the users that are using my XP logging feature.")]
         public async Task ActiveAFK()
         {
+            var xpLoggingList = XpLoggingService.GetXpLoggingUsers();
+            var priorityXpLoggingList = XpLoggingService.GetPriorityXpLoggingUsers();
+
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Active XP Logging Users",
                 IconUrl = app.IconUrl
             };
-            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+            string p = priorityXpLoggingList.Count != 0 ? $" (+{priorityXpLoggingList.Count})" : "";
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} people are logging their XP."
+                Text = $"{xpLoggingList.Count + priorityXpLoggingList.Count}/{XpLoggingService.GetMaxLoggingUsers()}{p} people are logging their XP."
             };
             var embed = new EmbedBuilder()
             {
@@ -61,16 +72,16 @@ namespace Levante.Commands
                 Footer = foot,
             };
 
-            if (ActiveConfig.ActiveAFKUsers.Count >= 1)
+            if (xpLoggingList.Count >= 1)
             {
                 embed.Description = $"__Priority XP Logging List:__\n";
-                foreach (var aau in ActiveConfig.PriorityActiveAFKUsers)
+                foreach (var aau in priorityXpLoggingList)
                 {
                     embed.Description +=
                         $"{aau.UniqueBungieName}: Level {aau.LastLevel}\n";
                 }
                 embed.Description += $"__XP Logging List:__\n";
-                foreach (var aau in ActiveConfig.ActiveAFKUsers)
+                foreach (var aau in xpLoggingList)
                 {
                     embed.Description +=
                         $"{aau.UniqueBungieName}: Level {aau.LastLevel}\n";
@@ -501,13 +512,9 @@ namespace Levante.Commands
                 return;
             }
 
-            int old = ActiveConfig.MaximumLoggingUsers;
-            ActiveConfig.MaximumLoggingUsers = NewMaxUserCount;
-            ActiveConfig.UpdateActiveAFKUsersConfig();
+            int old = XpLoggingService.GetMaxLoggingUsers();
+            XpLoggingService.SetMaxLoggingUsers(NewMaxUserCount);
 
-            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
-            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
             await RespondAsync($"Changed maximum XP Logging users to {NewMaxUserCount} (was {old}).");
         }
 

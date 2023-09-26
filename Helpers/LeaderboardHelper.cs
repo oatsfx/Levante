@@ -235,7 +235,7 @@ namespace Levante.Helpers
             return true;
         }
 
-        public static void CheckLeaderboardData(ActiveConfig.ActiveAFKUser AAU)
+        public static void CheckLeaderboardData(XPLoggingUser AAU)
         {
             var user = DataConfig.GetLinkedUser(AAU.DiscordID);
             // Generate a Leaderboard entry, and overwrite if the existing one is worse.

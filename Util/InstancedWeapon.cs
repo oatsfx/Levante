@@ -43,7 +43,6 @@ namespace Levante.Util
                     for (int i = 0; i < item.Response.sockets.data.sockets.Count; i++)
                     {
                         var socket = item.Response.sockets.data.sockets[i];
-                        Log.Debug($"{socket.plugHash}");
                         if (socket.plugHash == null) continue;
                         long plugHash = (long)socket.plugHash;
                         if (ManifestHelper.Perks.ContainsKey(plugHash))

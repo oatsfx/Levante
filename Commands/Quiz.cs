@@ -34,8 +34,6 @@ namespace Levante.Commands
     [Group("quiz", "Test your knowledge on various Destiny 2 entities.")]
     public class Quiz : InteractionModuleBase<ShardedInteractionContext>
     {
-        public InteractiveService Interactive { get; set; }
-
         [ComponentInteraction("playEmblemQuizAgain:*:*", ignoreGroupNames: true)]
         public async Task PlayEmblemQuizAgain(ulong DiscordID, bool hideVotes)
         {
