@@ -114,6 +114,21 @@ namespace Levante.Commands
                 await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.AscendantChallenge.DatePrediction(AscendantChallenge, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
             }
 
+            [SlashCommand("crotas-end", "Be notified when a Crota's End challenge is active.")]
+            public async Task CrotasEnd([Summary("challenge", "Crota's End challenge to be alerted for."), Autocomplete(typeof(DeepStoneCryptAutocomplete))] int Encounter)
+            {
+                var tracking = CurrentRotations.CrotasEnd.GetUserTracking(Context.User.Id);
+                if (tracking != null)
+                {
+                    await RespondAsync($"You already have tracking for Crota's End challenges. I am watching for {tracking}.", ephemeral: true);
+                    return;
+                }
+
+                tracking = new CrotasEndLink { DiscordID = Context.User.Id, Encounter = Encounter };
+                CurrentRotations.CrotasEnd.AddUserTracking(tracking);
+                await RespondAsync($"I will remind you when {tracking} is in rotation, which will be on {TimestampTag.FromDateTime(CurrentRotations.CrotasEnd.DatePrediction(Encounter, 0).Date, TimestampTagStyles.ShortDate)}.", ephemeral: true);
+            }
+
             [SlashCommand("curse-week", "Be notified when a Curse Week strength is active.")]
             public async Task CurseWeek([Summary("strength", "Curse Week strength to be alerted for."), Autocomplete(typeof(CurseWeekAutocomplete))] int CurseWeek)
             {
@@ -457,6 +472,17 @@ namespace Levante.Commands
                     CurrentRotations.AscendantChallenge.RemoveUserTracking(Context.User.Id);
                     await RespondAsync($"Removed your Ascendant Challenge tracking, you will not be notified when {tracker} is available.", ephemeral: true);
                 }
+                else if (trackerType.Equals("crotas-end"))
+                {
+                    var tracker = CurrentRotations.CrotasEnd.GetUserTracking(Context.User.Id);
+                    if (tracker == null)
+                    {
+                        await RespondAsync("No Crota's End tracking enabled.", ephemeral: true);
+                        return;
+                    }
+                    CurrentRotations.CrotasEnd.RemoveUserTracking(Context.User.Id);
+                    await RespondAsync($"Removed your Crota's End tracking, you will not be notified when {tracker} is available.", ephemeral: true);
+                }
                 else if (trackerType.Equals("curse-week"))
                 {
                     var tracker = CurrentRotations.CurseWeek.GetUserTracking(Context.User.Id);
@@ -768,6 +794,75 @@ namespace Levante.Commands
                 await RespondAsync(embed: embed.Build());
             }
 
+            [SlashCommand("crotas-end", "Find out when a Crota's End challenge is active next.")]
+            public async Task CrotasEnd([Summary("challenge", "Crota's End challenge to predict its next appearance."), Autocomplete(typeof(CrotasEndAutocomplete))] int Encounter,
+                [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
+            {
+                show = show switch
+                {
+                    < 1 => 1,
+                    > 4 => 4,
+                    _ => show
+                };
+
+                var predictions = new List<CrotasEndPrediction>();
+                for (int i = 0; i < show; i++)
+                    predictions.Add(CurrentRotations.CrotasEnd.DatePrediction(Encounter, i));
+
+                //var featuredRaidPredictions = new List<FeaturedRaidPrediction>();
+                /*for (int i = 0; i < show; i++)
+                    featuredRaidPredictions.Add(CurrentRotations.FeaturedRaid.DatePrediction(CurrentRotations.FeaturedRaid.Rotations.FindIndex(x => x.Raid.Equals("Crota's End")), i));*/
+
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Title = "Crota's End",
+                    Description = $"Requested: {CurrentRotations.CrotasEnd.Rotations[Encounter]}"
+                }.WithCurrentTimestamp();
+
+                var seasonEndDate = (DateTime)ManifestHelper.CurrentSeason.EndDate;
+                int occurrences = 1;
+                foreach (var prediction in predictions)
+                {
+                    //var nextFeatured = featuredRaidPredictions.ElementAt(0);
+                    //bool isPastSeasonEnd = nextFeatured.Date.ToUniversalTime() >= seasonEndDate;
+                    /*if (prediction.Date >= nextFeatured.Date)
+                    {
+                        featuredRaidPredictions.RemoveAt(0);
+                        embed.AddField(x =>
+                        {
+                            x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                            x.Value = $"{prediction.CrotasEnd} on {TimestampTag.FromDateTime(nextFeatured.Date, TimestampTagStyles.ShortDate)} (Featured Raid)";
+                            x.IsInline = false;
+                        });
+                        occurrences++;
+
+                        // Don't show duplicate weeks.
+                        if (prediction.Date == nextFeatured.Date)
+                            continue;
+                    }*/
+
+                    bool isPastSeasonEnd = prediction.Date.ToUniversalTime() >= seasonEndDate;
+                    embed.AddField(x =>
+                    {
+                        x.Name = $"Occurrence {occurrences}{(isPastSeasonEnd ? $" {Emotes.Warning}" : "")}";
+                        x.Value = $"{prediction.CrotasEnd} on {TimestampTag.FromDateTime(prediction.Date, TimestampTagStyles.ShortDate)}";
+                        x.IsInline = false;
+                    });
+                    occurrences++;
+                }
+
+                embed.Fields = embed.Fields.Take(4).ToList();
+
+                if (embed.Fields.Any(x => x.Name.Contains(Emotes.Warning)))
+                    embed.Description +=
+                        $"\n\n*{Emotes.Warning} - Prediction is beyond the {ManifestHelper.CurrentSeason.DisplayProperties.Name} end date ({TimestampTag.FromDateTime(seasonEndDate, TimestampTagStyles.ShortDate)}) and is subject to change.*";
+
+                embed.ThumbnailUrl =
+                    "https://www.bungie.net/common/destiny2_content/icons/DestinyMilestoneDefinition_2c5b645accc12584f882c472deb30017.png";
+                await RespondAsync(embed: embed.Build());
+            }
+
             [SlashCommand("curse-week", "Find out when a Curse Week strength is active.")]
             public async Task CurseWeek([Summary("strength", "Curse Week strength."), Autocomplete(typeof(CurseWeekAutocomplete))] int CurseWeek,
                 [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
@@ -973,7 +1068,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("featured-dungeon", "Find out when a dungeon is being featured next.")]
-            public async Task FeaturedDungeon([Summary("raid", "Legacy dungeon activity to predict its next appearance."), Autocomplete(typeof(FeaturedDungeonAutocomplete))] int Dungeon,
+            public async Task FeaturedDungeon([Summary("dungeon", "Legacy dungeon activity to predict its next appearance."), Autocomplete(typeof(FeaturedDungeonAutocomplete))] int Dungeon,
                 [Summary("show-next", "Number of next occurrences to show. Default: 1. Max: 4.")] int show = 1)
             {
                 show = show switch

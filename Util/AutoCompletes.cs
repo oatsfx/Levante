@@ -248,6 +248,10 @@ namespace Levante.Util
             if (ascendantChallenge != null)
                 results.Add(new AutocompleteResult($"Ascendant Challenge: {ascendantChallenge}", "ascendant-challenge"));
 
+            var crotasEnd = CurrentRotations.CrotasEnd.GetUserTracking(context.User.Id);
+            if (crotasEnd != null)
+                results.Add(new AutocompleteResult($"Crota's End: {crotasEnd}", "crotas-end"));
+
             var curseWeek = CurrentRotations.CurseWeek.GetUserTracking(context.User.Id);
             if (curseWeek != null)
                 results.Add(new AutocompleteResult($"Curse Week: {curseWeek}", "curse-week"));
@@ -372,6 +376,26 @@ namespace Levante.Util
                         results.Add(new AutocompleteResult($"{searchList[i]}", i));
 
             // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
+    public class CrotasEndAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            List<AutocompleteResult> results = new();
+            var searchList = CurrentRotations.CrotasEnd.Rotations;
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                for (int i = 0; i < searchList.Count; i++)
+                    results.Add(new AutocompleteResult($"{searchList[i]}", i));
+            else
+                for (int i = 0; i < searchList.Count; i++)
+                    if ($"{searchList[i]}".ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult($"{searchList[i]}", i));
+
             return AutocompletionResult.FromSuccess(results.Take(25));
         }
     }

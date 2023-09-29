@@ -22,6 +22,7 @@ namespace Levante.Rotations
         public static Ada1Rotation Ada1 = new();
         public static AltarsOfSorrowRotation AltarsOfSorrow = new();
         public static AscendantChallengeRotation AscendantChallenge = new();
+        public static CrotasEndRotation CrotasEnd = new();
         public static CurseWeekRotation CurseWeek = new();
         public static DaresOfEternityRotation DaresOfEternity = new();
         public static DeepStoneCryptRotation DeepStoneCrypt = new();
@@ -70,6 +71,7 @@ namespace Levante.Rotations
             Actives.VowChallenge = Actives.VowChallenge == VowOfTheDisciple.Rotations.Count - 1 ? 0 : Actives.VowChallenge + 1;
             Actives.KFChallenge = Actives.KFChallenge == KingsFall.Rotations.Count - 1 ? 0 : Actives.KFChallenge + 1;
             Actives.RoNChallenge = Actives.RoNChallenge == RootOfNightmares.Rotations.Count - 1 ? 0 : Actives.RoNChallenge + 1;
+            Actives.CEChallenge = Actives.CEChallenge == CrotasEnd.Rotations.Count - 1 ? 0 : Actives.CEChallenge + 1;
             Actives.FeaturedRaid = Actives.FeaturedRaid == FeaturedRaid.Rotations.Count - 1 ? 0 : Actives.FeaturedRaid + 1;
             Actives.CurseWeek = Actives.CurseWeek == CurseWeek.Rotations.Count - 1 ? 0 : Actives.CurseWeek + 1;
             Actives.AscendantChallenge = Actives.AscendantChallenge == AscendantChallenge.Rotations.Count - 1 ? 0 : Actives.AscendantChallenge + 1;
@@ -253,7 +255,13 @@ namespace Levante.Rotations
             .AddField(x =>
             {
                 x.Name = $"{(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Root of Nightmares") ? "★ " : "")}Root of Nightmares";
-                x.Value = $"{DestinyEmote.RoNRaidChallenge} {RootOfNightmares.Rotations[Actives.RoNChallenge]}";
+                x.Value = $"{DestinyEmote.RoNRaidChallenge} {(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Root of Nightmares") ? "All challenges available." : $"{RootOfNightmares.Rotations[Actives.RoNChallenge]}")}";
+                x.IsInline = true;
+            })
+            .AddField(x =>
+            {
+                x.Name = $"{(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Crota's End") ? "★ " : "")}Crota's End";
+                x.Value = $"{DestinyEmote.CERaidChallenge} {(FeaturedRaid.Rotations[Actives.FeaturedRaid].Raid.Equals("Crota's End") ? "All challenges available." : $"{CrotasEnd.Rotations[Actives.CEChallenge]}")}";
                 x.IsInline = true;
             })
             .AddField(x =>
@@ -412,6 +420,9 @@ namespace Levante.Rotations
 
         [JsonProperty("RoNChallenge")]
         public int RoNChallenge = 0;
+
+        [JsonProperty("CEChallenge")]
+        public int CEChallenge = 0;
 
         [JsonProperty("FeaturedRaid")]
         public int FeaturedRaid = 0;

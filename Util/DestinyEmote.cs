@@ -67,6 +67,7 @@ namespace Levante.Util
         public static readonly string Bait = "<:Bait:1115561961980186694>";
         public static readonly string Classified = "<:Classified:1014305658390184006>";
         public static readonly string Commendations = "<:Commendations:1082135754320384001>";
+        public static readonly string CERaidChallenge = "<:CrotasEndChallenge:1157358243132227615>";
         public static readonly string Dungeon = "<:Dungeon:1109018943525507102>";
         public static readonly string Emblem = "<:Emblem:1109022520411164755>";
         public static readonly string Enhanced = "<:Enhanced:1020834766397911080>";
