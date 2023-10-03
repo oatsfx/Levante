@@ -115,7 +115,7 @@ namespace Levante.Commands
             }
 
             [SlashCommand("crotas-end", "Be notified when a Crota's End challenge is active.")]
-            public async Task CrotasEnd([Summary("challenge", "Crota's End challenge to be alerted for."), Autocomplete(typeof(DeepStoneCryptAutocomplete))] int Encounter)
+            public async Task CrotasEnd([Summary("challenge", "Crota's End challenge to be alerted for."), Autocomplete(typeof(CrotasEndAutocomplete))] int Encounter)
             {
                 var tracking = CurrentRotations.CrotasEnd.GetUserTracking(Context.User.Id);
                 if (tracking != null)

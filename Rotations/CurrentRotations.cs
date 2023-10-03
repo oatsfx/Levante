@@ -355,6 +355,7 @@ namespace Levante.Rotations
         {
             await Ada1.CheckTrackers(Client);
             await AscendantChallenge.CheckTrackers(Client);
+            await CrotasEnd.CheckTrackers(Client);
             await CurseWeek.CheckTrackers(Client);
             await DeepStoneCrypt.CheckTrackers(Client);
             await EmpireHunt.CheckTrackers(Client);
@@ -366,10 +367,10 @@ namespace Levante.Rotations
             await Nightfall.CheckTrackers(Client);
             await NightmareHunt.CheckTrackers(Client);
             await RootOfNightmares.CheckTrackers(Client);
-            //await ShadowkeepMission.
+            //await ShadowkeepMission.CheckTrackers(Client);
             await VaultOfGlass.CheckTrackers(Client);
             await VowOfTheDisciple.CheckTrackers(Client);
-            //await Wi
+            //await WitchQueenMission.CheckTrackers(Client);
         }
     }
 
