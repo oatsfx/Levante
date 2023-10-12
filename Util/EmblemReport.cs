@@ -26,6 +26,8 @@ namespace Levante.Util
                 collectibles = new List<long> { collectibleHash }
             };
             using var client = new HttpClient();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd($"Mozilla/5.0 (compatible; {BotConfig.AppName}/1.0)");
+            client.DefaultRequestHeaders.Add("X-API-KEY", BotConfig.EmblemReportApiKey);
             var postContent = new StringContent(JsonConvert.SerializeObject(collectiblesBody), Encoding.UTF8, "application/json");
 
             var response = client.PostAsync("https://emblem.report/api/getRarestEmblems", postContent).Result;

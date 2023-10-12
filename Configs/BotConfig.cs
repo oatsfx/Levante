@@ -50,6 +50,9 @@ namespace Levante.Configs
         [JsonProperty("BungieClientSecret")]
         public static string BungieClientSecret { get; set; } = "[YOUR CLIENT SECRET HERE]";
 
+        [JsonProperty("EmblemReportApiKey")]
+        public static string EmblemReportApiKey { get; set; } = "[YOUR API KEY HERE]";
+
         [JsonProperty("Version")]
         public static string Version { get; set; } = "1.0.0";
 
