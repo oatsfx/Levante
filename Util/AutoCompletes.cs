@@ -171,6 +171,34 @@ namespace Levante.Util
         }
     }
 
+    public class ConsumablesAutocomplete : AutocompleteHandler
+    {
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            var random = new Random();
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                while (results.Count < 7)
+                {
+                    var consumable = ManifestHelper.Consumables.ElementAt(random.Next(0, ManifestHelper.Consumables.Count));
+                    if (!results.Exists(x => x.Name.Equals($"{consumable.Value}")))
+                        results.Add(new AutocompleteResult(consumable.Value, $"{consumable.Key}"));
+                }
+            else
+                foreach (var Consumable in ManifestHelper.Consumables)
+                    if (Consumable.Value.ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(Consumable.Value, $"{Consumable.Key}"));
+
+            results = results.OrderBy(x => x.Name).ToList();
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
     public class EmblemAutocomplete : AutocompleteHandler
     {
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)

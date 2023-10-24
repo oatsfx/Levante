@@ -1279,7 +1279,98 @@ namespace Levante.Commands
         [Group("view", "Get details on in-game items.")]
         public class View : InteractionModuleBase<ShardedInteractionContext>
         {
-            [SlashCommand("emblem", "Get details on an emblem via found via Bungie's API.")]
+            [SlashCommand("consumable", "Get details on a consumable found via Bungie's API.")]
+            public async Task ViewConsumable([Summary("name", "Name of the consumable you want details for."), Autocomplete(typeof(ConsumablesAutocomplete))] string SearchQuery)
+            {
+                if (!long.TryParse(SearchQuery, out long HashCode))
+                {
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = $"Invalid search, please try again. Make sure to choose one of the autocomplete options!";
+                    await RespondAsync($"", embed: errEmbed.Build(), ephemeral: true);
+                    return;
+                }
+
+                await DeferAsync();
+
+                Consumable consumable;
+                try
+                {
+                    consumable = new Consumable(HashCode);
+                }
+                catch (Exception)
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No consumable found for Hash Code: {HashCode}."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                    return;
+                }
+
+                if (!ManifestHelper.Consumables.ContainsKey(HashCode))
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Hash Code: {HashCode} is not a Consumable type."; });
+                    return;
+                }
+
+                var itemEmbed = consumable.GetEmbed();
+
+                var dil = DataConfig.GetLinkedUser(Context.User.Id);
+                if (dil != null)
+                {
+                    using var client = new HttpClient();
+                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
+
+                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,102,201").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+
+                    // Get the amount the user has on their account.
+                    var invAmount = 0;
+                    var vaultAmount = 0;
+                    var postAmount = 0;
+                    for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
+                    {
+                        long hash = item.Response.profileInventory.data.items[i].itemHash;
+                        if (hash == HashCode)
+                        {
+                            if (item.Response.profileInventory.data.items[i].bucketHash == 138197802)
+                                vaultAmount += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}");
+                            else
+                                invAmount += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}");
+                        }
+                    }
+
+                    int numOfChars = item.Response.profile.data.characterIds.Count;
+                    for (int i = 0; i < numOfChars; i++)
+                    {
+                        string charId = $"{item.Response.profile.data.characterIds[i]}";
+                        for (int j = 0; j < item.Response.characterInventories.data[$"{charId}"].items.Count; j++)
+                        {
+                            long hash = item.Response.characterInventories.data[$"{charId}"].items[j].itemHash;
+                            if (hash == HashCode)
+                            {
+                                postAmount += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}");
+                                break;
+                            }
+                        }
+                    }
+
+                    if (invAmount > 0 || vaultAmount > 0 || postAmount > 0)
+                    {
+                        itemEmbed.AddField(x =>
+                        {
+                            x.Name = "> You Have";
+                            x.Value =
+                                $"Inventory: **{invAmount:n0}**\n" +
+                                $"Vault: **{vaultAmount:n0}**\n" +
+                                $"Postmaster: **{postAmount:n0}**";
+                            x.IsInline = true;
+                        });
+                    }
+                }
+
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = itemEmbed.Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
+            }
+
+            [SlashCommand("emblem", "Get details on an emblem found via Bungie's API.")]
             public async Task ViewEmblem([Summary("name", "Name of the emblem you want details for."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery,
                 [Summary("show-wide-bg", "Show nameplate background or inventory menu background. Default: false (nameplate background)")] bool showWideBg = false)
             {
