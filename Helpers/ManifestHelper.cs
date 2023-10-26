@@ -23,6 +23,7 @@ namespace Levante.Helpers
         // Inv Hash, Collectible Hash
         public static Dictionary<long, uint> EmblemsCollectible = new();
         // Hash, Name
+        public static Dictionary<long, string> Consumables = new();
         public static Dictionary<long, string> Emblems = new();
         public static Dictionary<long, string> Weapons = new();
         public static Dictionary<long, string> Seals = new();
@@ -532,8 +533,9 @@ namespace Levante.Helpers
                         if (string.IsNullOrWhiteSpace(invItem.Value.DisplayProperties.Name) ||
                             string.IsNullOrWhiteSpace(invItem.Value.ItemTypeDisplayName)) continue;
 
+
                         //Console.WriteLine($"{invItem.Value.DisplayProperties.Name}");
-                        if (/*invItem.Value.TraitIds.Contains("item_type.emblem") || */invItem.Value.ItemType == DestinyItemType.Emblem && invItem.Value.BackgroundColor != null)
+                        if (invItem.Value.ItemType == DestinyItemType.Emblem && invItem.Value.BackgroundColor != null)
                         {
                             if (invItem.Value.Hash == 1968995963) // соняшник (Sunflower) Ukraine Relief Emblem
                                 Emblems.Add(invItem.Value.Hash, $"{invItem.Value.DisplayProperties.Name} (Sunflower)");
@@ -543,7 +545,6 @@ namespace Levante.Helpers
                             if (invItem.Value.CollectibleHash != null)
                                 EmblemsCollectible.Add(invItem.Value.Hash, (uint)invItem.Value.CollectibleHash);
                         }
-
 
                         if (invItem.Value.ItemType == DestinyItemType.Weapon)
                         {
@@ -634,6 +635,13 @@ namespace Levante.Helpers
                             }
                         }
 
+                        // invItem.Value.Inventory.BucketTypeHash == 1469714392 /* Consumables */ && invItem.Value.TraitHashes != null && invItem.Value.TraitHashes.Contains(3906525419)
+                        if (invItem.Value.ItemType == DestinyItemType.Consumable)
+                        {
+                            //Log.Debug($"{invItem.Value.DisplayProperties.Name}");
+                            Consumables.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name);
+                        }
+
                         if (invItem.Value.ItemType == DestinyItemType.None)
                         {
                             // Find those Enhanced Perks that aren't labeled as mods!
@@ -644,6 +652,24 @@ namespace Levante.Helpers
 
                                 if (clarity.ContainsKey(invItem.Value.Hash) && clarity[invItem.Value.Hash].Descriptions != null)
                                     ClarityDescriptions.Add(invItem.Value.Hash, clarity[invItem.Value.Hash].Descriptions["en"]);
+                            }
+
+                            if (invItem.Value.ItemTypeDisplayName.Contains("Currency") && invItem.Value.Inventory.BucketTypeHash == 1469714392)
+                            {
+                                Log.Debug($"{invItem.Value.DisplayProperties.Name}");
+                                Consumables.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name);
+                            }
+
+                            if (invItem.Value.ItemTypeDisplayName.Contains("Material"))
+                            {
+                                //Log.Debug($"{invItem.Value.DisplayProperties.Name}");
+                                Consumables.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name);
+                            }
+
+                            if (invItem.Value.ItemTypeDisplayName.Contains("Memento") && invItem.Value.Inventory.BucketTypeHash == 1469714392)
+                            {
+                                //Log.Debug($"{invItem.Value.DisplayProperties.Name}");
+                                Consumables.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name);
                             }
 
                             // LETS GO!!! SHADERS AREN'T SHADERS ANY MORE! (This is a joke because this sucks)
