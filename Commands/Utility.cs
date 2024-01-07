@@ -1917,7 +1917,7 @@ namespace Levante.Commands
             [Summary("season", "Season of the specific leaderboard. Defaults to the current season."),
             Choice("Season of the Lost", 15), Choice("Season of the Risen", 16), Choice("Season of the Haunted", 17),
             Choice("Season of Plunder", 18), Choice("Season of the Seraph", 19), Choice("Season of Defiance", 20),
-            Choice("Season of the Deep", 21), Choice("Season of the Witch", 22)] int Season = 22)
+            Choice("Season of the Deep", 21), Choice("Season of the Witch", 22), Choice("Season of the Wish", 23)] int Season = 23)
         {
             Leaderboard LeaderboardType = (Leaderboard)ArgLeaderboard;
 
