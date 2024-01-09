@@ -13,7 +13,8 @@ namespace Levante.Leaderboards
         public static readonly string FilePathS19 = @"Data/S19/xpPerHourData.json";
         public static readonly string FilePathS20 = @"Data/S20/xpPerHourData.json";
         public static readonly string FilePathS21 = @"Data/S21/xpPerHourData.json";
-        public static readonly string FilePath = @"Data/S22/xpPerHourData.json";
+        public static readonly string FilePathS22 = @"Data/S22/xpPerHourData.json";
+        public static readonly string FilePath = @"Data/S23/xpPerHourData.json";
 
         [JsonProperty("XPPerHourEntries")]
         public List<XPPerHourEntry> XPPerHourEntries { get; set; } = new();

@@ -13,7 +13,8 @@ namespace Levante.Leaderboards
         public static readonly string FilePathS19 = @"Data/S19/powerLevelData.json";
         public static readonly string FilePathS20 = @"Data/S20/powerLevelData.json";
         public static readonly string FilePathS21 = @"Data/S21/powerLevelData.json";
-        public static readonly string FilePath = @"Data/S22/powerLevelData.json";
+        public static readonly string FilePathS22 = @"Data/S22/powerLevelData.json";
+        public static readonly string FilePath = @"Data/S23/powerLevelData.json";
 
         [JsonProperty("PowerLevelDataEntries")]
         public List<PowerLevelDataEntry> PowerLevelDataEntries { get; set; } = new();
