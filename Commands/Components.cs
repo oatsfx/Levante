@@ -1,8 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Text;
-using System.Threading.Tasks;
-using Discord;
+﻿using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Levante.Configs;
@@ -11,6 +7,9 @@ using Levante.Rotations;
 using Levante.Util;
 using Levante.Util.Attributes;
 using Serilog;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Levante.Commands
 {
@@ -115,7 +114,7 @@ namespace Levante.Commands
             }
 
             string uniqueName = dil.UniqueBungieName;
-            var userLogChannel = await guild.CreateTextChannelAsync($"{uniqueName.Split('#')[0]}", options: new RequestOptions(){ AuditLogReason = "XP Logging Session Create" }, 
+            var userLogChannel = await guild.CreateTextChannelAsync($"{uniqueName.Split('#')[0]}", options: new RequestOptions{ AuditLogReason = "XP Logging Session Create" }, 
                 func: x =>
                 {
                     x.CategoryId = cc.Id;
@@ -180,7 +179,17 @@ namespace Levante.Commands
             string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
             await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
 
-            await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
+            var menuBuilder = new SelectMenuBuilder()
+                .WithPlaceholder("Add a user to the logging channel")
+                .WithCustomId("addUserToXpChannel")
+                .WithMinValues(1)
+                .WithMaxValues(1)
+                .WithType(ComponentType.UserSelect);
+
+            var builder = new ComponentBuilder()
+                .WithSelectMenu(menuBuilder);
+
+            await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...", builder);
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Your logging channel has been successfully created! Access it here: {userLogChannel.Mention}!"; });
             Log.Information("[{Type}] Started XP logging for {User}.", "XP Sessions", newUser.UniqueBungieName);
         }
@@ -367,9 +376,74 @@ namespace Levante.Commands
             string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
             await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
 
-            await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...");
+            var menuBuilder = new SelectMenuBuilder()
+                .WithPlaceholder("Add a user to the logging channel")
+                .WithCustomId("addUserToXpChannel")
+                .WithMinValues(1)
+                .WithMaxValues(1)
+                .WithType(ComponentType.UserSelect);
+
+            var builder = new ComponentBuilder()
+                .WithSelectMenu(menuBuilder);
+
+            await LogHelper.Log(userLogChannel, "User is subscribed to our Bungie API refreshes. Waiting for next refresh...", builder);
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Your logging has been successfully restarted! Reminder that the previous session did not continue; a new session was created without making a new channel!"; });
             Log.Information("[{Type}] Started XP logging for {User}.", "XP Sessions", newUser.UniqueBungieName);
+        }
+
+        [RequireBotPermission(ChannelPermission.ManageChannels)]
+        [ComponentInteraction("addUserToXpChannel")]
+        public async Task SelectMenu(IUser[] selectedUsers)
+        {
+            if (Context.Channel is not SocketGuildChannel guildChannel)
+            {
+                await RespondAsync("Channel is not part of a server! Cannot edit permissions.", ephemeral: true);
+                return;
+            }
+
+            var activeUser = ActiveConfig.ActiveAFKUsers.Find(x => x.DiscordChannelID == Context.Channel.Id);
+
+            if (activeUser == null)
+            {
+                await RespondAsync("Channel is currently not active.");
+                return;
+            }
+
+            if (activeUser.DiscordID != Context.User.Id)
+            {
+                await RespondAsync("This channel is not yours, only the channel owner can add users to the channel.", ephemeral: true);
+                return;
+            }
+
+            var usersAdded = string.Empty;
+            foreach (var user in selectedUsers)
+            {
+                if (guildChannel.PermissionOverwrites.Any(x => x.TargetId == user.Id && (x.Permissions.SendMessages == PermValue.Allow && x.Permissions.ViewChannel == PermValue.Allow )))
+                {
+                    continue;
+                }
+
+                await guildChannel.AddPermissionOverwriteAsync(user, new OverwritePermissions(sendMessages: PermValue.Allow, viewChannel: PermValue.Allow), new RequestOptions{ AuditLogReason = "XP Logging User Added by Channel Owner" });
+                usersAdded += $"{user.Mention}, ";
+            }
+
+            if (string.IsNullOrEmpty(usersAdded))
+            {
+                await RespondAsync($"No users added. The selected users can, most likely, already see this channel.", ephemeral: true);
+                return;
+            }
+
+            var menuBuilder = new SelectMenuBuilder()
+                .WithPlaceholder("Add another user to the logging channel")
+                .WithCustomId("addUserToXpChannel")
+                .WithMinValues(1)
+                .WithMaxValues(1)
+                .WithType(ComponentType.UserSelect);
+
+            var builder = new ComponentBuilder()
+                .WithSelectMenu(menuBuilder);
+
+            await RespondAsync($"{usersAdded.Remove(usersAdded.Length - 2)} can now see this channel.", components: builder.Build());
         }
     }
 }
