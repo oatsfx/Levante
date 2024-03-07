@@ -656,7 +656,7 @@ namespace Levante.Helpers
 
                             if (invItem.Value.ItemTypeDisplayName.Contains("Currency") && invItem.Value.Inventory.BucketTypeHash == 1469714392)
                             {
-                                Log.Debug($"{invItem.Value.DisplayProperties.Name}");
+                                //Log.Debug($"{invItem.Value.DisplayProperties.Name}");
                                 Consumables.Add(invItem.Value.Hash, invItem.Value.DisplayProperties.Name);
                             }
 
