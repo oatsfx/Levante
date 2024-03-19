@@ -61,7 +61,7 @@ namespace Levante.Util
                     var enhanced = new WeaponPerk(ManifestHelper.EnhancedPerks.FirstOrDefault(x => x.Value.Equals(GetName())).Key);
                     embed.AddField(x =>
                     {
-                        x.Name = "Enhanced";
+                        x.Name = $"Enhanced {DestinyEmote.Enhanced}";
                         x.Value = $"{enhanced.GetDescription()}";
                         x.IsInline = false;
                     });

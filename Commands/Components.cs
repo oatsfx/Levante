@@ -22,6 +22,7 @@ namespace Levante.Commands
             await RespondAsync("Forcing daily...");
             CurrentRotations.DailyRotation();
             await Task.Run(CountdownConfig.CheckCountdowns);
+            await Task.Run(EmblemOffer.CheckEmblemOffers);
             await DataConfig.PostDailyResetUpdate(Context.Client);
             await CurrentRotations.CheckUsersDailyTracking(Context.Client);
             await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "Forced Daily Reset!"; });
@@ -34,6 +35,7 @@ namespace Levante.Commands
             await RespondAsync("Forcing weekly...");
             CurrentRotations.WeeklyRotation();
             await Task.Run(CountdownConfig.CheckCountdowns);
+            await Task.Run(EmblemOffer.CheckEmblemOffers);
             await DataConfig.PostDailyResetUpdate(Context.Client);
             await DataConfig.PostWeeklyResetUpdate(Context.Client);
             await CurrentRotations.CheckUsersDailyTracking(Context.Client);

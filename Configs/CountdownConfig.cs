@@ -39,7 +39,6 @@ namespace Levante.Configs
 
         public static void CheckCountdowns()
         {
-            var countdowns = Countdowns;
             foreach (var countdown in Countdowns)
                 if (DateTime.Now >= countdown.Value)
                     RemoveCountdown(countdown.Key);

@@ -16,25 +16,7 @@ namespace Levante.Commands
         [SlashCommand("help", "Get the command list for Levante.")]
         public async Task Help([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = "Command List",
-                IconUrl = Context.Client.CurrentUser.GetAvatarUrl()
-            };
-
-            var embed = new EmbedBuilder()
-            {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
-                Author = auth,
-            };
-
-            string desc = "For in-depth explanations for all commands and features, visit [this page](https://www.levante.dev/features/).\n" +
-                "__Commands:__\n";
-            foreach (var cmd in Context.Client.Shards.FirstOrDefault().GetGlobalApplicationCommandsAsync().Result.OrderBy(cmd => cmd.Name))
-                desc += $"/{cmd.Name}\n";
-            embed.Description = desc;
-
-            await RespondAsync(embed: embed.Build(), ephemeral: hide);
+            await RespondAsync(embed: Embeds.GetHelpEmbed().Build(), ephemeral: hide);
         }
         
         [SlashCommand("info", "Get information about Levante and the other projects she links you to.")]

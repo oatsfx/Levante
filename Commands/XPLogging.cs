@@ -31,15 +31,20 @@ namespace Levante.Commands
                 Footer = foot,
             };
 
-            if (ActiveConfig.ActiveAFKUsers.Count >= 1)
+            var normalCount = ActiveConfig.PriorityActiveAFKUsers.Count;
+            var priorityCount = ActiveConfig.PriorityActiveAFKUsers.Count;
+            var maxCount = ActiveConfig.MaximumLoggingUsers;
+            string p = normalCount != 0 ? $" (+{priorityCount})" : "";
+            embed.Description = $"### {normalCount}/{maxCount}{p} people are logging their XP.";
+
+            embed.AddField(x =>
             {
-                string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
-                embed.Description = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} people are logging their XP.";
-            }
-            else
-            {
-                embed.Description = "No users are using my XP logging feature.";
-            }
+                x.Name = "What does this mean?";
+                x.Value = $"- Number of non-supporters logging: **{normalCount}**\n" +
+                          $"- Max number of non-supporters allowed at once: **{maxCount}**\n" +
+                          $"- Number of supporters logging: **{priorityCount}**\n";
+                x.IsInline = true;
+            });
 
             await RespondAsync(embed: embed.Build());
         }
