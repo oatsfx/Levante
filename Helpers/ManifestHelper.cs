@@ -692,7 +692,7 @@ namespace Levante.Helpers
 
         private static string ClarityClean(string input)
         {
-            string output = input.Replace("🠅", DestinyEmote.Enhanced);
+            string output = input.Replace("🡅", DestinyEmote.Enhanced);
 
             return output;
         }

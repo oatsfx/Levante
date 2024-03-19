@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using BungieSharper.Entities.Destiny;
+using Discord;
 using Discord.Interactions;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
@@ -15,6 +16,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Levante.Commands
@@ -469,18 +471,44 @@ namespace Levante.Commands
         }
 
         [SlashCommand("free-emblems", "Display a list of universal emblem codes.")]
-        public async Task FreeEmblems([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
+        public async Task FreeEmblems([Summary("only-show-missing", "Only show the emblem codes you are missing. Default: true")] bool onlyShowMissing = true, [Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
-            var RewardsUrl = "https://rewards.mijago.net/#/";
-            var LinkedUser = DataConfig.GetLinkedUser(Context.User.Id);
-            
-            if(LinkedUser != null)
-                RewardsUrl += $"{LinkedUser.BungieMembershipType}/{LinkedUser.BungieMembershipID}";
-            
+            var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
+
+            var emblemsUserMissing = new List<string>();
+            if (linkedUser != null)
+            {
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
+
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + linkedUser.BungieMembershipType + "/Profile/" + linkedUser.BungieMembershipID + "/?components=800").Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                dynamic item = JsonConvert.DeserializeObject(content);
+
+                foreach (var emblem in BotConfig.UniversalCodes)
+                {
+                    var hash = ManifestHelper.Emblems.First(x => x.Value.Contains(emblem.Name)).Key;
+                    var emblemCollectible = ManifestHelper.EmblemsCollectible[hash];
+                    var hasEmblem = !((DestinyCollectibleState)item.Response.profileCollectibles.data.collectibles[$"{emblemCollectible}"].state).HasFlag(DestinyCollectibleState.NotAcquired);
+
+                    if (!hasEmblem)
+                        emblemsUserMissing.Add(emblem.Name);
+                }
+            }
+
+            var universalEmblems = BotConfig.UniversalCodes;
+
+            if (onlyShowMissing)
+                universalEmblems = universalEmblems.Where(x => emblemsUserMissing.Contains(x.Name)).ToList();
+
+            if (universalEmblems.Count == 0)
+                universalEmblems = BotConfig.UniversalCodes;
+
             var paginator = new LazyPaginatorBuilder()
                 .AddUser(Context.User)
                 .WithPageFactory(GeneratePage)
-                .WithMaxPageIndex((int)Math.Ceiling(BotConfig.UniversalCodes.Count / (decimal)10) - 1)
+                .WithMaxPageIndex((int)Math.Ceiling(universalEmblems.Count / (decimal)10) - 1)
                 .AddOption(new Emoji("◀"), PaginatorAction.Backward)
                 .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
                 .AddOption(new Emoji("▶"), PaginatorAction.Forward)
@@ -492,16 +520,17 @@ namespace Levante.Commands
 
             await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), ephemeral: hide);
 
+
             PageBuilder GeneratePage(int index)
             {
                 var auth = new EmbedAuthorBuilder()
                 {
-                    Name = $"Universal Emblem Codes",
+                    Name = "Universal Emblem Codes",
                     IconUrl = Context.Client.GetApplicationInfoAsync().Result.IconUrl,
                 };
                 var foot = new EmbedFooterBuilder()
                 {
-                    Text = $"These codes are not limited to one account and can be used by anyone."
+                    Text = "These codes are not limited to one account and can be used by anyone."
                 };
                 var embed = new EmbedBuilder()
                 {
@@ -510,15 +539,18 @@ namespace Levante.Commands
                     Footer = foot,
                 };
 
-                foreach (var emblem in BotConfig.UniversalCodes.GetRange(10 * index, (10 * index) + 10 > BotConfig.UniversalCodes.Count ? BotConfig.UniversalCodes.Count - (10 * index) : 10))
+                foreach (var emblem in universalEmblems.GetRange(10 * index, (10 * index) + 10 > universalEmblems.Count ? universalEmblems.Count - (10 * index) : 10))
                 {
                     embed.Description +=
-                        $"[{emblem.Name}]({emblem.ImageUrl}): **{emblem.Code}**\n";
+                        $"> {(linkedUser != null && emblemsUserMissing.Contains(emblem.Name) ? $"{Emotes.Warning} " : "")}[{emblem.Name}](https://www.bungie.net/7/en/Codes/Redeem?token={emblem.Code}): **{emblem.Code}**\n";
                 }
+
+                var count = universalEmblems.Count;
+                var pageNumStr = $"Showing {(10 * index) + 1}-{((10 * index) + 10 > count ? count : (10 * index) + 10)} emblems of {count} total.";
                 embed.Description +=
-                    $"*Redeem those codes [here](https://www.bungie.net/7/en/Codes/Redeem).*\n"
-                    + $"For a full view of what they look like or check which you already have unlocked, click [here]({RewardsUrl})\n\n"
-                    + $"({(10 * index) + 1}-{((10 * index) + 10 > BotConfig.UniversalCodes.Count ? BotConfig.UniversalCodes.Count : (10 * index) + 10)})";
+                    $"*Click the name to redeem.*\n{(linkedUser != null && emblemsUserMissing.Any() ? $"{Emotes.Warning} - Your linked account ({linkedUser.UniqueBungieName}) is missing this emblem.\n" : "")}\n{pageNumStr}";
+
+
                 return new PageBuilder()
                     .WithAuthor(embed.Author)
                     .WithDescription(embed.Description)

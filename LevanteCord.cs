@@ -198,6 +198,7 @@ namespace Levante
         public async void DailyResetChanges(Object o = null)
         {
             await Task.Run(CountdownConfig.CheckCountdowns);
+            await Task.Run(EmblemOffer.CheckEmblemOffers);
             using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
@@ -646,7 +647,7 @@ namespace Levante
             _interaction.SlashCommandExecuted += SlashCommandExecuted;
             _interaction.ComponentCommandExecuted += ComponentCommandExecuted;
             _client.SelectMenuExecuted += SelectMenuHandler;
-            //_client.MessageReceived += HandleMessageAsync;
+            _client.MessageReceived += HandleMessageAsync;
             LevanteCordInstance.Client = _client;
         }
 
@@ -911,22 +912,23 @@ namespace Levante
             }*/
         }
 
-        //private async Task HandleMessageAsync(SocketMessage arg)
-        //{
-        //    if (arg.Author.IsWebhook || arg.Author.IsBot) return; // Return if message is from a Webhook or Bot user
-        //    if (arg.ToString().Length < 0) return; // Return of the message has no text
-        //    if (arg.Author.Id == _client.CurrentUser.Id) return; // Return of the message is from itself
+        private async Task HandleMessageAsync(SocketMessage arg)
+        {
+            if (arg.Author.IsWebhook || arg.Author.IsBot) return; // Return if message is from a Webhook or Bot user
+            if (arg.ToString().Length < 0) return; // Return of the message has no text
+            if (arg.Author.Id == _client.CurrentUser.Id) return; // Return of the message is from itself
 
-        //    int argPos = 0; // Position to check for command arguments
+            int argPos = 0; // Position to check for command arguments
 
-        //    var msg = arg as SocketUserMessage;
-        //    if (msg == null) return;
+            var msg = arg as SocketUserMessage;
+            if (msg == null) return;
 
-        //    if (msg.MentionedUsers.Contains(_client.CurrentUser))
-        //    {
-        //        Console.WriteLine("Ping!");
-        //    }
-        //}
+            if (msg.MentionedUsers.Any(x => x.Id == _client.CurrentUser.Id))
+            {
+                await msg.ReplyAsync(embed: Embeds.GetHelpEmbed().Build());
+                return;
+            }
+        }
 
         private async Task HandleInteraction(SocketInteraction arg)
         {

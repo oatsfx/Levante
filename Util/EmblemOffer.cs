@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 
 namespace Levante.Util
 {
@@ -100,7 +101,14 @@ namespace Levante.Util
                     .WithButton($"Get {OfferedEmblem.GetName()}", style: ButtonStyle.Link, url: SpecialUrl, emote: Emote.Parse(DestinyEmote.Emblem), row: 0);
         }
 
-        public string GetDateRange() => $"{TimestampTag.FromDateTime(StartDate, TimestampTagStyles.ShortDate)} - {(EndDate != null ? $"{TimestampTag.FromDateTime((DateTime)EndDate, TimestampTagStyles.ShortDate)}" : "UNKNOWN")}";
+        public string GetDateRange()
+        {
+            var timestampStyle = TimestampTagStyles.ShortDate;
+            if (EndDate - StartDate < TimeSpan.FromDays(1))
+                timestampStyle = TimestampTagStyles.ShortDateTime;
+
+            return $"{TimestampTag.FromDateTime(StartDate, timestampStyle)} - {(EndDate != null ? $"{TimestampTag.FromDateTime((DateTime)EndDate, timestampStyle)}" : "UNKNOWN")}";
+        }
 
         public static EmblemOffer GetRandomOffer()
         {
@@ -125,10 +133,13 @@ namespace Levante.Util
                 Footer = foot,
             };
 
-            string desc = $"__Offers ({(10 * Page) + 1}-{((10 * Page) + 10 > CurrentOffers.Count ? CurrentOffers.Count : (10 * Page) + 10)})__\n";
+            var count = CurrentOffers.Count;
+            var pageNumStr = $"Showing {(10 * Page) + 1}-{((10 * Page) + 10 > count ? count : (10 * Page) + 10)} offers of {count} total.";
+
+            string desc = "";
             if (CurrentOffers.Count != 0)
             {
-                foreach (var Offer in CurrentOffers.GetRange(10 * Page, (10 * Page) + 10 > CurrentOffers.Count ? CurrentOffers.Count - (10 * Page) : 10))
+                foreach (var Offer in CurrentOffers.GetRange(10 * Page, (10 * Page) + 10 > count ? count - (10 * Page) : 10))
                 {
                     string s = Offer.SpecialUrl != null
                         ? $"[{Offer.OfferedEmblem.GetName()}]({Offer.SpecialUrl})"
@@ -136,7 +147,7 @@ namespace Levante.Util
                     desc += $"> {s} [[IMAGE]({Offer.ImageUrl})]\n";
                 }
                     
-                desc += $"\n*Want specific details? Use the command `/current-offers [EMBLEM NAME]`.*";
+                desc += $"\n*Want specific details? Use the command `/current-offers [EMBLEM NAME]`.*\n\n{pageNumStr}";
             }
             else
                 desc = "There are currently no limited time emblem offers; you are all caught up!";
@@ -195,6 +206,13 @@ namespace Levante.Util
             CurrentOffers.Remove(offerToDelete);
             File.Delete(emblemOfferPath + @"/" + offerToDelete.EmblemHashCode + @".json");
             Log.Information("[{Type}] Deleted Emblem Offer for emblem: {Name} ({Hash}).", "Offers", offerToDelete.OfferedEmblem.GetName(), offerToDelete.EmblemHashCode);
+        }
+
+        public static void CheckEmblemOffers()
+        {
+            foreach (var offer in CurrentOffers.ToList())
+                if (DateTime.Now >= offer.EndDate)
+                    DeleteOffer(offer);
         }
     }
 }

@@ -40,6 +40,9 @@ namespace Levante.Commands
                 "Rolled",
                 "I own you",
                 "You're mad",
+                "Ran",
+                "RRRRRAAAAAAAAHHHHHHH",
+                $"Who is {Context.User.GlobalName}?"
             };
 
             var random = new Random();

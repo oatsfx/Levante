@@ -22,5 +22,23 @@ namespace Levante.Util
 
             return embed;
         }
+
+        public static EmbedBuilder GetHelpEmbed()
+        {
+            var embed = new EmbedBuilder()
+            {
+                Title = "Bot Help",
+                Description = "All commands and bot features can be found at [this page](https://www.levante.dev/features/).",
+                Color = new Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                ThumbnailUrl = BotConfig.BotLogoUrl,
+                Footer = new()
+                {
+                    IconUrl = BotConfig.BotAvatarUrl,
+                    Text = $"{BotConfig.AppName} v{BotConfig.Version}",
+                },
+            };
+
+            return embed;
+        }
     }
 }
