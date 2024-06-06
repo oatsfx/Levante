@@ -22,6 +22,7 @@ using Serilog;
 using Serilog.Events;
 using BungieSharper.Entities.Destiny.Advanced;
 using Levante.Services;
+using BungieSharper.Entities.Applications;
 
 namespace Levante
 {
@@ -56,9 +57,9 @@ namespace Levante
             _services = new ServiceCollection()
                 .AddSingleton(_client)
                 .AddSingleton<InteractiveService>()
-                .AddSingleton<InteractionService>()
+                .AddSingleton<InteractionService>(p => new InteractionService(p.GetRequiredService<DiscordShardedClient>()))
                 .AddSingleton<CreationsService>()
-                .BuildServiceProvider();
+            .BuildServiceProvider();
         }
 
         static void Main(string[] args)
@@ -446,7 +447,7 @@ namespace Levante
                     else
                     {
                         int levelsGained = aau.LastLevel - aau.StartLevel;
-                        long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
+                        long xpGained = (levelsGained * 100_000) - aau.StartLevelProgress + aau.LastLevelProgress;
                         await LogHelper.Log(logChannel, $"Refreshed: {tempAau.LastLevelProgress:n0} XP -> {updatedProgression:n0} XP. Level: {updatedLevel} | Power Bonus: +{powerBonus} | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours):n0} XP/Hour");
 
                         actualUser.LastLevel = updatedLevel;
@@ -544,10 +545,10 @@ namespace Levante
                             });
 
                             if (item.Response.characterProgressions.data == null) continue;
-                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == 100)
+                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == 200)
                             {
                                 int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
-                                Level = 100 + extraLevel;
+                                Level = 200 + extraLevel;
                             }
                             else
                             {

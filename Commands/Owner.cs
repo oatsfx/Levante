@@ -17,6 +17,7 @@ using Discord.Interactions;
 using System.Diagnostics;
 using Levante.Util.Attributes;
 using Serilog;
+using BungieSharper.Entities.Destiny;
 
 namespace Levante.Commands
 {
@@ -756,24 +757,74 @@ namespace Levante.Commands
         [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
         public async Task Test()
         {
-            var embed = new EmbedBuilder
+            await DeferAsync();
+            var listOfEmblemCollectibleHashes = ManifestHelper.EmblemsCollectible.Values.ToList();
+
+            var profiles = new List<string>
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
-                Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                Footer = new EmbedFooterBuilder() { Text = $"{BotConfig.AppName} v{BotConfig.Version}" },
-                Title = "???",
-                ThumbnailUrl = BotConfig.BotLogoUrl,
-                Description = "Nothing found."
+                ""
             };
 
-            embed.AddField(x =>
-            {
-                x.Name = "???";
-                x.Value = $"???";
-                x.IsInline = true;
-            });
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+            Log.Debug($"starting with {listOfEmblemCollectibleHashes.Count} emblems");
 
-            await RespondAsync(embed: embed.Build());
+            foreach (var profile in profiles)
+            {
+                Log.Debug($"{profile}");
+
+                try
+                {
+                    var response = client.GetAsync($"{profile}?components=800").Result;
+                    var content = response.Content.ReadAsStringAsync().Result;
+                    dynamic item = JsonConvert.DeserializeObject(content);
+
+                    foreach (var emblem in listOfEmblemCollectibleHashes.ToList())
+                    {
+                        if (item.Response.profileCollectibles.data.collectibles[$"{emblem}"] == null)
+                        {
+                            listOfEmblemCollectibleHashes.RemoveAll(x => x == emblem);
+
+                            Log.Debug($"removed {emblem}");
+                            continue;
+                        }
+
+                        if (item.Response.profileCollectibles.data.collectibles[$"{emblem}"].state == null)
+                        {
+                            listOfEmblemCollectibleHashes.RemoveAll(x => x == emblem);
+
+                            Log.Debug($"removed {emblem}");
+                            continue;
+                        }
+
+                        if (((DestinyCollectibleState)item.Response.profileCollectibles.data.collectibles[$"{emblem}"].state).HasFlag(DestinyCollectibleState.NotAcquired))
+                        {
+                            listOfEmblemCollectibleHashes.RemoveAll(x => x == emblem);
+
+                            Log.Debug($"removed {emblem}");
+                        }
+                    }
+
+                }
+                catch (Exception x)
+                {
+                    Log.Error($"{x}");
+                }
+                
+            }
+            Log.Debug($"profiles grabbed {listOfEmblemCollectibleHashes.Count}");
+
+            var invHashes = ManifestHelper.EmblemsCollectible.Where(x => listOfEmblemCollectibleHashes.Contains(x.Value)).Select(x => x.Key);
+            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "Sending emblem results now."; });
+            var builder = "";
+
+            foreach (var hash in invHashes)
+            {
+                //await Context.Channel.SendMessageAsync($"{ManifestHelper.Emblems[hash]} <https://emblem.report/{hash}>");
+                builder += $"{ManifestHelper.Emblems[hash]}\n";
+            }
+
+            Log.Debug(builder);
         }
 
         public async Task SendToAllAnnounceChannels(EmblemOffer offer)

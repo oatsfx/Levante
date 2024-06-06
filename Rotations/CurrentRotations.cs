@@ -281,7 +281,7 @@ namespace Levante.Rotations
                 x.Name = "Weapon";
                 x.Value = Nightfall.WeaponRotations.Count == 0
                     ? "Weapon Rotation Unknown"
-                    : $"{Nightfall.WeaponRotations[Actives.NightfallWeaponDrop].Emote} {Nightfall.WeaponRotations[Actives.NightfallWeaponDrop].Name}";
+                    : $"{Nightfall.WeaponRotations[Actives.NightfallWeaponDrop].Emote}{Nightfall.WeaponRotations[Actives.NightfallWeaponDrop].Name}";
 
                 x.IsInline = true;
             })
