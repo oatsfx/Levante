@@ -44,9 +44,20 @@ namespace Levante.Commands
                     }
 
                     var randomOffer = EmblemOffer.GetRandomOffer();
+                    
                     try
                     {
-                        await Context.Channel.SendMessageAsync(embed: randomOffer.BuildEmbed().Build(), components: randomOffer.BuildExternalButton().Build());
+                        if (randomOffer == null)
+                        {
+                            var errEmbed = Embeds.GetErrorEmbed();
+                            errEmbed.Description = $"There aren't any emblem offers as this time, but fret not, I've still set up alerts in this channel!";
+                            await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
+                        }
+                        else
+                        {
+                            await Context.Channel.SendMessageAsync(embed: randomOffer.BuildEmbed().Build(), components: randomOffer.BuildExternalButton().Build());
+                        }
+                        
                     }
                     catch
                     {

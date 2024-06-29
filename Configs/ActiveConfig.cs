@@ -53,11 +53,17 @@ namespace Levante.Configs
             [JsonProperty("StartLevel")]
             public int StartLevel { get; set; } = 0;
 
+            [JsonProperty("StartExtraLevel")]
+            public int StartExtraLevel { get; set; } = 0;
+
             [JsonProperty("StartLevelProgress")]
             public int StartLevelProgress { get; set; } = 0;
 
             [JsonProperty("StartPowerBonus")]
             public int StartPowerBonus { get; set; } = 0;
+
+            [JsonProperty("StartNextLevelAt")]
+            public int StartNextLevelAt { get; set; } = 0;
 
             [JsonProperty("TimeStarted")]
             public DateTime TimeStarted { get; set; } = DateTime.Now;
@@ -65,11 +71,17 @@ namespace Levante.Configs
             [JsonProperty("LastLevel")]
             public int LastLevel { get; set; } = 0;
 
+            [JsonProperty("LastExtraLevel")]
+            public int LastExtraLevel { get; set; } = 0;
+
             [JsonProperty("LastLevelProgress")]
             public int LastLevelProgress { get; set; } = 0;
 
             [JsonProperty("LastPowerBonus")]
             public int LastPowerBonus { get; set; } = 0;
+
+            [JsonProperty("LastNextLevelAt")]
+            public int LastNextLevelAt { get; set; } = 0;
 
             [JsonProperty("NoXPGainRefreshes")]
             public int NoXPGainRefreshes { get; set; } = 0;

@@ -42,6 +42,7 @@ namespace Levante.Helpers
         // List per Week, <Hash, Record>.
         public static List<Dictionary<long, DestinyRecordDefinition>> SeasonalChallenges = new();
         public static DestinySeasonDefinition CurrentSeason = new();
+        public static int CurrentLevelCap = 0;
         public static Dictionary<long, string> SeasonalObjectives = new();
         public static Dictionary<string, int> StringVariables = new();
 
@@ -349,14 +350,36 @@ namespace Levante.Helpers
                     response = client.GetAsync(seasonUrl).Result;
                     content = response.Content.ReadAsStringAsync().Result;
                     seasonList = JsonConvert.DeserializeObject<Dictionary<long, DestinySeasonDefinition>>(content);
-                    File.WriteAllText($"Data/Manifest/JSONs/DestinySeasonDefinition/{fileName}", JsonConvert.SerializeObject(seasonList, Formatting.Indented));
+
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinySeasonDefinition/{fileName}", JsonConvert.SerializeObject(JsonConvert.DeserializeObject(content), Formatting.Indented));
                 }
                 else
                 {
                     content = File.ReadAllText($"Data/Manifest/JSONs/DestinySeasonDefinition/{fileName}");
                     seasonList = JsonConvert.DeserializeObject<Dictionary<long, DestinySeasonDefinition>>(content);
+
                     Log.Information("[{Type}] Loaded {def} from local.",
                         "Manifest", "DestinySeasonDefinition");
+                }
+
+                foreach (var season in seasonList)
+                {
+                    if (season.Value.StartDate <= DateTime.UtcNow && DateTime.UtcNow <= season.Value.EndDate)
+                        CurrentSeason = season.Value;
+                }
+
+                dynamic raw = JsonConvert.DeserializeObject(content);
+                dynamic rawSeason = raw[$"{CurrentSeason.Hash}"];
+                if (rawSeason.acts != null)
+                {
+                    for (int i = 0; i < rawSeason.acts.Count; i++)
+                    {
+                        if (((DateTime)rawSeason.acts[i].startTime) < DateTime.Now)
+                        {
+                            CurrentLevelCap += (int)rawSeason.acts[i].rankCount;
+                        }
+                        Log.Debug($"{CurrentLevelCap}");
+                    }
                 }
 
                 string stringVarUrl = "https://bungie.net/Platform/Destiny2/3/Profile/4611686018471482002/?components=1200";
