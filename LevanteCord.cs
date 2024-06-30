@@ -21,6 +21,7 @@ using Levante.Util.Attributes;
 using Serilog;
 using Serilog.Events;
 using Levante.Services;
+using System.Collections.Generic;
 
 namespace Levante
 {
@@ -317,7 +318,7 @@ namespace Levante
                     if (logChannel == null)
                     {
                         await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: LoggingChannelNotFound. Logging will be terminated for {tempAau.UniqueBungieName}.");
-                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
+                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                         Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
 
@@ -338,7 +339,7 @@ namespace Levante
                     var levelCap = loggingValues.LevelCap;
 
                     var combinedLevel = updatedLevel + updatedExtraLevel;
-                    var lastCombinedLevel = aau.LastLevel + aau.LastExtraLevel;
+                    var lastCombinedLevel = aau.Last.Level + aau.Last.ExtraLevel;
 
                     if (!errorStatus.Equals("Success"))
                     {
@@ -350,7 +351,7 @@ namespace Levante
                             await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
                             //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Logging will be terminated for {uniqueName}.");
-                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
+                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                             Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                             //listOfRemovals.Add(tempAau);
@@ -370,11 +371,11 @@ namespace Levante
                         continue;
                     }
 
-                    if (powerBonus > tempAau.LastPowerBonus)
+                    if (powerBonus > tempAau.Last.PowerBonus)
                     {
-                        await LogHelper.Log(logChannel, $"Power bonus increase!: {tempAau.LastPowerBonus} -> {powerBonus} (Start: {tempAau.StartPowerBonus}).");
+                        await LogHelper.Log(logChannel, $"Power bonus increase!: {tempAau.Last.PowerBonus} -> {powerBonus} (Start: {tempAau.Start.PowerBonus}).");
 
-                        actualUser.LastPowerBonus = powerBonus;
+                        actualUser.Last.PowerBonus = powerBonus;
                     }
                    
                     if (activityHash != tempAau.ActivityHash)
@@ -384,7 +385,7 @@ namespace Levante
                         await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player activity has changed. Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
                         //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
-                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
+                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                         Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                         ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
@@ -392,16 +393,19 @@ namespace Levante
                     }
                     else if (combinedLevel > lastCombinedLevel)
                     {
-                        await LogHelper.Log(logChannel, $"Level up!: {tempAau.LastLevel}{(tempAau.LastExtraLevel > 0 ? $" (+{tempAau.LastExtraLevel})" : "")} -> {updatedLevel}{(updatedExtraLevel > 0 ? $" (+{updatedExtraLevel})" : "")} " +
+                        await LogHelper.Log(logChannel, $"Level up! Now: {tempAau.Last.Level}{(tempAau.Last.ExtraLevel > 0 ? $" (+{tempAau.Last.ExtraLevel})" : "")}" +
+                            $" -> {updatedLevel}{(updatedExtraLevel > 0 ? $" (+{updatedExtraLevel})" : "")} " +
                             $"({updatedProgression:n0}/{nextLevelAt:n0} XP). " +
-                            $"Start: {tempAau.StartLevel} ({tempAau.StartLevelProgress:n0}/{tempAau.StartNextLevelAt:n0} XP).");
+                            $"Start: {tempAau.Start.Level}{(tempAau.Start.ExtraLevel > 0 ? $" (+{tempAau.Start.ExtraLevel})" : "")} ({tempAau.Start.LevelProgress:n0}/{tempAau.Start.NextLevelAt:n0} XP).");
 
-                        actualUser.LastLevel = combinedLevel;
-                        actualUser.LastLevelProgress = updatedProgression;
-                        actualUser.LastNextLevelAt = nextLevelAt;
+                        actualUser.Last.Level = updatedLevel;
+                        actualUser.Last.ExtraLevel = updatedExtraLevel;
+                        actualUser.Last.LevelProgress = updatedProgression;
+                        actualUser.Last.NextLevelAt = nextLevelAt;
                         actualUser.NoXPGainRefreshes = 0;
+                        actualUser.Last.Timestamp = DateTime.Now;
                     }
-                    else if (updatedProgression <= tempAau.LastLevelProgress)
+                    else if (updatedProgression <= tempAau.Last.LevelProgress)
                     {
                         if (tempAau.NoXPGainRefreshes >= ActiveConfig.RefreshesBeforeKick)
                         {
@@ -410,7 +414,7 @@ namespace Levante
                             await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
                             //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
-                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
+                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                             Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                             //listOfRemovals.Add(tempAau);
@@ -427,27 +431,35 @@ namespace Levante
                     }
                     else
                     {
-                        int levelsGained = (aau.LastLevel - aau.StartLevel) + (aau.LastExtraLevel - aau.StartExtraLevel);
+                        int levelsGained = (aau.Last.Level - aau.Start.Level) + (aau.Last.ExtraLevel - aau.Start.ExtraLevel);
                         long xpGained = 0;
                         // If the user hit the cap during the session, calculate gained XP differently.
-                        if (aau.StartLevel < levelCap && aau.LastLevel >= levelCap)
+                        if (aau.Start.Level < levelCap && aau.Last.Level >= levelCap)
                         {
-                            int levelsToCap = levelCap - aau.StartLevel;
+                            int levelsToCap = levelCap - aau.Start.Level;
                             int levelsPastCap = levelsGained - levelsToCap;
                             // StartNextLevelAt should be the 100,000 or whatever Bungie decides to change it to later on.
-                            xpGained = ((levelsToCap) * aau.StartNextLevelAt) + (levelsPastCap * nextLevelAt) - aau.StartLevelProgress + updatedProgression;
+                            xpGained = ((levelsToCap) * aau.Start.NextLevelAt) + (levelsPastCap * nextLevelAt) - aau.Start.LevelProgress + updatedProgression;
                         }
                         else // The nextLevelAt stays the same because it did not change mid-logging session.
                         {
-                            xpGained = (levelsGained * nextLevelAt) - aau.StartLevelProgress + updatedProgression;
+                            xpGained = (levelsGained * nextLevelAt) - aau.Start.LevelProgress + updatedProgression;
                         }
-                        
-                        await LogHelper.Log(logChannel, $"Refreshed: {tempAau.LastLevelProgress:n0} XP -> {updatedProgression:n0} XP. Level: {updatedLevel}{(updatedExtraLevel > 0 ? $" (+{updatedExtraLevel})" : "")} | Power Bonus: +{powerBonus} | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours):n0} XP/Hour");
 
-                        actualUser.LastLevel = updatedLevel;
-                        actualUser.LastLevelProgress = updatedProgression;
-                        actualUser.LastNextLevelAt = nextLevelAt;
+                        long xpGainedInOneRefresh = updatedProgression - tempAau.Last.LevelProgress;
+
+                        await LogHelper.Log(logChannel, $"{tempAau.Last.LevelProgress:n0} (+{xpGainedInOneRefresh:n0}) -> {updatedProgression:n0} XP" +
+                            $" | Level: {updatedLevel}{(updatedExtraLevel > 0 ? $" (+{updatedExtraLevel})" : "")}" +
+                            $" | Power: +{powerBonus}" +
+                            $" | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.Start.Timestamp).TotalHours):n0} XP/Hour" +
+                            $" | Inst. Rate: {(int)Math.Floor(xpGainedInOneRefresh / (DateTime.Now - aau.Last.Timestamp).TotalHours):n0} XP/Hour");
+
+                        actualUser.Last.Level = updatedLevel;
+                        actualUser.Last.ExtraLevel = updatedExtraLevel;
+                        actualUser.Last.LevelProgress = updatedProgression;
+                        actualUser.Last.NextLevelAt = nextLevelAt;
                         actualUser.NoXPGainRefreshes = 0;
+                        actualUser.Last.Timestamp = DateTime.Now;
                     }
                 }
                 ActiveConfig.UpdateActiveAFKUsersConfig();
@@ -507,7 +519,7 @@ namespace Levante
                     {
                         if (user.AccessExpiration < DateTime.Now)
                         {
-                            //user = DataConfig.RefreshCode(user);
+                            user = DataConfig.RefreshCode(user);
                             DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == user.DiscordID).AccessExpiration = user.AccessExpiration;
                             DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == user.DiscordID).AccessToken = user.AccessToken;
                             DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == user.DiscordID).RefreshExpiration = user.RefreshExpiration;

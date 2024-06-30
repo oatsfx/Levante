@@ -68,13 +68,13 @@ namespace Levante.Commands
                 foreach (var aau in ActiveConfig.PriorityActiveAFKUsers)
                 {
                     embed.Description +=
-                        $"{aau.UniqueBungieName}: Level {aau.LastLevel}\n";
+                        $"{aau.UniqueBungieName}: Level {aau.Last.Level}\n";
                 }
                 embed.Description += $"__XP Logging List:__\n";
                 foreach (var aau in ActiveConfig.ActiveAFKUsers)
                 {
                     embed.Description +=
-                        $"{aau.UniqueBungieName}: Level {aau.LastLevel}\n";
+                        $"{aau.UniqueBungieName}: Level {aau.Last.Level}\n";
                 }
             }
             else

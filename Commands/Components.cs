@@ -182,16 +182,22 @@ namespace Levante.Commands
                     DiscordID = user.Id,
                     UniqueBungieName = uniqueName,
                     DiscordChannelID = userLogChannel.Id,
-                    StartLevel = userLevel,
-                    StartExtraLevel = userExtraLevel,
-                    StartLevelProgress = lvlProg,
-                    StartPowerBonus = powerBonus,
-                    StartNextLevelAt = nextLevelAt,
-                    LastLevel = userLevel,
-                    LastExtraLevel = userExtraLevel,
-                    LastLevelProgress = lvlProg,
-                    LastPowerBonus = powerBonus,
-                    LastNextLevelAt = nextLevelAt,
+                    Start = new()
+                    {
+                        Level = userLevel,
+                        ExtraLevel = userExtraLevel,
+                        LevelProgress = lvlProg,
+                        PowerBonus = powerBonus,
+                        NextLevelAt = nextLevelAt,
+                    },
+                    Last = new()
+                    {
+                        Level = userLevel,
+                        ExtraLevel = userExtraLevel,
+                        LevelProgress = lvlProg,
+                        PowerBonus = powerBonus,
+                        NextLevelAt = nextLevelAt,
+                    },
                     ActivityHash = activityHash,
                 };
 
@@ -211,7 +217,7 @@ namespace Levante.Commands
                     logType = LoggingType.Priority;
 
                 var guardian = new Guardian(newUser.UniqueBungieName, memId, memType, characterId);
-                await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLevel}{(newUser.LastExtraLevel > 0 ? $" (+{newUser.LastExtraLevel})" : "")} ({newUser.LastLevelProgress:n0}/{nextLevelAt:n0} XP) and Power Bonus +{newUser.LastPowerBonus}.{(logType == LoggingType.Priority ? " *You are in the priority logging list; thank you for your generous support!*" : "")}", guardian.GetGuardianEmbed());
+                await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.Last.Level}{(newUser.Last.ExtraLevel > 0 ? $" (+{newUser.Last.ExtraLevel})" : "")} ({newUser.Last.LevelProgress:n0}/{nextLevelAt:n0} XP) and Power Bonus +{newUser.Last.PowerBonus}.{(logType == LoggingType.Priority ? " *You are in the priority logging list; thank you for your generous support!*" : "")}", guardian.GetGuardianEmbed());
                 //string recommend = fireteamPrivacy == PrivacySetting.Open || fireteamPrivacy == PrivacySetting.ClanAndFriendsOnly || fireteamPrivacy == PrivacySetting.FriendsOnly ? $" It is recommended to change your privacy to prevent people from joining you. {user.Mention}" : "";
                 //await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
 
@@ -280,7 +286,7 @@ namespace Levante.Commands
             }
 
             await LogHelper.Log(Context.Client.GetChannel(aau.DiscordChannelID) as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: XPLoggingHelper.GenerateSessionSummary(aau), CB: XPLoggingHelper.GenerateChannelButtons(aau.DiscordID));
-            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(aau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(aau));
+            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(aau.Start.Timestamp)}.", XPLoggingHelper.GenerateSessionSummary(aau));
 
             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(aau));
             ActiveConfig.DeleteActiveUserFromConfig(user.Id);
@@ -397,22 +403,28 @@ namespace Levante.Commands
                     DiscordID = user.Id,
                     UniqueBungieName = uniqueName,
                     DiscordChannelID = userLogChannel.Id,
-                    StartLevel = userLevel,
-                    StartExtraLevel = userExtraLevel,
-                    StartLevelProgress = lvlProg,
-                    StartPowerBonus = powerBonus,
-                    StartNextLevelAt = nextLevelAt,
-                    LastLevel = userLevel,
-                    LastExtraLevel = userExtraLevel,
-                    LastLevelProgress = lvlProg,
-                    LastPowerBonus = powerBonus,
-                    LastNextLevelAt = nextLevelAt,
+                    Start = new()
+                    {
+                        Level = userLevel,
+                        ExtraLevel = userExtraLevel,
+                        LevelProgress = lvlProg,
+                        PowerBonus = powerBonus,
+                        NextLevelAt = nextLevelAt,
+                    },
+                    Last = new()
+                    {
+                        Level = userLevel,
+                        ExtraLevel = userExtraLevel,
+                        LevelProgress = lvlProg,
+                        PowerBonus = powerBonus,
+                        NextLevelAt = nextLevelAt,
+                    },
                     ActivityHash = activityHash,
                 };
 
                 await userLogChannel.ModifyAsync(x =>
                 {
-                    x.Topic = $"{uniqueName.Split('#')[0]} (Starting Level: {newUser.StartLevel}{(newUser.LastExtraLevel > 0 ? $" (+{newUser.LastExtraLevel})" : "")} [{newUser.StartLevelProgress:n0}/100,000 XP] | Starting Power Bonus: +{newUser.StartPowerBonus}) - Time Started: {TimestampTag.FromDateTime(newUser.TimeStarted)}";
+                    x.Topic = $"{uniqueName.Split('#')[0]} (Starting Level: {newUser.Start.Level}{(newUser.Last.ExtraLevel > 0 ? $" (+{newUser.Last.ExtraLevel})" : "")} [{newUser.Start.LevelProgress:n0}/100,000 XP] | Starting Power Bonus: +{newUser.Start.PowerBonus}) - Time Started: {TimestampTag.FromDateTime(newUser.Start.Timestamp)}";
                 }, options: new RequestOptions() { AuditLogReason = "XP Logging Session Channel Edit" }).ConfigureAwait(false);
 
                 string privacy = "";
@@ -431,7 +443,7 @@ namespace Levante.Commands
                     logType = LoggingType.Priority;
 
                 var guardian = new Guardian(newUser.UniqueBungieName, memId, memType, characterId);
-                await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.LastLevel}{(userExtraLevel > 0 ? $" (+{userExtraLevel})" : "")} ({newUser.LastLevelProgress:n0}/100,000 XP) and Power Bonus +{newUser.LastPowerBonus}.{(logType == LoggingType.Priority ? " *You are in the priority logging list; thank you for your generous support!*" : "")}", guardian.GetGuardianEmbed());
+                await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.Last.Level}{(userExtraLevel > 0 ? $" (+{userExtraLevel})" : "")} ({newUser.Last.LevelProgress:n0}/100,000 XP) and Power Bonus +{newUser.Last.PowerBonus}.{(logType == LoggingType.Priority ? " *You are in the priority logging list; thank you for your generous support!*" : "")}", guardian.GetGuardianEmbed());
                 //string recommend = fireteamPrivacy == PrivacySetting.Open || fireteamPrivacy == PrivacySetting.ClanAndFriendsOnly || fireteamPrivacy == PrivacySetting.FriendsOnly ? $" It is recommended to change your privacy to prevent people from joining you. {user.Mention}" : "";
                 //await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
 
