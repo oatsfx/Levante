@@ -849,8 +849,6 @@ namespace Levante.Commands
                     XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].progressToNextLevel;
                 }
 
-                Level -= 15;
-
                 var auth = new EmbedAuthorBuilder()
                 {
                     Name = $"Season {ManifestHelper.CurrentSeason.SeasonNumber}: {ManifestHelper.CurrentSeason.DisplayProperties.Name} Level and XP Info",
