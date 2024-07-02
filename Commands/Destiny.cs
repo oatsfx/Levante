@@ -865,7 +865,7 @@ namespace Levante.Commands
                     Footer = foot,
                     Description =
                         $"Player: **{dil.UniqueBungieName}**\n" +
-                        $"Level: **{Level}**{(ExtraLevel > 0 ? $"/ (+**{ExtraLevel}**)" : "")}\n" +
+                        $"Level: **{Level}**{(ExtraLevel > 0 ? $" (+**{ExtraLevel}**)" : "")}\n" +
                         $"Progress to Next Level: **{XpProgress:n0}/{(Level >= LevelCap ? OverflowXpProgressCap : XpProgressCap):n0}**",
                 };
 
