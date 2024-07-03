@@ -37,9 +37,9 @@ namespace Levante.Commands
                 _ => PowerBonus,
             };
 
-            for (int i = 0; i < 25; i++)
+            for (int i = 0; i < PowerBonus; i++)
             {
-                Log.Debug($"{i}, {GetXPForBoost(i)}");
+                Log.Debug($"{i}, {GetXPForLevel(i)}, {GetXPForBoost(i)}");
             }
 
             var app = await Context.Client.GetApplicationInfoAsync();
@@ -64,7 +64,6 @@ namespace Levante.Commands
             if (DataConfig.IsExistingLinkedUser(Context.User.Id))
             {
                 var dil = DataConfig.GetLinkedUser(Context.User.Id);
-                
 
                 using var client = new HttpClient();
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
@@ -119,7 +118,7 @@ namespace Levante.Commands
                     else
                     {
                         seasonRanksNeeded = (xpNeeded - XpProgress) / OverflowXpProgressCap;
-                        projectedSeasonRank = Level + seasonRanksNeeded;
+                        projectedSeasonRank = Level + ExtraLevel + seasonRanksNeeded;
                     }
 
                     embed.Title += $"{seasonRanksNeeded:0.00}";
@@ -133,7 +132,8 @@ namespace Levante.Commands
                     int progressToNextLevel = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.progressToNextLevel;
                     int nextPowerLevelAt = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.nextLevelAt;
 
-                    int xpNeeded = GetXPForBoost(PowerBonus) - progressToNextLevel;
+                    int totalXp = (Level * XpProgressCap) + (ExtraLevel * OverflowXpProgressCap) + progressToNextLevel;
+                    int xpNeeded = GetXPForBoost(PowerBonus) - totalXp;
                     var seasonRanksNeeded = 0.0;
                     if (Level < LevelCap)
                     {
@@ -151,14 +151,14 @@ namespace Levante.Commands
                         }
                         else
                         {
-                            seasonRanksNeeded = (double)(xpNeeded - XpProgress) / XpProgressCap;
-                            projectedSeasonRank = Level + seasonRanksNeeded;
+                            seasonRanksNeeded = (double)xpNeeded / XpProgressCap;
+                            projectedSeasonRank = Level + ((double)progressToNextLevel / XpProgressCap) + seasonRanksNeeded;
                         }
                     }
                     else
                     {
-                        seasonRanksNeeded = (double)(xpNeeded - XpProgress) / OverflowXpProgressCap;
-                        projectedSeasonRank = Level + seasonRanksNeeded;
+                        seasonRanksNeeded = (double)xpNeeded / OverflowXpProgressCap;
+                        projectedSeasonRank = Level + ExtraLevel + ((double)progressToNextLevel / OverflowXpProgressCap) + seasonRanksNeeded;
                     }
 
                     embed.Title += $"{projectedSeasonRank:0.00}";
@@ -171,16 +171,23 @@ namespace Levante.Commands
             {
                 int xpNeeded = GetXPForBoost(PowerBonus);
                 var seasonRanksNeeded = 0.0;
+                XpProgressCap = ManifestHelper.BaseNextLevelAt;
+                OverflowXpProgressCap = ManifestHelper.ExtraNextLevelAt;
+
                 if (xpNeeded > XpProgressCap * LevelCap)
                 {
                     var overflowXpNeeded = xpNeeded - (XpProgressCap * LevelCap);
                     seasonRanksNeeded = LevelCap + ((double)overflowXpNeeded / OverflowXpProgressCap);
                 }
+                else
+                {
+                    seasonRanksNeeded = ((double)xpNeeded / XpProgressCap);
+                }
 
                 embed.Title += $"{seasonRanksNeeded:0.00}";
                 embed.Description =
                         $"You are not linked; I cannot provide a personalized projection.\n" +
-                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:.00}**.";
+                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:0.00}**.";
                 await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
             }
         }
@@ -878,7 +885,7 @@ namespace Levante.Commands
 
                 //int xpForNextBoost = GetXPForBoost(powerBonus + 1);
                 int xpNeeded = nextPowerLevelAt - progressToNextPowerLevel;
-                int projectedSeasonRank = 0;
+                var projectedSeasonRank = 0.00;
 
                 // Check if we're below the level cap in case we need to do different calculations for Power Bonus projection.
                 if (Level < LevelCap)
@@ -897,14 +904,14 @@ namespace Levante.Commands
                     }
                     else
                     {
-                        var seasonRanksNeeded = (xpNeeded - XpProgress) / XpProgressCap;
+                        var seasonRanksNeeded = (double)(xpNeeded - XpProgress) / XpProgressCap;
                         projectedSeasonRank = Level + seasonRanksNeeded;
                     }
                 }
                 else
                 {
-                    var seasonRanksNeeded = (xpNeeded - XpProgress) / OverflowXpProgressCap;
-                    projectedSeasonRank = Level + seasonRanksNeeded;
+                    var seasonRanksNeeded = (double)(xpNeeded - XpProgress) / OverflowXpProgressCap;
+                    projectedSeasonRank = Level + ExtraLevel + seasonRanksNeeded;
                 }
 
                 embed.AddField(x =>
@@ -918,7 +925,7 @@ namespace Levante.Commands
                 {
                     x.Name = $"Artifact Bonus (+{powerBonus})";
                     x.Value = $"Progress: {progressToNextPowerLevel:n0}/{nextPowerLevelAt:n0} XP\n" +
-                        $"Next Level (+{powerBonus + 1}): {nextPowerLevelAt - progressToNextPowerLevel:n0} XP (At Rank: {projectedSeasonRank})";
+                        $"Next Level (+{powerBonus + 1}): {xpNeeded:n0} XP (At Rank: {projectedSeasonRank:0.00})";
                     x.IsInline = true;
                 });
 
@@ -932,17 +939,27 @@ namespace Levante.Commands
 
         private static int GetXPForBoost(int boostLevel)
         {
-            if (boostLevel == 0)
+            var xp = 0;
+            for (int i = 0; i <= boostLevel; i++)
+            {
+                xp += GetXPForLevel(i);
+            }
+            return xp;
+        }
+
+        private static int GetXPForLevel(int level)
+        {
+            if (level == 0)
             {
                 return 0;
             }
             else
             {
-                if (boostLevel > 19)
+                if (level > 20)
                 {
-                    boostLevel = 19;
+                    level = 20;
                 }
-                return 55_000 * (boostLevel / 2) + GetXPForBoost(boostLevel - 1);
+                return 55_000 * (level / 2) + GetXPForLevel(level - 1);
             }
         }
 

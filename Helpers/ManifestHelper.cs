@@ -43,6 +43,8 @@ namespace Levante.Helpers
         public static List<Dictionary<long, DestinyRecordDefinition>> SeasonalChallenges = new();
         public static DestinySeasonDefinition CurrentSeason = new();
         public static int CurrentLevelCap = 0;
+        public static int BaseNextLevelAt = 0;
+        public static int ExtraNextLevelAt = 0;
         public static Dictionary<long, string> SeasonalObjectives = new();
         public static Dictionary<string, int> StringVariables = new();
 
@@ -378,15 +380,18 @@ namespace Levante.Helpers
                         {
                             CurrentLevelCap += (int)rawSeason.acts[i].rankCount;
                         }
-                        Log.Debug($"{CurrentLevelCap}");
                     }
                 }
 
-                string stringVarUrl = "https://bungie.net/Platform/Destiny2/3/Profile/4611686018471482002/?components=1200";
+                string stringVarUrl = "https://bungie.net/Platform/Destiny2/3/Profile/4611686018471482002/?components=100,202,1200";
                 response = client.GetAsync(stringVarUrl).Result;
                 content = response.Content.ReadAsStringAsync().Result;
                 item = JsonConvert.DeserializeObject(content);
+                var baseProgression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"];
+                var extraProgression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"];
                 StringVariables = item.Response.profileStringVariables.data.integerValuesByHash.ToObject<Dictionary<string, int>>();
+                BaseNextLevelAt = baseProgression.nextLevelAt;
+                ExtraNextLevelAt = extraProgression.nextLevelAt;
 
                 Log.Information("[{Type}] Populating Dictionaries...",
                         "Manifest");
@@ -538,8 +543,6 @@ namespace Levante.Helpers
                                 }
                             }
                         }
-
-
                     }
 
                     foreach (var invItem in invItemList)

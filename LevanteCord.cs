@@ -193,7 +193,7 @@ namespace Levante
         {
             // this is called to get the timer set up to run at every daily reset
             TimeSpan timeToGo = new(alertTime.Ticks - DateTime.UtcNow.Ticks);
-            Log.Debug("Reset in: {Time}.", $"{timeToGo.Hours}:{timeToGo.Minutes}:{timeToGo.Seconds}");
+            Log.Debug("Reset in: {Time}.", $"{timeToGo.Hours:00}:{timeToGo.Minutes:00}:{timeToGo.Seconds:00}");
             DailyResetTimer = new Timer(DailyResetChanges, null, (long)timeToGo.TotalMilliseconds, Timeout.Infinite);
         }
 
@@ -675,7 +675,7 @@ namespace Levante
                     BotConfig.CreationsLogChannel = _client.GetChannel(BotConfig.CommunityCreationsLogChannel) as SocketTextChannel;
 
                     _xpTimer = new Timer(XPTimerCallback, null, 20000, ActiveConfig.TimeBetweenRefresh * 60000);
-                    _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 5000, 3600000);
+                    _leaderboardTimer = new Timer(LeaderboardTimerCallback, null, 30000, 3600000);
                     Log.Information("[{Type}] Continued XP logging for {Count} (+{PriorityCount}) Users.",
                         "XP Sessions", ActiveConfig.ActiveAFKUsers.Count, ActiveConfig.PriorityActiveAFKUsers.Count);
 
