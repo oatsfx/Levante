@@ -65,8 +65,8 @@ namespace Levante.Configs
 
         public static ActiveAFKUser GetActiveAFKUser(ulong DiscordID)
         {
-            var aau = ActiveAFKUsers.First(x => x.DiscordID == DiscordID);
-            aau ??= PriorityActiveAFKUsers.First(x => x.DiscordID == DiscordID);
+            var aau = ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == DiscordID);
+            aau ??= PriorityActiveAFKUsers.FirstOrDefault(x => x.DiscordID == DiscordID);
 
             return aau;
         }
