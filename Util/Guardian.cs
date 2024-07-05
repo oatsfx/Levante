@@ -98,8 +98,6 @@ namespace Levante.Util
                 ActivityStarted = DateTime.SpecifyKind(DateTime.Parse($"{item.Response.activities.data.dateActivityStarted}"), DateTimeKind.Utc);
             }
 
-            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
             if (linkedUser != null)
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
 

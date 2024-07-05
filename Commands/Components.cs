@@ -216,7 +216,7 @@ namespace Levante.Commands
                 if (BotConfig.IsSupporter(user.Id))
                     logType = LoggingType.Priority;
 
-                var guardian = new Guardian(newUser.UniqueBungieName, memId, memType, characterId);
+                var guardian = new Guardian(newUser.UniqueBungieName, memId, memType, characterId, dil);
                 await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.Last.Level}{(newUser.Last.ExtraLevel > 0 ? $" (+{newUser.Last.ExtraLevel})" : "")} ({newUser.Last.LevelProgress:n0}/{nextLevelAt:n0} XP) and Power Bonus +{newUser.Last.PowerBonus}.{(logType == LoggingType.Priority ? " *You are in the priority logging list; thank you for your generous support!*" : "")}", guardian.GetGuardianEmbed());
                 //string recommend = fireteamPrivacy == PrivacySetting.Open || fireteamPrivacy == PrivacySetting.ClanAndFriendsOnly || fireteamPrivacy == PrivacySetting.FriendsOnly ? $" It is recommended to change your privacy to prevent people from joining you. {user.Mention}" : "";
                 //await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
@@ -442,7 +442,7 @@ namespace Levante.Commands
                 if (BotConfig.IsSupporter(user.Id))
                     logType = LoggingType.Priority;
 
-                var guardian = new Guardian(newUser.UniqueBungieName, memId, memType, characterId);
+                var guardian = new Guardian(newUser.UniqueBungieName, memId, memType, characterId, dil);
                 await LogHelper.Log(userLogChannel, $"{uniqueName} is starting at Level {newUser.Last.Level}{(userExtraLevel > 0 ? $" (+{userExtraLevel})" : "")} ({newUser.Last.LevelProgress:n0}/{nextLevelAt:n0} XP) and Power Bonus +{newUser.Last.PowerBonus}.{(logType == LoggingType.Priority ? " *You are in the priority logging list; thank you for your generous support!*" : "")}", guardian.GetGuardianEmbed());
                 //string recommend = fireteamPrivacy == PrivacySetting.Open || fireteamPrivacy == PrivacySetting.ClanAndFriendsOnly || fireteamPrivacy == PrivacySetting.FriendsOnly ? $" It is recommended to change your privacy to prevent people from joining you. {user.Mention}" : "";
                 //await LogHelper.Log(userLogChannel, $"{uniqueName} has fireteam on {privacy}.{recommend}");
