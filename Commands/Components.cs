@@ -275,7 +275,7 @@ namespace Levante.Commands
                 return;
             }
 
-            var ang sau = ActiveConfig.GetActiveAFKUser(user.Id);
+            var aau = ActiveConfig.GetActiveAFKUser(user.Id);
 
             var channel = Context.Client.GetChannel(aau.DiscordChannelID);
             if (channel == null)
