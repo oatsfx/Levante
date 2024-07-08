@@ -35,22 +35,38 @@ namespace Levante.Helpers
                 Author = auth,
                 Footer = foot,
             };
-            int levelsGained = aau.LastLevel - aau.StartLevel;
-            int powerBonusGained = aau.LastPowerBonus - aau.StartPowerBonus;
-            long xpGained = (levelsGained * 100000) - aau.StartLevelProgress + aau.LastLevelProgress;
-            var timeSpan = DateTime.Now - aau.TimeStarted;
+            int powerBonusGained = aau.Last.PowerBonus - aau.Start.PowerBonus;
+            var levelCap = ManifestHelper.CurrentLevelCap;
+            var nextLevelAt = aau.Last.NextLevelAt;
+
+            int levelsGained = (aau.Last.Level - aau.Start.Level) + (aau.Last.ExtraLevel - aau.Start.ExtraLevel);
+            long xpGained = 0;
+            // If the user hit the cap during the session, calculate gained XP differently.
+            if (aau.Start.Level < levelCap && aau.Last.Level >= levelCap)
+            {
+                int levelsToCap = levelCap - aau.Start.Level;
+                int levelsPastCap = levelsGained - levelsToCap;
+                // StartNextLevelAt should be the 100,000 or whatever Bungie decides to change it to later on.
+                xpGained = ((levelsToCap) * aau.Start.NextLevelAt) + (levelsPastCap * nextLevelAt) - aau.Start.LevelProgress + aau.Last.LevelProgress;
+            }
+            else // The nextLevelAt stays the same because it did not change mid-logging session.
+            {
+                xpGained = (levelsGained * nextLevelAt) - aau.Start.LevelProgress + aau.Last.LevelProgress;
+            }
+            
+            var timeSpan = DateTime.Now - aau.Start.Timestamp;
             string timeString = $"{(Math.Floor(timeSpan.TotalHours) > 0 ? $"{Math.Floor(timeSpan.TotalHours)}h " : "")}" +
                     $"{(timeSpan.Minutes > 0 ? $"{timeSpan.Minutes:00}m " : "")}" +
                     $"{timeSpan.Seconds:00}s";
-            int xpPerHour = (int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours);
+            int xpPerHour = (int)Math.Floor(xpGained / (DateTime.Now - aau.Start.Timestamp).TotalHours);
             embed.WithCurrentTimestamp();
             embed.Description = $"Time Logged: {timeString}\n";
 
             embed.AddField(x =>
             {
                 x.Name = "Level Information";
-                x.Value = $"Start: {aau.StartLevel} ({aau.StartLevelProgress:n0}/100,000)\n" +
-                    $"Now: {aau.LastLevel} ({aau.LastLevelProgress:n0}/100,000)\n" +
+                x.Value = $"Start: {aau.Start.Level}{(aau.Start.ExtraLevel > 0 ? $" (+{aau.Start.ExtraLevel})" : "")} ({aau.Start.LevelProgress:n0}/{aau.Start.NextLevelAt:n0})\n" +
+                    $"Now: {aau.Last.Level}{(aau.Last.ExtraLevel > 0 ? $" (+{aau.Last.ExtraLevel})" : "")} ({aau.Last.LevelProgress:n0}/{aau.Last.NextLevelAt:n0})\n" +
                     $"Gained: {levelsGained}\n";
                 x.IsInline = true;
             }).AddField(x =>
@@ -62,8 +78,8 @@ namespace Levante.Helpers
             }).AddField(x =>
             {
                 x.Name = "Power Bonus Information";
-                x.Value = $"Start: {aau.StartPowerBonus}\n" +
-                    $"Now: {aau.LastPowerBonus}\n" +
+                x.Value = $"Start: {aau.Start.PowerBonus}\n" +
+                    $"Now: {aau.Last.PowerBonus}\n" +
                     $"Gained: {powerBonusGained}\n";
                 x.IsInline = true;
             });

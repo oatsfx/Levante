@@ -239,15 +239,15 @@ namespace Levante.Helpers
         {
             var user = DataConfig.GetLinkedUser(AAU.DiscordID);
             // Generate a Leaderboard entry, and overwrite if the existing one is worse.
-            if (DateTime.Now - AAU.TimeStarted > TimeSpan.FromHours(1)) // Ignore entries that are less than one hour.
+            if (DateTime.Now - AAU.Start.Timestamp > TimeSpan.FromHours(1)) // Ignore entries that are less than one hour.
             {
                 if (XPPerHourData.IsExistingLinkedEntry(AAU.UniqueBungieName))
                 {
                     var entry = XPPerHourData.GetExistingLinkedEntry(AAU.UniqueBungieName);
 
                     int xpPerHour = 0;
-                    if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
-                        xpPerHour = (int)Math.Floor((((AAU.LastLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+                    if ((DateTime.Now - AAU.Start.Timestamp).TotalHours >= 1)
+                        xpPerHour = (int)Math.Floor((((AAU.Last.Level - AAU.Start.Level) * 100000) - AAU.Start.LevelProgress + AAU.Last.LevelProgress) / (DateTime.Now - AAU.Start.Timestamp).TotalHours);
 
                     // Only add back if the entry is better than their previous.
                     if (xpPerHour > entry.XPPerHour)
@@ -263,8 +263,8 @@ namespace Levante.Helpers
                 else
                 {
                     int xpPerHour = 0;
-                    if ((DateTime.Now - AAU.TimeStarted).TotalHours >= 1)
-                        xpPerHour = (int)Math.Floor((((AAU.LastLevel - AAU.StartLevel) * 100000) - AAU.StartLevelProgress + AAU.LastLevelProgress) / (DateTime.Now - AAU.TimeStarted).TotalHours);
+                    if ((DateTime.Now - AAU.Start.Timestamp).TotalHours >= 1)
+                        xpPerHour = (int)Math.Floor((((AAU.Last.Level - AAU.Start.Level) * 100000) - AAU.Start.LevelProgress + AAU.Last.LevelProgress) / (DateTime.Now - AAU.Start.Timestamp).TotalHours);
 
                     XPPerHourData.AddEntryToConfig(new XPPerHourData.XPPerHourEntry()
                     {
@@ -278,7 +278,7 @@ namespace Levante.Helpers
             {
                 var entry = LongestSessionData.GetExistingLinkedEntry(AAU.UniqueBungieName);
 
-                var sessionTime = DateTime.Now - AAU.TimeStarted;
+                var sessionTime = DateTime.Now - AAU.Start.Timestamp;
 
                 // Only add back if the entry is better than their previous.
                 if (sessionTime > entry.Time)
@@ -295,7 +295,7 @@ namespace Levante.Helpers
             {
                 LongestSessionData.AddEntryToConfig(new LongestSessionData.LongestSessionEntry()
                 {
-                    Time = DateTime.Now - AAU.TimeStarted,
+                    Time = DateTime.Now - AAU.Start.Timestamp,
                     UniqueBungieName = AAU.UniqueBungieName
                 });
             }
@@ -304,7 +304,7 @@ namespace Levante.Helpers
             {
                 var entry = MostXPLoggingTimeData.GetExistingLinkedEntry(AAU.UniqueBungieName);
 
-                var newTotalTime = (DateTime.Now - AAU.TimeStarted) + entry.Time;
+                var newTotalTime = (DateTime.Now - AAU.Start.Timestamp) + entry.Time;
 
                 // Overwrite the existing entry with new data.
                 MostXPLoggingTimeData.DeleteEntryFromConfig(AAU.UniqueBungieName);
@@ -318,7 +318,7 @@ namespace Levante.Helpers
             {
                 MostXPLoggingTimeData.AddEntryToConfig(new MostXPLoggingTimeData.MostXPLogTimeEntry()
                 {
-                    Time = DateTime.Now - AAU.TimeStarted,
+                    Time = DateTime.Now - AAU.Start.Timestamp,
                     UniqueBungieName = AAU.UniqueBungieName
                 });
             }

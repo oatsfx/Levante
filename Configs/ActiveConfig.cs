@@ -50,76 +50,25 @@ namespace Levante.Configs
             [JsonProperty("DiscordChannelID")]
             public ulong DiscordChannelID { get; set; } = 0;
 
-            [JsonProperty("StartLevel")]
-            public int StartLevel { get; set; } = 0;
-
-            [JsonProperty("StartLevelProgress")]
-            public int StartLevelProgress { get; set; } = 0;
-
-            [JsonProperty("StartPowerBonus")]
-            public int StartPowerBonus { get; set; } = 0;
-
-            [JsonProperty("TimeStarted")]
-            public DateTime TimeStarted { get; set; } = DateTime.Now;
-
-            [JsonProperty("LastLevel")]
-            public int LastLevel { get; set; } = 0;
-
-            [JsonProperty("LastLevelProgress")]
-            public int LastLevelProgress { get; set; } = 0;
-
-            [JsonProperty("LastPowerBonus")]
-            public int LastPowerBonus { get; set; } = 0;
-
             [JsonProperty("NoXPGainRefreshes")]
             public int NoXPGainRefreshes { get; set; } = 0;
 
             [JsonProperty("ActivityHash")]
             public long ActivityHash { get; set; } = 0;
+
+            [JsonProperty("Start")]
+            public LoggingValuesGroup Start { get; set; }
+
+            [JsonProperty("Last")]
+            public LoggingValuesGroup Last { get; set; }
         }
 
         public static ActiveAFKUser GetActiveAFKUser(ulong DiscordID)
         {
-            foreach (ActiveAFKUser aau in ActiveAFKUsers)
-                if (aau.DiscordID == DiscordID)
-                    return aau;
-            foreach (ActiveAFKUser aau in PriorityActiveAFKUsers)
-                if (aau.DiscordID == DiscordID)
-                    return aau;
-            return null;
-        }
+            var aau = ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == DiscordID);
+            aau ??= PriorityActiveAFKUsers.FirstOrDefault(x => x.DiscordID == DiscordID);
 
-        public static bool IsPlayerOnline(string BungieMembershipID, string BungieMembershipType)
-        {
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + BungieMembershipType + "/Profile/" + BungieMembershipID + "/?components=1000").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                if (item.Response.profileTransitoryData.data == null)
-                    return false;
-                else
-                    return true;
-            }
-        }
-
-        public static PrivacySetting GetFireteamPrivacy(string BungieMembershipID, string BungieMembershipType)
-        {
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + BungieMembershipType + "/Profile/" + BungieMembershipID + "/?components=1000").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                PrivacySetting result = item.Response.profileTransitoryData.data.joinability.privacySetting;
-
-                return result;
-            }
+            return aau;
         }
 
         #region JSONHandling
@@ -183,5 +132,26 @@ namespace Levante.Configs
     {
         Basic,
         Priority,
+    }
+
+    public class LoggingValuesGroup
+    {
+        [JsonProperty("Level")]
+        public int Level { get; set; } = 0;
+
+        [JsonProperty("ExtraLevel")]
+        public int ExtraLevel { get; set; } = 0;
+
+        [JsonProperty("LevelProgress")]
+        public int LevelProgress { get; set; } = 0;
+
+        [JsonProperty("PowerBonus")]
+        public int PowerBonus { get; set; } = 0;
+
+        [JsonProperty("NextLevelAt")]
+        public int NextLevelAt { get; set; } = 0;
+
+        [JsonProperty("Timestamp")]
+        public DateTime Timestamp { get; set; } = DateTime.Now;
     }
 }

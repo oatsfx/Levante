@@ -83,6 +83,9 @@ namespace Levante.Configs
         [JsonProperty("BotSupporters")]
         public static List<ulong> BotSupportersDiscordIDs { get; set; } = new();
 
+        [JsonProperty("GuildSupporters")]
+        public static List<ulong> GuildSupportersDiscordIDs { get; set; } = new();
+
         [JsonProperty("EmbedColor")]
         public static EmbedColorGroup EmbedColor { get; set; } = new();
 

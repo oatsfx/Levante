@@ -62,13 +62,12 @@ namespace Levante.Util
 
             APIUrl = $"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/Character/" + CharacterID + "/?components=200,204,205";
 
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
 
-                var response = client.GetAsync(APIUrl).Result;
-                GuardianContent = response.Content.ReadAsStringAsync().Result;
-            }
+            var response = client.GetAsync(APIUrl).Result;
+            GuardianContent = response.Content.ReadAsStringAsync().Result;
+
             dynamic item = JsonConvert.DeserializeObject(GuardianContent);
             Emblem = new Emblem((long)item.Response.character.data.emblemHash);
             Race = item.Response.character.data.raceType;
@@ -99,63 +98,58 @@ namespace Levante.Util
                 ActivityStarted = DateTime.SpecifyKind(DateTime.Parse($"{item.Response.activities.data.dateActivityStarted}"), DateTimeKind.Utc);
             }
 
-            using (var client = new HttpClient())
+            if (linkedUser != null)
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
+
+            response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=700,900,1400").Result;
+
+            string content = response.Content.ReadAsStringAsync().Result;
+            dynamic item1 = JsonConvert.DeserializeObject(content);
+
+            try
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                CommendationTotal = item1.Response.profileCommendations.data.totalScore;
+            }
+            catch
+            {
+                CommendationTotal = -1;
+            }
 
-                if (linkedUser != null)
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
-
-                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=700,900,1400").Result;
-                
-                string content = response.Content.ReadAsStringAsync().Result;
-                dynamic item1 = JsonConvert.DeserializeObject(content);
-
-                try
+            try
+            {
+                foreach (var rank in ManifestHelper.GuardianRanks)
                 {
-                    CommendationTotal = item1.Response.profileCommendations.data.totalScore;
-                }
-                catch
-                {
-                    CommendationTotal = -1;
-                }
-
-                try
-                {
-                    foreach (var rank in ManifestHelper.GuardianRanks)
+                    var rankObj = item1.Response.profilePresentationNodes.data.nodes[$"{rank.Key}"];
+                    if ((int)rankObj.progressValue < (int)rankObj.completionValue)
                     {
-                        var rankObj = item1.Response.profilePresentationNodes.data.nodes[$"{rank.Key}"];
-                        if ((int)rankObj.progressValue < (int)rankObj.completionValue)
-                        {
-                            RankProgress = (int)rankObj.progressValue;
-                            RankCompletion = (int)rankObj.completionValue;
-                            break;
-                        }
-                        Rank++;
+                        RankProgress = (int)rankObj.progressValue;
+                        RankCompletion = (int)rankObj.completionValue;
+                        break;
                     }
+                    Rank++;
                 }
-                catch
-                {
-                    Rank = -1;
-                }
-                
+            }
+            catch
+            {
+                Rank = -1;
+            }
 
-                if (item.Response.character.data.titleRecordHash != null)
-                {
-                    long sealHash = (long)item.Response.character.data.titleRecordHash;
-                    SealDiscordString = $"{ManifestHelper.Seals[sealHash]}";
 
-                    if (ManifestHelper.GildableSeals.ContainsKey(sealHash))
+            if (item.Response.character.data.titleRecordHash != null)
+            {
+                long sealHash = (long)item.Response.character.data.titleRecordHash;
+                SealDiscordString = $"{ManifestHelper.Seals[sealHash]}";
+
+                if (ManifestHelper.GildableSeals.ContainsKey(sealHash))
+                {
+                    var trackHash = ManifestHelper.GildableSeals[sealHash];
+                    if (item1.Response.profileRecords.data != null)
                     {
-                        var trackHash = ManifestHelper.GildableSeals[sealHash];
-                        if (item1.Response.profileRecords.data != null)
-                        {
-                            bool isGildedThisSeason = item1.Response.profileRecords.data.records[$"{trackHash}"].objectives[0].complete;
-                            if (isGildedThisSeason && item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
-                                SealDiscordString += $" {DestinyEmote.Gilded}{item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount}";
-                            else if (item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
-                                SealDiscordString += $" {DestinyEmote.GildedPurple}{item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount}";
-                        }
+                        bool isGildedThisSeason = item1.Response.profileRecords.data.records[$"{trackHash}"].objectives[0].complete;
+                        if (isGildedThisSeason && item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
+                            SealDiscordString += $" {DestinyEmote.Gilded}{item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount}";
+                        else if (item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount != 0)
+                            SealDiscordString += $" {DestinyEmote.GildedPurple}{item1.Response.profileRecords.data.records[$"{trackHash}"].completedCount}";
                     }
                 }
             }

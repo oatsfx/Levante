@@ -42,6 +42,9 @@ namespace Levante.Helpers
         // List per Week, <Hash, Record>.
         public static List<Dictionary<long, DestinyRecordDefinition>> SeasonalChallenges = new();
         public static DestinySeasonDefinition CurrentSeason = new();
+        public static int CurrentLevelCap = 0;
+        public static int BaseNextLevelAt = 0;
+        public static int ExtraNextLevelAt = 0;
         public static Dictionary<long, string> SeasonalObjectives = new();
         public static Dictionary<string, int> StringVariables = new();
 
@@ -349,21 +352,46 @@ namespace Levante.Helpers
                     response = client.GetAsync(seasonUrl).Result;
                     content = response.Content.ReadAsStringAsync().Result;
                     seasonList = JsonConvert.DeserializeObject<Dictionary<long, DestinySeasonDefinition>>(content);
-                    File.WriteAllText($"Data/Manifest/JSONs/DestinySeasonDefinition/{fileName}", JsonConvert.SerializeObject(seasonList, Formatting.Indented));
+
+                    File.WriteAllText($"Data/Manifest/JSONs/DestinySeasonDefinition/{fileName}", JsonConvert.SerializeObject(JsonConvert.DeserializeObject(content), Formatting.Indented));
                 }
                 else
                 {
                     content = File.ReadAllText($"Data/Manifest/JSONs/DestinySeasonDefinition/{fileName}");
                     seasonList = JsonConvert.DeserializeObject<Dictionary<long, DestinySeasonDefinition>>(content);
+
                     Log.Information("[{Type}] Loaded {def} from local.",
                         "Manifest", "DestinySeasonDefinition");
                 }
 
-                string stringVarUrl = "https://bungie.net/Platform/Destiny2/3/Profile/4611686018471482002/?components=1200";
+                foreach (var season in seasonList)
+                {
+                    if (season.Value.StartDate <= DateTime.UtcNow && DateTime.UtcNow <= season.Value.EndDate)
+                        CurrentSeason = season.Value;
+                }
+
+                dynamic raw = JsonConvert.DeserializeObject(content);
+                dynamic rawSeason = raw[$"{CurrentSeason.Hash}"];
+                if (rawSeason.acts != null)
+                {
+                    for (int i = 0; i < rawSeason.acts.Count; i++)
+                    {
+                        if (((DateTime)rawSeason.acts[i].startTime) < DateTime.Now)
+                        {
+                            CurrentLevelCap += (int)rawSeason.acts[i].rankCount;
+                        }
+                    }
+                }
+
+                string stringVarUrl = "https://bungie.net/Platform/Destiny2/3/Profile/4611686018471482002/?components=100,202,1200";
                 response = client.GetAsync(stringVarUrl).Result;
                 content = response.Content.ReadAsStringAsync().Result;
                 item = JsonConvert.DeserializeObject(content);
+                var baseProgression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"];
+                var extraProgression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"];
                 StringVariables = item.Response.profileStringVariables.data.integerValuesByHash.ToObject<Dictionary<string, int>>();
+                BaseNextLevelAt = baseProgression.nextLevelAt;
+                ExtraNextLevelAt = extraProgression.nextLevelAt;
 
                 Log.Information("[{Type}] Populating Dictionaries...",
                         "Manifest");
@@ -515,8 +543,6 @@ namespace Levante.Helpers
                                 }
                             }
                         }
-
-
                     }
 
                     foreach (var invItem in invItemList)

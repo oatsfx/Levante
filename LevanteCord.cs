@@ -20,9 +20,8 @@ using APIHelper;
 using Levante.Util.Attributes;
 using Serilog;
 using Serilog.Events;
-using BungieSharper.Entities.Destiny.Advanced;
 using Levante.Services;
-using BungieSharper.Entities.Applications;
+using System.Collections.Generic;
 
 namespace Levante
 {
@@ -48,7 +47,7 @@ namespace Levante
             var config = new DiscordSocketConfig
             {
                 TotalShards = BotConfig.DiscordShards,
-                GatewayIntents = GatewayIntents.AllUnprivileged
+                GatewayIntents = GatewayIntents.AllUnprivileged & ~GatewayIntents.GuildInvites & ~GatewayIntents.GuildScheduledEvents,
             };
 
             _client = new DiscordShardedClient(config);
@@ -117,6 +116,8 @@ namespace Levante
             var creations = _services.GetRequiredService<CreationsService>();
 
             client.Log += LogAsync;
+
+            client.EntitlementCreated += HandleEntitlementCreated;
 
             await _client.LoginAsync(TokenType.Bot, BotConfig.DiscordToken);
             await _client.StartAsync();
@@ -192,7 +193,7 @@ namespace Levante
         {
             // this is called to get the timer set up to run at every daily reset
             TimeSpan timeToGo = new(alertTime.Ticks - DateTime.UtcNow.Ticks);
-            Log.Debug("Reset in: {Time}.", $"{timeToGo.Hours}:{timeToGo.Minutes}:{timeToGo.Seconds}");
+            Log.Debug("Reset in: {Time}.", $"{timeToGo.Hours:00}:{timeToGo.Minutes:00}:{timeToGo.Seconds:00}");
             DailyResetTimer = new Timer(DailyResetChanges, null, (long)timeToGo.TotalMilliseconds, Timeout.Infinite);
         }
 
@@ -317,7 +318,7 @@ namespace Levante
                     if (logChannel == null)
                     {
                         await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: LoggingChannelNotFound. Logging will be terminated for {tempAau.UniqueBungieName}.");
-                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
+                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                         Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
 
@@ -326,7 +327,19 @@ namespace Levante
                         await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                     }
 
-                    int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out int powerBonus, out string errorStatus, out long activityHash);
+                    //int updatedLevel = DataConfig.GetAFKValues(tempAau.DiscordID, out int updatedProgression, out int powerBonus, out string errorStatus, out long activityHash);
+                    var loggingValues = new XpLoggingValueResponse(tempAau.DiscordID);
+                    var updatedLevel = loggingValues.CurrentLevel;
+                    var updatedExtraLevel = loggingValues.CurrentExtraLevel;
+                    var updatedProgression = loggingValues.XpProgress;
+                    var powerBonus = loggingValues.PowerBonus;
+                    var errorStatus = loggingValues.ErrorStatus;
+                    var activityHash = loggingValues.ActivityHash;
+                    var nextLevelAt = loggingValues.NextLevelAt;
+                    var levelCap = loggingValues.LevelCap;
+
+                    var combinedLevel = updatedLevel + updatedExtraLevel;
+                    var lastCombinedLevel = aau.Last.Level + aau.Last.ExtraLevel;
 
                     if (!errorStatus.Equals("Success"))
                     {
@@ -338,7 +351,7 @@ namespace Levante
                             await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
                             //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Logging will be terminated for {uniqueName}.");
-                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
+                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                             Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                             //listOfRemovals.Add(tempAau);
@@ -358,40 +371,13 @@ namespace Levante
                         continue;
                     }
 
-                    if (powerBonus > tempAau.LastPowerBonus)
+                    if (powerBonus > tempAau.Last.PowerBonus)
                     {
-                        await LogHelper.Log(logChannel, $"Power bonus increase!: {tempAau.LastPowerBonus} -> {powerBonus} (Start: {tempAau.StartPowerBonus}).");
+                        await LogHelper.Log(logChannel, $"Power bonus increase!: {tempAau.Last.PowerBonus} -> {powerBonus} (Start: {tempAau.Start.PowerBonus}).");
 
-                        actualUser.LastPowerBonus = powerBonus;
+                        actualUser.Last.PowerBonus = powerBonus;
                     }
-
-                    /*if (!isPlaying)
-                    {
-                        string uniqueName = tempAau.UniqueBungieName;
-
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"Player is no longer playing Destiny 2.");
-                        await LogHelper.Log(_client.GetChannelAsync(tempAau.DiscordChannelID).Result as ITextChannel, $"<@{tempAau.DiscordID}>: Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()), XPLoggingHelper.GenerateDeleteChannelButton());
-
-                        IUser user;
-                        if (_client.GetUser(tempAau.DiscordID) == null)
-                        {
-                            var _rClient = _client.Rest;
-                            user = await _rClient.GetUserAsync(tempAau.DiscordID);
-                        }
-                        else
-                        {
-                            user = _client.GetUser(tempAau.DiscordID);
-                        }
-                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"<@{tempAau.DiscordID}>: Player is no longer playing Destiny 2. Logging will be terminated for {uniqueName}.");
-                        await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau, _client.CurrentUser.GetAvatarUrl()));
-
-                        LogHelper.ConsoleLog($"[LOGGING] Stopped logging for {tempAau.UniqueBungieName} via automation.");
-                        //listOfRemovals.Add(tempAau);
-                        //ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
-                        ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordID == tempAau.DiscordID));
-                        await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
-                    }
-                    else */
+                   
                     if (activityHash != tempAau.ActivityHash)
                     {
                         string uniqueName = tempAau.UniqueBungieName;
@@ -399,26 +385,27 @@ namespace Levante
                         await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player activity has changed. Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
                         //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
-                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
+                        await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                         Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                         ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
                         await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
                     }
-                    else if (updatedLevel > tempAau.LastLevel)
+                    else if (combinedLevel > lastCombinedLevel)
                     {
-                        await LogHelper.Log(logChannel, $"Level up!: {tempAau.LastLevel} -> {updatedLevel} ({updatedProgression:n0}/100,000 XP). " +
-                            $"Start: {tempAau.StartLevel} ({tempAau.StartLevelProgress:n0}/100,000 XP).");
+                        await LogHelper.Log(logChannel, $"Level up! Now: {tempAau.Last.Level}{(tempAau.Last.ExtraLevel > 0 ? $" (+{tempAau.Last.ExtraLevel})" : "")}" +
+                            $" -> {updatedLevel}{(updatedExtraLevel > 0 ? $" (+{updatedExtraLevel})" : "")} " +
+                            $"({updatedProgression:n0}/{nextLevelAt:n0} XP). " +
+                            $"Start: {tempAau.Start.Level}{(tempAau.Start.ExtraLevel > 0 ? $" (+{tempAau.Start.ExtraLevel})" : "")} ({tempAau.Start.LevelProgress:n0}/{tempAau.Start.NextLevelAt:n0} XP).");
 
-                        actualUser.LastLevel = updatedLevel;
-                        actualUser.LastLevelProgress = updatedProgression;
+                        actualUser.Last.Level = updatedLevel;
+                        actualUser.Last.ExtraLevel = updatedExtraLevel;
+                        actualUser.Last.LevelProgress = updatedProgression;
+                        actualUser.Last.NextLevelAt = nextLevelAt;
                         actualUser.NoXPGainRefreshes = 0;
-                        //tempAau.LastLoggedLevel = updatedLevel;
-                        //tempAau.LastLevelProgress = updatedProgression;
-                        //tempAau.NoXPGainRefreshes = 0;
-                        //newList.Add(tempAau);
+                        actualUser.Last.Timestamp = DateTime.Now;
                     }
-                    else if (updatedProgression <= tempAau.LastLevelProgress)
+                    else if (updatedProgression <= tempAau.Last.LevelProgress)
                     {
                         if (tempAau.NoXPGainRefreshes >= ActiveConfig.RefreshesBeforeKick)
                         {
@@ -427,7 +414,7 @@ namespace Levante
                             await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", XPLoggingHelper.GenerateSessionSummary(tempAau), XPLoggingHelper.GenerateChannelButtons(tempAau.DiscordID));
 
                             //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
-                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.TimeStarted)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
+                            await LogHelper.Log(dmChannel, $"Here is the session summary, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", XPLoggingHelper.GenerateSessionSummary(tempAau));
 
                             Log.Information("[{Type}] Stopped logging for {User} via automation.", "XP Sessions", tempAau.UniqueBungieName);
                             //listOfRemovals.Add(tempAau);
@@ -439,24 +426,40 @@ namespace Levante
                         else
                         {
                             actualUser.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
-                            //tempAau.NoXPGainRefreshes = tempAau.NoXPGainRefreshes + 1;
-                            //newList.Add(tempAau);
                             await LogHelper.Log(logChannel, $"No XP change detected, waiting for next refresh... Warning {tempAau.NoXPGainRefreshes} of {ActiveConfig.RefreshesBeforeKick}.");
                         }
                     }
                     else
                     {
-                        int levelsGained = aau.LastLevel - aau.StartLevel;
-                        long xpGained = (levelsGained * 100_000) - aau.StartLevelProgress + aau.LastLevelProgress;
-                        await LogHelper.Log(logChannel, $"Refreshed: {tempAau.LastLevelProgress:n0} XP -> {updatedProgression:n0} XP. Level: {updatedLevel} | Power Bonus: +{powerBonus} | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.TimeStarted).TotalHours):n0} XP/Hour");
+                        int levelsGained = (aau.Last.Level - aau.Start.Level) + (aau.Last.ExtraLevel - aau.Start.ExtraLevel);
+                        long xpGained = 0;
+                        // If the user hit the cap during the session, calculate gained XP differently.
+                        if (aau.Start.Level < levelCap && aau.Last.Level >= levelCap)
+                        {
+                            int levelsToCap = levelCap - aau.Start.Level;
+                            int levelsPastCap = levelsGained - levelsToCap;
+                            // StartNextLevelAt should be the 100,000 or whatever Bungie decides to change it to later on.
+                            xpGained = ((levelsToCap) * aau.Start.NextLevelAt) + (levelsPastCap * nextLevelAt) - aau.Start.LevelProgress + updatedProgression;
+                        }
+                        else // The nextLevelAt stays the same because it did not change mid-logging session.
+                        {
+                            xpGained = (levelsGained * nextLevelAt) - aau.Start.LevelProgress + updatedProgression;
+                        }
 
-                        actualUser.LastLevel = updatedLevel;
-                        actualUser.LastLevelProgress = updatedProgression;
+                        long xpGainedInOneRefresh = updatedProgression - tempAau.Last.LevelProgress;
+
+                        await LogHelper.Log(logChannel, $"{tempAau.Last.LevelProgress:n0} (+{xpGainedInOneRefresh:n0}) -> {updatedProgression:n0} XP" +
+                            $" | Level: {updatedLevel}{(updatedExtraLevel > 0 ? $" (+{updatedExtraLevel})" : "")}" +
+                            $" | Power: +{powerBonus}" +
+                            $" | Rate: {(int)Math.Floor(xpGained / (DateTime.Now - aau.Start.Timestamp).TotalHours):n0} XP/Hour" +
+                            $" | Inst. Rate: {(int)Math.Floor(xpGainedInOneRefresh / (DateTime.Now - aau.Last.Timestamp).TotalHours):n0} XP/Hour");
+
+                        actualUser.Last.Level = updatedLevel;
+                        actualUser.Last.ExtraLevel = updatedExtraLevel;
+                        actualUser.Last.LevelProgress = updatedProgression;
+                        actualUser.Last.NextLevelAt = nextLevelAt;
                         actualUser.NoXPGainRefreshes = 0;
-                        //tempAau.LastLoggedLevel = updatedLevel;
-                        //tempAau.LastLevelProgress = updatedProgression;
-                        //tempAau.NoXPGainRefreshes = 0;
-                        //newList.Add(tempAau);
+                        actualUser.Last.Timestamp = DateTime.Now;
                     }
                 }
                 ActiveConfig.UpdateActiveAFKUsersConfig();
@@ -496,81 +499,100 @@ namespace Levante
             {
                 var tempPowerLevelData = new PowerLevelData();
                 var tempLevelData = new LevelData();
-                bool nameChange = false;
+                bool updateConfig = false;
                 foreach (var link in DataConfig.DiscordIDLinks.ToList()) // USE THIS FOREACH LOOP TO POPULATE FUTURE LEADERBOARDS (that use API calls)
                 {
+                    var user = link;
                     int Level = 0;
                     int PowerLevel = -1;
-                    using (var client = new HttpClient())
+                    using var client = new HttpClient();
+                    string errorReason = "ResponseError";
+                    if (user.RefreshExpiration < DateTime.Now)
                     {
-                        string errorReason = "ResponseError";
-                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                        errorReason = "RefreshExpired";
+                        Log.Warning("[{Type}] Refresh expired, removing this user from my data.", "Leaderboards", user.DiscordID, user.UniqueBungieName, errorReason);
+                        DataConfig.DeleteUserFromConfig(user.DiscordID);
+                        continue;
+                    }
 
-                        var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + link.BungieMembershipType + "/Profile/" + link.BungieMembershipID + "/?components=100,200,202").Result;
+                    try
+                    {
+                        if (user.AccessExpiration < DateTime.Now)
+                        {
+                            user = DataConfig.RefreshCode(user);
+                            DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == user.DiscordID).AccessExpiration = user.AccessExpiration;
+                            DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == user.DiscordID).AccessToken = user.AccessToken;
+                            DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == user.DiscordID).RefreshExpiration = user.RefreshExpiration;
+                            DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == user.DiscordID).RefreshToken = user.RefreshToken;
+                            DataConfig.UpdateConfig();
+                            updateConfig = true;
+                        }
+
+                        client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {user.AccessToken}");
+
+                        var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + user.BungieMembershipType + "/Profile/" + user.BungieMembershipID + "/?components=100,200,202").Result;
                         var content = response.Content.ReadAsStringAsync().Result;
                         dynamic item = JsonConvert.DeserializeObject(content);
 
-                        //first 100 levels: 4095505052 (S15); 2069932355 (S16); 26079066 (S17)
-                        //anything after: 1531004716 (S15); 1787069365 (S16); 482365574 (S17)
                         errorReason = item.ErrorStatus;
-                        try
+                        // System to update names in case players do change name.
+                        string name = $"{item.Response.profile.data.userInfo.bungieGlobalDisplayName}";
+                        string nameCode = int.Parse($"{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode}").ToString().PadLeft(4, '0');
+                        if (!user.UniqueBungieName.Equals($"{name}#{nameCode}"))
                         {
-                            // System to update names in case players do change name.
-                            string name = $"{item.Response.profile.data.userInfo.bungieGlobalDisplayName}";
-                            string nameCode = int.Parse($"{item.Response.profile.data.userInfo.bungieGlobalDisplayNameCode}").ToString().PadLeft(4, '0');
-                            if (!link.UniqueBungieName.Equals($"{name}#{nameCode}"))
-                            {
-                                DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == link.DiscordID).UniqueBungieName = $"{name}#{nameCode}";
-                                nameChange = true;
-                            }
-
-                            if (item.Response.profile.privacy != 1) continue;
-                            if (item.Response.characters.privacy != 1) continue;
-
-                            if (item.Response.profile.data.characterIds.Count <= 0)
-                                continue;
-
-                            for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
-                            {
-                                string charId = $"{item.Response.profile.data.characterIds[i]}";
-                                int powerLevelComp = (int)item.Response.characters.data[charId].light;
-                                if (PowerLevel <= powerLevelComp)
-                                    PowerLevel = powerLevelComp;
-                            }
-
-                            tempPowerLevelData.PowerLevelDataEntries.Add(new PowerLevelData.PowerLevelDataEntry()
-                            {
-                                PowerLevel = PowerLevel,
-                                UniqueBungieName = link.UniqueBungieName,
-                            });
-
-                            if (item.Response.characterProgressions.data == null) continue;
-                            if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == 200)
-                            {
-                                int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
-                                Level = 200 + extraLevel;
-                            }
-                            else
-                            {
-                                Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
-                            }
-
-                            tempLevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
-                            {
-                                Level = Level,
-                                UniqueBungieName = link.UniqueBungieName,
-                            });
+                            DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == user.DiscordID).UniqueBungieName = $"{name}#{nameCode}";
+                            DataConfig.UpdateConfig();
+                            updateConfig = true;
                         }
-                        catch
-                        {
-                            // Continue with the rest of the linked users. Don't want to stop the populating for one problematic account.
-                            string discordTag = $"{(_client.GetUser(link.DiscordID)).Username}#{(_client.GetUser(link.DiscordID)).Discriminator}";
-                            Log.Warning("[{Type}] Error while pulling data for user: {DiscordTag} linked with {BungieTag}. Reason: {Reason}.", "Leaderboards", discordTag, link.UniqueBungieName, errorReason);
+
+                        if (item.Response.profile.privacy != 1) continue;
+                        if (item.Response.characters.privacy != 1) continue;
+
+                        if (item.Response.profile.data.characterIds.Count <= 0)
                             continue;
+
+                        for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                        {
+                            string charId = $"{item.Response.profile.data.characterIds[i]}";
+                            int powerLevelComp = (int)item.Response.characters.data[charId].light;
+                            if (PowerLevel <= powerLevelComp)
+                                PowerLevel = powerLevelComp;
                         }
+
+                        tempPowerLevelData.PowerLevelDataEntries.Add(new PowerLevelData.PowerLevelDataEntry()
+                        {
+                            PowerLevel = PowerLevel,
+                            UniqueBungieName = user.UniqueBungieName,
+                        });
+
+                        if (item.Response.characterProgressions.data == null) continue;
+                        if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == ManifestHelper.CurrentLevelCap)
+                        {
+                            int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
+                            Level = ManifestHelper.CurrentLevelCap + extraLevel;
+                        }
+                        else
+                        {
+                            Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
+                        }
+
+                        tempLevelData.LevelDataEntries.Add(new LevelData.LevelDataEntry()
+                        {
+                            Level = Level,
+                            UniqueBungieName = user.UniqueBungieName,
+                        });
+                        Log.Debug($"{name}#{nameCode} - Level: {Level} - Power: {PowerLevel}");
+                    }
+                    catch
+                    {
+                        // Continue with the rest of the linked users. Don't want to stop the populating for one problematic account.
+                        //string discordTag = $"{(_client.GetUser(link.DiscordID)).Username}#{(_client.GetUser(link.DiscordID)).Discriminator}";
+                        Log.Warning("[{Type}] Error while pulling data for user: {DiscordTag} linked with {BungieTag}. Reason: {Reason}.", "Leaderboards", user.DiscordID, user.UniqueBungieName, errorReason);
+                        continue;
                     }
                 }
-                if (nameChange)
+                if (updateConfig)
                     DataConfig.UpdateConfig();
 
                 tempLevelData.UpdateEntriesConfig();
@@ -592,6 +614,12 @@ namespace Levante
             await _interaction.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
 
             int readyShards = 0;
+            _client.InteractionCreated += HandleInteraction;
+            _interaction.SlashCommandExecuted += SlashCommandExecuted;
+            _interaction.ComponentCommandExecuted += ComponentCommandExecuted;
+            _client.MessageReceived += HandleMessageAsync;
+            _client.EntitlementCreated += HandleEntitlementCreated;
+
             _client.ShardReady += async shard =>
             {
                 //var guild = _client.GetGuild(915020047154565220);
@@ -605,6 +633,17 @@ namespace Levante
                         Log.Information("[{Type}] Shard {ShardID} connected and ready.", "Discord", shard.ShardId);
                     });
                 };
+
+                //try
+                //{
+                //    await shard.GetEntitlementsAsync();
+                //    await shard.CreateTestEntitlementAsync(1252458418653106337, 915020047154565220, SubscriptionOwnerType.Guild);
+                //}
+                //catch (Exception x)
+                //{
+                //    Log.Debug($"{x}");
+                //}
+                //var entitlements = shard.Entitlements;
 
                 readyShards++;
                 if (readyShards == _client.Shards.Count)
@@ -644,12 +683,17 @@ namespace Levante
                 }
             };
 
-            _client.InteractionCreated += HandleInteraction;
-            _interaction.SlashCommandExecuted += SlashCommandExecuted;
-            _interaction.ComponentCommandExecuted += ComponentCommandExecuted;
-            _client.SelectMenuExecuted += SelectMenuHandler;
-            _client.MessageReceived += HandleMessageAsync;
             LevanteCordInstance.Client = _client;
+        }
+
+        private async Task HandleEntitlementCreated(SocketEntitlement entitlement)
+        {
+            // Guild Entitlement
+            if (entitlement.Guild != null)
+            {
+                Log.Debug($"{entitlement.Guild}");
+            }
+            
         }
 
         private async Task SlashCommandExecuted(SlashCommandInfo info, IInteractionContext context, Discord.Interactions.IResult result)
@@ -704,215 +748,6 @@ namespace Levante
             return;
         }
 
-        private async Task SelectMenuHandler(SocketMessageComponent interaction)
-        {
-            string trackerType = interaction.Data.Values.First();
-
-            /*if (trackerType.Equals("ada-1"))
-            {
-                if (Ada1Rotation.GetUserTracking(interaction.User.Id, out var ModHash) == null)
-                {
-                    await interaction.RespondAsync($"No Ada-1 tracking enabled.", ephemeral: true);
-                    return;
-                }
-                Ada1Rotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Ada-1 tracking, you will not be notified when {ManifestHelper.Ada1Items[ModHash]} is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("altars-of-sorrow"))
-            {
-                var tracker = CurrentRotations.AltarsOfSorrow.GetUserTracking(interaction.User.Id);
-                if (tracker == null)
-                {
-                    await interaction.RespondAsync($"No Altars of Sorrow tracking enabled.", ephemeral: true);
-                    return;
-                }
-                var trackerRotation = CurrentRotations.AltarsOfSorrow.Rotations[tracker.WeaponDrop];
-                CurrentRotations.AltarsOfSorrow.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Altars of Sorrow tracking, you will not be notified when {trackerRotation.Weapon} ({trackerRotation.WeaponType}) is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("ascendant-challenge"))
-            {
-                if (AscendantChallengeRotation.GetUserTracking(interaction.User.Id, out var Challenge) == null)
-                {
-                    await interaction.RespondAsync($"No Ascendant Challenge tracking enabled.", ephemeral: true);
-                    return;
-                }
-                AscendantChallengeRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Ascendant Challenge tracking, you will not be notified when {AscendantChallengeRotation.GetChallengeNameString(Challenge)} ({AscendantChallengeRotation.GetChallengeLocationString(Challenge)}) is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("curse-week"))
-            {
-                if (CurseWeekRotation.GetUserTracking(interaction.User.Id, out var Strength) == null)
-                {
-                    await interaction.RespondAsync($"No Curse Week tracking enabled.", ephemeral: true);
-                    return;
-                }
-                CurseWeekRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Curse Week tracking, you will not be notified when {Strength} Strength is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("dsc-challenge"))
-            {
-                if (DeepStoneCryptRotation.GetUserTracking(interaction.User.Id, out var DSCEncounter) == null)
-                {
-                    await interaction.RespondAsync($"No Deep Stone Crypt challenges tracking enabled.", ephemeral: true);
-                    return;
-                }
-                DeepStoneCryptRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Deep Stone Crypt challenges tracking, you will not be notified when {DeepStoneCryptRotation.GetEncounterString(DSCEncounter)} ({DeepStoneCryptRotation.GetChallengeString(DSCEncounter)}) is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("empire-hunt"))
-            {
-                if (EmpireHuntRotation.GetUserTracking(interaction.User.Id, out var EmpireHunt) == null)
-                {
-                    await interaction.RespondAsync($"No Empire Hunt tracking enabled.", ephemeral: true);
-                    return;
-                }
-                EmpireHuntRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Empire Hunt tracking, you will not be notified when {EmpireHuntRotation.GetHuntBossString(EmpireHunt)} is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("featured-raid"))
-            {
-                if (FeaturedRaidRotation.GetUserTracking(interaction.User.Id, out var FeaturedRaid) == null)
-                {
-                    await interaction.RespondAsync($"No Featured Raid tracking enabled.", ephemeral: true);
-                    return;
-                }
-                FeaturedRaidRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Featured Raid tracking, you will not be notified when {FeaturedRaidRotation.GetRaidString(FeaturedRaid)} is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("gos-challenge"))
-            {
-                if (GardenOfSalvationRotation.GetUserTracking(interaction.User.Id, out var GoSEncounter) == null)
-                {
-                    await interaction.RespondAsync($"No Garden of Salvation challenges tracking enabled.", ephemeral: true);
-                    return;
-                }
-                GardenOfSalvationRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Garden of Salvation challenges tracking, you will not be notified when {GardenOfSalvationRotation.GetEncounterString(GoSEncounter)} ({GardenOfSalvationRotation.GetChallengeString(GoSEncounter)}) is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("kf-challenge"))
-            {
-                if (KingsFallRotation.GetUserTracking(interaction.User.Id, out var KFEncounter) == null)
-                {
-                    await interaction.RespondAsync($"No King's Fall challenges tracking enabled.", ephemeral: true);
-                    return;
-                }
-                KingsFallRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your King's Fall challenges tracking, you will not be notified when {KFEncounter} ({KingsFallRotation.GetChallengeString(KFEncounter)}) is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("lw-challenge"))
-            {
-                if (LastWishRotation.GetUserTracking(interaction.User.Id, out var LWEncounter) == null)
-                {
-                    await interaction.RespondAsync($"No Last Wish challenges tracking enabled.", ephemeral: true);
-                    return;
-                }
-                LastWishRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Last Wish challenges tracking, you will not be notified when {LastWishRotation.GetEncounterString(LWEncounter)} ({LastWishRotation.GetChallengeString(LWEncounter)}) is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("lost-sector"))
-            {
-                if (LostSectorRotation.GetUserTracking(interaction.User.Id, out var LS, out var EAT) == null)
-                {
-                    await interaction.RespondAsync($"No Lost Sector tracking enabled.", ephemeral: true);
-                    return;
-                }
-                LostSectorRotation.RemoveUserTracking(interaction.User.Id);
-                if (LS == -1 && EAT == null)
-                    await interaction.RespondAsync($"An error has occurred.", ephemeral: true);
-                else if (LS != -1 && EAT == null)
-                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.LostSectors[LS].Name} is available.", ephemeral: true);
-                else if (LS == -1 && EAT != null)
-                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when Lost Sectors are dropping {EAT}.", ephemeral: true);
-                else if (LS != -1 && EAT != null)
-                    await interaction.RespondAsync($"Removed your Lost Sector tracking, you will not be notified when {LostSectorRotation.LostSectors[LS].Name} is dropping {EAT}.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("nightfall"))
-            {
-                if (NightfallRotation.GetUserTracking(interaction.User.Id, out var NF, out var NFWeapon) == null)
-                {
-                    await interaction.RespondAsync($"No Nightfall tracking enabled.", ephemeral: true);
-                    return;
-                }
-                NightfallRotation.RemoveUserTracking(interaction.User.Id);
-                if (NF == null && NFWeapon == null)
-                    await interaction.RespondAsync($"An error has occurred.", ephemeral: true);
-                else if (NF != null && NFWeapon == null)
-                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.Nightfalls[(int)NF]} is available.", ephemeral: true);
-                else if (NF == null && NFWeapon != null)
-                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.NightfallWeapons[(int)NFWeapon].Name} is available.", ephemeral: true);
-                else if (NF != null && NFWeapon != null)
-                    await interaction.RespondAsync($"Removed your Nightfall tracking, you will not be notified when {NightfallRotation.Nightfalls[(int)NF]} is dropping {NightfallRotation.NightfallWeapons[(int)NFWeapon].Name}.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("nightmare-hunt"))
-            {
-                if (NightmareHuntRotation.GetUserTracking(interaction.User.Id, out var NightmareHunt) == null)
-                {
-                    await interaction.RespondAsync($"No Nightmare Hunt tracking enabled.", ephemeral: true);
-                    return;
-                }
-                NightmareHuntRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Nightmare Hunt tracking, you will not be notified when {NightmareHuntRotation.GetHuntNameString(NightmareHunt)} ({NightmareHuntRotation.GetHuntBossString(NightmareHunt)}) is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("terminal-overload"))
-            {
-                if (TerminalOverloadRotation.GetUserTracking(interaction.User.Id, out var Location) == null)
-                {
-                    await interaction.RespondAsync($"No Terminal Overload tracking enabled.", ephemeral: true);
-                    return;
-                }
-                TerminalOverloadRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Terminal Overload tracking, you will not be notified when {TerminalOverloadRotation.TerminalOverloads[Location].Weapon} ({TerminalOverloadRotation.TerminalOverloads[Location].WeaponType}) is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("vog-challenge"))
-            {
-                if (VaultOfGlassRotation.GetUserTracking(interaction.User.Id, out var VoGEncounter) == null)
-                {
-                    await interaction.RespondAsync($"No Vault of Glass challenges tracking enabled.", ephemeral: true);
-                    return;
-                }
-                VaultOfGlassRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Vault of Glass challenges tracking, you will not be notified when {VaultOfGlassRotation.GetEncounterString(VoGEncounter)} ({VaultOfGlassRotation.GetChallengeString(VoGEncounter)}) is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("vow-challenge"))
-            {
-                if (VowOfTheDiscipleRotation.GetUserTracking(interaction.User.Id, out var VowEncounter) == null)
-                {
-                    await interaction.RespondAsync($"No Vow of the Disciple challenges tracking enabled.", ephemeral: true);
-                    return;
-                }
-                VowOfTheDiscipleRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Vow of the Disciple challenges tracking, you will not be notified when {VowOfTheDiscipleRotation.GetEncounterString(VowEncounter)} ({VowOfTheDiscipleRotation.GetChallengeString(VowEncounter)}) is available.", ephemeral: true);
-                return;
-            }
-            else if (trackerType.Equals("wellspring"))
-            {
-                if (WellspringRotation.GetUserTracking(interaction.User.Id, out var Wellspring) == null)
-                {
-                    await interaction.RespondAsync($"No Wellspring tracking enabled.", ephemeral: true);
-                    return;
-                }
-                WellspringRotation.RemoveUserTracking(interaction.User.Id);
-                await interaction.RespondAsync($"Removed your Wellspring tracking, you will not be notified when The Wellspring: {WellspringRotation.GetWellspringTypeString(Wellspring)} is dropping {WellspringRotation.GetWeaponNameString(Wellspring)}.", ephemeral: true);
-                return;
-            }*/
-        }
-
         private async Task HandleMessageAsync(SocketMessage arg)
         {
             if (arg.Author.IsWebhook || arg.Author.IsBot) return; // Return if message is from a Webhook or Bot user
@@ -926,7 +761,11 @@ namespace Levante
 
             if (msg.MentionedUsers.Any(x => x.Id == _client.CurrentUser.Id))
             {
-                await msg.ReplyAsync(embed: Embeds.GetHelpEmbed().Build());
+                if (msg.Content.ToLower().Contains("help"))
+                {
+                    await msg.ReplyAsync(embed: Embeds.GetHelpEmbed().Build());
+                }
+                
                 return;
             }
         }

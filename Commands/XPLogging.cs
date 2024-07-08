@@ -31,18 +31,20 @@ namespace Levante.Commands
                 Footer = foot,
             };
 
-            var normalCount = ActiveConfig.PriorityActiveAFKUsers.Count;
+            var normalCount = ActiveConfig.ActiveAFKUsers.Count;
             var priorityCount = ActiveConfig.PriorityActiveAFKUsers.Count;
             var maxCount = ActiveConfig.MaximumLoggingUsers;
             string p = normalCount != 0 ? $" (+{priorityCount})" : "";
             embed.Description = $"### {normalCount}/{maxCount}{p} people are logging their XP.";
 
+            var isSupporter = BotConfig.IsSupporter(Context.User.Id) || BotConfig.IsStaff(Context.User.Id);
+
             embed.AddField(x =>
             {
                 x.Name = "What does this mean?";
-                x.Value = $"- Number of non-supporters logging: **{normalCount}**\n" +
+                x.Value = $"- Number of non-supporters{(!isSupporter ? " (you)" : "")} logging: **{normalCount}**\n" +
                           $"- Max number of non-supporters allowed at once: **{maxCount}**\n" +
-                          $"- Number of supporters logging: **{priorityCount}**\n";
+                          $"- Number of supporters{(isSupporter ? " (you)" : "")} logging: **{priorityCount}**\n";
                 x.IsInline = true;
             });
 

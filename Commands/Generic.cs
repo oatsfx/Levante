@@ -122,13 +122,12 @@ namespace Levante.Commands
                 {
                     x.Name = $"Shard {shard.ShardId}{(shard.ShardId == Context.Client.GetShardFor(Context.Guild).ShardId ? " ★" : "")}";
 
-                    switch (shard.Latency)
+                    x.Value = shard.Latency switch
                     {
-                        case >= 0 and < 110: x.Value = "🟢"; break;
-                        case >= 110 and < 300: x.Value = "🟡"; break;
-                        default: x.Value = "🔴"; break;
-                    }
-
+                        >= 0 and < 110 => "🟢",
+                        >= 110 and < 300 => "🟡",
+                        _ => "🔴",
+                    };
                     x.Value += $" {shard.Latency} ms";
                     x.IsInline = true;
                 });
@@ -178,10 +177,10 @@ namespace Levante.Commands
             embed.ThumbnailUrl = BotConfig.BotLogoUrl;
 
             embed.Title = "Support Levante";
-            embed.Url = "https://donate.levante.dev/";
+            embed.Url = $"https://donate.{BotConfig.Website}/";
             embed.Description =
                 "Levante is available to everyone for free, and it will continue to stay this way. " +
-                "Anyone who supports Levante and her team by donating will be eligible for [supporter perks](https://www.levante.dev/features/). " +
+                $"Anyone who supports Levante and her team by donating will be eligible for [supporter perks](https://www.{BotConfig.Website}/features/). " +
                 "Those extra perks are a way of saying thank you to all our generous supporters.";
 
             embed.AddField(x =>
@@ -211,7 +210,7 @@ namespace Levante.Commands
             }
 
             var buttonBuilder = new ComponentBuilder()
-                .WithButton("Support Levante", style: ButtonStyle.Link, url: $"https://donate.levante.dev/", emote: Emote.Parse(Emotes.KoFi), row: 0);
+                .WithButton("Support Levante", style: ButtonStyle.Link, url: $"https://donate.{BotConfig.Website}/", emote: Emote.Parse(Emotes.KoFi), row: 0);
 
             await RespondAsync(embed: embed.Build(), components: buttonBuilder.Build(), ephemeral: hide);
         }

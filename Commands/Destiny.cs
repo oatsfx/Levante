@@ -26,15 +26,21 @@ namespace Levante.Commands
         public InteractiveService Interactive { get; set; }
 
         [SlashCommand("artifact", "Project what level you need to hit for a specific Power bonus.")]
-        public async Task ArtifactBonusPrediction([Summary("power-bonus", "Project what level you'll hit a specific Power bonus at.")] int PowerBonus)
+        public async Task ArtifactBonusPrediction([Summary("power-bonus", "Power Level to project.")] int PowerBonus)
         {
             await DeferAsync();
 
-            if (PowerBonus < 1)
-                PowerBonus = 1;
+            PowerBonus = PowerBonus switch
+            {
+                < 1 => 1,
+                > 100 => 100,
+                _ => PowerBonus,
+            };
 
-            if (PowerBonus > 100)
-                PowerBonus = 100;
+            for (int i = 0; i < PowerBonus; i++)
+            {
+                Log.Debug($"{i}, {GetXPForLevel(i)}, {GetXPForBoost(i)}");
+            }
 
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
@@ -53,43 +59,67 @@ namespace Levante.Commands
                 Footer = foot,
             };
             embed.Title = $"Power Bonus +{PowerBonus} at Level ";
+            int Level = 0, ExtraLevel = 0, XpProgress = 0, XpProgressCap = 0, OverflowXpProgressCap = 0, LevelCap = ManifestHelper.CurrentLevelCap;
+
             if (DataConfig.IsExistingLinkedUser(Context.User.Id))
             {
                 var dil = DataConfig.GetLinkedUser(Context.User.Id);
-                int Level;
-                int XPProgress;
-                dynamic item;
-                using (var client = new HttpClient())
+
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
+
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                dynamic item = JsonConvert.DeserializeObject(content);
+
+                XpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].nextLevelAt;
+                OverflowXpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].nextLevelAt;
+
+                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == LevelCap)
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
-
-                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    item = JsonConvert.DeserializeObject(content);
-
-                    //first 100 levels: 4095505052 (S15); 2069932355 (S16); 26079066 (S17)
-                    //anything after: 1531004716 (S15); 1787069365 (S16); 482365574 (S17)
-
-                    if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == 100)
-                    {
-                        int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
-                        Level = 100 + extraLevel;
-                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].progressToNextLevel;
-                    }
-                    else
-                    {
-                        Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
-                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].progressToNextLevel;
-                    }
+                    Level = LevelCap;
+                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].progressToNextLevel;
+                }
+                else
+                {
+                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].progressToNextLevel;
                 }
                 int currentPowerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
+                double projectedSeasonRank = 0.0;
 
                 if (currentPowerBonus >= PowerBonus)
                 {
                     int xpNeeded = GetXPForBoost(PowerBonus);
-                    var seasonRanksNeeded = (double)xpNeeded / 100000;
-                    var remainder = xpNeeded % 100000;
+                    var seasonRanksNeeded = 0.0;
+
+                    if (Level < LevelCap)
+                    {
+                        var xpToCap = ((LevelCap - Level) * XpProgressCap) - XpProgress;
+                        if (xpToCap < xpNeeded)
+                        {
+                            var overflowXpNeeded = xpNeeded - xpToCap;
+                            var extraLevelsNeeded = (double)overflowXpNeeded / OverflowXpProgressCap;
+
+                            projectedSeasonRank = Level + ((double)xpToCap / XpProgressCap) + extraLevelsNeeded;
+
+                            var remainder = xpToCap % XpProgressCap;
+                            if (remainder + XpProgress >= XpProgressCap)
+                                projectedSeasonRank += 1;
+                        }
+                        else
+                        {
+                            seasonRanksNeeded = (xpNeeded - XpProgress) / XpProgressCap;
+                            projectedSeasonRank = Level + seasonRanksNeeded;
+                        }
+                    }
+                    else
+                    {
+                        seasonRanksNeeded = (xpNeeded - XpProgress) / OverflowXpProgressCap;
+                        projectedSeasonRank = Level + ExtraLevel + seasonRanksNeeded;
+                    }
 
                     embed.Title += $"{seasonRanksNeeded:0.00}";
                     embed.Description =
@@ -100,30 +130,64 @@ namespace Levante.Commands
                 else
                 {
                     int progressToNextLevel = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.progressToNextLevel;
-                    int xpNeeded = GetXPForBoost(PowerBonus);
-                    int xpNeededPlayer = xpNeeded - GetXPForBoost(currentPowerBonus) - progressToNextLevel;
-                    var seasonRanksNeeded = (double)xpNeeded / 100000;
-                    var seasonRanksNeededPlayer = (double)xpNeededPlayer / 100000;
-                    var remainder = xpNeeded % 100000;
-                    if (remainder + XPProgress > 100000)
-                        seasonRanksNeededPlayer += 1;
+                    int nextPowerLevelAt = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.nextLevelAt;
 
-                    embed.Title += $"{Level + seasonRanksNeededPlayer + ((double)XPProgress / 100000):0.00}";
+                    int totalXp = (Level * XpProgressCap) + (ExtraLevel * OverflowXpProgressCap) + progressToNextLevel;
+                    int xpNeeded = GetXPForBoost(PowerBonus) - totalXp;
+                    var seasonRanksNeeded = 0.0;
+                    if (Level < LevelCap)
+                    {
+                        var xpToCap = ((LevelCap - Level) * XpProgressCap) - XpProgress;
+                        if (xpToCap < xpNeeded)
+                        {
+                            var overflowXpNeeded = xpNeeded - xpToCap;
+                            var extraLevelsNeeded = (double)overflowXpNeeded / OverflowXpProgressCap;
+
+                            projectedSeasonRank = Level + ((double)xpToCap / XpProgressCap) + extraLevelsNeeded;
+
+                            var remainder = xpToCap % XpProgressCap;
+                            if (remainder + XpProgress >= XpProgressCap)
+                                projectedSeasonRank += 1;
+                        }
+                        else
+                        {
+                            seasonRanksNeeded = (double)xpNeeded / XpProgressCap;
+                            projectedSeasonRank = Level + ((double)progressToNextLevel / XpProgressCap) + seasonRanksNeeded;
+                        }
+                    }
+                    else
+                    {
+                        seasonRanksNeeded = (double)xpNeeded / OverflowXpProgressCap;
+                        projectedSeasonRank = Level + ExtraLevel + ((double)progressToNextLevel / OverflowXpProgressCap) + seasonRanksNeeded;
+                    }
+
+                    embed.Title += $"{projectedSeasonRank:0.00}";
                     embed.Description =
-                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{Level + seasonRanksNeededPlayer + ((double)XPProgress / 100000):0.00}** (Need {seasonRanksNeededPlayer:0.00}).";
+                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{projectedSeasonRank:0.00}** (Need {seasonRanksNeeded:0.00}).";
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                 }
             }
             else
             {
                 int xpNeeded = GetXPForBoost(PowerBonus);
-                var seasonRanksNeeded = (double)xpNeeded / 100000;
-                var remainder = xpNeeded % 100000;
+                var seasonRanksNeeded = 0.0;
+                XpProgressCap = ManifestHelper.BaseNextLevelAt;
+                OverflowXpProgressCap = ManifestHelper.ExtraNextLevelAt;
+
+                if (xpNeeded > XpProgressCap * LevelCap)
+                {
+                    var overflowXpNeeded = xpNeeded - (XpProgressCap * LevelCap);
+                    seasonRanksNeeded = LevelCap + ((double)overflowXpNeeded / OverflowXpProgressCap);
+                }
+                else
+                {
+                    seasonRanksNeeded = ((double)xpNeeded / XpProgressCap);
+                }
 
                 embed.Title += $"{seasonRanksNeeded:0.00}";
                 embed.Description =
                         $"You are not linked; I cannot provide a personalized projection.\n" +
-                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:.00}**.";
+                        $"> You will hit Power Bonus +{PowerBonus} at roughly Level **{seasonRanksNeeded:0.00}**.";
                 await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
             }
         }
@@ -760,41 +824,38 @@ namespace Levante.Commands
             try
             {
                 var dil = DataConfig.GetLinkedUser(User.Id);
-                int Level;
-                int XPProgress;
+                int Level = 0, ExtraLevel = 0, XpProgress = 0, XpProgressCap = 0, OverflowXpProgressCap = 0, LevelCap = ManifestHelper.CurrentLevelCap;
+                
                 dynamic item;
-                using (var client = new HttpClient())
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
+
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                item = JsonConvert.DeserializeObject(content);
+
+                if (item.Response.profile.privacy == 2)
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
-
-                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    item = JsonConvert.DeserializeObject(content);
-
-                    if (item.Response.profile.privacy == 2)
-                    {
-                        await RespondAsync($"{User.Mention} has their Destiny 2 stats on Private. Let's respect that.", ephemeral: true);
-                        return;
-                    }
-
-                    //first 100 levels: 4095505052 (S15); 2069932355 (S16); 26079066 (S17)
-                    //anything after: 1531004716 (S15); 1787069365 (S16); 482365574 (S17)
-
-                    if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == 200)
-                    {
-                        int extraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
-                        Level = 200 + extraLevel;
-                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].progressToNextLevel;
-                    }
-                    else
-                    {
-                        Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
-                        XPProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].progressToNextLevel;
-                    }
+                    await RespondAsync($"{User.Mention} has their Destiny 2 stats on Private. Let's respect that.", ephemeral: true);
+                    return;
                 }
 
-                var app = await Context.Client.GetApplicationInfoAsync();
+                XpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].nextLevelAt;
+                OverflowXpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].nextLevelAt;
+
+                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == LevelCap)
+                {
+                    Level = LevelCap;
+                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].progressToNextLevel;
+                }
+                else
+                {
+                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].progressToNextLevel;
+                }
+
                 var auth = new EmbedAuthorBuilder()
                 {
                     Name = $"Season {ManifestHelper.CurrentSeason.SeasonNumber}: {ManifestHelper.CurrentSeason.DisplayProperties.Name} Level and XP Info",
@@ -811,24 +872,47 @@ namespace Levante.Commands
                     Footer = foot,
                     Description =
                         $"Player: **{dil.UniqueBungieName}**\n" +
-                        $"Level: **{Level}**\n" +
-                        $"Progress to Next Level: **{XPProgress:n0}/100,000**",
+                        $"Level: **{Level}**{(ExtraLevel > 0 ? $" (+**{ExtraLevel}**)" : "")}\n" +
+                        $"Progress to Next Level: **{XpProgress:n0}/{(Level >= LevelCap ? OverflowXpProgressCap : XpProgressCap):n0}**",
                 };
 
                 int powerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
                 int totalXP = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.currentProgress;
                 int dailyProgress = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.dailyProgress;
                 int weeklyProgress = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.weeklyProgress;
-                int progressToNextLevel = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.progressToNextLevel;
-                int nextLevelAt = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.nextLevelAt;
+                int progressToNextPowerLevel = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.progressToNextLevel;
+                int nextPowerLevelAt = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.nextLevelAt;
 
-                int xpForNextBoost = GetXPForBoost(powerBonus + 1);
-                int xpNeeded = xpForNextBoost - GetXPForBoost(powerBonus) - progressToNextLevel;
-                var seasonRanksNeeded = xpNeeded / 100000;
-                var remainder = xpNeeded % 100000;
-                if (remainder + XPProgress > 100000)
-                    seasonRanksNeeded += 1;
-                int projectedSeasonRank = Level + seasonRanksNeeded;
+                //int xpForNextBoost = GetXPForBoost(powerBonus + 1);
+                int xpNeeded = nextPowerLevelAt - progressToNextPowerLevel;
+                var projectedSeasonRank = 0.00;
+
+                // Check if we're below the level cap in case we need to do different calculations for Power Bonus projection.
+                if (Level < LevelCap)
+                {
+                    var xpToCap = ((LevelCap - Level) * XpProgressCap) - XpProgress;
+                    if (xpToCap < xpNeeded)
+                    {
+                        var overflowXpNeeded = xpNeeded - xpToCap;
+                        var extraLevelsNeeded = overflowXpNeeded / OverflowXpProgressCap;
+
+                        projectedSeasonRank = Level + (xpToCap / XpProgressCap) + extraLevelsNeeded;
+
+                        var remainder = xpToCap % XpProgressCap;
+                        if (remainder + XpProgress >= XpProgressCap)
+                            projectedSeasonRank += 1;
+                    }
+                    else
+                    {
+                        var seasonRanksNeeded = (double)(xpNeeded - XpProgress) / XpProgressCap;
+                        projectedSeasonRank = Level + seasonRanksNeeded;
+                    }
+                }
+                else
+                {
+                    var seasonRanksNeeded = (double)(xpNeeded - XpProgress) / OverflowXpProgressCap;
+                    projectedSeasonRank = Level + ExtraLevel + seasonRanksNeeded;
+                }
 
                 embed.AddField(x =>
                 {
@@ -840,8 +924,8 @@ namespace Levante.Commands
                 }).AddField(x =>
                 {
                     x.Name = $"Artifact Bonus (+{powerBonus})";
-                    x.Value = $"Progress: {progressToNextLevel:n0}/{nextLevelAt:n0} XP\n" +
-                        $"Next Level (+{powerBonus + 1}): {nextLevelAt - progressToNextLevel:n0} XP (At Rank: {projectedSeasonRank})";
+                    x.Value = $"Progress: {progressToNextPowerLevel:n0}/{nextPowerLevelAt:n0} XP\n" +
+                        $"Next Level (+{powerBonus + 1}): {xpNeeded:n0} XP (At Rank: {projectedSeasonRank:0.00})";
                     x.IsInline = true;
                 });
 
@@ -855,12 +939,28 @@ namespace Levante.Commands
 
         private static int GetXPForBoost(int boostLevel)
         {
-            int diff = 0;
-            if (boostLevel > 70)
+            var xp = 0;
+            for (int i = 0; i <= boostLevel; i++)
             {
-                diff = boostLevel - 70;
+                xp += GetXPForLevel(i);
             }
-            return 55_000 * (boostLevel - 1) * (boostLevel - 1) + (diff * 7_645_000);
+            return xp;
+        }
+
+        private static int GetXPForLevel(int level)
+        {
+            if (level == 0)
+            {
+                return 0;
+            }
+            else
+            {
+                if (level > 20)
+                {
+                    level = 20;
+                }
+                return 55_000 * (level / 2) + GetXPForLevel(level - 1);
+            }
         }
 
         [SlashCommand("lost-sector", "Get info on a Lost Sector based on Difficulty.")]
@@ -1303,7 +1403,7 @@ namespace Levante.Commands
                 Footer = foot
             };
             embed.Description =
-                    $"This is probably what you'd look like in-game if you had **{emblem.GetName()}**.";
+                    $"This is probably what you'd look like in-game if you had **{emblem.GetName()}**.\n\nThis command will be deprecated in the near future. Please use the [web version](https://winnow.oatsfx.com/#/emblem-try-on?emblem={HashCode}&name={name}) of this tool that yields a more accurate result!";
             embed.ImageUrl = @"attachment://temp.png";
             await Context.Interaction.FollowupWithFileAsync(filePath: "temp.png", embed: embed.Build());
         }

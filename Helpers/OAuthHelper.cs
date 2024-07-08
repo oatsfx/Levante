@@ -18,8 +18,10 @@ namespace Levante.Helpers
 
         public OAuthHelper()
         {
-            _listener = new HttpListener();
-            _listener.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
+            _listener = new()
+            {
+                AuthenticationSchemes = AuthenticationSchemes.Anonymous
+            };
             _listener.Prefixes.Add("http://*:8080/");
             _listener.Start();
             _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
@@ -80,12 +82,12 @@ namespace Levante.Helpers
                 if (result.Reason != ErrorReason.None)
                 {
                     //LogHelper.ConsoleLog($"[OAUTH] Redirecting to Link Fail with reason {result.Reason}.");
-                    response.Redirect($"https://www.levante.dev/link-fail/?error={Convert.ToInt32(result.Reason)}");
+                    response.Redirect($"https://www.{BotConfig.Website}/link-fail/?error={Convert.ToInt32(result.Reason)}");
                 }
                 else
                 {
                     //LogHelper.ConsoleLog("[OAUTH] Redirecting to Link Success.");
-                    response.Redirect($"https://www.levante.dev/link-success/?discDisp={Uri.EscapeDataString(result.DiscordDisplayName)}");
+                    response.Redirect($"https://www.{BotConfig.Website}/link-success/?discDisp={Uri.EscapeDataString(result.DiscordDisplayName)}");
                 }
 
                 // simulate work
