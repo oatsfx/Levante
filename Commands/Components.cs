@@ -113,42 +113,46 @@ namespace Levante.Commands
                 {
                     if (categoryChan.Channels.Count >= 50)
                     {
-                        var oldestTime = DateTime.MinValue;
-                        var oldestChannel = categoryChan.Channels.FirstOrDefault();
-                        foreach (var channel in categoryChan.Channels)
-                        {
-                            // Even though this category isn't supposed to have non-text channels, check anyway.
-                            if (channel is not SocketTextChannel textChannel)
-                            {
-                                continue;
-                            }
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"The \"{categoryChan.Name}\" category is full. You may have to invite me to another server and use this feature there if this persists."; });
+                        return;
 
-                            // Don't delete the XP Hub channel.
-                            if (textChannel.Name.Contains("xp-hub") || (textChannel.Topic != null && textChannel.Topic.Contains("XP Hub:")))
-                            {
-                                var msgs = await (channel as SocketTextChannel).GetMessagesAsync().FlattenAsync();
-                                if (msgs.Any(x => x.Author.Id == Context.Client.CurrentUser.Id && x.Components.Count == 1 && x.Embeds.Count == 1))
-                                {
-                                    Log.Debug("Found the XP Hub channel.");
-                                    continue;
-                                }
-                            }
+                        // Remove oldest channel testing feature.
+                        //var oldestTime = DateTime.MinValue;
+                        //var oldestChannel = categoryChan.Channels.FirstOrDefault();
+                        //foreach (var channel in categoryChan.Channels)
+                        //{
+                        //    // Even though this category isn't supposed to have non-text channels, check anyway.
+                        //    if (channel is not SocketTextChannel textChannel)
+                        //    {
+                        //        continue;
+                        //    }
 
-                            var msg = await textChannel.GetMessagesAsync(1).FlattenAsync();
-                            if (!msg.Any())
-                            {
-                                await channel.DeleteAsync(options: new RequestOptions { AuditLogReason = "XP Logging Channel Deleted. Reason: No Messages" });
-                                continue;
-                            }
+                        //    // Don't delete the XP Hub channel.
+                        //    if (textChannel.Name.Contains("xp-hub") || (textChannel.Topic != null && textChannel.Topic.Contains("XP Hub:")))
+                        //    {
+                        //        var msgs = await (channel as SocketTextChannel).GetMessagesAsync().FlattenAsync();
+                        //        if (msgs.Any(x => x.Author.Id == Context.Client.CurrentUser.Id && x.Components.Count == 1 && x.Embeds.Count == 1))
+                        //        {
+                        //            Log.Debug("Found the XP Hub channel.");
+                        //            continue;
+                        //        }
+                        //    }
 
-                            Log.Debug($"{msg.FirstOrDefault().CreatedAt}");
-                            if (msg.FirstOrDefault().CreatedAt == oldestTime)
-                            {
-                                oldestChannel = channel;
-                            }
-                        }
+                        //    var msg = await textChannel.GetMessagesAsync(1).FlattenAsync();
+                        //    if (!msg.Any())
+                        //    {
+                        //        await channel.DeleteAsync(options: new RequestOptions { AuditLogReason = "XP Logging Channel Deleted. Reason: No Messages" });
+                        //        continue;
+                        //    }
 
-                        await oldestChannel.DeleteAsync(options: new RequestOptions { AuditLogReason = "XP Logging Channel Deleted. Reason: Oldest Logging Channel" });
+                        //    Log.Debug($"{msg.FirstOrDefault().CreatedAt}");
+                        //    if (msg.FirstOrDefault().CreatedAt == oldestTime)
+                        //    {
+                        //        oldestChannel = channel;
+                        //    }
+                        //}
+
+                        //await oldestChannel.DeleteAsync(options: new RequestOptions { AuditLogReason = "XP Logging Channel Deleted. Reason: Oldest Logging Channel" });
                     }
 
                     cc = categoryChan;
@@ -271,7 +275,7 @@ namespace Levante.Commands
                 return;
             }
 
-            var aau = ActiveConfig.GetActiveAFKUser(user.Id);
+            var ang sau = ActiveConfig.GetActiveAFKUser(user.Id);
 
             var channel = Context.Client.GetChannel(aau.DiscordChannelID);
             if (channel == null)
