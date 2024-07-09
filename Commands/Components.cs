@@ -489,6 +489,7 @@ namespace Levante.Commands
             }
 
             var activeUser = ActiveConfig.ActiveAFKUsers.Find(x => x.DiscordChannelID == Context.Channel.Id);
+            activeUser ??= ActiveConfig.PriorityActiveAFKUsers.Find(x => x.DiscordChannelID == Context.Channel.Id);
 
             if (activeUser == null)
             {
