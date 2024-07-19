@@ -62,7 +62,7 @@ namespace Levante.Util
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             int[] emblemRGB = OfferedEmblem.GetRGBAsIntArray();
             var embed = new EmbedBuilder()
@@ -128,7 +128,7 @@ namespace Levante.Util
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };

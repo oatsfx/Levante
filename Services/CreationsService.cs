@@ -20,23 +20,21 @@ namespace Levante.Services
         private readonly Timer _timer;
         private readonly DiscordShardedClient _client;
 
-        public static readonly string FilePath = @"Configs/creationsConfig.json";
+        public readonly string FilePath = @"Configs/creationsConfig.json";
 
         [JsonProperty("CreationsPosts")]
         private List<string> CreationsPosts = new();
 
         public CreationsService(DiscordShardedClient client)
         {
-            if (File.Exists(FilePath))
-            {
-                string json = File.ReadAllText(FilePath);
-                CreationsPosts = JsonConvert.DeserializeObject<List<string>>(json);
-            }
-            else
+            if (!File.Exists(FilePath))
             {
                 File.WriteAllText(FilePath, JsonConvert.SerializeObject(CreationsPosts, Formatting.Indented));
-                Console.WriteLine($"No creationsConfig.json file detected. A new one has been created, no action needed.");
+                Log.Information("[{Type}] No creationsConfig.json file detected. A new one has been created, no action needed.", "Creations");
             }
+
+            string json = File.ReadAllText(FilePath);
+            CreationsPosts = JsonConvert.DeserializeObject<List<string>>(json);
 
             _timer = new Timer(CheckCommunityCreationsCallback, null, 5000, 60000 * 2);
             _client = client;
@@ -53,7 +51,7 @@ namespace Levante.Services
             {
                 using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
                     var response = client.GetAsync($"https://www.bungie.net/Platform/CommunityContent/Get/1/0/0/").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
@@ -102,7 +100,7 @@ namespace Levante.Services
                             };
                             var embed = new EmbedBuilder()
                             {
-                                Color = new Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                                Color = new Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                                 Author = auth,
                                 Footer = foot,
                             };
@@ -127,7 +125,7 @@ namespace Levante.Services
                                 x.IsInline = true;
                             });
 
-                            var msg = await BotConfig.CreationsLogChannel.SendMessageAsync(embed: embed.Build());
+                            var msg = await AppConfig.Discord.CreationsLogChannel.SendMessageAsync(embed: embed.Build());
                             //if (BotConfig.CreationsLogChannel is SocketNewsChannel)
                             //await msg.CrosspostAsync();
 

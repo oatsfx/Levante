@@ -1,6 +1,8 @@
-﻿using Levante.Configs;
+﻿using APIHelper;
+using Levante.Configs;
 using Levante.Helpers;
 using Newtonsoft.Json;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,10 +23,13 @@ namespace Levante.Util
         public readonly long ActivityHash = 0;
         public readonly PrivacySetting FireteamPrivacy = PrivacySetting.Open;
         public readonly string CharacterId = "";
+        public readonly long OverrideHash = 0;
+        public readonly int OverrideValue = -1;
+        public readonly List<string> OverrideInventoryList = new();
 
         public readonly string ErrorStatus = "ResponseError";
 
-        public XpLoggingValueResponse(ulong discordId)
+        public XpLoggingValueResponse(ulong discordId, LoggingOverride loggingOverride = null)
         {
             try
             {
@@ -32,10 +37,10 @@ namespace Levante.Util
 
                 var dil = DataConfig.GetLinkedUser(discordId);
                 using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202,204,1000").Result;
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,102,104,201,202,204,1000").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
@@ -47,7 +52,7 @@ namespace Levante.Util
 
                 if (item.Response.profileTransitoryData.data == null)
                 {
-                    ErrorStatus = $"NoTransitoryData";
+                    ErrorStatus = $"PlayerOffline";
                     return;
                 }
 
@@ -57,9 +62,9 @@ namespace Levante.Util
                     return;
                 }
 
-                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level >= LevelCap)
+                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].level >= LevelCap)
                 {
-                    var progression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"];
+                    var progression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"];
                     int extraLevel = progression.level;
                     CurrentLevel = LevelCap;
                     CurrentExtraLevel = extraLevel;
@@ -68,9 +73,10 @@ namespace Levante.Util
                 }
                 else
                 {
-                    var progression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"];
+                    var progression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"];
+                    var extraProgression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"];
                     CurrentLevel = progression.level;
-                    CurrentExtraLevel = 0;
+                    CurrentExtraLevel = extraProgression.level;
                     XpProgress = progression.progressToNextLevel;
                     NextLevelAt = progression.nextLevelAt;
                 }
@@ -92,12 +98,122 @@ namespace Levante.Util
 
                 FireteamPrivacy = item.Response.profileTransitoryData.data.joinability.privacySetting;
                 PowerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
+
+                // Override Stat Handling
+
+                if (loggingOverride == null)
+                    return;
+
+                switch (loggingOverride.OverrideType)
+                {
+                    case LoggingOverrideType.ProfileProgression:
+                        {
+                            // Not implemented yet.
+                            // Probably won't be because there is nothing here other than checklists and artifact data.
+
+                            // Likely tracking an integer.
+                            break;
+                        }
+                    case LoggingOverrideType.CharacterProgression:
+                        {
+                            var progression = item.Response.characterProgressions.data[CharacterId].progressions[$"{loggingOverride.Hash}"];
+
+                            // Likely tracking an integer.
+                            OverrideValue = progression.currentProgress;
+
+                            break;
+                        }
+                    case LoggingOverrideType.InventoryItem:
+                        {
+                            // Likely tracking a list of instance IDs.
+                            // Check vault and postmasters.
+                            var invItems = new List<string>();
+                            for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
+                            {
+                                long hash = item.Response.profileInventory.data.items[i].itemHash;
+
+                                if (hash == loggingOverride.Hash)
+                                {
+                                    invItems.Add($"{item.Response.profileInventory.data.items[i].itemInstanceId}");
+                                    Log.Debug($"Found {item.Response.profileInventory.data.items[i].itemHash} - {item.Response.profileInventory.data.items[i].itemInstanceId}");
+                                }
+                            }
+
+                            // Check every character.
+                            for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                            {
+                                string charId = $"{item.Response.profile.data.characterIds[i]}";
+                                for (int j = 0; j < item.Response.characterInventories.data[$"{charId}"].items.Count; j++)
+                                {
+                                    long hash = item.Response.characterInventories.data[$"{charId}"].items[j].itemHash;
+
+                                    if (hash == loggingOverride.Hash)
+                                    {
+                                        invItems.Add($"{item.Response.characterInventories.data[$"{charId}"].items[j].itemInstanceId}");
+                                        Log.Debug($"Found {item.Response.characterInventories.data[$"{charId}"].items[j].itemHash} - {item.Response.characterInventories.data[$"{charId}"].items[j].itemInstanceId} on {charId}");
+                                    }
+                                }
+                            }
+                            OverrideInventoryList = invItems;
+                            OverrideValue = 0;
+                            break;
+                        }
+                    case LoggingOverrideType.Consumable:
+                        {
+                            // Likely tracking an integer.
+                            var itemCount = 0;
+                            // Check vault and postmasters.
+                            for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
+                            {
+                                long hash = item.Response.profileInventory.data.items[i].itemHash;
+
+                                if (hash == loggingOverride.Hash)
+                                {
+                                    itemCount += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}");
+                                    Log.Debug($"Found {item.Response.profileInventory.data.items[i].itemHash} - {item.Response.profileInventory.data.items[i].quantity}");
+                                }
+                            }
+
+                            // Check every character.
+                            for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                            {
+                                string charId = $"{item.Response.profile.data.characterIds[i]}";
+                                for (int j = 0; j < item.Response.characterInventories.data[$"{charId}"].items.Count; j++)
+                                {
+                                    long hash = item.Response.characterInventories.data[$"{charId}"].items[j].itemHash;
+
+                                    if (hash == loggingOverride.Hash)
+                                    {
+                                        int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}");
+                                        Log.Debug($"Found {item.Response.characterInventories.data[$"{charId}"].items[j].itemHash} - {item.Response.characterInventories.data[$"{charId}"].items[j].quantity}");
+                                    }
+                                }
+                            }
+                            OverrideValue = itemCount;
+                            break;
+                        }
+                    case LoggingOverrideType.ProfileStringVariable:
+                        {
+                            // Likely tracking an integer.
+                            OverrideValue = int.Parse($"{item.Response.profileStringVariables.data.integerValuesByHash[$"{loggingOverride.Hash}"]}");
+                            break;
+                        }
+                    case LoggingOverrideType.CharacterStringVariable:
+                        {
+                            // Likely tracking an integer.
+                            OverrideValue = int.Parse($"{item.Response.characterStringVariables.data[CharacterId].integerValuesByHash[$"{loggingOverride.Hash}"]}");
+
+                            break;
+                        }
+                    default:
+                        {
+                            break;
+                        }
+                }
             }
-            catch
+            catch (Exception ex)
             {
-                XpProgress = -1;
-                PowerBonus = -1;
-                ActivityHash = 0;
+                Log.Warning($"{ex}");
                 return;
             }
         }

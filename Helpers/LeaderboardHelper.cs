@@ -44,11 +44,11 @@ namespace Levante.Helpers
                 {
                     string badge = "";
 
-                    if (BotConfig.IsDeveloper(SortedList[i].UniqueBungieName))
+                    if (AppConfig.IsDeveloper(SortedList[i].UniqueBungieName))
                         badge = $" {Emotes.Dev}";
-                    else if (BotConfig.IsStaff(SortedList[i].UniqueBungieName))
+                    else if (AppConfig.IsStaff(SortedList[i].UniqueBungieName))
                         badge = $" {Emotes.Staff}";
-                    else if (BotConfig.IsSupporter(SortedList[i].UniqueBungieName))
+                    else if (AppConfig.IsSupporter(SortedList[i].UniqueBungieName))
                         badge = $" {Emotes.Supporter}";
 
                     if (DataConfig.IsExistingLinkedUser(User.Id) && SortedList[i].UniqueBungieName.Equals(linkedUser.UniqueBungieName))
@@ -69,11 +69,11 @@ namespace Levante.Helpers
                         {
                             string badge = "";
 
-                            if (BotConfig.IsDeveloper(SortedList[i].UniqueBungieName))
+                            if (AppConfig.IsDeveloper(SortedList[i].UniqueBungieName))
                                 badge = $" {Emotes.Dev}";
-                            else if (BotConfig.IsStaff(SortedList[i].UniqueBungieName))
+                            else if (AppConfig.IsStaff(SortedList[i].UniqueBungieName))
                                 badge = $" {Emotes.Staff}";
-                            else if (BotConfig.IsSupporter(SortedList[i].UniqueBungieName))
+                            else if (AppConfig.IsSupporter(SortedList[i].UniqueBungieName))
                                 badge = $" {Emotes.Supporter}";
 
                             embedDesc += $"{i + 1}) **{SortedList[i].UniqueBungieName}**{badge} ({GetValueString(SortedList[i])})";
@@ -87,11 +87,11 @@ namespace Levante.Helpers
                 {
                     string badge = "";
 
-                    if (BotConfig.IsDeveloper(SortedList[i].UniqueBungieName))
+                    if (AppConfig.IsDeveloper(SortedList[i].UniqueBungieName))
                         badge = $" {Emotes.Dev}";
-                    else if (BotConfig.IsStaff(SortedList[i].UniqueBungieName))
+                    else if (AppConfig.IsStaff(SortedList[i].UniqueBungieName))
                         badge = $" {Emotes.Staff}";
-                    else if (BotConfig.IsSupporter(SortedList[i].UniqueBungieName))
+                    else if (AppConfig.IsSupporter(SortedList[i].UniqueBungieName))
                         badge = $" {Emotes.Supporter}";
 
                     if (DataConfig.IsExistingLinkedUser(User.Id) && SortedList[i].UniqueBungieName.Equals(DataConfig.GetLinkedUser(User.Id).UniqueBungieName))
@@ -107,11 +107,11 @@ namespace Levante.Helpers
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -235,7 +235,7 @@ namespace Levante.Helpers
             return true;
         }
 
-        public static void CheckLeaderboardData(ActiveConfig.ActiveAFKUser AAU)
+        public static void CheckLeaderboardData(LoggingUser AAU)
         {
             var user = DataConfig.GetLinkedUser(AAU.DiscordID);
             // Generate a Leaderboard entry, and overwrite if the existing one is worse.

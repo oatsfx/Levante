@@ -34,7 +34,7 @@ namespace Levante.Util
 
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
                 var response = client.GetAsync(APIUrl).Result;
                 Content = response.Content.ReadAsStringAsync().Result;
@@ -101,7 +101,7 @@ namespace Levante.Util
 
             // Don't want to make emotes on Debug.
             if (makeEmote)
-                makeEmote = !BotConfig.IsDebug;
+                makeEmote = !AppConfig.IsDebug;
 
             string json = File.ReadAllText(EmoteConfig.FilePath);
             var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);

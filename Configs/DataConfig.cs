@@ -22,36 +22,36 @@ namespace Levante.Configs
         public static string FilePath { get; } = @"Configs/dataConfig.json";
 
         [JsonProperty("DiscordIDLinks")]
-        public static List<DiscordIDLink> DiscordIDLinks { get; set; } = new();
+        public static List<DiscordIDLink> DiscordIDLinks { get; set; }
 
         [JsonProperty("AnnounceDailyLinks")]
-        public static List<ulong> AnnounceDailyLinks { get; set; } = new();
+        public static List<ulong> AnnounceDailyLinks { get; set; }
 
         [JsonProperty("AnnounceWeeklyLinks")]
-        public static List<ulong> AnnounceWeeklyLinks { get; set; } = new();
+        public static List<ulong> AnnounceWeeklyLinks { get; set; }
 
         [JsonProperty("AnnounceEmblemLinks")]
-        public static List<EmblemAnnounceLink> AnnounceEmblemLinks { get; set; } = new();
+        public static List<EmblemAnnounceLink> AnnounceEmblemLinks { get; set; }
 
         public class DiscordIDLink
         {
             [JsonProperty("DiscordID")]
-            public ulong DiscordID { get; set; } = 0;
+            public ulong DiscordID { get; set; }
 
             [JsonProperty("BungieMembershipID")]
-            public string BungieMembershipID { get; set; } = "-1";
+            public string BungieMembershipID { get; set; }
 
             [JsonProperty("BungieMembershipType")]
-            public string BungieMembershipType { get; set; } = "-1";
+            public string BungieMembershipType { get; set; }
 
             [JsonProperty("UniqueBungieName")]
-            public string UniqueBungieName { get; set; } = "Guardian#0000";
+            public string UniqueBungieName { get; set; }
 
             [JsonProperty("AccessToken")]
-            public string AccessToken { get; set; } = null;
+            public string AccessToken { get; set; }
 
             [JsonProperty("RefreshToken")]
-            public string RefreshToken { get; set; } = null;
+            public string RefreshToken { get; set; }
 
             [JsonProperty("AccessExpiration")]
             public DateTime AccessExpiration { get; set; } = DateTime.Now;
@@ -63,83 +63,10 @@ namespace Levante.Configs
         public class EmblemAnnounceLink
         {
             [JsonProperty("ChannelID")]
-            public ulong ChannelID { get; set; } = 0;
+            public ulong ChannelID { get; set; }
 
             [JsonProperty("RoleID")]
-            public ulong RoleID { get; set; } = 0;
-        }
-
-        public static string GetValidDestinyMembership(string BungieTag, out string MembershipType)
-        {
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/-1/" + Uri.EscapeDataString(BungieTag)).Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                if (IsBungieAPIDown(content))
-                {
-                    MembershipType = null;
-                    return null;
-                }
-
-                if (item != null)
-                    for (var i = 0; i < item.Response.Count; i++)
-                    {
-                        string memId = item.Response[i].membershipId;
-
-                        var memResponse = client
-                            .GetAsync(
-                                $"https://www.bungie.net/Platform/Destiny2/-1/Profile/{memId}/LinkedProfiles/?getAllMemberships=true")
-                            .Result;
-                        var memContent = memResponse.Content.ReadAsStringAsync().Result;
-                        dynamic memItem = JsonConvert.DeserializeObject(memContent);
-
-                        var lastPlayed = new DateTime();
-                        var goodProfile = -1;
-
-                        if (memItem == null || memItem.ErrorCode != 1) continue;
-
-                        for (var j = 0; j < memItem.Response.profiles.Count; j++)
-                        {
-                            if (memItem.Response.profiles[j].isCrossSavePrimary == true)
-                            {
-                                MembershipType = memItem.Response.profiles[j].membershipType;
-                                return memId;
-                            }
-
-                            if (DateTime.Parse(memItem.Response.profiles[j].dateLastPlayed.ToString()) <= lastPlayed) continue;
-
-                            lastPlayed = DateTime.Parse(memItem.Response.profiles[j].dateLastPlayed.ToString());
-                            goodProfile = j;
-                        }
-
-                        if (goodProfile == -1) continue;
-
-                        MembershipType = memItem.Response.profiles[goodProfile].membershipType;
-                        return memItem.Response.profiles[goodProfile].membershipId;
-                    }
-            }
-            MembershipType = null;
-            return null;
-        }
-
-        public static bool IsPublicAccount(string BungieTag, int memId)
-        {
-            bool isPublic = false;
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/{memId}/" + Uri.EscapeDataString(BungieTag)).Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                isPublic = item.Response[0].isPublic;
-            }
-            return isPublic;
+            public ulong RoleID { get; set; }
         }
 
         public static bool IsBungieAPIDown(string JSONContent)
@@ -155,8 +82,8 @@ namespace Levante.Configs
             {
                 var values = new Dictionary<string, string>
                 {
-                    { "client_id", $"{BotConfig.BungieClientID}" },
-                    { "client_secret", $"{BotConfig.BungieClientSecret}" },
+                    { "client_id", $"{AppConfig.Credentials.BungieClientId}" },
+                    { "client_secret", $"{AppConfig.Credentials.BungieClientSecret}" },
                     { "Content-Type", "application/x-www-form-urlencoded" },
                     { "grant_type", "refresh_token" },
                     { "refresh_token", $"{DIL.RefreshToken}" }
@@ -371,7 +298,7 @@ namespace Levante.Configs
                     }
 
                     var msg = await channel.SendMessageAsync($"", embed: CurrentRotations.DailyResetEmbed().Build());
-                    if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
+                    if (channel is SocketNewsChannel && channel.Guild.Id == AppConfig.Discord.SupportServerId)
                         await msg.CrosspostAsync();
                 }
                 catch (Exception x)
@@ -415,7 +342,7 @@ namespace Levante.Configs
                     }
 
                     var msg = await channel.SendMessageAsync($"", embed: CurrentRotations.WeeklyResetEmbed().Build());
-                    if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
+                    if (channel is SocketNewsChannel && channel.Guild.Id == AppConfig.Discord.SupportServerId)
                         await msg.CrosspostAsync();
                 }
                 catch (Exception x)

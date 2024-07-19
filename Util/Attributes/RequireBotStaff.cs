@@ -10,13 +10,13 @@ namespace Levante.Util.Attributes
     {
         public override Task<PreconditionResult> CheckRequirementsAsync(IInteractionContext context, ICommandInfo command, IServiceProvider services)
         {
-            if (BotConfig.BotStaffDiscordIDs.Contains(context.User.Id))
+            if (AppConfig.BotStaffDiscordIDs.Contains(context.User.Id))
                 return Task.FromResult(PreconditionResult.FromSuccess());
 
             // If not a Bot Staff, say they cannot run command.
             return Task.FromResult(PreconditionResult.FromError("You are not permitted to run this command."));
         }
 
-        public static bool IsBotStaff(ulong DiscordID) => BotConfig.BotStaffDiscordIDs.Contains(DiscordID);
+        public static bool IsBotStaff(ulong DiscordID) => AppConfig.BotStaffDiscordIDs.Contains(DiscordID);
     }
 }

@@ -18,6 +18,7 @@ using System.Diagnostics;
 using Levante.Util.Attributes;
 using Serilog;
 using BungieSharper.Entities.Destiny;
+using Levante.Services;
 
 namespace Levante.Commands
 {
@@ -25,7 +26,14 @@ namespace Levante.Commands
     [DevGuildOnly]
     public class Owner : InteractionModuleBase<ShardedInteractionContext>
     {
-        public InteractiveService Interactive { get; set; }
+        private readonly InteractiveService Interactive;
+        private readonly LoggingService Logging;
+
+        public Owner(LoggingService xpLoggingService, InteractiveService interactive)
+        {
+            Logging = xpLoggingService;
+            Interactive = interactive;
+        }
 
         [RequireOwner]
         [SlashCommand("force", "[OWNER]: Sends a button to force a daily/weekly reset.")]
@@ -44,34 +52,37 @@ namespace Levante.Commands
         [SlashCommand("active-logging-users", "[BOT STAFF]: Gets a list of the users that are using my XP logging feature.")]
         public async Task ActiveAFK()
         {
+            var xpLoggingList = Logging.GetXpLoggingUsers();
+            var priorityXpLoggingList = Logging.GetPriorityXpLoggingUsers();
+
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Active XP Logging Users",
                 IconUrl = app.IconUrl
             };
-            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+            string p = priorityXpLoggingList.Count != 0 ? $" (+{priorityXpLoggingList.Count})" : "";
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} people are logging their XP."
+                Text = $"{xpLoggingList.Count}/{Logging.GetMaxLoggingUsers()}{p} people are logging their XP."
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
 
-            if (ActiveConfig.ActiveAFKUsers.Count >= 1)
+            if (xpLoggingList.Count >= 1)
             {
-                embed.Description = $"__Priority XP Logging List:__\n";
-                foreach (var aau in ActiveConfig.PriorityActiveAFKUsers)
+                embed.Description = $"## Priority XP Logging List:\n";
+                foreach (var aau in priorityXpLoggingList)
                 {
                     embed.Description +=
                         $"{aau.UniqueBungieName}: Level {aau.Last.Level}\n";
                 }
-                embed.Description += $"__XP Logging List:__\n";
-                foreach (var aau in ActiveConfig.ActiveAFKUsers)
+                embed.Description += $"## XP Logging List:\n";
+                foreach (var aau in xpLoggingList)
                 {
                     embed.Description +=
                         $"{aau.UniqueBungieName}: Level {aau.Last.Level}\n";
@@ -93,11 +104,11 @@ namespace Levante.Commands
             {
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Supporters"
                 };
                 string result = "";
-                foreach (var supporter in BotConfig.BotSupportersDiscordIDs)
+                foreach (var supporter in AppConfig.BotSupportersDiscordIDs)
                     result += $"<@{supporter}>\n";
 
                 embed.Description = result;
@@ -105,93 +116,18 @@ namespace Levante.Commands
                 return;
             }
 
-            if (BotConfig.BotSupportersDiscordIDs.Contains(User.Id))
+            if (AppConfig.BotSupportersDiscordIDs.Contains(User.Id))
             {
-                BotConfig.BotSupportersDiscordIDs.Remove(User.Id);
+                AppConfig.BotSupportersDiscordIDs.Remove(User.Id);
                 await RespondAsync($"{User.Mention} has been removed as a bot supporter!");
             }
             else
             {
-                BotConfig.BotSupportersDiscordIDs.Add(User.Id);
+                AppConfig.BotSupportersDiscordIDs.Add(User.Id);
                 await RespondAsync($"Added {User.Mention} to my list of Supporters!");
             }
-            var bConfig = new BotConfig();
-            File.WriteAllText(BotConfig.FilePath, JsonConvert.SerializeObject(bConfig, Formatting.Indented));
-        }
-
-        [RequireBotStaff]
-        [SlashCommand("new-offer", "[BOT STAFF]: Create an Emblem Offer using a JSON file.")]
-        public async Task NewEmblemOffer([Summary("offer-json", "JSON file for the offer.")] IAttachment attachment)
-        {
-            await DeferAsync();
-            string content;
-            using (var httpCilent = new HttpClient())
-            {
-                var url = attachment.Url;
-                byte[] bytes = await httpCilent.GetByteArrayAsync(url);
-                content = Encoding.UTF8.GetString(bytes);
-            }
-            EmblemOffer newOffer;
-
-            try
-            {
-                newOffer = JsonConvert.DeserializeObject<EmblemOffer>(content);
-            }
-            catch
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = "Error with JSON file. Make sure all values are correct.");
-                return;
-            }
-
-            if (EmblemOffer.HasExistingOffer(newOffer.EmblemHashCode))
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = "Emblem has an offer already. Delete it first.");
-                return;
-            }
-
-            var buttonBuilder = newOffer.BuildExternalButton()
-                .WithButton("Post Offer", customId: $"newPost", ButtonStyle.Success, row: 1)
-                .WithButton("Skip Posting", customId: $"newSkip", ButtonStyle.Secondary, row: 1)
-                .WithButton("Cancel", customId: $"newCancel", ButtonStyle.Danger, row: 1);
-
-            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "This is what the embed looks like. What would you like to do?"; message.Embed = newOffer.BuildEmbed().Build(); message.Components = buttonBuilder.Build(); });
-
-            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
-
-            if (buttonResponse == null)
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                return;
-            }
-
-            if (buttonResponse.IsTimeout)
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                return;
-            }
-
-            if (buttonResponse.Value.Data.CustomId.Equals("newPost"))
-            {
-                await buttonResponse.Value.DeferAsync();
-                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sending to {DataConfig.AnnounceEmblemLinks.Count} channels..."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                newOffer.CreateJSON();
-                await SendToAllAnnounceChannels(newOffer);
-                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sent to {DataConfig.AnnounceEmblemLinks.Count} channels!"; });
-                return;
-            }
-            else if (buttonResponse.Value.Data.CustomId.Equals("newSkip"))
-            {
-                await buttonResponse.Value.DeferAsync();
-                newOffer.CreateJSON();
-                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Created Emblem Offer, but did not send to channels."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                return;
-            }
-            else
-            {
-                await buttonResponse.Value.DeferAsync();
-                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Cancelled operation."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                return;
-            }
+            var aConfig = new AppConfig();
+            File.WriteAllText(AppConfig.FilePath, JsonConvert.SerializeObject(aConfig, Formatting.Indented));
         }
 
         [RequireBotStaff]
@@ -218,7 +154,7 @@ namespace Levante.Commands
 
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{Context.User.Username}" },
                 Title = "New Countdown",
@@ -226,7 +162,7 @@ namespace Levante.Commands
             };
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "This is the countdown you are adding, continue?"; message.Components = buttonBuilder.Build(); message.Embed = embed.Build(); });
-            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
 
             if (buttonResponse == null)
             {
@@ -268,7 +204,7 @@ namespace Levante.Commands
 
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{Context.User.Username}" },
                 Title = "Countdown Removal",
@@ -277,7 +213,7 @@ namespace Levante.Commands
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Remove this countdown?"; message.Embed = embed.Build(); message.Components = buttonBuilder.Build(); });
 
-            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
 
             if (buttonResponse == null)
             {
@@ -300,6 +236,81 @@ namespace Levante.Commands
             else
             {
                 await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Did not remove this countdown."; message.Components = new ComponentBuilder().Build(); });
+            }
+        }
+
+        [RequireBotStaff]
+        [SlashCommand("new-offer", "[BOT STAFF]: Create an Emblem Offer using a JSON file.")]
+        public async Task NewEmblemOffer([Summary("offer-json", "JSON file for the offer.")] IAttachment attachment)
+        {
+            await DeferAsync();
+            string content;
+            using (var httpCilent = new HttpClient())
+            {
+                var url = attachment.Url;
+                byte[] bytes = await httpCilent.GetByteArrayAsync(url);
+                content = Encoding.UTF8.GetString(bytes);
+            }
+            EmblemOffer newOffer;
+
+            try
+            {
+                newOffer = JsonConvert.DeserializeObject<EmblemOffer>(content);
+            }
+            catch
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = "Error with JSON file. Make sure all values are correct.");
+                return;
+            }
+
+            if (EmblemOffer.HasExistingOffer(newOffer.EmblemHashCode))
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = "Emblem has an offer already. Delete it first.");
+                return;
+            }
+
+            var buttonBuilder = newOffer.BuildExternalButton()
+                .WithButton("Post Offer", customId: $"newPost", ButtonStyle.Success, row: 1)
+                .WithButton("Skip Posting", customId: $"newSkip", ButtonStyle.Secondary, row: 1)
+                .WithButton("Cancel", customId: $"newCancel", ButtonStyle.Danger, row: 1);
+
+            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "This is what the embed looks like. What would you like to do?"; message.Embed = newOffer.BuildEmbed().Build(); message.Components = buttonBuilder.Build(); });
+
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
+
+            if (buttonResponse == null)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+
+            if (buttonResponse.IsTimeout)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+
+            if (buttonResponse.Value.Data.CustomId.Equals("newPost"))
+            {
+                await buttonResponse.Value.DeferAsync();
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sending to {DataConfig.AnnounceEmblemLinks.Count} channels..."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                newOffer.CreateJSON();
+                await SendToAllAnnounceChannels(newOffer);
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sent to {DataConfig.AnnounceEmblemLinks.Count} channels!"; });
+                return;
+            }
+            else if (buttonResponse.Value.Data.CustomId.Equals("newSkip"))
+            {
+                await buttonResponse.Value.DeferAsync();
+                newOffer.CreateJSON();
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Created Emblem Offer, but did not send to channels."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+            else
+            {
+                await buttonResponse.Value.DeferAsync();
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Cancelled operation."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
             }
         }
 
@@ -327,7 +338,7 @@ namespace Levante.Commands
 
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{removeHashes.Count} expired Emblem offers" },
                 Title = "Remove these offers?",
@@ -340,7 +351,7 @@ namespace Levante.Commands
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); message.Components = buttonBuilder.Build(); });
 
-            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
 
             if (buttonResponse == null)
             {
@@ -397,7 +408,7 @@ namespace Levante.Commands
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Remove this offer?";  message.Embed = offerToDelete.BuildEmbed().Build(); message.Components = buttonBuilder.Build(); });
 
-            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
 
             if (buttonResponse == null)
             {
@@ -441,7 +452,7 @@ namespace Levante.Commands
                     .WithButton("Yes", customId: $"sendYes", ButtonStyle.Success, row: 1)
                     .WithButton("No", customId: $"sendNo", ButtonStyle.Danger, row: 1);
                 await RespondAsync("This is what the embed looks like. Ready to send to all channels?", embed: eo.BuildEmbed().Build(), components: buttonBuilder.Build());
-                var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+                var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
 
                 if (buttonResponse == null)
                 {
@@ -465,6 +476,111 @@ namespace Levante.Commands
                 {
                     await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Did not send offer."; message.Components = new ComponentBuilder().Build(); });
                 }
+            }
+        }
+
+        [RequireBotStaff]
+        [SlashCommand("new-logging-override", "[BOT STAFF]: Create a Logging Override using a JSON file.")]
+        public async Task NewLoggingOverride([Summary("override-json", "JSON file for the override.")] IAttachment attachment)
+        {
+            await DeferAsync();
+            string content;
+            using (var httpCilent = new HttpClient())
+            {
+                var url = attachment.Url;
+                byte[] bytes = await httpCilent.GetByteArrayAsync(url);
+                content = Encoding.UTF8.GetString(bytes);
+            }
+            LoggingOverride newOverride;
+
+            try
+            {
+                newOverride = JsonConvert.DeserializeObject<LoggingOverride>(content);
+            }
+            catch
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = "Error with JSON file. Make sure all values are correct.");
+                return;
+            }
+
+            if (Logging.HasExistingOverride(newOverride.Hash))
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = "Item has an override already. Delete it first.");
+                return;
+            }
+
+            var buttonBuilder = new ComponentBuilder()
+                .WithButton("Create Override", customId: $"newOverride", ButtonStyle.Success, row: 0)
+                .WithButton("Cancel", customId: $"newCancel", ButtonStyle.Danger, row: 0);
+
+            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "This is the override you created. What would you like to do?"; message.Embed = newOverride.GetEmbed().Build(); message.Components = buttonBuilder.Build(); });
+
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
+
+            if (buttonResponse == null)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+
+            if (buttonResponse.IsTimeout)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+
+            if (buttonResponse.Value.Data.CustomId.Equals("newOverride"))
+            {
+                await buttonResponse.Value.DeferAsync();
+                Logging.AddLoggingOverride(newOverride);
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Created a new Logging Override for {newOverride.Name}."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+            else
+            {
+                await buttonResponse.Value.DeferAsync();
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Cancelled operation."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+        }
+
+        [RequireBotStaff]
+        [SlashCommand("remove-logging-override", "[BOT STAFF]: Remove a Logging Override.")]
+        public async Task RemoveLoggingOverride([Summary("override-to-remove", "Logging Override to remove."), Autocomplete(typeof(LoggingOverrideAutocomplete))] string OverrideHash)
+        {
+            await DeferAsync();
+            var hash = long.Parse(OverrideHash);
+            var overrideToDelete = Logging.GetLoggingOverride(hash);
+
+            var buttonBuilder = new ComponentBuilder()
+                .WithButton("Yes", customId: $"removeYes", ButtonStyle.Success, row: 0)
+                .WithButton("No", customId: $"removeNo", ButtonStyle.Danger, row: 0);
+
+            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Remove this offer?"; message.Embed = overrideToDelete.GetEmbed().Build(); message.Components = buttonBuilder.Build(); });
+
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
+
+            if (buttonResponse == null)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+
+            if (buttonResponse.IsTimeout)
+            {
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                return;
+            }
+
+            if (buttonResponse.Value.Data.CustomId.Equals("removeYes"))
+            {
+                Logging.RemoveLoggingOverride(overrideToDelete);
+
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Removed this Logging Override."; message.Components = new ComponentBuilder().Build(); message.Embed = overrideToDelete.GetEmbed().Build(); });
+            }
+            else
+            {
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Did not remove this Logging Override."; message.Components = new ComponentBuilder().Build(); message.Embed = overrideToDelete.GetEmbed().Build(); });
             }
         }
 
@@ -502,13 +618,11 @@ namespace Levante.Commands
                 return;
             }
 
-            int old = ActiveConfig.MaximumLoggingUsers;
-            ActiveConfig.MaximumLoggingUsers = NewMaxUserCount;
-            ActiveConfig.UpdateActiveAFKUsersConfig();
+            int old = AppConfig.Logging.MaximumLoggingUsers;
+            AppConfig.Logging.MaximumLoggingUsers = NewMaxUserCount;
 
-            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
-            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
+            var aConfig = new AppConfig();
+            File.WriteAllText(AppConfig.FilePath, JsonConvert.SerializeObject(aConfig, Formatting.Indented));
             await RespondAsync($"Changed maximum XP Logging users to {NewMaxUserCount} (was {old}).");
         }
 
@@ -519,11 +633,11 @@ namespace Levante.Commands
             var app = await Context.Client.GetApplicationInfoAsync();
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                Footer = new EmbedFooterBuilder() { Text = $"{BotConfig.AppName} v{BotConfig.Version}" },
+                Footer = new EmbedFooterBuilder() { Text = $"{AppConfig.App.Name} v{AppConfig.App.Version}" },
                 Title = "Metrics",
-                ThumbnailUrl = BotConfig.BotLogoUrl
+                ThumbnailUrl = AppConfig.App.LogoUrl
             };
 
             var process = Process.GetCurrentProcess();
@@ -599,7 +713,7 @@ namespace Levante.Commands
                 try
                 {
                     // Name, Id, Amount Approved
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                     int page = 0;
                     bool hasMore = true;
                     do
@@ -650,7 +764,7 @@ namespace Levante.Commands
             };
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
                 Timestamp = DateTime.Now,
@@ -687,7 +801,7 @@ namespace Levante.Commands
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
                 Timestamp = DateTime.Now,
@@ -698,7 +812,7 @@ namespace Levante.Commands
                 try
                 {
                     // Name, Id, Amount Approved
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                     int page = 0;
                     bool hasMore = true;
                     var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/{linkedUser.BungieMembershipType}/Profile/{linkedUser.BungieMembershipID}/LinkedProfiles/").Result;
@@ -766,7 +880,7 @@ namespace Levante.Commands
             };
 
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+            client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
             Log.Debug($"starting with {listOfEmblemCollectibleHashes.Count} emblems");
 
             foreach (var profile in profiles)
@@ -856,14 +970,14 @@ namespace Levante.Commands
                     {
                         var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
                         var msg = await channel.SendMessageAsync($"{role.Mention}", embed: embed.Build(), components: button.Build());
-                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
+                        if (channel is SocketNewsChannel && channel.Guild.Id == AppConfig.Discord.SupportServerId)
                             await msg.CrosspostAsync();
                     }
                     else
                     {
                         // Crosspost/Publish for the support server news channel.
                         var msg = await channel.SendMessageAsync("", embed: embed.Build(), components: button.Build());
-                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
+                        if (channel is SocketNewsChannel && channel.Guild.Id == AppConfig.Discord.SupportServerId)
                             await msg.CrosspostAsync();
                     }
                 }

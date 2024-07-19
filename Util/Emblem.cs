@@ -25,15 +25,15 @@ namespace Levante.Util
             int[] result = new int[3];
             if (Content.BackgroundColor == null)
             {
-                result[0] = BotConfig.EmbedColor.R;
-                result[1] = BotConfig.EmbedColor.G;
-                result[2] = BotConfig.EmbedColor.B;
+                result[0] = AppConfig.Discord.EmbedColor.R;
+                result[1] = AppConfig.Discord.EmbedColor.G;
+                result[2] = AppConfig.Discord.EmbedColor.B;
             }
             else
             {
-                result[0] = (int)Content.BackgroundColor.Red;
-                result[1] = (int)Content.BackgroundColor.Green;
-                result[2] = (int)Content.BackgroundColor.Blue;
+                result[0] = Content.BackgroundColor.Red;
+                result[1] = Content.BackgroundColor.Green;
+                result[2] = Content.BackgroundColor.Blue;
             }
             return result;
         }
@@ -44,7 +44,7 @@ namespace Levante.Util
             {
                 using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
                     var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/Manifest/DestinyCollectibleDefinition/" + GetCollectableHash()).Result;
                     var content = response.Content.ReadAsStringAsync().Result;
@@ -117,9 +117,9 @@ namespace Levante.Util
                         : $"This emblem is [currently available]({offer.SpecialUrl})!\n";
                 }
 
-                if (BotConfig.UniversalCodes.Exists(x => x.Name.Equals(GetName())))
+                if (AppConfig.UniversalCodes.Exists(x => x.Name.Equals(GetName())))
                 {
-                    var uniCode = BotConfig.UniversalCodes.Find(x => x.Name.Equals(GetName()));
+                    var uniCode = AppConfig.UniversalCodes.Find(x => x.Name.Equals(GetName()));
                     offerStr = $"This emblem is available via a code: {uniCode.Code}.\nRedeem it [here](https://www.bungie.net/7/en/Codes/Redeem).";
                 }
 
@@ -183,7 +183,7 @@ namespace Levante.Util
             }
             catch
             {
-                embed.WithColor(new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B));
+                embed.WithColor(new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B));
                 embed.Description = "This emblem is missing some API values, sorry about that!";
             }
 

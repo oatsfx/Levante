@@ -63,7 +63,7 @@ namespace Levante.Util
             APIUrl = $"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/Character/" + CharacterID + "/?components=200,204,205";
 
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+            client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
             var response = client.GetAsync(APIUrl).Result;
             GuardianContent = response.Content.ReadAsStringAsync().Result;
@@ -170,12 +170,12 @@ namespace Levante.Util
         {
             string badge = "";
 
-            if (BotConfig.IsDeveloper(UniqueBungieName))
-                badge = $"\n{Emotes.Dev} {BotConfig.AppName} Developer";
-            else if (BotConfig.IsStaff(UniqueBungieName))
-                badge = $"\n{Emotes.Staff} {BotConfig.AppName} Staff";
-            else if (BotConfig.IsSupporter(UniqueBungieName))
-                badge = $"\n{Emotes.Supporter} {BotConfig.AppName} Supporter";
+            if (AppConfig.IsDeveloper(UniqueBungieName))
+                badge = $"\n{Emotes.Dev} {AppConfig.App.Name} Developer";
+            else if (AppConfig.IsStaff(UniqueBungieName))
+                badge = $"\n{Emotes.Staff} {AppConfig.App.Name} Staff";
+            else if (AppConfig.IsSupporter(UniqueBungieName))
+                badge = $"\n{Emotes.Supporter} {AppConfig.App.Name} Supporter";
 
             var auth = new EmbedAuthorBuilder()
             {

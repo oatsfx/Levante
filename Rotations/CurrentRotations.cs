@@ -144,11 +144,11 @@ namespace Levante.Rotations
         {
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Footer = foot,
                 Title = $"Daily Reset of {TimestampTag.FromDateTime(Actives.DailyResetTimestamp, TimestampTagStyles.ShortDate)}",
                 Description = "Below are some of the things that are available today."
@@ -196,11 +196,11 @@ namespace Levante.Rotations
         {
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{String.Format("{0:0.00#}", BotConfig.Version)}"
+                Text = $"Powered by {AppConfig.App.Name} v{String.Format("{0:0.00#}", AppConfig.App.Version)}"
             };
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Footer = foot,
                 Title = $"Weekly Reset of {TimestampTag.FromDateTime(Actives.WeeklyResetTimestamp, TimestampTagStyles.ShortDate)}",
                 Description = "Below are some of the things that are available this week."

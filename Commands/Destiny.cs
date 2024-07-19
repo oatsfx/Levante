@@ -50,11 +50,11 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -66,26 +66,26 @@ namespace Levante.Commands
                 var dil = DataConfig.GetLinkedUser(Context.User.Id);
 
                 using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
-                XpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].nextLevelAt;
-                OverflowXpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].nextLevelAt;
+                XpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].nextLevelAt;
+                OverflowXpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].nextLevelAt;
 
-                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == LevelCap)
+                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].level == LevelCap)
                 {
                     Level = LevelCap;
-                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
-                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].progressToNextLevel;
+                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].progressToNextLevel;
                 }
                 else
                 {
-                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
-                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].progressToNextLevel;
+                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].progressToNextLevel;
                 }
                 int currentPowerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
                 double projectedSeasonRank = 0.0;
@@ -204,11 +204,11 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -243,7 +243,7 @@ namespace Levante.Commands
                         .WithFooter(PaginatorFooter.None)
                         .Build();
 
-                    await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator));
+                    await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForPaginator));
 
                     static PageBuilder GeneratePage(int index)
                     {
@@ -543,14 +543,14 @@ namespace Levante.Commands
             if (linkedUser != null)
             {
                 using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
 
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + linkedUser.BungieMembershipType + "/Profile/" + linkedUser.BungieMembershipID + "/?components=800").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
                 dynamic item = JsonConvert.DeserializeObject(content);
 
-                foreach (var emblem in BotConfig.UniversalCodes)
+                foreach (var emblem in AppConfig.UniversalCodes)
                 {
                     var hash = ManifestHelper.Emblems.First(x => x.Value.Contains(emblem.Name)).Key;
                     var emblemCollectible = ManifestHelper.EmblemsCollectible[hash];
@@ -561,13 +561,13 @@ namespace Levante.Commands
                 }
             }
 
-            var universalEmblems = BotConfig.UniversalCodes;
+            var universalEmblems = AppConfig.UniversalCodes;
 
             if (onlyShowMissing)
                 universalEmblems = universalEmblems.Where(x => emblemsUserMissing.Contains(x.Name)).ToList();
 
             if (universalEmblems.Count == 0)
-                universalEmblems = BotConfig.UniversalCodes;
+                universalEmblems = AppConfig.UniversalCodes;
 
             var paginator = new LazyPaginatorBuilder()
                 .AddUser(Context.User)
@@ -582,8 +582,7 @@ namespace Levante.Commands
                 .WithFooter(PaginatorFooter.None)
                 .Build();
 
-            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), ephemeral: hide);
-
+            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForPaginator), ephemeral: hide);
 
             PageBuilder GeneratePage(int index)
             {
@@ -598,7 +597,7 @@ namespace Levante.Commands
                 };
                 var embed = new EmbedBuilder()
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                 };
@@ -648,7 +647,7 @@ namespace Levante.Commands
 
                 using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
                     var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + LinkedUser.BungieMembershipType + "/Profile/" + LinkedUser.BungieMembershipID + "?components=100,200").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
@@ -719,7 +718,7 @@ namespace Levante.Commands
                 string MembershipID = null;
                 using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
                     var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/-1/" + Uri.EscapeDataString(BungieTag)).Result;
                     var content = response.Content.ReadAsStringAsync().Result;
@@ -757,7 +756,7 @@ namespace Levante.Commands
 
                 using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
                     var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "?components=100,200").Result;
                     var content = response.Content.ReadAsStringAsync().Result;
@@ -828,7 +827,7 @@ namespace Levante.Commands
                 
                 dynamic item;
                 using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
@@ -841,19 +840,20 @@ namespace Levante.Commands
                     return;
                 }
 
-                XpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].nextLevelAt;
-                OverflowXpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].nextLevelAt;
+                XpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].nextLevelAt;
+                OverflowXpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].nextLevelAt;
 
-                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == LevelCap)
+                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].level >= LevelCap)
                 {
                     Level = LevelCap;
-                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
-                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].progressToNextLevel;
+                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].progressToNextLevel;
                 }
                 else
                 {
-                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
-                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].progressToNextLevel;
+                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].level;
+                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].progressToNextLevel;
                 }
 
                 var auth = new EmbedAuthorBuilder()
@@ -867,7 +867,7 @@ namespace Levante.Commands
                 };
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                     Description =
@@ -996,7 +996,7 @@ namespace Levante.Commands
 
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,102,103,201,1200").Result;
@@ -1006,7 +1006,7 @@ namespace Levante.Commands
                 for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
                 {
                     long hash = item.Response.profileInventory.data.items[i].itemHash;
-                    if (BotConfig.SeasonalCurrencyHashes.ContainsKey(hash))
+                    if (AppConfig.SeasonalCurrencyHashes.ContainsKey(hash))
                     {
                         if (seasonalMats.ContainsKey(hash))
                             seasonalMats[hash] += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}");
@@ -1127,7 +1127,7 @@ namespace Levante.Commands
                 };
                 var embed = new EmbedBuilder()
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                 };
@@ -1182,16 +1182,16 @@ namespace Levante.Commands
                     string result = "";
                     foreach (var seasonalMat in seasonalMats)
                     {
-                        if (!emoteCfg.HasEmote(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", "")))
+                        if (!emoteCfg.HasEmote(AppConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", "")))
                         {
                             response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/" + seasonalMat.Key).Result;
                             content = response.Content.ReadAsStringAsync().Result;
                             item = JsonConvert.DeserializeObject(content);
                             var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{item.Response.displayProperties.icon}").Result;
-                            Task.Run(() => emoteCfg.AddEmote(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
+                            Task.Run(() => emoteCfg.AddEmote(AppConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
                             emoteCfg.UpdateJSON();
                         }
-                        result += $"{emoteCfg.GetEmote(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", ""))} {seasonalMat.Value:n0}\n";
+                        result += $"{emoteCfg.GetEmote(AppConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", ""))} {seasonalMat.Value:n0}\n";
                     }
 
                     embed.AddField(x =>
@@ -1203,7 +1203,7 @@ namespace Levante.Commands
                 }
 
                 string engramCounts = "";
-                foreach (var engram in BotConfig.EngramHashes)
+                foreach (var engram in AppConfig.EngramHashes)
                 {
                     engramCounts += $"{engram.Value} {item.Response.profileStringVariables.data.integerValuesByHash[$"{engram.Key}"]}\n";
                 }
@@ -1244,7 +1244,7 @@ namespace Levante.Commands
 
                 if (showProgress)
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
                     var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,900,1200").Result;
@@ -1267,7 +1267,7 @@ namespace Levante.Commands
                     .WithFooter(PaginatorFooter.None)
                     .Build();
 
-                await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
+                await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForPaginator), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
 
                 PageBuilder GeneratePage(int index)
                 {
@@ -1279,7 +1279,7 @@ namespace Levante.Commands
 
                     var embed = new EmbedBuilder()
                     {
-                        Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                        Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                         Author = auth,
                     };
 
@@ -1371,7 +1371,7 @@ namespace Levante.Commands
 
                 using (Font font = new("Neue Haas Grotesk Display Pro", 14))
                 {
-                    graphics.DrawString($"{BotConfig.AppName} Bot{(BotConfig.IsSupporter(Context.User.Id) ? " Supporter" : "")} {(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", font, new SolidBrush(System.Drawing.Color.FromArgb(128, System.Drawing.Color.White)), new PointF(84f, 37f));
+                    graphics.DrawString($"{AppConfig.App.Name} Bot{(AppConfig.IsSupporter(Context.User.Id) ? " Supporter" : "")} {(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", font, new SolidBrush(System.Drawing.Color.FromArgb(128, System.Drawing.Color.White)), new PointF(84f, 37f));
                 }
             }
 
@@ -1447,7 +1447,7 @@ namespace Levante.Commands
                 if (dil != null)
                 {
                     using var client = new HttpClient();
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
                     var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,102,201").Result;

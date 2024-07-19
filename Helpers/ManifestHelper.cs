@@ -61,7 +61,7 @@ namespace Levante.Helpers
         {
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
@@ -101,7 +101,7 @@ namespace Levante.Helpers
                 var clarityResponse = client.GetAsync(CLARITY_INFO_LINK).Result;
                 Dictionary<long, Clarity> clarity = JsonConvert.DeserializeObject<Dictionary<long, Clarity>>(ClarityClean(clarityResponse.Content.ReadAsStringAsync().Result));
 
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
                 var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/").Result;
                 var content = response.Content.ReadAsStringAsync().Result;
@@ -376,9 +376,10 @@ namespace Levante.Helpers
                 {
                     for (int i = 0; i < rawSeason.acts.Count; i++)
                     {
-                        if (((DateTime)rawSeason.acts[i].startTime) < DateTime.Now)
+                        if (((DateTime)rawSeason.acts[i].startTime) < DateTime.UtcNow)
                         {
                             CurrentLevelCap += (int)rawSeason.acts[i].rankCount;
+                            Log.Debug($"{CurrentLevelCap}");
                         }
                     }
                 }
@@ -387,8 +388,8 @@ namespace Levante.Helpers
                 response = client.GetAsync(stringVarUrl).Result;
                 content = response.Content.ReadAsStringAsync().Result;
                 item = JsonConvert.DeserializeObject(content);
-                var baseProgression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"];
-                var extraProgression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"];
+                var baseProgression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"];
+                var extraProgression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"];
                 StringVariables = item.Response.profileStringVariables.data.integerValuesByHash.ToObject<Dictionary<string, int>>();
                 BaseNextLevelAt = baseProgression.nextLevelAt;
                 ExtraNextLevelAt = extraProgression.nextLevelAt;

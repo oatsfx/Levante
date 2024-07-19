@@ -81,7 +81,7 @@ namespace Levante.Util
             }
             catch
             {
-                embed.WithColor(new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B));
+                embed.WithColor(new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B));
                 embed.Description = "This perk is missing some API values, sorry about that!";
             }
 

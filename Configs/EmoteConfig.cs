@@ -24,7 +24,7 @@ namespace Levante.Configs
         public async Task<bool> AddEmote(string name, Image image)
         {
             // Don't make an emote when debugging.
-            if (BotConfig.IsDebug)
+            if (AppConfig.IsDebug)
             {
                 Log.Debug("[{Type}] Would've made an emote for {Name}", "Emotes", name);
                 return true;

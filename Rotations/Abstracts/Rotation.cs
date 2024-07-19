@@ -68,9 +68,9 @@ namespace Levante.Rotations.Abstracts
                 .WithAuthor(x =>
                 {
                     x.Name = "Rotation Tracking Alert";
-                    x.IconUrl = BotConfig.BotAvatarUrl;
+                    x.IconUrl = AppConfig.App.AvatarUrl;
                 })
-                .WithColor(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B)
+                .WithColor(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B)
                 .WithTitle(ToString())
                 .WithDescription("Hey! A requested rotation is available right now. Good luck!")
                 .WithCurrentTimestamp()

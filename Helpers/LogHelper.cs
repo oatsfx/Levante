@@ -81,8 +81,8 @@ namespace Levante.Helpers
             var message = logEvent.RenderMessage(_formatProvider).Replace("\"", "");
             if (logEvent.Level >= LogEventLevel.Error)
             {
-                if (LevanteCordInstance.Client != null && BotConfig.LoggingChannel != null)
-                    BotConfig.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix(logEvent.Timestamp.DateTime)}]: {message}");
+                if (LevanteCordInstance.Client != null && AppConfig.Discord.LoggingChannel != null)
+                    AppConfig.Discord.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix(logEvent.Timestamp.DateTime)}]: {message}");
             }
         }
 

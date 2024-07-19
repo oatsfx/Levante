@@ -15,27 +15,26 @@ namespace Levante.Helpers
             if (!Directory.Exists("Configs"))
                 Directory.CreateDirectory("Configs");
 
-            BotConfig bConfig;
+            AppConfig aConfig;
             DataConfig dConfig;
-            ActiveConfig aConfig;
             CountdownConfig cConfig;
 
             bool closeProgram = false;
-            if (File.Exists(BotConfig.FilePath))
+            if (File.Exists(AppConfig.FilePath))
             {
-                string json = File.ReadAllText(BotConfig.FilePath);
-                bConfig = JsonConvert.DeserializeObject<BotConfig>(json);
+                string json = File.ReadAllText(AppConfig.FilePath);
+                aConfig = JsonConvert.DeserializeObject<AppConfig>(json);
             }
             else
             {
-                bConfig = new BotConfig();
-                File.WriteAllText(BotConfig.FilePath, JsonConvert.SerializeObject(bConfig, Formatting.Indented));
-                Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.", BotConfig.FilePath);
+                aConfig = new AppConfig();
+                File.WriteAllText(AppConfig.FilePath, JsonConvert.SerializeObject(aConfig, Formatting.Indented));
+                Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped. Go and change API tokens and other items.", AppConfig.FilePath);
                 closeProgram = true;
             }
 
             if (Debugger.IsAttached)
-                BotConfig.IsDebug = true;
+                AppConfig.IsDebug = true;
 
             if (File.Exists(DataConfig.FilePath))
             {
@@ -47,19 +46,6 @@ namespace Levante.Helpers
                 dConfig = new DataConfig();
                 File.WriteAllText(DataConfig.FilePath, JsonConvert.SerializeObject(dConfig, Formatting.Indented));
                 Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped. No action is needed.", DataConfig.FilePath);
-                closeProgram = true;
-            }
-
-            if (File.Exists(ActiveConfig.FilePath))
-            {
-                string json = File.ReadAllText(ActiveConfig.FilePath);
-                aConfig = JsonConvert.DeserializeObject<ActiveConfig>(json);
-            }
-            else
-            {
-                aConfig = new ActiveConfig();
-                File.WriteAllText(ActiveConfig.FilePath, JsonConvert.SerializeObject(aConfig, Formatting.Indented));
-                Log.Warning("No {FilePath} file detected. A new one has been created and the program has stopped. No action is needed.", ActiveConfig.FilePath);
                 closeProgram = true;
             }
 

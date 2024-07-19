@@ -25,7 +25,7 @@ namespace Levante.Util
             else if (Query.Contains("Exotic"))
                 return Exotic;
             else
-                return new int[] { BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B };
+                return new int[] { AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B };
         }
     }
 }

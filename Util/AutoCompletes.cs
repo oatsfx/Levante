@@ -1,10 +1,12 @@
 ﻿using Discord;
 using Discord.Interactions;
+using Fergun.Interactive;
 using Levante.Commands;
 using Levante.Configs;
 using Levante.Helpers;
 using Levante.Rotations;
 using Levante.Rotations.Abstracts;
+using Levante.Services;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -16,6 +18,8 @@ using System.Threading.Tasks;
 
 namespace Levante.Util
 {
+    
+
     public class WeaponAutocomplete : AutocompleteHandler
     {
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
@@ -101,6 +105,37 @@ namespace Levante.Util
         }
     }
 
+    public class LoggingOverrideAutocomplete : AutocompleteHandler
+    {
+        private readonly LoggingService Logging;
+
+        public LoggingOverrideAutocomplete(LoggingService xpLoggingService)
+        {
+            Logging = xpLoggingService;
+        }
+
+        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
+        {
+            await Task.Delay(0);
+            // Create a collection with suggestions for autocomplete
+            List<AutocompleteResult> results = new();
+            string SearchQuery = autocompleteInteraction.Data.Current.Value.ToString();
+
+            if (String.IsNullOrWhiteSpace(SearchQuery))
+                foreach (var or in Logging.GetLoggingOverrides())
+                    results.Add(new AutocompleteResult(or.Name, $"{or.Hash}"));
+            else
+                foreach (var or in Logging.GetLoggingOverrides())
+                    if (or.Name.ToLower().Contains(SearchQuery.ToLower()))
+                        results.Add(new AutocompleteResult(or.Name, $"{or.Hash}"));
+
+            results = results.OrderBy(x => x.Name).ToList();
+
+            // max - 25 suggestions at a time (API limit)
+            return AutocompletionResult.FromSuccess(results.Take(25));
+        }
+    }
+
     public class CountdownAutocomplete : AutocompleteHandler
     {
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
@@ -145,7 +180,7 @@ namespace Levante.Util
             {
                 using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                     //Attempt to use post, but results in Error Code 30.
                     //var values = new Dictionary<string, string>
                     //{

@@ -34,7 +34,6 @@ namespace Levante.Commands
     [Group("quiz", "Test your knowledge on various Destiny 2 entities.")]
     public class Quiz : InteractionModuleBase<ShardedInteractionContext>
     {
-        public InteractiveService Interactive { get; set; }
 
         [ComponentInteraction("playEmblemQuizAgain:*:*", ignoreGroupNames: true)]
         public async Task PlayEmblemQuizAgain(ulong DiscordID, bool hideVotes)
@@ -103,7 +102,7 @@ namespace Levante.Commands
             QuizInstance.ActiveEmblemQuizzes.Add(quiz);
 
             // Wait to end the quiz. I'm sure there is a better way to handle this.
-            await Task.Delay(BotConfig.DurationToWaitForNextMessage * 1000);
+            await Task.Delay(AppConfig.Discord.DurationToWaitForNextMessage * 1000);
 
             // Find the quiz (just in case it was ended early).
             //quiz = QuizInstance.ActiveEmblemQuizzes.FirstOrDefault(x => x.MessageId == Context.Interaction.GetOriginalResponseAsync().Result.Id);
@@ -183,7 +182,7 @@ namespace Levante.Commands
             QuizInstance.ActiveWeaponPerkQuizzes.Add(quiz);
 
             // Wait to end the quiz. I'm sure there is a better way to handle this.
-            await Task.Delay(BotConfig.DurationToWaitForNextMessage * 1000);
+            await Task.Delay(AppConfig.Discord.DurationToWaitForNextMessage * 1000);
 
             // Find the quiz (just in case it was ended early).
             //quiz = QuizInstance.ActiveWeaponPerkQuizzes.FirstOrDefault(x => x.MessageId == Context.Interaction.GetOriginalResponseAsync().Result.Id);
@@ -256,7 +255,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by the Bungie API and {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by the Bungie API and {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             Embed = new EmbedBuilder()
             {
@@ -266,7 +265,7 @@ namespace Levante.Commands
             int[] emblemRGB = _Emblem.GetRGBAsIntArray();
             Embed.WithColor(emblemRGB[0], emblemRGB[1], emblemRGB[2]);
 
-            Embed.Description = $"What Emblem is this? Answer using the buttons below! Guessing ends {TimestampTag.FromDateTime(DateTime.Now + TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage), TimestampTagStyles.Relative)}.";
+            Embed.Description = $"What Emblem is this? Answer using the buttons below! Guessing ends {TimestampTag.FromDateTime(DateTime.Now + TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage), TimestampTagStyles.Relative)}.";
             Embed.ImageUrl = _Emblem.GetBackgroundUrl();
             Embed.ThumbnailUrl = _Emblem.GetIconUrl();
 
@@ -428,7 +427,7 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by the Bungie API and {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by the Bungie API and {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             Embed = new EmbedBuilder()
             {
@@ -437,7 +436,7 @@ namespace Levante.Commands
             };
             Embed.WithColor(254, 254, 254);
 
-            Embed.Description = $"{_Perk.GetDescription()}\n\nWhat Weapon Perk is this? Answer using the buttons below! Guessing ends {TimestampTag.FromDateTime(DateTime.Now + TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage), TimestampTagStyles.Relative)}.";
+            Embed.Description = $"{_Perk.GetDescription()}\n\nWhat Weapon Perk is this? Answer using the buttons below! Guessing ends {TimestampTag.FromDateTime(DateTime.Now + TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage), TimestampTagStyles.Relative)}.";
             Embed.ThumbnailUrl = _Perk.GetIconUrl();
 
             string builder = "";

@@ -82,12 +82,12 @@ namespace Levante.Helpers
                 if (result.Reason != ErrorReason.None)
                 {
                     //LogHelper.ConsoleLog($"[OAUTH] Redirecting to Link Fail with reason {result.Reason}.");
-                    response.Redirect($"https://www.{BotConfig.Website}/link-fail/?error={Convert.ToInt32(result.Reason)}");
+                    response.Redirect($"https://www.{AppConfig.App.Website}/link-fail/?error={Convert.ToInt32(result.Reason)}");
                 }
                 else
                 {
                     //LogHelper.ConsoleLog("[OAUTH] Redirecting to Link Success.");
-                    response.Redirect($"https://www.{BotConfig.Website}/link-success/?discDisp={Uri.EscapeDataString(result.DiscordDisplayName)}");
+                    response.Redirect($"https://www.{AppConfig.App.Website}/link-success/?discDisp={Uri.EscapeDataString(result.DiscordDisplayName)}");
                 }
 
                 // simulate work
@@ -124,8 +124,8 @@ namespace Levante.Helpers
             {
                 var values = new Dictionary<string, string>
                 {
-                    { "client_id", $"{BotConfig.BungieClientID}" },
-                    { "client_secret", $"{BotConfig.BungieClientSecret}" },
+                    { "client_id", $"{AppConfig.Credentials.BungieClientId}" },
+                    { "client_secret", $"{AppConfig.Credentials.BungieClientSecret}" },
                     { "Authorization",  $"Basic {Code}" },
                     { "Content-Type", "application/x-www-form-urlencoded" },
                     { "grant_type", "authorization_code" },
@@ -185,11 +185,11 @@ namespace Levante.Helpers
                 };
                 var foot = new EmbedFooterBuilder()
                 {
-                    Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}",
+                    Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}",
                 };
                 var embed = new EmbedBuilder()
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                 };
@@ -229,7 +229,7 @@ namespace Levante.Helpers
             // /Platform/Destiny2/254/Profile/17125100/LinkedProfiles/
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
                 string memId = "";
                 string memType = "";

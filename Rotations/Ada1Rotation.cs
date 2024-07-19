@@ -31,11 +31,11 @@ namespace Levante.Rotations
         {
             try
             {
-                var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == BotConfig.BotDevDiscordIDs[0]);
+                var devLinked = DataConfig.DiscordIDLinks.FirstOrDefault(x => x.DiscordID == AppConfig.BotDevDiscordIDs[0]);
                 devLinked = DataConfig.RefreshCode(devLinked);
                 using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
                     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {devLinked.AccessToken}");
 
                     var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + devLinked.BungieMembershipType + "/Profile/" + devLinked.BungieMembershipID + "?components=100,200").Result;

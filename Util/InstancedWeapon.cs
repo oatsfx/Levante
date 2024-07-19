@@ -28,7 +28,7 @@ namespace Levante.Util
 
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
 
                 if (linkedUser != null)
                     client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");

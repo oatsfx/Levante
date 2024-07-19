@@ -166,6 +166,7 @@ namespace Levante.Commands
             await hubChannel.ModifyAsync(x =>
             {
                 x.CategoryId = cc.Id;
+                x.Position = 0;
                 x.Topic = $"XP Hub: Start your logging here.";
                 x.PermissionOverwrites = new[]
                 {
@@ -185,22 +186,22 @@ namespace Levante.Commands
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
             embed.Description =
-                $"Are you ready to keep track of your XP gains?\n" +
-                $"Click the \"Ready\" button and I'll start logging your progress!\n" +
+                $"Are you ready to start logging something in Destiny 2?\n" +
+                $"Click the \"Start\" button and I'll start logging your progress!\n" +
                 $"When you are done, click the \"Stop\" button and I'll shut your logging down.";
 
-            Emoji sleepyEmote = new Emoji("😴");
-            Emoji helpEmote = new Emoji("❔");
-            Emoji stopEmote = new Emoji("🛑");
+            var checkEmote = new Emoji("✅");
+            var stopEmote = new Emoji("🛑");
+            var helpEmote = new Emoji("❔");
 
             var buttonBuilder = new ComponentBuilder()
-                .WithButton("Ready", customId: $"startXPAFK", ButtonStyle.Secondary, sleepyEmote, row: 0)
-                .WithButton("Stop", customId: $"stopXPAFK", ButtonStyle.Secondary, stopEmote, row: 0)
+                .WithButton("Start", customId: $"startXPAFK", ButtonStyle.Success, checkEmote, row: 0)
+                .WithButton("Stop", customId: $"stopXPAFK", ButtonStyle.Danger, stopEmote, row: 0)
                 .WithButton("Help", customId: $"viewXPHelp", ButtonStyle.Secondary, helpEmote, row: 0);
 
             await hubChannel.SendMessageAsync($"", false, embed.Build(), components: buttonBuilder.Build());
@@ -227,11 +228,11 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}",
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}",
             };
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
                 Description = $"\n",
@@ -267,7 +268,7 @@ namespace Levante.Commands
             })
             .AddField(x =>
             {
-                x.Name = $"> {BotConfig.AppName} Integrations";
+                x.Name = $"> {AppConfig.App.Name} Integrations";
                 x.Value = $"Bot Joined: {TimestampTag.FromDateTime(Context.Guild.GetUser(Context.Client.CurrentUser.Id).JoinedAt.Value.DateTime, TimestampTagStyles.ShortDateTime)}\n" +
                     $"Emblem Announce Channel: {(emblemAnnounceId == 0 ? "None." : $"<#{emblemAnnounceId}>")}{(emblemAnnounceRoleId != 0 ? $" and tags role: <@&{emblemAnnounceRoleId}>" : "")}\n" +
                     $"Daily Reset Channel: {(dailyAnnounceId == 0 ? "None." : $"<#{dailyAnnounceId}>")}\n" +

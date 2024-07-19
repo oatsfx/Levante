@@ -29,7 +29,7 @@ namespace Levante.Commands
         {
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             var auth = new EmbedAuthorBuilder()
             {
@@ -38,7 +38,7 @@ namespace Levante.Commands
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Footer = foot,
                 Author = auth
             };
@@ -46,13 +46,13 @@ namespace Levante.Commands
             string state = Convert.ToBase64String(plainTextBytes);
 
             embed.Title = $"Click here to start the linking process.";
-            embed.Url = $"https://www.bungie.net/en/OAuth/Authorize?client_id={BotConfig.BungieClientID}&response_type=code&state={state}";
+            embed.Url = $"https://www.bungie.net/en/OAuth/Authorize?client_id={AppConfig.Credentials.BungieClientId}&response_type=code&state={state}";
             embed.Description = $"- Linking allows you to start XP Tracking, quick '/guardian' commands, and more.\n" +
                 $"- After linking is complete, you'll receive another DM from me to confirm.\n" +
                 $"- Experienced a name change? Relinking will update your name with our data.";
 
             var buttonBuilder = new ComponentBuilder()
-                .WithButton("Link with Levante", style: ButtonStyle.Link, url: $"https://www.bungie.net/en/OAuth/Authorize?client_id={BotConfig.BungieClientID}&response_type=code&state={state}", emote: Emote.Parse(Emotes.Logo), row: 0);
+                .WithButton("Link with Levante", style: ButtonStyle.Link, url: $"https://www.bungie.net/en/OAuth/Authorize?client_id={AppConfig.Credentials.BungieClientId}&response_type=code&state={state}", emote: Emote.Parse(Emotes.Logo), row: 0);
 
             await RespondAsync(embed: embed.Build(), components: buttonBuilder.Build(), ephemeral: true);
         }
@@ -721,7 +721,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Altars of Sorrow",
                     Description = $"Requested: {CurrentRotations.AltarsOfSorrow.Rotations[Weapon].WeaponEmote}{CurrentRotations.AltarsOfSorrow.Rotations[Weapon]}"
                 }.WithCurrentTimestamp();
@@ -766,7 +766,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Ascendant Challenge",
                     Description = $"Requested: {CurrentRotations.AscendantChallenge.Rotations[AscendantChallenge]}"
                 }.WithCurrentTimestamp();
@@ -815,7 +815,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Crota's End",
                     Description = $"Requested: {CurrentRotations.CrotasEnd.Rotations[Encounter]}"
                 }.WithCurrentTimestamp();
@@ -880,7 +880,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Curse Week",
                     Description = $"Requested: {CurrentRotations.CurseWeek.Rotations[CurseWeek]}"
                 }.WithCurrentTimestamp();
@@ -929,7 +929,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Deep Stone Crypt",
                     Description = $"Requested: {CurrentRotations.DeepStoneCrypt.Rotations[Encounter]}"
                 }.WithCurrentTimestamp();
@@ -994,7 +994,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Empire Hunt",
                     Description = $"Requested: {CurrentRotations.EmpireHunt.Rotations[Hunt]}"
                 }.WithCurrentTimestamp();
@@ -1039,7 +1039,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Featured Raid",
                     Description = $"Requested: {CurrentRotations.FeaturedRaid.Rotations[Raid]}"
                 }.WithCurrentTimestamp();
@@ -1084,7 +1084,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Featured Dungeon",
                     Description = $"Requested: {CurrentRotations.FeaturedDungeon.Rotations[Dungeon]}"
                 }.WithCurrentTimestamp();
@@ -1133,7 +1133,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Garden of Salvation",
                     Description = $"Requested: {CurrentRotations.GardenOfSalvation.Rotations[Encounter]}"
                 }.WithCurrentTimestamp();
@@ -1202,7 +1202,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "King's Fall",
                     Description = $"Requested: {CurrentRotations.KingsFall.Rotations[Encounter]}"
                 }.WithCurrentTimestamp();
@@ -1271,7 +1271,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Last Wish",
                     Description = $"Requested: {CurrentRotations.LastWish.Rotations[Encounter]}"
                 }.WithCurrentTimestamp();
@@ -1389,7 +1389,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Lost Sector",
                     Description = $"Requested: {requested}"
                 }.WithCurrentTimestamp();
@@ -1442,7 +1442,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Nightfall",
                     Description = $"Requested: {requested}"
                 }.WithCurrentTimestamp();
@@ -1494,7 +1494,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Nightmare Hunt",
                     Description = $"Requested: {CurrentRotations.NightmareHunt.Rotations[Hunt]}"
                 }.WithCurrentTimestamp();
@@ -1543,7 +1543,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Root of Nightmares",
                     Description = $"Requested: {CurrentRotations.RootOfNightmares.Rotations[Encounter]}"
                 }.WithCurrentTimestamp();
@@ -1653,7 +1653,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Terminal Overload",
                     Description = $"Requested: {CurrentRotations.TerminalOverload.Rotations[Location]}"
                 }.WithCurrentTimestamp();
@@ -1702,7 +1702,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Vault of Glass",
                     Description = $"Requested: {CurrentRotations.LastWish.Rotations[Encounter]}"
                 }.WithCurrentTimestamp();
@@ -1771,7 +1771,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Vow of the Disciple",
                     Description = $"Requested: {CurrentRotations.LastWish.Rotations[Encounter]}"
                 }.WithCurrentTimestamp();
@@ -1836,7 +1836,7 @@ namespace Levante.Commands
 
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = $"Wellspring: {CurrentRotations.Wellspring.Rotations[Wellspring].Type}",
                     Description = $"Requested: {CurrentRotations.Wellspring.Rotations[Wellspring].WeaponEmote}{CurrentRotations.Wellspring.Rotations[Wellspring]}"
                 }.WithCurrentTimestamp();
