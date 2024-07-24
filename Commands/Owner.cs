@@ -28,11 +28,15 @@ namespace Levante.Commands
     {
         private readonly InteractiveService Interactive;
         private readonly LoggingService Logging;
+        private readonly UserService Users;
+        private readonly GuildService Guilds;
 
-        public Owner(LoggingService xpLoggingService, InteractiveService interactive)
+        public Owner(LoggingService xpLoggingService, InteractiveService interactive, UserService users, GuildService guilds)
         {
             Logging = xpLoggingService;
             Interactive = interactive;
+            Users = users;
+            Guilds = guilds;
         }
 
         [RequireOwner]
@@ -871,74 +875,7 @@ namespace Levante.Commands
         [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
         public async Task Test()
         {
-            await DeferAsync();
-            var listOfEmblemCollectibleHashes = ManifestHelper.EmblemsCollectible.Values.ToList();
-
-            var profiles = new List<string>
-            {
-                ""
-            };
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-API-Key", AppConfig.Credentials.BungieApiKey);
-            Log.Debug($"starting with {listOfEmblemCollectibleHashes.Count} emblems");
-
-            foreach (var profile in profiles)
-            {
-                Log.Debug($"{profile}");
-
-                try
-                {
-                    var response = client.GetAsync($"{profile}?components=800").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
-
-                    foreach (var emblem in listOfEmblemCollectibleHashes.ToList())
-                    {
-                        if (item.Response.profileCollectibles.data.collectibles[$"{emblem}"] == null)
-                        {
-                            listOfEmblemCollectibleHashes.RemoveAll(x => x == emblem);
-
-                            Log.Debug($"removed {emblem}");
-                            continue;
-                        }
-
-                        if (item.Response.profileCollectibles.data.collectibles[$"{emblem}"].state == null)
-                        {
-                            listOfEmblemCollectibleHashes.RemoveAll(x => x == emblem);
-
-                            Log.Debug($"removed {emblem}");
-                            continue;
-                        }
-
-                        if (((DestinyCollectibleState)item.Response.profileCollectibles.data.collectibles[$"{emblem}"].state).HasFlag(DestinyCollectibleState.NotAcquired))
-                        {
-                            listOfEmblemCollectibleHashes.RemoveAll(x => x == emblem);
-
-                            Log.Debug($"removed {emblem}");
-                        }
-                    }
-
-                }
-                catch (Exception x)
-                {
-                    Log.Error($"{x}");
-                }
-                
-            }
-            Log.Debug($"profiles grabbed {listOfEmblemCollectibleHashes.Count}");
-
-            var invHashes = ManifestHelper.EmblemsCollectible.Where(x => listOfEmblemCollectibleHashes.Contains(x.Value)).Select(x => x.Key);
-            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "Sending emblem results now."; });
-            var builder = "";
-
-            foreach (var hash in invHashes)
-            {
-                //await Context.Channel.SendMessageAsync($"{ManifestHelper.Emblems[hash]} <https://emblem.report/{hash}>");
-                builder += $"{ManifestHelper.Emblems[hash]}\n";
-            }
-
-            Log.Debug(builder);
+            Guilds.AddGuild(Context.Guild.Id);
         }
 
         public async Task SendToAllAnnounceChannels(EmblemOffer offer)

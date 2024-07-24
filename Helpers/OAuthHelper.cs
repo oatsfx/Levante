@@ -9,6 +9,7 @@ using Discord;
 using Levante.Configs;
 using Levante.Util;
 using Serilog;
+using Levante.Services;
 
 namespace Levante.Helpers
 {
@@ -22,10 +23,10 @@ namespace Levante.Helpers
             {
                 AuthenticationSchemes = AuthenticationSchemes.Anonymous
             };
-            _listener.Prefixes.Add("http://*:8080/");
+            _listener.Prefixes.Add($"http://*:{AppConfig.App.OauthPort}/");
             _listener.Start();
             _listener.BeginGetContext(new AsyncCallback(GetToken), _listener);
-            Log.Information("[{Type}] Listening...", "OAuth");
+            Log.Information("[{Type}] Listening on port: {Port}...", "OAuth", AppConfig.App.OauthPort);
         }
 
         public async void GetToken(IAsyncResult ar)
@@ -39,7 +40,6 @@ namespace Levante.Helpers
                 }
 
                 HttpListenerContext context = _listener.EndGetContext(ar);
-                //LogHelper.ConsoleLog("[OAUTH] Connection Received.");
 
                 var query = context.Request.QueryString;
 
@@ -104,7 +104,7 @@ namespace Levante.Helpers
                 {
                     //LogHelper.ConsoleLog("[OAUTH] Unable to send response write data.");
                 }
-                Log.Information("[{Type}] Flow completed. Listening...", "OAuth");
+                Log.Information("[{Type}] Flow completed. Listening on port: {Port}...", "OAuth", AppConfig.App.OauthPort);
             }
             catch (Exception x)
             {

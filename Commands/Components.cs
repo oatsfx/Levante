@@ -124,7 +124,7 @@ namespace Levante.Commands
 
             var aau = Logging.GetLoggingUser(user.Id);
 
-            var channel = Context.Client.GetChannel(aau.DiscordChannelID);
+            var channel = Context.Client.GetChannel(aau.DiscordChannelId);
             if (channel == null)
             {
                 var embed = Embeds.GetErrorEmbed();
@@ -136,8 +136,8 @@ namespace Levante.Commands
                 return;
             }
 
-            await LogHelper.Log(Context.Client.GetChannel(aau.DiscordChannelID) as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: Logging.GenerateSessionSummary(aau), CB: LoggingService.GenerateChannelButtons(aau.DiscordID));
-            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary from <#{aau.DiscordChannelID}>, beginning on {TimestampTag.FromDateTime(aau.Start.Timestamp)}.", Logging.GenerateSessionSummary(aau));
+            await LogHelper.Log(Context.Client.GetChannel(aau.DiscordChannelId) as ITextChannel, $"<@{user.Id}>: Logging terminated by user. Here is your session summary:", Embed: Logging.GenerateSessionSummary(aau), CB: LoggingService.GenerateChannelButtons(aau.DiscordUserId));
+            await LogHelper.Log(user.CreateDMChannelAsync().Result, $"Here is the session summary from <#{aau.DiscordChannelId}>, beginning on {TimestampTag.FromDateTime(aau.Start.Timestamp)}.", Logging.GenerateSessionSummary(aau));
 
             await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(aau));
             Logging.DeleteActiveUserFromConfig(user.Id);
@@ -288,9 +288,9 @@ namespace Levante.Commands
             {
                 LoggingUser newUser = new()
                 {
-                    DiscordID = user.Id,
+                    DiscordUserId = user.Id,
                     UniqueBungieName = uniqueName,
-                    DiscordChannelID = userLogChannel.Id,
+                    DiscordChannelId = userLogChannel.Id,
                     Start = new()
                     {
                         Level = userLevel,
@@ -368,8 +368,8 @@ namespace Levante.Commands
                 return;
             }
 
-            var activeUser = Logging.GetXpLoggingUsers().Find(x => x.DiscordChannelID == Context.Channel.Id);
-            activeUser ??= Logging.GetPriorityXpLoggingUsers().Find(x => x.DiscordChannelID == Context.Channel.Id);
+            var activeUser = Logging.GetXpLoggingUsers().Find(x => x.DiscordChannelId == Context.Channel.Id);
+            activeUser ??= Logging.GetPriorityXpLoggingUsers().Find(x => x.DiscordChannelId == Context.Channel.Id);
 
             if (activeUser == null)
             {
@@ -377,7 +377,7 @@ namespace Levante.Commands
                 return;
             }
 
-            if (activeUser.DiscordID != Context.User.Id)
+            if (activeUser.DiscordUserId != Context.User.Id)
             {
                 await RespondAsync("This channel is not yours, only the channel owner can add users to the channel.", ephemeral: true);
                 return;
@@ -576,9 +576,9 @@ namespace Levante.Commands
             {
                 LoggingUser newUser = new()
                 {
-                    DiscordID = user.Id,
+                    DiscordUserId = user.Id,
                     UniqueBungieName = uniqueName,
-                    DiscordChannelID = userLogChannel.Id,
+                    DiscordChannelId = userLogChannel.Id,
                     Start = new()
                     {
                         Level = userLevel,

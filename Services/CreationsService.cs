@@ -22,7 +22,6 @@ namespace Levante.Services
 
         public readonly string FilePath = @"Configs/creationsConfig.json";
 
-        [JsonProperty("CreationsPosts")]
         private List<string> CreationsPosts = new();
 
         public CreationsService(DiscordShardedClient client)

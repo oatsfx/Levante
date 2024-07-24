@@ -41,14 +41,14 @@ namespace Levante.Configs
 
     public class LoggingUser
     {
-        [JsonProperty("DiscordID")]
-        public ulong DiscordID { get; set; } = 0;
+        [JsonProperty("DiscordUserId")]
+        public ulong DiscordUserId { get; set; } = 0;
 
         [JsonProperty("UniqueBungieName")]
         public string UniqueBungieName { get; set; } = "Guardian#0000";
 
-        [JsonProperty("DiscordChannelID")]
-        public ulong DiscordChannelID { get; set; } = 0;
+        [JsonProperty("DiscordChannelId")]
+        public ulong DiscordChannelId { get; set; } = 0;
 
         [JsonProperty("NoGainRefreshes")]
         public int NoGainRefreshes { get; set; } = 0;

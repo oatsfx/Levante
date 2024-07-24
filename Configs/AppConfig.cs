@@ -149,6 +149,9 @@ namespace Levante.Configs
             [JsonProperty("Version")]
             public string Version { get; set; } = "1.0.0";
 
+            [JsonProperty("OauthPort")]
+            public int OauthPort { get; set; } = 8000;
+
             [JsonProperty("LogoUrl")]
             public string LogoUrl = "https://www.levante.dev/images/Levante-Logo.png";
 

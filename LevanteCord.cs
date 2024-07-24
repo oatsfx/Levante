@@ -58,8 +58,9 @@ namespace Levante
                 .AddSingleton<InteractionService>(p => new InteractionService(p.GetRequiredService<DiscordShardedClient>()))
                 .AddSingleton<CreationsService>()
                 .AddSingleton<LoggingService>()
-
-            .BuildServiceProvider();
+                .AddSingleton<UserService>()
+                .AddSingleton<GuildService>()
+                .BuildServiceProvider();
         }
 
         static void Main(string[] args)

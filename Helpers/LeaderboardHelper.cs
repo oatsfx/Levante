@@ -237,7 +237,7 @@ namespace Levante.Helpers
 
         public static void CheckLeaderboardData(LoggingUser AAU)
         {
-            var user = DataConfig.GetLinkedUser(AAU.DiscordID);
+            var user = DataConfig.GetLinkedUser(AAU.DiscordUserId);
             // Generate a Leaderboard entry, and overwrite if the existing one is worse.
             if (DateTime.Now - AAU.Start.Timestamp > TimeSpan.FromHours(1)) // Ignore entries that are less than one hour.
             {

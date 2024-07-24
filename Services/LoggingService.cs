@@ -120,37 +120,37 @@ namespace Levante.Services
             var tempAau = aau;
 
             // If the user has removed themselves from logging while we are refreshing.
-            if (!(loggingConfig.Users.Exists(x => x.DiscordChannelID == tempAau.DiscordChannelID) ||
-                loggingConfig.PriorityUsers.Exists(x => x.DiscordChannelID == tempAau.DiscordChannelID)))
+            if (!(loggingConfig.Users.Exists(x => x.DiscordChannelId == tempAau.DiscordChannelId) ||
+                loggingConfig.PriorityUsers.Exists(x => x.DiscordChannelId == tempAau.DiscordChannelId)))
                 return;
 
             Log.Information("[{Type}] Checking {User}.", "Logging", tempAau.UniqueBungieName);
-            var actualUser = loggingConfig.Users.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
-            actualUser ??= loggingConfig.PriorityUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID);
+            var actualUser = loggingConfig.Users.FirstOrDefault(x => x.DiscordChannelId == tempAau.DiscordChannelId);
+            actualUser ??= loggingConfig.PriorityUsers.FirstOrDefault(x => x.DiscordChannelId == tempAau.DiscordChannelId);
 
-            IUser user = _client.GetUser(tempAau.DiscordID);
+            IUser user = _client.GetUser(tempAau.DiscordUserId);
             if (user == null)
             {
                 var _rClient = _client.Rest;
-                user = await _rClient.GetUserAsync(tempAau.DiscordID);
+                user = await _rClient.GetUserAsync(tempAau.DiscordUserId);
             }
 
-            var logChannel = _client.GetChannel(tempAau.DiscordChannelID) as ITextChannel;
+            var logChannel = _client.GetChannel(tempAau.DiscordChannelId) as ITextChannel;
             var dmChannel = user.CreateDMChannelAsync().Result;
 
             if (logChannel == null)
             {
-                await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: LoggingChannelNotFound. Logging will be terminated for {tempAau.UniqueBungieName}.");
-                await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelID}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
+                await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordUserId}>: Refresh unsuccessful. Reason: LoggingChannelNotFound. Logging will be terminated for {tempAau.UniqueBungieName}.");
+                await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelId}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
 
                 Log.Information("[{Type}] Stopped logging for {User} via automation.", "Logging", tempAau.UniqueBungieName);
 
-                DeleteActiveUserFromConfig(tempAau.DiscordID);
+                DeleteActiveUserFromConfig(tempAau.DiscordUserId);
                 await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
             }
 
             var currentOverride = loggingOverrides.FirstOrDefault(x => x.Hash == tempAau.OverrideHash);
-            var loggingValues = new XpLoggingValueResponse(tempAau.DiscordID, currentOverride);
+            var loggingValues = new XpLoggingValueResponse(tempAau.DiscordUserId, currentOverride);
             var updatedLevel = loggingValues.CurrentLevel;
             var updatedExtraLevel = loggingValues.CurrentExtraLevel;
             var updatedProgression = loggingValues.XpProgress;
@@ -170,12 +170,12 @@ namespace Levante.Services
                     string uniqueName = tempAau.UniqueBungieName;
 
                     await LogHelper.Log(logChannel, $"Refresh unsuccessful. Reason: {errorStatus}.");
-                    await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", GenerateSessionSummary(tempAau), GenerateChannelButtons(tempAau.DiscordID));
+                    await LogHelper.Log(logChannel, $"<@{tempAau.DiscordUserId}>: Refresh unsuccessful. Reason: {errorStatus}. Here is your session summary:", GenerateSessionSummary(tempAau), GenerateChannelButtons(tempAau.DiscordUserId));
 
-                    await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelID}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
+                    await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelId}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
 
                     Log.Information("[{Type}] Stopped logging for {User} via automation.", "Logging", tempAau.UniqueBungieName);
-                    DeleteActiveUserFromConfig(tempAau.DiscordID);
+                    DeleteActiveUserFromConfig(tempAau.DiscordUserId);
                     await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau));
                 }
                 else
@@ -201,13 +201,13 @@ namespace Levante.Services
             {
                 string uniqueName = tempAau.UniqueBungieName;
 
-                await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player activity has changed. Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau), GenerateChannelButtons(tempAau.DiscordID));
+                await LogHelper.Log(logChannel, $"<@{tempAau.DiscordUserId}>: Player activity has changed. Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau), GenerateChannelButtons(tempAau.DiscordUserId));
 
                 //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
-                await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelID}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
+                await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelId}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
 
                 Log.Information("[{Type}] Stopped logging for {User} via automation.", "Logging", tempAau.UniqueBungieName);
-                DeleteActiveUserFromConfig(tempAau.DiscordID);
+                DeleteActiveUserFromConfig(tempAau.DiscordUserId);
                 await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
 
                 return;
@@ -246,13 +246,13 @@ namespace Levante.Services
                                 {
                                     string uniqueName = tempAau.UniqueBungieName;
 
-                                    await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau), GenerateChannelButtons(tempAau.DiscordID));
+                                    await LogHelper.Log(logChannel, $"<@{tempAau.DiscordUserId}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau), GenerateChannelButtons(tempAau.DiscordUserId));
 
-                                    await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelID}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
+                                    await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelId}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
 
                                     Log.Information("[{Type}] Stopped logging for {User} via automation.", "Logging", tempAau.UniqueBungieName);
 
-                                    DeleteActiveUserFromConfig(tempAau.DiscordID);
+                                    DeleteActiveUserFromConfig(tempAau.DiscordUserId);
                                     await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
                                 }
                                 else
@@ -313,13 +313,13 @@ namespace Levante.Services
                                 {
                                     string uniqueName = tempAau.UniqueBungieName;
 
-                                    await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau), GenerateChannelButtons(tempAau.DiscordID));
+                                    await LogHelper.Log(logChannel, $"<@{tempAau.DiscordUserId}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau), GenerateChannelButtons(tempAau.DiscordUserId));
 
-                                    await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelID}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
+                                    await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelId}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
 
                                     Log.Information("[{Type}] Stopped logging for {User} via automation.", "Logging", tempAau.UniqueBungieName);
 
-                                    DeleteActiveUserFromConfig(tempAau.DiscordID);
+                                    DeleteActiveUserFromConfig(tempAau.DiscordUserId);
                                     await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
                                 }
                                 else
@@ -389,15 +389,15 @@ namespace Levante.Services
                 {
                     string uniqueName = tempAau.UniqueBungieName;
 
-                    await LogHelper.Log(logChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau), GenerateChannelButtons(tempAau.DiscordID));
+                    await LogHelper.Log(logChannel, $"<@{tempAau.DiscordUserId}>: Player has been determined as inactive. Logging terminated by automation. Here is your session summary:", GenerateSessionSummary(tempAau), GenerateChannelButtons(tempAau.DiscordUserId));
 
                     //await LogHelper.Log(dmChannel, $"<@{tempAau.DiscordID}>: Player has been determined as inactive. Logging will be terminated for {uniqueName}.");
-                    await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelID}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
+                    await LogHelper.Log(dmChannel, $"Here is the session summary from <#{tempAau.DiscordChannelId}>, beginning on {TimestampTag.FromDateTime(tempAau.Start.Timestamp)}.", GenerateSessionSummary(tempAau));
 
                     Log.Information("[{Type}] Stopped logging for {User} via automation.", "Logging", tempAau.UniqueBungieName);
                     //listOfRemovals.Add(tempAau);
 
-                    DeleteActiveUserFromConfig(tempAau.DiscordID);
+                    DeleteActiveUserFromConfig(tempAau.DiscordUserId);
                     //ActiveConfig.ActiveAFKUsers.Remove(ActiveConfig.ActiveAFKUsers.FirstOrDefault(x => x.DiscordChannelID == tempAau.DiscordChannelID));
                     await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
                 }
@@ -524,13 +524,13 @@ namespace Levante.Services
             return embed;
         }
 
-        public static ComponentBuilder GenerateChannelButtons(ulong DiscordID)
+        public static ComponentBuilder GenerateChannelButtons(ulong discordUserId)
         {
             var deleteEmote = new Emoji("⛔");
             var restartEmote = new Emoji("✅");
 
             var buttonBuilder = new ComponentBuilder()
-                .WithButton("Restart Logging", customId: $"restartLogging:{DiscordID}", ButtonStyle.Success, restartEmote, row: 0)
+                .WithButton("Restart Logging", customId: $"restartLogging:{discordUserId}", ButtonStyle.Success, restartEmote, row: 0)
                 .WithButton("Delete Log Channel", customId: $"deleteChannel", ButtonStyle.Secondary, deleteEmote, row: 0);
 
             return buttonBuilder;
@@ -546,20 +546,20 @@ namespace Levante.Services
 
         public List<LoggingUser> GetPriorityXpLoggingUsers() => loggingConfig.PriorityUsers;
 
-        public LoggingUser GetLoggingUser(ulong DiscordID)
+        public LoggingUser GetLoggingUser(ulong discordId)
         {
-            var result = loggingConfig.Users.FirstOrDefault(x => x.DiscordID == DiscordID);
-            result ??= loggingConfig.PriorityUsers.FirstOrDefault(x => x.DiscordID == DiscordID);
+            var result = loggingConfig.Users.FirstOrDefault(x => x.DiscordUserId == discordId);
+            result ??= loggingConfig.PriorityUsers.FirstOrDefault(x => x.DiscordUserId == discordId);
             return result;
         }
 
         public List<LoggingOverride> GetLoggingOverrides() => loggingOverrides;
 
-        public LoggingOverride GetLoggingOverride(long Hash) => loggingOverrides.FirstOrDefault(x => x.Hash == Hash);
+        public LoggingOverride GetLoggingOverride(long hash) => loggingOverrides.FirstOrDefault(x => x.Hash == hash);
 
         public void AddLoggingOverride(LoggingOverride lo)
         {
-            string overridePath = @"Configs/EmblemOffers/" + lo.ShortName + @".json";
+            string overridePath = @"LoggingOverrides/" + lo.ShortName + @".json";
             loggingOverrides.Add(lo);
 
             if (!File.Exists(overridePath))
@@ -572,7 +572,7 @@ namespace Levante.Services
 
         public void RemoveLoggingOverride(LoggingOverride lo)
         {
-            string emblemOfferPath = @"Configs/EmblemOffers/";
+            string emblemOfferPath = @"LoggingOverrides/";
             loggingOverrides.Remove(lo);
             File.Delete(emblemOfferPath + @"/" + lo.ShortName + @".json");
             Log.Information("[{Type}] Deleted Logging Override: {Name} ({Hash}).", "Logging", lo.ShortName, lo.Hash);
@@ -602,12 +602,12 @@ namespace Levante.Services
 
         public void DeleteActiveUserFromConfig(ulong DiscordID)
         {
-            if (loggingConfig.Users.Exists(x => x.DiscordID == DiscordID))
-                loggingConfig.Users.Remove(loggingConfig.Users.First(x => x.DiscordID == DiscordID));
+            if (loggingConfig.Users.Exists(x => x.DiscordUserId == DiscordID))
+                loggingConfig.Users.Remove(loggingConfig.Users.First(x => x.DiscordUserId == DiscordID));
             else
-                loggingConfig.PriorityUsers.Remove(loggingConfig.PriorityUsers.First(x => x.DiscordID == DiscordID));
+                loggingConfig.PriorityUsers.Remove(loggingConfig.PriorityUsers.First(x => x.DiscordUserId == DiscordID));
         }
 
-        public bool IsExistingActiveUser(ulong DiscordID) => loggingConfig.Users.Exists(x => x.DiscordID == DiscordID) || loggingConfig.PriorityUsers.Exists(x => x.DiscordID == DiscordID);
+        public bool IsExistingActiveUser(ulong DiscordID) => loggingConfig.Users.Exists(x => x.DiscordUserId == DiscordID) || loggingConfig.PriorityUsers.Exists(x => x.DiscordUserId == DiscordID);
     }
 }
