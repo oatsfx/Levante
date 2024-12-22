@@ -378,7 +378,7 @@ namespace Levante
                         actualUser.Last.PowerBonus = powerBonus;
                     }
                    
-                    if (activityHash != tempAau.ActivityHash)
+                    /*if (activityHash != tempAau.ActivityHash)
                     {
                         string uniqueName = tempAau.UniqueBungieName;
 
@@ -391,7 +391,7 @@ namespace Levante
                         ActiveConfig.DeleteActiveUserFromConfig(tempAau.DiscordID);
                         await Task.Run(() => LeaderboardHelper.CheckLeaderboardData(tempAau)).ConfigureAwait(false);
                     }
-                    else if (combinedLevel > lastCombinedLevel)
+                    else*/ if (combinedLevel > lastCombinedLevel)
                     {
                         await LogHelper.Log(logChannel, $"Level up! Now: {tempAau.Last.Level}{(tempAau.Last.ExtraLevel > 0 ? $" (+{tempAau.Last.ExtraLevel})" : "")}" +
                             $" -> {updatedLevel}{(updatedExtraLevel > 0 ? $" (+{updatedExtraLevel})" : "")} " +
