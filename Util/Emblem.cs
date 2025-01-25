@@ -142,12 +142,12 @@ namespace Levante.Util
                     embed.AddField(x =>
                     {
                         x.Name = "Redeemed";
-                        x.Value = $"> {acquisition.Data.Acquisition:n0}";
+                        x.Value = $"> {acquisition.Data.Find(x => x.CollectibleHash == (long)GetCollectableHash()).Acquisition:n0}";
                         x.IsInline = true;
                     }).AddField(x =>
                     {
                         x.Name = "Rarity";
-                        x.Value = $"> {acquisition.Data.Percentage}%";
+                        x.Value = $"> {acquisition.Data.Find(x => x.CollectibleHash == (long)GetCollectableHash()).Percentage}%";
                         x.IsInline = true;
                     });
                 }

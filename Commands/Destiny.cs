@@ -16,7 +16,6 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Levante.Commands
@@ -26,7 +25,7 @@ namespace Levante.Commands
         public InteractiveService Interactive { get; set; }
 
         [SlashCommand("artifact", "Project what level you need to hit for a specific Power bonus.")]
-        public async Task ArtifactBonusPrediction([Summary("power-bonus", "Power Level to project.")] int PowerBonus)
+        public async Task ArtifactBonusPrediction([Summary("power-bonus", "Power Level to project. Range: 1-100")] int PowerBonus)
         {
             await DeferAsync();
 
@@ -537,6 +536,7 @@ namespace Levante.Commands
         [SlashCommand("free-emblems", "Display a list of universal emblem codes.")]
         public async Task FreeEmblems([Summary("only-show-missing", "Only show the emblem codes you are missing. Default: true")] bool onlyShowMissing = true, [Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
+            await DeferAsync(ephemeral: hide);
             var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
 
             var emblemsUserMissing = new List<string>();
@@ -582,7 +582,7 @@ namespace Levante.Commands
                 .WithFooter(PaginatorFooter.None)
                 .Build();
 
-            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), ephemeral: hide);
+            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
 
 
             PageBuilder GeneratePage(int index)
@@ -1222,6 +1222,158 @@ namespace Levante.Commands
             }
         }
 
+        [SlashCommand("rarest-emblems", "Get your profile's rarest emblems.")]
+        public async Task RarestEmblems([Summary("player", "Player's Bungie tag to get Guardian information for."), Autocomplete(typeof(BungieTagAutocomplete))] string BungieTag = "", [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
+                Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5), Choice("Epic Games", 6)]int ArgPlatform = 0,
+            [Summary("count", "Number of rarest emblems to fetch. Default: 7. Range: 1-50.")] int count = 7,
+            [Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
+        {
+            await DeferAsync(ephemeral: hide);
+
+            Guardian.Platform Platform = (Guardian.Platform)ArgPlatform;
+            count = count switch
+            {
+                < 1 => 1,
+                > 50 => 50,
+                _ => count,
+            };
+
+            string MembershipType = null;
+            string MembershipID = null;
+            string authToken = null;
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+            if (!String.IsNullOrEmpty(BungieTag))
+            {
+                var bTagResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/-1/" + Uri.EscapeDataString(BungieTag)).Result;
+                var bTagContent = bTagResponse.Content.ReadAsStringAsync().Result;
+                dynamic bTagItem = JsonConvert.DeserializeObject(bTagContent);
+
+                for (int i = 0; i < bTagItem.Response.Count; i++)
+                {
+                    string memId = bTagItem.Response[i].membershipId;
+                    string memType = bTagItem.Response[i].membershipType;
+
+                    var memResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + memType + "/Profile/" + memId + "/?components=100").Result;
+                    var memContent = memResponse.Content.ReadAsStringAsync().Result;
+                    dynamic memItem = JsonConvert.DeserializeObject(memContent);
+
+                    if (memItem.ErrorCode == 1)
+                    {
+                        if (((int)memItem.Response.profile.data.userInfo.crossSaveOverride == (int)memItem.Response.profile.data.userInfo.membershipType) ||
+                            ((int)memItem.Response.profile.data.userInfo.crossSaveOverride == 0 && (int)memItem.Response.profile.data.userInfo.membershipType == ((int)Platform)))
+                        {
+                            MembershipType = memType;
+                            MembershipID = memId;
+                            break;
+                        }
+                    }
+                }
+
+                if (MembershipType == null || MembershipID == null)
+                {
+                    var errorEmbed = Embeds.GetErrorEmbed();
+                    errorEmbed.Description = $"An error occurred when retrieving that player's Guardians. Run the command again and specify their platform.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errorEmbed.Build(); });
+                    return;
+                }
+            }
+            else
+            {
+                if (!DataConfig.IsExistingLinkedUser(Context.User.Id))
+                {
+                    var errorEmbed = Embeds.GetErrorEmbed();
+                    errorEmbed.Description = $"You don't have a Destiny 2 account linked, I need this information to get your data from Bungie's API. Get started with the `/link` command.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errorEmbed.Build(); });
+                    return;
+                }
+
+                var dil = DataConfig.GetLinkedUser(Context.User.Id);
+                if (dil == null)
+                {
+                    var errorEmbed = Embeds.GetErrorEmbed();
+                    errorEmbed.Description = $"There was an error with your linked account. Try relinking with the `/link` command.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errorEmbed.Build(); });
+                    return;
+                }
+
+                MembershipID = dil.BungieMembershipID;
+                MembershipType = dil.BungieMembershipType;
+                authToken = dil.AccessToken;
+                BungieTag = dil.UniqueBungieName;
+            }
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
+
+            var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=800").Result;
+            var content = response.Content.ReadAsStringAsync().Result;
+            dynamic item = JsonConvert.DeserializeObject(content);
+
+            var collectibles = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(item.Response.profileCollectibles.data.collectibles.ToString()) as Dictionary<string, dynamic>;
+            var filtered = collectibles.Where(x => ManifestHelper.EmblemsCollectible.ContainsValue(uint.Parse(x.Key)) && !((DestinyCollectibleState)x.Value.state)
+                .HasFlag(DestinyCollectibleState.NotAcquired))
+                .Select(x => long.Parse(x.Key));
+
+            var acquisition = new EmblemReport(filtered, count);
+            // In case we are given data that is less than what we asked for.
+            count = acquisition.Data.Count;
+
+            var paginator = new LazyPaginatorBuilder()
+                .AddUser(Context.User)
+                .WithStartPageIndex(0)
+                .WithPageFactory(GeneratePage)
+                .WithMaxPageIndex(count / 10)
+                .AddOption(new Emoji("◀"), PaginatorAction.Backward)
+                .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
+                .AddOption(new Emoji("▶"), PaginatorAction.Forward)
+                .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
+                .WithActionOnCancellation(ActionOnStop.DeleteInput)
+                .WithActionOnTimeout(ActionOnStop.DeleteInput)
+                .WithFooter(PaginatorFooter.None)
+                .Build();
+
+            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), ephemeral: hide, responseType: InteractionResponseType.DeferredChannelMessageWithSource);
+
+            PageBuilder GeneratePage(int index)
+            {
+                string embedDesc = "";
+                var startIndex = index * 10;
+                var endIndex = ((10 * index) + 10 > count ? count : (10 * index) + 10);
+
+                for (int i = startIndex; i < endIndex; i++)
+                {
+                    var emblem = acquisition.Data[i];
+                    var invHash = ManifestHelper.EmblemsCollectible.FirstOrDefault(x => x.Value == emblem.CollectibleHash).Key;
+                    var emblemName = ManifestHelper.Emblems[ManifestHelper.EmblemsCollectible.FirstOrDefault(x => x.Value == emblem.CollectibleHash).Key];
+                    embedDesc += $"> {(count > 10 ? $"{i + 1}" : $"{i + 1,2}")}. `{emblem.Acquisition,7}` - [{emblemName}](https://emblem.report/{invHash}) ({emblem.Percentage}%)\n";
+                }
+
+                var auth = new EmbedAuthorBuilder()
+                {
+                    Name = $"{BungieTag} Rarest Emblems",
+                    Url = $"https://emblem.report/p/{MembershipType}/{MembershipID}",
+                };
+                var foot = new EmbedFooterBuilder()
+                {
+                    Text = $"Powered by emblem.report | Showing {startIndex + 1}-{endIndex} of {count}"
+                };
+                var embed = new EmbedBuilder
+                {
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Author = auth,
+                    Footer = foot,
+                    Description = embedDesc,
+                };
+
+                return new PageBuilder()
+                    .WithAuthor(embed.Author)
+                    .WithDescription(embed.Description)
+                    .WithFields(embed.Fields)
+                    .WithFooter(embed.Footer)
+                    .WithColor((Discord.Color)embed.Color);
+            }
+            
+        }
+
         [SlashCommand("seasonals", "View the current season's challenges, even ones not available yet.")]
         public async Task Seasonals([Summary("week", "Start at a specified week. Numbers outside of the bounds will default accordingly.")] int week = 1,
             [Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
@@ -1237,96 +1389,95 @@ namespace Levante.Commands
             bool showProgress = dil != null;
 
             await DeferAsync(ephemeral: hide);
-            using (var client = new HttpClient())
+            using var client = new HttpClient();
+
+            dynamic item = "";
+            string charId = "";
+
+            if (showProgress)
             {
-                dynamic item = "";
-                string charId = "";
+                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
 
-                if (showProgress)
+                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,900,1200").Result;
+                var content = response.Content.ReadAsStringAsync().Result;
+                item = JsonConvert.DeserializeObject(content);
+                charId = $"{item.Response.profile.data.characterIds[0]}";
+            }
+
+            var paginator = new LazyPaginatorBuilder()
+                .AddUser(Context.User)
+                .WithStartPageIndex(week - 1)
+                .WithPageFactory(GeneratePage)
+                .WithMaxPageIndex(ManifestHelper.SeasonalChallenges.Count - 1)
+                .AddOption(new Emoji("◀"), PaginatorAction.Backward)
+                .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
+                .AddOption(new Emoji("▶"), PaginatorAction.Forward)
+                .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
+                .WithActionOnCancellation(ActionOnStop.DeleteInput)
+                .WithActionOnTimeout(ActionOnStop.DeleteInput)
+                .WithFooter(PaginatorFooter.None)
+                .Build();
+
+            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
+
+            PageBuilder GeneratePage(int index)
+            {
+                var auth = new EmbedAuthorBuilder()
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
+                    Name = $"{ManifestHelper.CurrentSeason.DisplayProperties.Name} Seasonal Challenges Week {index + 1} of {ManifestHelper.SeasonalChallenges.Count}",
+                    IconUrl = $"https://bungie.net{ManifestHelper.CurrentSeason.DisplayProperties.Icon}",
+                };
 
-                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,900,1200").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    item = JsonConvert.DeserializeObject(content);
-                    charId = $"{item.Response.profile.data.characterIds[0]}";
-                }
-
-                var paginator = new LazyPaginatorBuilder()
-                    .AddUser(Context.User)
-                    .WithStartPageIndex(week - 1)
-                    .WithPageFactory(GeneratePage)
-                    .WithMaxPageIndex(ManifestHelper.SeasonalChallenges.Count - 1)
-                    .AddOption(new Emoji("◀"), PaginatorAction.Backward)
-                    .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
-                    .AddOption(new Emoji("▶"), PaginatorAction.Forward)
-                    .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
-                    .WithActionOnCancellation(ActionOnStop.DeleteInput)
-                    .WithActionOnTimeout(ActionOnStop.DeleteInput)
-                    .WithFooter(PaginatorFooter.None)
-                    .Build();
-
-                await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
-
-                PageBuilder GeneratePage(int index)
+                var embed = new EmbedBuilder()
                 {
-                    var auth = new EmbedAuthorBuilder()
+                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Author = auth,
+                };
+
+                int classifiedCount = 0;
+                foreach (var challenges in ManifestHelper.SeasonalChallenges[index])
+                {
+                    if (challenges.Value.Redacted)
                     {
-                        Name = $"{ManifestHelper.CurrentSeason.DisplayProperties.Name} Seasonal Challenges Week {index + 1} of {ManifestHelper.SeasonalChallenges.Count}",
-                        IconUrl = $"https://bungie.net{ManifestHelper.CurrentSeason.DisplayProperties.Icon}",
-                    };
-
-                    var embed = new EmbedBuilder()
-                    {
-                        Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
-                        Author = auth,
-                    };
-
-                    int classifiedCount = 0;
-                    foreach (var challenges in ManifestHelper.SeasonalChallenges[index])
-                    {
-                        if (challenges.Value.Redacted)
-                        {
-                            classifiedCount++;
-                            continue;
-                        }
-
-                        string progress = "";
-                        if (showProgress)
-                        {
-                            for (int i = 0; i < item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives.Count; i++)
-                            {
-                                long hash = (long)item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].objectiveHash;
-                                int progressValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].progress;
-                                int completionValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].completionValue;
-                                if (!ManifestHelper.SeasonalObjectives.ContainsKey(hash)) continue;
-                                progress += $"> {ManifestHelper.SeasonalObjectives[hash]}:" +
-                                    $" {progressValue}/{completionValue} {(progressValue >= completionValue ? Emotes.Yes : "")}\n";
-                            }
-                        }
-
-                        embed.AddField(x =>
-                        {
-                            x.Name = challenges.Value.DisplayProperties.Name;
-                            x.Value = $"{DestinyEmote.ParseBungieVars(challenges.Value.DisplayProperties.Description.Split('\n').FirstOrDefault())}\n{progress}";
-                            x.IsInline = false;
-                        });
+                        classifiedCount++;
+                        continue;
                     }
 
-                    var foot = new EmbedFooterBuilder()
+                    string progress = "";
+                    if (showProgress)
                     {
-                        Text = $"Powered by the Bungie API | Week {index + 1}/{ManifestHelper.SeasonalChallenges.Count}{(classifiedCount > 0 ? $" | Classified Records ({classifiedCount}/{ManifestHelper.SeasonalChallenges[index].Count}) are Hidden" : "")}"
-                    };
-                    embed.WithFooter(foot);
+                        for (int i = 0; i < item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives.Count; i++)
+                        {
+                            long hash = (long)item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].objectiveHash;
+                            int progressValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].progress;
+                            int completionValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].completionValue;
+                            if (!ManifestHelper.SeasonalObjectives.ContainsKey(hash)) continue;
+                            progress += $"> {ManifestHelper.SeasonalObjectives[hash]}:" +
+                                $" {progressValue}/{completionValue} {(progressValue >= completionValue ? Emotes.Yes : "")}\n";
+                        }
+                    }
 
-                    return new PageBuilder()
-                        .WithAuthor(embed.Author)
-                        .WithDescription(embed.Description)
-                        .WithFields(embed.Fields)
-                        .WithFooter(embed.Footer)
-                        .WithColor((Discord.Color)embed.Color);
+                    embed.AddField(x =>
+                    {
+                        x.Name = challenges.Value.DisplayProperties.Name;
+                        x.Value = $"{DestinyEmote.ParseBungieVars(challenges.Value.DisplayProperties.Description.Split('\n').FirstOrDefault())}\n{progress}";
+                        x.IsInline = false;
+                    });
                 }
+
+                var foot = new EmbedFooterBuilder()
+                {
+                    Text = $"Powered by the Bungie API | Week {index + 1}/{ManifestHelper.SeasonalChallenges.Count}{(classifiedCount > 0 ? $" | Classified Records ({classifiedCount}/{ManifestHelper.SeasonalChallenges[index].Count}) are Hidden" : "")}"
+                };
+                embed.WithFooter(foot);
+
+                return new PageBuilder()
+                    .WithAuthor(embed.Author)
+                    .WithDescription(embed.Description)
+                    .WithFields(embed.Fields)
+                    .WithFooter(embed.Footer)
+                    .WithColor((Discord.Color)embed.Color);
             }
         }
 
