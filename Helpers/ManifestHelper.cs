@@ -370,19 +370,6 @@ namespace Levante.Helpers
                         CurrentSeason = season.Value;
                 }
 
-                dynamic raw = JsonConvert.DeserializeObject(content);
-                dynamic rawSeason = raw[$"{CurrentSeason.Hash}"];
-                if (rawSeason.acts != null)
-                {
-                    for (int i = 0; i < rawSeason.acts.Count; i++)
-                    {
-                        if (((DateTime)rawSeason.acts[i].startTime) < DateTime.Now)
-                        {
-                            CurrentLevelCap += (int)rawSeason.acts[i].rankCount;
-                        }
-                    }
-                }
-
                 string stringVarUrl = "https://bungie.net/Platform/Destiny2/3/Profile/4611686018471482002/?components=100,202,1200";
                 response = client.GetAsync(stringVarUrl).Result;
                 content = response.Content.ReadAsStringAsync().Result;

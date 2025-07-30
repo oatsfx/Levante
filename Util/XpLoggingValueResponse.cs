@@ -28,8 +28,6 @@ namespace Levante.Util
         {
             try
             {
-                LevelCap = ManifestHelper.CurrentLevelCap;
-
                 var dil = DataConfig.GetLinkedUser(discordId);
                 using var client = new HttpClient();
                 client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
@@ -57,9 +55,10 @@ namespace Levante.Util
                     return;
                 }
 
-                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level >= LevelCap)
+                var progression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"];
+                if (progression.level >= progression.levelCap)
                 {
-                    var progression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"];
+                    progression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"];
                     int extraLevel = progression.level;
                     CurrentLevel = LevelCap;
                     CurrentExtraLevel = extraLevel;
@@ -68,7 +67,6 @@ namespace Levante.Util
                 }
                 else
                 {
-                    var progression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"];
                     CurrentLevel = progression.level;
                     CurrentExtraLevel = 0;
                     XpProgress = progression.progressToNextLevel;
