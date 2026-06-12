@@ -73,57 +73,6 @@ namespace Levante.Commands
                     return;
                 }
             }
-
-            [SlashCommand("resets", "Set up announcements for Daily/Weekly Reset. Use this in the channel you want this set up in.")]
-            public async Task Resets([Summary("reset-type", "Choose between Daily or Weekly Reset."),
-                Choice("Daily", 0), Choice("Weekly", 1)] int ResetType)
-            {
-                if (Context.Channel.GetChannelType() == ChannelType.DM)
-                {
-                    var errEmbed = Embeds.GetErrorEmbed();
-                    errEmbed.Description = $"I only allow alerts like these to be made in servers!";
-                    await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
-                    return;
-                }
-
-                bool IsDaily = ResetType == 0;
-
-                if (DataConfig.IsExistingLinkedChannel(Context.Channel.Id, IsDaily))
-                {
-                    DataConfig.DeleteChannelFromRotationConfig(Context.Channel.Id, IsDaily);
-
-                    await RespondAsync($"This channel will no longer receive {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command to re-subscribe to them!", ephemeral: true);
-                    return;
-                }
-                else
-                {
-                    foreach (var channel in Context.Guild.TextChannels)
-                    {
-                        if (DataConfig.IsExistingLinkedChannel(channel.Id, IsDaily))
-                        {
-                            await RespondAsync($"This guild already has {(IsDaily ? "Daily" : "Weekly")} reset posts set up in {channel.Mention}.", ephemeral: true);
-                            return;
-                        }
-                    }
-
-                    try
-                    {
-                        await Context.Channel.SendMessageAsync(embed: IsDaily ? CurrentRotations.DailyResetEmbed().Build() : CurrentRotations.WeeklyResetEmbed().Build());
-                    }
-                    catch
-                    {
-                        var errEmbed = Embeds.GetErrorEmbed();
-                        errEmbed.Description = $"Something went wrong when trying to post the reset embed, do I have permissions to send messages into this channel?";
-                        await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
-                        return;
-                    }
-
-                    DataConfig.AddChannelToRotationConfig(Context.Channel.Id, IsDaily);
-
-                    await RespondAsync($"This channel is now successfully subscribed to {(IsDaily ? "Daily" : "Weekly")} reset posts. Run this command again to remove this type of alert!", ephemeral: true);
-                    return;
-                }
-            }
         }
 
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]

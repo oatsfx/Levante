@@ -72,6 +72,7 @@ namespace Levante
             Console.WriteLine(ASCIIName);
             if (!ConfigHelper.CheckAndLoadConfigFiles())
                 return;
+
             //create the logger and setup your sinks, filters and properties
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Verbose()
@@ -113,7 +114,6 @@ namespace Levante
             await InitializeListeners();
             var client = _services.GetRequiredService<DiscordShardedClient>();
             var commands = _services.GetRequiredService<InteractionService>();
-            var creations = _services.GetRequiredService<CreationsService>();
 
             client.Log += LogAsync;
 
@@ -184,7 +184,7 @@ namespace Levante
                 case 10:
                     await _client.SetActivityAsync(new Game($"{BotConfig.WatchingStatuses[rand.Next(0, BotConfig.WatchingStatuses.Count)]} | v{BotConfig.Version}", ActivityType.Watching)); break;
                 default:
-                    await _client.SetActivityAsync(new CustomStatusGame("If you haven't used me after August 15th, 2023, relink using the /link command.")); break;
+                    break;
             }
             return;
         }
@@ -255,16 +255,6 @@ namespace Levante
             }
 
             // Send reset embeds if applicable.
-            if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
-                await DataConfig.PostWeeklyResetUpdate(_client);
-
-            await DataConfig.PostDailyResetUpdate(_client);
-
-            // Send users their tracking if applicable.
-            if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
-                await CurrentRotations.CheckUsersWeeklyTracking(_client);
-
-            await CurrentRotations.CheckUsersDailyTracking(_client);
 
             // Start the next timer.
             SetUpTimer(new DateTime(DateTime.UtcNow.AddDays(1).Year, DateTime.UtcNow.AddDays(1).Month, DateTime.UtcNow.AddDays(1).Day, 17, 0, 5));

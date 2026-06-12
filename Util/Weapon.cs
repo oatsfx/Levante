@@ -145,7 +145,7 @@ namespace Levante.Util
             }).AddField(x =>
             {
                 x.Name = "> Other Sources";
-                x.Value = $"[d2foundry](https://d2foundry.gg/w/{GetItemHash()})";
+                x.Value = $"[destiny.report](https://destiny.report/w/{GetItemHash()})";
                 x.IsInline = false;
             }).AddField(x =>
             {

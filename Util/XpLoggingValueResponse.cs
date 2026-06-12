@@ -56,7 +56,7 @@ namespace Levante.Util
                 }
 
                 var progression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"];
-                if (progression.level >= progression.levelCap)
+                if (progression.level >= progression.levelCap && progression.levelCap > 0)
                 {
                     progression = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"];
                     int extraLevel = progression.level;

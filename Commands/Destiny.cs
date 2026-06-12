@@ -269,12 +269,6 @@ namespace Levante.Commands
                 await RespondAsync(embed: offer.BuildEmbed().Build(), components: offer.BuildExternalButton().Build());
         }
 
-        [SlashCommand("daily", "Display Daily reset information.")]
-        public async Task Daily()
-        {
-            await RespondAsync(embed: CurrentRotations.DailyResetEmbed().Build());
-        }
-
         //[RequireBungieOauth]
         //[SlashCommand("fishing", "Get a player's Destiny 2 fishing information.")]
         //public async Task Fishing([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
@@ -877,11 +871,11 @@ namespace Levante.Commands
                 };
 
                 int powerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
-                int totalXP = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.currentProgress;
-                int dailyProgress = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.dailyProgress;
-                int weeklyProgress = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.weeklyProgress;
-                int progressToNextPowerLevel = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.progressToNextLevel;
-                int nextPowerLevelAt = item.Response.profileProgression.data.seasonalArtifact.powerBonusProgression.nextLevelAt;
+                int totalXP = item.Response.profileProgression.data.seasonalArtifact.pointProgression.currentProgress;
+                int dailyProgress = item.Response.profileProgression.data.seasonalArtifact.pointProgression.dailyProgress;
+                int weeklyProgress = item.Response.profileProgression.data.seasonalArtifact.pointProgression.weeklyProgress;
+                int progressToNextPowerLevel = item.Response.profileProgression.data.seasonalArtifact.pointProgression.progressToNextLevel;
+                int nextPowerLevelAt = item.Response.profileProgression.data.seasonalArtifact.pointProgression.nextLevelAt;
 
                 //int xpForNextBoost = GetXPForBoost(powerBonus + 1);
                 int xpNeeded = nextPowerLevelAt - progressToNextPowerLevel;
@@ -961,13 +955,6 @@ namespace Levante.Commands
                 }
                 return 55_000 * (level / 2) + GetXPForLevel(level - 1);
             }
-        }
-
-        [SlashCommand("lost-sector", "Get info on a Lost Sector based on Difficulty.")]
-        public async Task LostSector([Summary("lost-sector", "Lost Sector name."), Autocomplete(typeof(LostSectorAutocomplete))] int LS,
-                [Summary("difficulty", "Lost Sector difficulty.")] LostSectorDifficulty LSD)
-        {
-            await RespondAsync(embed: CurrentRotations.LostSector.GetLostSectorEmbed(LS, LSD).Build());
         }
 
         [RequireBungieOauth]
@@ -1198,22 +1185,6 @@ namespace Levante.Commands
                     {
                         x.Name = "Seasonal";
                         x.Value = result;
-                        x.IsInline = true;
-                    });
-                }
-
-                string engramCounts = "";
-                foreach (var engram in BotConfig.EngramHashes)
-                {
-                    engramCounts += $"{engram.Value} {item.Response.profileStringVariables.data.integerValuesByHash[$"{engram.Key}"]}\n";
-                }
-
-                if (!String.IsNullOrEmpty(engramCounts))
-                {
-                    embed.AddField(x =>
-                    {
-                        x.Name = "Vendor Engrams";
-                        x.Value = engramCounts;
                         x.IsInline = true;
                     });
                 }
@@ -1749,12 +1720,6 @@ namespace Levante.Commands
 
                 await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = weapon.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
-        }
-
-        [SlashCommand("weekly", "Display Weekly reset information.")]
-        public async Task Weekly([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
-        {
-            await RespondAsync(embed: CurrentRotations.WeeklyResetEmbed().Build(), ephemeral: hide);
         }
     }
 }

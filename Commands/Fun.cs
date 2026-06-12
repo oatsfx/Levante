@@ -42,7 +42,12 @@ namespace Levante.Commands
                 "You're mad",
                 "Ran",
                 "RRRRRAAAAAAAAHHHHHHH",
-                $"Who is {Context.User.GlobalName}?"
+                $"Who is {Context.User.GlobalName}?",
+                "67",
+                "brainrot",
+                "dead game",
+                "yes, and?",
+                "goon"
             };
 
             var random = new Random();
