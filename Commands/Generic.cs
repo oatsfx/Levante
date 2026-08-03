@@ -24,9 +24,9 @@ namespace Levante.Commands
         {
             var app = await Context.Client.GetApplicationInfoAsync();
             var embed = new EmbedBuilder();
-            embed.WithColor(new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B));
+            embed.WithColor(new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B));
 
-            embed.ThumbnailUrl = BotConfig.BotLogoUrl;
+            embed.ThumbnailUrl = AppConfig.App.LogoUrl;
 
             embed.Title = "Bot Information";
             embed.Description =
@@ -50,17 +50,17 @@ namespace Levante.Commands
             }).AddField(x =>
             {
                 x.Name = "Bot Version";
-                x.Value = $"v{BotConfig.Version}";
+                x.Value = $"v{AppConfig.App.Version}";
                 x.IsInline = true;
             }).AddField(x =>
             {
                 x.Name = "Website";
-                x.Value = $"https://{BotConfig.Website}/";
+                x.Value = $"https://{AppConfig.App.Website}/";
                 x.IsInline = true;
             }).AddField(x =>
             {
                 x.Name = "Support Server";
-                x.Value = $"https://discord.gg/{BotConfig.SupportServer}";
+                x.Value = $"https://discord.gg/{AppConfig.Discord.SupportServerInvite}";
                 x.IsInline = true;
             }).AddField(x =>
             {
@@ -69,7 +69,7 @@ namespace Levante.Commands
                 x.IsInline = false;
             });
 
-            foreach (var thirdParty in BotConfig.ThirdPartyProjects)
+            foreach (var thirdParty in AppConfig.ThirdPartyProjects)
             {
                 string linkBuilder = "";
                 foreach (var link in thirdParty.Links)
@@ -93,21 +93,21 @@ namespace Levante.Commands
         {
             var embed = new EmbedBuilder();
 
-            embed.WithColor(new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B));
-            embed.ThumbnailUrl = BotConfig.BotLogoUrl;
+            embed.WithColor(new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B));
+            embed.ThumbnailUrl = AppConfig.App.LogoUrl;
             embed.Title = "Looking to have me in your server?";
             embed.Description =
                 "The button below will redirect you to my invite page. **Make sure you are allowed to Manage Applications in the server you want me in!**";
 
-            await RespondAsync(embed: embed.Build(), components: new ComponentBuilder().WithButton("Invite Levante", style: ButtonStyle.Link, url: "https://invite.levante.dev", emote: Emote.Parse(Emotes.Logo), row: 0).Build(), ephemeral: hide);
+            await RespondAsync(embed: embed.Build(), components: new ComponentBuilder().WithButton("Invite Levante", style: ButtonStyle.Link, url: "https://invite.levante.dev", emote: EmoteConfig.GetEmote("LevanteLogo"), row: 0).Build(), ephemeral: hide);
         }
 
-        [SlashCommand("ping", "Replies with Levante's latency to Discord in milliseconds.")]
+        [SlashCommand("ping", "Replies with the bot's latency to Discord in milliseconds.")]
         public async Task PingAsync([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             var embed = new EmbedBuilder
             {
@@ -160,33 +160,33 @@ namespace Levante.Commands
             await RespondAsync(embed: embed.Build(), ephemeral: hide);
         }
 
-        [SlashCommand("support", "Supporting is the best way to keep Levante around and get supporter perks!")]
+        [SlashCommand("support", "Supporting is the best way to keep the bot around and get supporter perks!")]
         public async Task Support([Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
-                IconUrl = BotConfig.BotAvatarUrl,
+                IconUrl = AppConfig.App.AvatarUrl,
             };
             var embed = new EmbedBuilder()
             {
                 Author = auth,
             };
-            embed.WithColor(new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B));
+            embed.WithColor(new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B));
 
-            embed.ThumbnailUrl = BotConfig.BotLogoUrl;
+            embed.ThumbnailUrl = AppConfig.App.LogoUrl;
 
-            embed.Title = "Support Levante";
-            embed.Url = $"https://donate.{BotConfig.Website}/";
+            embed.Title = "Support {AppConfig.App.Name}";
+            embed.Url = $"https://donate.{AppConfig.App.Website}/";
             embed.Description =
-                "Levante is available to everyone for free, and it will continue to stay this way. " +
-                $"Anyone who supports Levante and her team by donating will be eligible for [supporter perks](https://www.{BotConfig.Website}/features/). " +
+                "{AppConfig.App.Name} is available to everyone for free, and it will continue to stay this way. " +
+                $"Anyone who supports {AppConfig.App.Name} and her team by donating will be eligible for [supporter perks](https://www.{AppConfig.App.Website}/features/). " +
                 "Those extra perks are a way of saying thank you to all our generous supporters.";
 
             embed.AddField(x =>
             {
                 x.Name = "> Ways to Support";
-                x.Value = "*Some of the ways you can support Levante.*";
+                x.Value = "*Some of the ways you can support {AppConfig.App.Name}.*";
                 x.IsInline = false;
             });
 
@@ -195,7 +195,7 @@ namespace Levante.Commands
                 Text = "Supported? Let us know in our Support Server!"
             };
 
-            foreach (var thirdParty in BotConfig.ThirdPartySupport)
+            foreach (var thirdParty in AppConfig.SupportLinks)
             {
                 string linkBuilder = "";
                 foreach (var link in thirdParty.Links)
@@ -210,7 +210,7 @@ namespace Levante.Commands
             }
 
             var buttonBuilder = new ComponentBuilder()
-                .WithButton("Support Levante", style: ButtonStyle.Link, url: $"https://donate.{BotConfig.Website}/", emote: Emote.Parse(Emotes.KoFi), row: 0);
+                .WithButton("Support Levante", style: ButtonStyle.Link, url: $"https://donate.{AppConfig.App.Website}/", emote: EmoteConfig.GetEmote("KoFi"), row: 0);
 
             await RespondAsync(embed: embed.Build(), components: buttonBuilder.Build(), ephemeral: hide);
         }

@@ -5,14 +5,14 @@ using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using Levante.Configs;
 using Levante.Helpers;
-using Levante.Rotations;
+using Levante.Services;
+using Levante.Structs;
 using Levante.Util;
 using Levante.Util.Attributes;
 using Newtonsoft.Json;
 using Serilog;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -22,7 +22,18 @@ namespace Levante.Commands
 {
     public class Destiny : InteractionModuleBase<ShardedInteractionContext>
     {
-        public InteractiveService Interactive { get; set; }
+        private readonly InteractiveService Interactive;
+        private readonly LoggingService Logging;
+        private readonly UserService Users;
+        private readonly GuildService Guilds;
+
+        public Destiny(LoggingService xpLoggingService, InteractiveService interactive, UserService users, GuildService guilds)
+        {
+            Logging = xpLoggingService;
+            Interactive = interactive;
+            Users = users;
+            Guilds = guilds;
+        }
 
         [SlashCommand("artifact", "Project what level you need to hit for a specific Power bonus.")]
         public async Task ArtifactBonusPrediction([Summary("power-bonus", "Power Level to project. Range: 1-100")] int PowerBonus)
@@ -49,42 +60,37 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
             embed.Title = $"Power Bonus +{PowerBonus} at Level ";
             int Level = 0, ExtraLevel = 0, XpProgress = 0, XpProgressCap = 0, OverflowXpProgressCap = 0, LevelCap = ManifestHelper.CurrentLevelCap;
 
-            if (DataConfig.IsExistingLinkedUser(Context.User.Id))
+            if (Users.IsExistingUser(Context.User.Id))
             {
-                var dil = DataConfig.GetLinkedUser(Context.User.Id);
+                var dil = Users.GetUser(Context.User.Id);
 
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
-
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
+                var content = await BungieApi.Query($"/Platform/Destiny2/{dil.BungieCredentials.MembershipType}/Profile/{dil.BungieCredentials.MembershipId}/?components=100,104,202", dil.BungieCredentials.AccessToken);
                 dynamic item = JsonConvert.DeserializeObject(content);
 
-                XpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].nextLevelAt;
-                OverflowXpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].nextLevelAt;
+                XpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].nextLevelAt;
+                OverflowXpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].nextLevelAt;
 
-                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == LevelCap)
+                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].level == LevelCap)
                 {
                     Level = LevelCap;
-                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
-                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].progressToNextLevel;
+                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].progressToNextLevel;
                 }
                 else
                 {
-                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
-                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].progressToNextLevel;
+                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].progressToNextLevel;
                 }
                 int currentPowerBonus = item.Response.profileProgression.data.seasonalArtifact.powerBonus;
                 double projectedSeasonRank = 0.0;
@@ -203,11 +209,11 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}"
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}"
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -225,8 +231,30 @@ namespace Levante.Commands
         [SlashCommand("current-offers", "Gives a list of emblem offers. If an emblem is provided, you'll get the specific offer.")]
         public async Task CurrentOffers([Summary("emblem-name", "Emblem name of an emblem that is a current offer."), Autocomplete(typeof(CurrentOfferAutocomplete))] string EmblemHash = null)
         {
+            await DeferAsync();
             if (EmblemHash == null)
             {
+                string bungieName = "";
+                var emblemsUserMissing = new List<string>();
+                if (Users.IsExistingUser(Context.User.Id))
+                {
+                    var linkedUser = Users.GetUser(Context.User.Id);
+
+                    var content = await BungieApi.Query($"/Platform/Destiny2/{linkedUser.BungieCredentials.MembershipType}/Profile/{linkedUser.BungieCredentials.MembershipId}/?components=800", linkedUser.BungieCredentials.AccessToken);
+                    dynamic item = JsonConvert.DeserializeObject(content);
+
+                    foreach (var emblem in EmblemOffer.CurrentOffers)
+                    {
+                        var hash = ManifestHelper.Emblems.First(x => x.Value.Contains(emblem.OfferedEmblem.GetName())).Key;
+                        var emblemCollectible = ManifestHelper.EmblemsCollectible[hash];
+                        var hasEmblem = !((DestinyCollectibleState)item.Response.profileCollectibles.data.collectibles[$"{emblemCollectible}"].state).HasFlag(DestinyCollectibleState.NotAcquired);
+
+                        if (!hasEmblem)
+                            emblemsUserMissing.Add(emblem.OfferedEmblem.GetName());
+                    }
+                    bungieName = linkedUser.BungieCredentials.BungieName;
+                }
+
                 if (EmblemOffer.CurrentOffers.Count > 10)
                 {
                     var paginator = new LazyPaginatorBuilder()
@@ -242,21 +270,22 @@ namespace Levante.Commands
                         .WithFooter(PaginatorFooter.None)
                         .Build();
 
-                    await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator));
+                    await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForPaginator), InteractionResponseType.DeferredChannelMessageWithSource);
 
-                    static PageBuilder GeneratePage(int index)
+                    PageBuilder GeneratePage(int index)
                     {
-                        var embed = EmblemOffer.GetOfferListEmbed(index);
+                        var embed = EmblemOffer.GetOfferListEmbed(index, bungieName, emblemsUserMissing);
                         return new PageBuilder()
                             .WithAuthor(embed.Author)
                             .WithDescription(embed.Description)
-                            .WithColor((Discord.Color)embed.Color);
+                            .WithColor((Discord.Color)embed.Color)
+                            .WithFooter(embed.Footer);
                     }
                 }
                 else
                 {
                     // No need to paginate because we should be able to fit all (less than 10) offers.
-                    await RespondAsync(embed: EmblemOffer.GetOfferListEmbed(0).Build());
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = EmblemOffer.GetOfferListEmbed(0, bungieName, emblemsUserMissing).Build(); });
                 }
 
                 return;
@@ -264,9 +293,9 @@ namespace Levante.Commands
             long EmblemHashCode = long.Parse(EmblemHash);
             var offer = EmblemOffer.GetSpecificOffer(EmblemHashCode);
             if (!EmblemOffer.HasExistingOffer(EmblemHashCode))
-                await RespondAsync("Invalid search, please try again. Make sure to choose one of the autocomplete options!");
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Invalid search, please try again. Make sure to choose one of the autocomplete options!"; });
             else
-                await RespondAsync(embed: offer.BuildEmbed().Build(), components: offer.BuildExternalButton().Build());
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = offer.BuildEmbed().Build(); message.Components = offer.BuildExternalButton().Build(); });
         }
 
         //[RequireBungieOauth]
@@ -531,20 +560,17 @@ namespace Levante.Commands
         public async Task FreeEmblems([Summary("only-show-missing", "Only show the emblem codes you are missing. Default: true")] bool onlyShowMissing = true, [Summary("hide", "Hide this post from users except yourself. Default: false")] bool hide = false)
         {
             await DeferAsync(ephemeral: hide);
-            var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
 
+            string bungieName = "";
             var emblemsUserMissing = new List<string>();
-            if (linkedUser != null)
+            if (Users.IsExistingUser(Context.User.Id))
             {
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {linkedUser.AccessToken}");
+                var linkedUser = Users.GetUser(Context.User.Id);
 
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + linkedUser.BungieMembershipType + "/Profile/" + linkedUser.BungieMembershipID + "/?components=800").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
+                var content = await BungieApi.Query($"/Platform/Destiny2/{linkedUser.BungieCredentials.MembershipType}/Profile/{linkedUser.BungieCredentials.MembershipId}/?components=800", linkedUser.BungieCredentials.AccessToken);
                 dynamic item = JsonConvert.DeserializeObject(content);
 
-                foreach (var emblem in BotConfig.UniversalCodes)
+                foreach (var emblem in AppConfig.UniversalCodes)
                 {
                     var hash = ManifestHelper.Emblems.First(x => x.Value.Contains(emblem.Name)).Key;
                     var emblemCollectible = ManifestHelper.EmblemsCollectible[hash];
@@ -553,15 +579,16 @@ namespace Levante.Commands
                     if (!hasEmblem)
                         emblemsUserMissing.Add(emblem.Name);
                 }
+                bungieName = linkedUser.BungieCredentials.BungieName;
             }
 
-            var universalEmblems = BotConfig.UniversalCodes;
+            var universalEmblems = AppConfig.UniversalCodes;
 
             if (onlyShowMissing)
                 universalEmblems = universalEmblems.Where(x => emblemsUserMissing.Contains(x.Name)).ToList();
 
             if (universalEmblems.Count == 0)
-                universalEmblems = BotConfig.UniversalCodes;
+                universalEmblems = AppConfig.UniversalCodes;
 
             var paginator = new LazyPaginatorBuilder()
                 .AddUser(Context.User)
@@ -576,7 +603,7 @@ namespace Levante.Commands
                 .WithFooter(PaginatorFooter.None)
                 .Build();
 
-            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
+            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForPaginator), responseType: InteractionResponseType.DeferredChannelMessageWithSource, ephemeral: hide);
 
 
             PageBuilder GeneratePage(int index)
@@ -592,7 +619,7 @@ namespace Levante.Commands
                 };
                 var embed = new EmbedBuilder()
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                 };
@@ -600,13 +627,13 @@ namespace Levante.Commands
                 foreach (var emblem in universalEmblems.GetRange(10 * index, (10 * index) + 10 > universalEmblems.Count ? universalEmblems.Count - (10 * index) : 10))
                 {
                     embed.Description +=
-                        $"> {(linkedUser != null && emblemsUserMissing.Contains(emblem.Name) ? $"{Emotes.Warning} " : "")}[{emblem.Name}](https://www.bungie.net/7/en/Codes/Redeem?token={emblem.Code}): **{emblem.Code}**\n";
+                        $"> {(!String.IsNullOrEmpty(bungieName) && emblemsUserMissing.Contains(emblem.Name) ? $"{EmoteConfig.GetEmote("Warning")} " : "")}[{emblem.Name}]({BungieApi.API_BASE_URL}/7/en/Codes/Redeem?token={emblem.Code}): **{emblem.Code}**\n";
                 }
 
                 var count = universalEmblems.Count;
                 var pageNumStr = $"Showing {(10 * index) + 1}-{((10 * index) + 10 > count ? count : (10 * index) + 10)} emblems of {count} total.";
                 embed.Description +=
-                    $"*Click the name to redeem.*\n{(linkedUser != null && emblemsUserMissing.Any() ? $"{Emotes.Warning} - Your linked account ({linkedUser.UniqueBungieName}) is missing this emblem.\n" : "")}\n{pageNumStr}";
+                    $"*Click the name to redeem.*\n{(!String.IsNullOrEmpty(bungieName) && emblemsUserMissing.Any() ? $"{EmoteConfig.GetEmote("Warning")} - Your linked account ({bungieName}) is missing this emblem.\n" : "")}\n{pageNumStr}";
 
 
                 return new PageBuilder()
@@ -621,18 +648,28 @@ namespace Levante.Commands
         [Group("guardian", "Display Guardian information.")]
         public class Guardians : InteractionModuleBase<ShardedInteractionContext>
         {
+            private readonly InteractiveService Interactive;
+            private readonly LoggingService Logging;
+            private readonly UserService Users;
+            private readonly GuildService Guilds;
+
+            public Guardians(LoggingService xpLoggingService, InteractiveService interactive, UserService users, GuildService guilds)
+            {
+                Logging = xpLoggingService;
+                Interactive = interactive;
+                Users = users;
+                Guilds = guilds;
+            }
+
             [SlashCommand("linked-user", "Get Guardian information of a Linked User.")]
             public async Task LinkedUser([Summary("user", "User to get Guardian information for.")] IUser User,
                 [Summary("class", "Guardian Class to get information for."), Choice("Titan", 0), Choice("Hunter", 1), Choice("Warlock", 2)] int ClassType,
                 [Summary("platform", "Only needed if the user does not have Cross Save activated. This will be ignored otherwise."),
                 Choice("Xbox", 1), Choice("PSN", 2), Choice("Steam", 3), Choice("Stadia", 5), Choice("Epic Games", 6)]int ArgPlatform = 0)
             {
-                DataConfig.DiscordIDLink LinkedUser = DataConfig.GetLinkedUser(User.Id);
-                Guardian.Platform Platform = (Guardian.Platform)ArgPlatform;
-
                 await DeferAsync();
 
-                if (LinkedUser == null || !DataConfig.IsExistingLinkedUser(LinkedUser.DiscordID))
+                if (!Users.IsExistingUser(User.Id))
                 {
                     var embed = Embeds.GetErrorEmbed();
                     embed.Description = $"User is not linked; tell them to link using '/link' or use the Bungie tag variant of this command.";
@@ -640,63 +677,60 @@ namespace Levante.Commands
                     return;
                 }
 
-                using (var client = new HttpClient())
+                var linkedUser = Users.GetUser(User.Id);
+                var Platform = (Guardian.Platform)ArgPlatform;
+
+                var content = await BungieApi.Query($"/Platform/Destiny2/{linkedUser.BungieCredentials.MembershipType}/Profile/{linkedUser.BungieCredentials.MembershipId}?components=100,200");
+                dynamic item = JsonConvert.DeserializeObject(content);
+
+                if (item.ErrorStatus.Equals("Success"))
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + LinkedUser.BungieMembershipType + "/Profile/" + LinkedUser.BungieMembershipID + "?components=100,200").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
-
-                    if (DataConfig.IsBungieAPIDown(content))
-                    {
-                        var embed = Embeds.GetErrorEmbed();
-                        embed.Description = $"Bungie API is temporary down, try again later.";
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
-                        return;
-                    }
-
-                    if (item.ErrorCode != 1)
-                    {
-                        var embed = Embeds.GetErrorEmbed();
-                        embed.Description = $"An error occured with that account. Is there a connected Destiny 2 account?";
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
-                        return;
-                    }
-
-                    List<Guardian> userGuardians = new();
-                    for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
-                    {
-                        try
-                        {
-                            string charId = $"{item.Response.profile.data.characterIds[i]}";
-                            if ((int)item.Response.characters.data[$"{charId}"].classType == ClassType)
-                                userGuardians.Add(new Guardian(LinkedUser.UniqueBungieName, LinkedUser.BungieMembershipID, LinkedUser.BungieMembershipType, charId, DataConfig.GetLinkedUser(User.Id)));
-                        }
-                        catch (Exception x)
-                        {
-                            var embed = Embeds.GetErrorEmbed();
-                            embed.Description = $"`{x}`";
-                            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
-                            Log.Debug($"{x}");
-                            return;
-                        }
-                    }
-
-                    if (userGuardians.Count == 0)
-                    {
-                        var embed = Embeds.GetErrorEmbed();
-                        embed.Description = $"No guardians found for user.";
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
-                        return;
-                    }
-
-                    List<Embed> embeds = new();
-                    foreach (var guardian in userGuardians)
-                        embeds.Add(guardian.GetGuardianEmbed().Build());
-
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embeds = embeds.ToArray(); });
+                    var embed = Embeds.GetErrorEmbed();
+                    embed.Description = $"Bungie API is temporary down, try again later.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                    return;
                 }
+
+                if (item.ErrorCode != 1)
+                {
+                    var embed = Embeds.GetErrorEmbed();
+                    embed.Description = $"An error occured with that account. Is there a connected Destiny 2 account?";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                    return;
+                }
+
+                List<Guardian> userGuardians = new();
+                for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                {
+                    try
+                    {
+                        string charId = $"{item.Response.profile.data.characterIds[i]}";
+                        if ((int)item.Response.characters.data[$"{charId}"].classType == ClassType)
+                            userGuardians.Add(new Guardian(linkedUser.BungieCredentials.BungieName, linkedUser.BungieCredentials.MembershipId, linkedUser.BungieCredentials.MembershipType, charId, linkedUser));
+                    }
+                    catch (Exception x)
+                    {
+                        var embed = Embeds.GetErrorEmbed();
+                        embed.Description = $"`{x}`";
+                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                        Log.Debug($"{x}");
+                        return;
+                    }
+                }
+
+                if (userGuardians.Count == 0)
+                {
+                    var embed = Embeds.GetErrorEmbed();
+                    embed.Description = $"No guardians found for user.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                    return;
+                }
+
+                List<Embed> embeds = new();
+                foreach (var guardian in userGuardians)
+                    embeds.Add(guardian.GetGuardianEmbed().Build());
+
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embeds = embeds.ToArray(); });
             }
 
             [SlashCommand("bungie-tag", "Get Guardian information of any player.")]
@@ -711,32 +745,26 @@ namespace Levante.Commands
 
                 string MembershipType = null;
                 string MembershipID = null;
-                using (var client = new HttpClient())
+
+                var content = await BungieApi.Query($"/Platform/Destiny2/SearchDestinyPlayer/-1/{Uri.EscapeDataString(BungieTag)}");
+                dynamic item = JsonConvert.DeserializeObject(content);
+
+                for (int i = 0; i < item.Response.Count; i++)
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
+                    string memId = item.Response[i].membershipId;
+                    string memType = item.Response[i].membershipType;
 
-                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/-1/" + Uri.EscapeDataString(BungieTag)).Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
+                    var memContent = await BungieApi.Query("/platform/Destiny2/" + memType + "/Profile/" + memId + "/?components=100");
+                    dynamic memItem = JsonConvert.DeserializeObject(memContent);
 
-                    for (int i = 0; i < item.Response.Count; i++)
+                    if (memItem.ErrorCode == 1)
                     {
-                        string memId = item.Response[i].membershipId;
-                        string memType = item.Response[i].membershipType;
-
-                        var memResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + memType + "/Profile/" + memId + "/?components=100").Result;
-                        var memContent = memResponse.Content.ReadAsStringAsync().Result;
-                        dynamic memItem = JsonConvert.DeserializeObject(memContent);
-
-                        if (memItem.ErrorCode == 1)
+                        if (((int)memItem.Response.profile.data.userInfo.crossSaveOverride == (int)memItem.Response.profile.data.userInfo.membershipType) ||
+                            ((int)memItem.Response.profile.data.userInfo.crossSaveOverride == 0 && (int)memItem.Response.profile.data.userInfo.membershipType == ((int)Platform)))
                         {
-                            if (((int)memItem.Response.profile.data.userInfo.crossSaveOverride == (int)memItem.Response.profile.data.userInfo.membershipType) ||
-                                ((int)memItem.Response.profile.data.userInfo.crossSaveOverride == 0 && (int)memItem.Response.profile.data.userInfo.membershipType == ((int)Platform)))
-                            {
-                                MembershipType = memType;
-                                MembershipID = memId;
-                                break;
-                            }
+                            MembershipType = memType;
+                            MembershipID = memId;
+                            break;
                         }
                     }
                 }
@@ -749,57 +777,51 @@ namespace Levante.Commands
                     return;
                 }
 
-                using (var client = new HttpClient())
+                content = await BungieApi.Query($"/Platform/Destiny2/{MembershipType}/Profile/{MembershipID}?components=100,200");
+                item = JsonConvert.DeserializeObject(content);
+
+                if (item.ErrorStatus.Equals("Success"))
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-
-                    var response = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "?components=100,200").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
-
-                    if (DataConfig.IsBungieAPIDown(content))
-                    {
-                        var embed = Embeds.GetErrorEmbed();
-                        embed.Description = $"Bungie API is temporary down, try again later.";
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
-                        return;
-                    }
-
-                    if (item.ErrorCode != 1)
-                    {
-                        var embed = Embeds.GetErrorEmbed();
-                        embed.Description = $"An error occured with that account. Is there a connected Destiny 2 account?";
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
-                        return;
-                    }
-
-                    List<Guardian> userGuardians = new();
-                    for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
-                    {
-                        try
-                        {
-                            string charId = $"{item.Response.profile.data.characterIds[i]}";
-                            if ((int)item.Response.characters.data[$"{charId}"].classType == ClassType)
-                                userGuardians.Add(new Guardian(BungieTag, MembershipID, MembershipType, charId));
-                        }
-                        catch (Exception x)
-                        {
-                            Console.WriteLine($"{x}");
-                        }
-                    }
-
-                    if (userGuardians.Count == 0)
-                    {
-                        await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "No guardian found."; });
-                        return;
-                    }
-
-                    List<Embed> embeds = new List<Embed>();
-                    foreach (var guardian in userGuardians)
-                        embeds.Add(guardian.GetGuardianEmbed().Build());
-
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embeds = embeds.ToArray(); });
+                    var embed = Embeds.GetErrorEmbed();
+                    embed.Description = $"Bungie API is temporary down, try again later.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                    return;
                 }
+
+                if (item.ErrorCode != 1)
+                {
+                    var embed = Embeds.GetErrorEmbed();
+                    embed.Description = $"An error occured with that account. Is there a connected Destiny 2 account?";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                    return;
+                }
+
+                List<Guardian> userGuardians = [];
+                for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+                {
+                    try
+                    {
+                        string charId = $"{item.Response.profile.data.characterIds[i]}";
+                        if ((int)item.Response.characters.data[$"{charId}"].classType == ClassType)
+                            userGuardians.Add(new Guardian(BungieTag, MembershipID, MembershipType, charId));
+                    }
+                    catch (Exception x)
+                    {
+                        Console.WriteLine($"{x}");
+                    }
+                }
+
+                if (userGuardians.Count == 0)
+                {
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "No guardian found."; });
+                    return;
+                }
+
+                List<Embed> embeds = [];
+                foreach (var guardian in userGuardians)
+                    embeds.Add(guardian.GetGuardianEmbed().Build());
+
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embeds = embeds.ToArray(); });
             }
         }
 
@@ -809,7 +831,7 @@ namespace Levante.Commands
         {
             User ??= Context.User;
 
-            if (!DataConfig.IsExistingLinkedUser(User.Id))
+            if (!Users.IsExistingUser(User.Id))
             {
                 await RespondAsync($"No account linked for {User.Mention}.", ephemeral: true);
                 return;
@@ -817,16 +839,11 @@ namespace Levante.Commands
             await DeferAsync();
             try
             {
-                var dil = DataConfig.GetLinkedUser(User.Id);
+                var dil = Users.GetUser(User.Id);
                 int Level = 0, ExtraLevel = 0, XpProgress = 0, XpProgressCap = 0, OverflowXpProgressCap = 0, LevelCap = ManifestHelper.CurrentLevelCap;
                 
                 dynamic item;
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
-
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,104,202").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
+                var content = await BungieApi.Query($"/Platform/Destiny2/{dil.BungieCredentials.MembershipType}/Profile/{dil.BungieCredentials.MembershipId}/?components=100,104,202", dil.BungieCredentials.AccessToken);
                 item = JsonConvert.DeserializeObject(content);
 
                 if (item.Response.profile.privacy == 2)
@@ -835,19 +852,19 @@ namespace Levante.Commands
                     return;
                 }
 
-                XpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].nextLevelAt;
-                OverflowXpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].nextLevelAt;
+                XpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].nextLevelAt;
+                OverflowXpProgressCap = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].nextLevelAt;
 
-                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level == LevelCap)
+                if (item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].level == LevelCap)
                 {
                     Level = LevelCap;
-                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].level;
-                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.Above100Ranks}"].progressToNextLevel;
+                    ExtraLevel = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.ExtraRanks}"].progressToNextLevel;
                 }
                 else
                 {
-                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].level;
-                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{BotConfig.Hashes.First100Ranks}"].progressToNextLevel;
+                    Level = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].level;
+                    XpProgress = item.Response.characterProgressions.data[$"{item.Response.profile.data.characterIds[0]}"].progressions[$"{AppConfig.Hashes.BaseRanks}"].progressToNextLevel;
                 }
 
                 var auth = new EmbedAuthorBuilder()
@@ -861,11 +878,11 @@ namespace Levante.Commands
                 };
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                     Description =
-                        $"Player: **{dil.UniqueBungieName}**\n" +
+                        $"Player: **{dil.BungieCredentials.BungieName}**\n" +
                         $"Level: **{Level}**{(ExtraLevel > 0 ? $" (+**{ExtraLevel}**)" : "")}\n" +
                         $"Progress to Next Level: **{XpProgress:n0}/{(Level >= LevelCap ? OverflowXpProgressCap : XpProgressCap):n0}**",
                 };
@@ -964,12 +981,12 @@ namespace Levante.Commands
             var User = Context.User;
 
             await DeferAsync(ephemeral: hide);
-            var dil = DataConfig.GetLinkedUser(User.Id);
+            var dil = Users.GetUser(User.Id);
             if (dil == null)
             {
-                var embed = Embeds.GetErrorEmbed();
-                embed.Description = $"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again.";
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
+                var errEmbed = Embeds.GetErrorEmbed();
+                errEmbed.Description = $"Unable to pull user data. I may have lost access to their information, likely, they'll have to link again.";
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = errEmbed.Build(); });
                 return;
             }
 
@@ -981,216 +998,222 @@ namespace Levante.Commands
             // <Hash, Amount>
             var seasonalMats = new Dictionary<long, int>();
 
-            using (var client = new HttpClient())
+            var content = await BungieApi.Query($"/Platform/Destiny2/{dil.BungieCredentials.MembershipType}/Profile/{dil.BungieCredentials.MembershipId}/?components=100,102,103,201,1200", dil.BungieCredentials.AccessToken);
+            dynamic item = JsonConvert.DeserializeObject(content);
+
+            for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
-
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,102,103,201,1200").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                dynamic item = JsonConvert.DeserializeObject(content);
-
-                for (int i = 0; i < item.Response.profileInventory.data.items.Count; i++)
+                long hash = item.Response.profileInventory.data.items[i].itemHash;
+                if (AppConfig.SeasonalCurrencyHashes.ContainsKey(hash))
                 {
-                    long hash = item.Response.profileInventory.data.items[i].itemHash;
-                    if (BotConfig.SeasonalCurrencyHashes.ContainsKey(hash))
-                    {
-                        if (seasonalMats.ContainsKey(hash))
-                            seasonalMats[hash] += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}");
-                        else
-                            seasonalMats.Add(hash, int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"));
+                    if (seasonalMats.ContainsKey(hash))
+                        seasonalMats[hash] += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}");
+                    else
+                        seasonalMats.Add(hash, int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"));
 
-                        continue;
-                    }
+                    continue;
+                }
 
+                switch (hash)
+                {
+                    // Upgrade Modules
+                    case 2979281381: UpgradeModules += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Enhancement Cores
+                    case 3853748946: EnhancementCores += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Enhancement Prisms
+                    case 4257549984: EnhancementPrisms += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Ascendant Shards
+                    case 4257549985: AscendantShards += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Spoils of Conquest
+                    case 3702027555: SpoilsOfConquest += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Resonant Alloy
+                    case 2497395625: ResonantAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Harmonic Alloy
+                    case 2708128607: HarmonicAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Ascendant Alloy
+                    case 353704689: AscendantAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Raid Banners
+                    case 3282419336: RaidBanners += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Tincture Of Queensfoil
+                    case 2367713531: TinctureOfQueensfoil += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Strange Coins
+                    case 800069450: StrangeCoins += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Treasure Keys
+                    case 616392721: TreasureKeys += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Paraversal Hauls
+                    case 1116049802: ParaversalHauls += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Phantasmal Fragments
+                    case 443031982: PhantasmalFragments += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Herealways Pieces
+                    case 2993288448: HerealwaysPieces += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Strand Meditations
+                    case 1289622079: StrandMeditations += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+
+                    // Terminal Overload Keys
+                    case 1471199156: TerminalOverloadKeys += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                }
+            }
+
+            for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+            {
+                string charId = $"{item.Response.profile.data.characterIds[i]}";
+                for (int j = 0; j < item.Response.characterInventories.data[$"{charId}"].items.Count; j++)
+                {
+                    long hash = item.Response.characterInventories.data[$"{charId}"].items[j].itemHash;
                     switch (hash)
                     {
                         // Upgrade Modules
-                        case 2979281381: UpgradeModules += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        case 2979281381: UpgradeModules += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
                         // Enhancement Cores
-                        case 3853748946: EnhancementCores += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        case 3853748946: EnhancementCores += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
                         // Enhancement Prisms
-                        case 4257549984: EnhancementPrisms += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        case 4257549984: EnhancementPrisms += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
                         // Ascendant Shards
-                        case 4257549985: AscendantShards += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        case 4257549985: AscendantShards += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
                         // Spoils of Conquest
-                        case 3702027555: SpoilsOfConquest += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        case 3702027555: SpoilsOfConquest += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
                         // Resonant Alloy
-                        case 2497395625: ResonantAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        case 2497395625: ResonantAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
                         // Harmonic Alloy
-                        case 2708128607: HarmonicAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        case 2708128607: HarmonicAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
                         // Ascendant Alloy
-                        case 353704689: AscendantAlloy += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
-
-                        // Raid Banners
-                        case 3282419336: RaidBanners += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
-
-                        // Tincture Of Queensfoil
-                        case 2367713531: TinctureOfQueensfoil += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        case 353704689: AscendantAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
                         // Strange Coins
-                        case 800069450: StrangeCoins += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
-
-                        // Treasure Keys
-                        case 616392721: TreasureKeys += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
-
-                        // Paraversal Hauls
-                        case 1116049802: ParaversalHauls += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
-
-                        // Phantasmal Fragments
-                        case 443031982: PhantasmalFragments += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
-
-                        // Herealways Pieces
-                        case 2993288448: HerealwaysPieces += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
-
-                        // Strand Meditations
-                        case 1289622079: StrandMeditations += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        case 800069450: StrangeCoins += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
 
                         // Terminal Overload Keys
-                        case 1471199156: TerminalOverloadKeys += int.Parse($"{item.Response.profileInventory.data.items[i].quantity}"); break;
+                        case 1471199156: TerminalOverloadKeys += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
                     }
                 }
+            }
 
-                for (int i = 0; i < item.Response.profile.data.characterIds.Count; i++)
+            Glimmer += int.Parse($"{item.Response.profileCurrencies.data.items[0].quantity}");
+            LegendaryShards += int.Parse($"{item.Response.profileCurrencies.data.items[1].quantity}");
+            BrightDust += int.Parse($"{item.Response.profileCurrencies.data.items[2].quantity}");
+
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"{dil.BungieCredentials.BungieName} Material and Currency Count",
+                IconUrl = User.GetAvatarUrl(),
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = $"Powered by the Bungie API"
+            };
+            var embed = new EmbedBuilder()
+            {
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
+                Author = auth,
+                Footer = foot,
+            };
+
+            embed.AddField(x =>
+            {
+                x.Name = "Currency";
+                x.Value = $"{EmoteConfig.GetEmote("Glimmer")} {Glimmer:n0}\n" +
+                    $"{EmoteConfig.GetEmote("LegendaryShards")} {LegendaryShards:n0}\n" +
+                    $"{EmoteConfig.GetEmote("BrightDust")} {BrightDust:n0}";
+                x.IsInline = true;
+            }).AddField(x =>
+            {
+                x.Name = "Masterwork";
+                x.Value = $"{EmoteConfig.GetEmote("EnhancementCore")} {EnhancementCores:n0}\n" +
+                    $"{EmoteConfig.GetEmote("EnhancementPrism")} {EnhancementPrisms:n0}\n" +
+                    $"{EmoteConfig.GetEmote("AscendantShard")} {AscendantShards:n0}";
+                x.IsInline = true;
+            }).AddField(x =>
+            {
+                x.Name = "Crafting";
+                x.Value = $"{EmoteConfig.GetEmote("ResonantAlloy")} {ResonantAlloy:n0}\n" +
+                    $"{EmoteConfig.GetEmote("HarmonicAlloy")} {HarmonicAlloy:n0}\n" +
+                    $"{EmoteConfig.GetEmote("AscendantAlloy")} {AscendantAlloy:n0}";
+                x.IsInline = true;
+            }).AddField(x =>
+            {
+                x.Name = "Campaign";
+                x.Value = $"{EmoteConfig.GetEmote("TinctureOfQueensfoil")} {TinctureOfQueensfoil:n0}\n" +
+                    $"{EmoteConfig.GetEmote("PhantasmalFragments")} {PhantasmalFragments:n0}\n" +
+                    $"{EmoteConfig.GetEmote("HerealwaysPieces")} {HerealwaysPieces:n0}\n" +
+                    $"{EmoteConfig.GetEmote("StrandMeditations")} {StrandMeditations:n0}\n" +
+                    $"{EmoteConfig.GetEmote("TerminalOverloadKey")} {TerminalOverloadKeys:n0}\n";
+                x.IsInline = true;
+            }).AddField(x =>
+            {
+                x.Name = "Miscellaneous";
+                x.Value = $"{EmoteConfig.GetEmote("UpgradeModule")} {UpgradeModules:n0}\n" +
+                    $"{EmoteConfig.GetEmote("SpoilsOfConquest")} {SpoilsOfConquest:n0}\n" +
+                    $"{EmoteConfig.GetEmote("RaidBanners")} {RaidBanners:n0}\n" +
+                    $"{EmoteConfig.GetEmote("StrangeCoins")} {StrangeCoins:n0}\n" +
+                    $"{EmoteConfig.GetEmote("ParaversalHauls")} {ParaversalHauls:n0}\n" +
+                    $"{EmoteConfig.GetEmote("TreasureKeys")} {TreasureKeys:n0}";
+                x.IsInline = true;
+            });
+
+
+            if (seasonalMats.Count > 0)
+            {
+                string result = "";
+                foreach (var seasonalMat in seasonalMats)
                 {
-                    string charId = $"{item.Response.profile.data.characterIds[i]}";
-                    for (int j = 0; j < item.Response.characterInventories.data[$"{charId}"].items.Count; j++)
+                    var formattedMat = AppConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", "");
+                    if (!EmoteConfig.HasEmote(formattedMat))
                     {
-                        long hash = item.Response.characterInventories.data[$"{charId}"].items[j].itemHash;
-                        switch (hash)
-                        {
-                            // Upgrade Modules
-                            case 2979281381: UpgradeModules += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            // Enhancement Cores
-                            case 3853748946: EnhancementCores += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            // Enhancement Prisms
-                            case 4257549984: EnhancementPrisms += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            // Ascendant Shards
-                            case 4257549985: AscendantShards += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            // Spoils of Conquest
-                            case 3702027555: SpoilsOfConquest += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            // Resonant Alloy
-                            case 2497395625: ResonantAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            // Harmonic Alloy
-                            case 2708128607: HarmonicAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            // Ascendant Alloy
-                            case 353704689: AscendantAlloy += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            // Strange Coins
-                            case 800069450: StrangeCoins += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-
-                            // Terminal Overload Keys
-                            case 1471199156: TerminalOverloadKeys += int.Parse($"{item.Response.characterInventories.data[$"{charId}"].items[j].quantity}"); break;
-                        }
+                        content = await BungieApi.Query($"/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/{seasonalMat.Key}");
+                        item = JsonConvert.DeserializeObject(content);
+                        var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{item.Response.displayProperties.icon}").Result;
+                        Task.Run(() => EmoteConfig.AddEmote(formattedMat, new Discord.Image(new MemoryStream(byteArray)))).Wait();
                     }
+                    result += $"{EmoteConfig.GetEmote(formattedMat)} {seasonalMat.Value:n0}\n";
                 }
-
-                Glimmer += int.Parse($"{item.Response.profileCurrencies.data.items[0].quantity}");
-                LegendaryShards += int.Parse($"{item.Response.profileCurrencies.data.items[1].quantity}");
-                BrightDust += int.Parse($"{item.Response.profileCurrencies.data.items[2].quantity}");
-
-                var auth = new EmbedAuthorBuilder()
-                {
-                    Name = $"{dil.UniqueBungieName} Material and Currency Count",
-                    IconUrl = User.GetAvatarUrl(),
-                };
-                var foot = new EmbedFooterBuilder()
-                {
-                    Text = $"Powered by the Bungie API"
-                };
-                var embed = new EmbedBuilder()
-                {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
-                    Author = auth,
-                    Footer = foot,
-                };
 
                 embed.AddField(x =>
                 {
-                    x.Name = "Currency";
-                    x.Value = $"{DestinyEmote.Glimmer} {Glimmer:n0}\n" +
-                        $"{DestinyEmote.LegendaryShards} {LegendaryShards:n0}\n" +
-                        $"{DestinyEmote.BrightDust} {BrightDust:n0}";
-                    x.IsInline = true;
-                }).AddField(x =>
-                {
-                    x.Name = "Masterwork";
-                    x.Value = $"{DestinyEmote.EnhancementCore} {EnhancementCores:n0}\n" +
-                        $"{DestinyEmote.EnhancementPrism} {EnhancementPrisms:n0}\n" +
-                        $"{DestinyEmote.AscendantShard} {AscendantShards:n0}";
-                    x.IsInline = true;
-                }).AddField(x =>
-                {
-                    x.Name = "Crafting";
-                    x.Value = $"{DestinyEmote.ResonantAlloy} {ResonantAlloy:n0}\n" +
-                        $"{DestinyEmote.HarmonicAlloy} {HarmonicAlloy:n0}\n" +
-                        $"{DestinyEmote.AscendantAlloy} {AscendantAlloy:n0}";
-                    x.IsInline = true;
-                }).AddField(x =>
-                {
-                    x.Name = "Campaign";
-                    x.Value = $"{DestinyEmote.TinctureOfQueensfoil} {TinctureOfQueensfoil:n0}\n" +
-                        $"{DestinyEmote.PhantasmalFragments} {PhantasmalFragments:n0}\n" +
-                        $"{DestinyEmote.HerealwaysPieces} {HerealwaysPieces:n0}\n" +
-                        $"{DestinyEmote.StrandMeditations} {StrandMeditations:n0}\n" +
-                        $"{DestinyEmote.TerminalOverloadKey} {TerminalOverloadKeys:n0}\n";
-                    x.IsInline = true;
-                }).AddField(x =>
-                {
-                    x.Name = "Miscellaneous";
-                    x.Value = $"{DestinyEmote.UpgradeModule} {UpgradeModules:n0}\n" +
-                        $"{DestinyEmote.SpoilsOfConquest} {SpoilsOfConquest:n0}\n" +
-                        $"{DestinyEmote.RaidBanners} {RaidBanners:n0}\n" +
-                        $"{DestinyEmote.StrangeCoins} {StrangeCoins:n0}\n" +
-                        $"{DestinyEmote.ParaversalHauls} {ParaversalHauls:n0}\n" +
-                        $"{DestinyEmote.TreasureKeys} {TreasureKeys:n0}";
+                    x.Name = "Seasonal";
+                    x.Value = result;
                     x.IsInline = true;
                 });
-
-                if (seasonalMats.Count > 0)
-                {
-                    string json = File.ReadAllText(EmoteConfig.FilePath);
-                    var emoteCfg = JsonConvert.DeserializeObject<EmoteConfig>(json);
-
-                    string result = "";
-                    foreach (var seasonalMat in seasonalMats)
-                    {
-                        if (!emoteCfg.HasEmote(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", "")))
-                        {
-                            response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/" + seasonalMat.Key).Result;
-                            content = response.Content.ReadAsStringAsync().Result;
-                            item = JsonConvert.DeserializeObject(content);
-                            var byteArray = new HttpClient().GetByteArrayAsync($"https://bungie.net{item.Response.displayProperties.icon}").Result;
-                            Task.Run(() => emoteCfg.AddEmote(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", ""), new Discord.Image(new MemoryStream(byteArray)))).Wait();
-                            emoteCfg.UpdateJSON();
-                        }
-                        result += $"{emoteCfg.GetEmote(BotConfig.SeasonalCurrencyHashes[seasonalMat.Key].Replace(" ", "").Replace("-", "").Replace("'", ""))} {seasonalMat.Value:n0}\n";
-                    }
-
-                    embed.AddField(x =>
-                    {
-                        x.Name = "Seasonal";
-                        x.Value = result;
-                        x.IsInline = true;
-                    });
-                }
-
-                await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
             }
+
+            string engramCounts = "";
+            foreach (var engram in AppConfig.EngramHashes)
+            {
+                engramCounts += $"{engram.Value} {item.Response.profileStringVariables.data.integerValuesByHash[$"{engram.Key}"]}\n";
+            }
+
+            if (!String.IsNullOrEmpty(engramCounts))
+            {
+                embed.AddField(x =>
+                {
+                    x.Name = "Vendor Engrams";
+                    x.Value = engramCounts;
+                    x.IsInline = true;
+                });
+            }
+
+            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); }); 
         }
 
         [SlashCommand("rarest-emblems", "Get your profile's rarest emblems.")]
@@ -1212,12 +1235,9 @@ namespace Levante.Commands
             string MembershipType = null;
             string MembershipID = null;
             string authToken = null;
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
             if (!String.IsNullOrEmpty(BungieTag))
             {
-                var bTagResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/SearchDestinyPlayer/-1/" + Uri.EscapeDataString(BungieTag)).Result;
-                var bTagContent = bTagResponse.Content.ReadAsStringAsync().Result;
+                var bTagContent = await BungieApi.Query($"/Platform/Destiny2/SearchDestinyPlayer/-1/{Uri.EscapeDataString(BungieTag)}");
                 dynamic bTagItem = JsonConvert.DeserializeObject(bTagContent);
 
                 for (int i = 0; i < bTagItem.Response.Count; i++)
@@ -1225,8 +1245,7 @@ namespace Levante.Commands
                     string memId = bTagItem.Response[i].membershipId;
                     string memType = bTagItem.Response[i].membershipType;
 
-                    var memResponse = client.GetAsync($"https://www.bungie.net/platform/Destiny2/" + memType + "/Profile/" + memId + "/?components=100").Result;
-                    var memContent = memResponse.Content.ReadAsStringAsync().Result;
+                    var memContent = await BungieApi.Query($"/platform/Destiny2/{memType}/Profile/{memId}/?components=100");
                     dynamic memItem = JsonConvert.DeserializeObject(memContent);
 
                     if (memItem.ErrorCode == 1)
@@ -1251,7 +1270,7 @@ namespace Levante.Commands
             }
             else
             {
-                if (!DataConfig.IsExistingLinkedUser(Context.User.Id))
+                if (!Users.IsExistingUser(Context.User.Id))
                 {
                     var errorEmbed = Embeds.GetErrorEmbed();
                     errorEmbed.Description = $"You don't have a Destiny 2 account linked, I need this information to get your data from Bungie's API. Get started with the `/link` command.";
@@ -1259,7 +1278,7 @@ namespace Levante.Commands
                     return;
                 }
 
-                var dil = DataConfig.GetLinkedUser(Context.User.Id);
+                var dil = Users.GetUser(Context.User.Id);
                 if (dil == null)
                 {
                     var errorEmbed = Embeds.GetErrorEmbed();
@@ -1268,15 +1287,12 @@ namespace Levante.Commands
                     return;
                 }
 
-                MembershipID = dil.BungieMembershipID;
-                MembershipType = dil.BungieMembershipType;
-                authToken = dil.AccessToken;
-                BungieTag = dil.UniqueBungieName;
+                MembershipID = dil.BungieCredentials.MembershipId;
+                MembershipType = dil.BungieCredentials.MembershipType;
+                authToken = dil.BungieCredentials.AccessToken;
+                BungieTag = dil.BungieCredentials.BungieName;
             }
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {authToken}");
-
-            var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + MembershipType + "/Profile/" + MembershipID + "/?components=800").Result;
-            var content = response.Content.ReadAsStringAsync().Result;
+            var content = await BungieApi.Query($"/Platform/Destiny2/{MembershipType}/Profile/{MembershipID}/?components=800", authToken);
             dynamic item = JsonConvert.DeserializeObject(content);
 
             var collectibles = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(item.Response.profileCollectibles.data.collectibles.ToString()) as Dictionary<string, dynamic>;
@@ -1302,9 +1318,9 @@ namespace Levante.Commands
                 .WithFooter(PaginatorFooter.None)
                 .Build();
 
-            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), ephemeral: hide, responseType: InteractionResponseType.DeferredChannelMessageWithSource);
+            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForPaginator), ephemeral: hide, responseType: InteractionResponseType.DeferredChannelMessageWithSource);
 
-            PageBuilder GeneratePage(int index)
+            async Task<PageBuilder>  GeneratePage(int index)
             {
                 string embedDesc = "";
                 var startIndex = index * 10;
@@ -1315,7 +1331,20 @@ namespace Levante.Commands
                     var emblem = acquisition.Data[i];
                     var invHash = ManifestHelper.EmblemsCollectible.FirstOrDefault(x => x.Value == emblem.CollectibleHash).Key;
                     var emblemName = ManifestHelper.Emblems[ManifestHelper.EmblemsCollectible.FirstOrDefault(x => x.Value == emblem.CollectibleHash).Key];
-                    embedDesc += $"> {(count > 10 ? $"{i + 1}" : $"{i + 1,2}")}. `{emblem.Acquisition,7}` - [{emblemName}](https://emblem.report/{invHash}) ({emblem.Percentage}%)\n";
+                    var formattedName = emblemName.Replace(" ", "").Replace("-", "").Replace("'", "");
+
+                    var emote = EmoteConfig.GetEmote(formattedName);
+                    if (EmoteConfig.HasEmote(formattedName))
+                        emote = $"{EmoteConfig.GetEmote(formattedName)}";
+                    else
+                    {
+                        var emblemDetails = new Emblem(invHash);
+                        var byteArray = new HttpClient().GetByteArrayAsync($"{emblemDetails.GetIconUrl()}").Result;
+
+                        emote = await EmoteConfig.AddEmote(formattedName, new Discord.Image(new MemoryStream(byteArray)));
+                    }
+
+                    embedDesc += $"> {(count > 10 ? $"{i + 1}" : $"{i + 1,2}")}. `{emblem.Acquisition,7}` - {emote} [{emblemName}](https://emblem.report/{invHash}) ({emblem.Percentage}%)\n";
                 }
 
                 var auth = new EmbedAuthorBuilder()
@@ -1329,7 +1358,7 @@ namespace Levante.Commands
                 };
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Author = auth,
                     Footer = foot,
                     Description = embedDesc,
@@ -1355,54 +1384,50 @@ namespace Levante.Commands
                 week = 1;
 
             var User = Context.User;
-            var dil = DataConfig.GetLinkedUser(Context.User.Id);
+            var dil = Users.GetUser(Context.User.Id);
 
             bool showProgress = dil != null;
 
             await DeferAsync(ephemeral: hide);
-            using var client = new HttpClient();
-
-            dynamic item = "";
-            string charId = "";
-
-            if (showProgress)
+            using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
+                dynamic item = "";
+                string charId = "";
 
-                var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,900,1200").Result;
-                var content = response.Content.ReadAsStringAsync().Result;
-                item = JsonConvert.DeserializeObject(content);
-                charId = $"{item.Response.profile.data.characterIds[0]}";
-            }
-
-            var paginator = new LazyPaginatorBuilder()
-                .AddUser(Context.User)
-                .WithStartPageIndex(week - 1)
-                .WithPageFactory(GeneratePage)
-                .WithMaxPageIndex(ManifestHelper.SeasonalChallenges.Count - 1)
-                .AddOption(new Emoji("◀"), PaginatorAction.Backward)
-                .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
-                .AddOption(new Emoji("▶"), PaginatorAction.Forward)
-                .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
-                .WithActionOnCancellation(ActionOnStop.DeleteInput)
-                .WithActionOnTimeout(ActionOnStop.DeleteInput)
-                .WithFooter(PaginatorFooter.None)
-                .Build();
-
-            await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(BotConfig.DurationToWaitForPaginator), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
-
-            PageBuilder GeneratePage(int index)
-            {
-                var auth = new EmbedAuthorBuilder()
+                if (showProgress)
                 {
-                    Name = $"{ManifestHelper.CurrentSeason.DisplayProperties.Name} Seasonal Challenges Week {index + 1} of {ManifestHelper.SeasonalChallenges.Count}",
-                    IconUrl = $"https://bungie.net{ManifestHelper.CurrentSeason.DisplayProperties.Icon}",
-                };
+                    var content = await BungieApi.Query($"/Platform/Destiny2/{dil.BungieCredentials.MembershipType}/Profile/{dil.BungieCredentials.MembershipId}/?components=100,900,1200", dil.BungieCredentials.AccessToken);
+                    item = JsonConvert.DeserializeObject(content);
+                    charId = $"{item.Response.profile.data.characterIds[0]}";
+                }
+
+                var paginator = new LazyPaginatorBuilder()
+                    .AddUser(Context.User)
+                    .WithStartPageIndex(week - 1)
+                    .WithPageFactory(GeneratePage)
+                    .WithMaxPageIndex(ManifestHelper.SeasonalChallenges.Count - 1)
+                    .AddOption(new Emoji("◀"), PaginatorAction.Backward)
+                    .AddOption(new Emoji("🔢"), PaginatorAction.Jump)
+                    .AddOption(new Emoji("▶"), PaginatorAction.Forward)
+                    .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
+                    .WithActionOnCancellation(ActionOnStop.DeleteInput)
+                    .WithActionOnTimeout(ActionOnStop.DeleteInput)
+                    .WithFooter(PaginatorFooter.None)
+                    .Build();
+
+                await Interactive.SendPaginatorAsync(paginator, Context.Interaction, TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForPaginator), responseType: InteractionResponseType.DeferredChannelMessageWithSource);
+
+                PageBuilder GeneratePage(int index)
+                {
+                    var auth = new EmbedAuthorBuilder()
+                    {
+                        Name = $"{ManifestHelper.CurrentSeason.DisplayProperties.Name} Seasonal Challenges Week {index + 1} of {ManifestHelper.SeasonalChallenges.Count}",
+                        IconUrl = $"{BungieApi.API_BASE_URL}{ManifestHelper.CurrentSeason.DisplayProperties.Icon}",
+                    };
 
                 var embed = new EmbedBuilder()
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Author = auth,
                 };
 
@@ -1415,49 +1440,48 @@ namespace Levante.Commands
                         continue;
                     }
 
-                    string progress = "";
-                    if (showProgress)
-                    {
-                        for (int i = 0; i < item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives.Count; i++)
+                        string progress = "";
+                        if (showProgress)
                         {
-                            long hash = (long)item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].objectiveHash;
-                            int progressValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].progress;
-                            int completionValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].completionValue;
-                            if (!ManifestHelper.SeasonalObjectives.ContainsKey(hash)) continue;
-                            progress += $"> {ManifestHelper.SeasonalObjectives[hash]}:" +
-                                $" {progressValue}/{completionValue} {(progressValue >= completionValue ? Emotes.Yes : "")}\n";
+                            for (int i = 0; i < item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives.Count; i++)
+                            {
+                                long hash = (long)item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].objectiveHash;
+                                int progressValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].progress;
+                                int completionValue = item.Response.characterRecords.data[charId].records[$"{challenges.Key}"].objectives[i].completionValue;
+                                if (!ManifestHelper.SeasonalObjectives.ContainsKey(hash)) continue;
+                                progress += $"> {ManifestHelper.SeasonalObjectives[hash]}:" +
+                                    $" {progressValue}/{completionValue} {(progressValue >= completionValue ? EmoteConfig.GetEmote("Yes") : "")}\n";
+                            }
                         }
+
+                        embed.AddField(x =>
+                        {
+                            x.Name = challenges.Value.DisplayProperties.Name;
+                            x.Value = $"{DestinyEmote.ParseBungieText(DestinyEmote.ParseBungieVars(challenges.Value.DisplayProperties.Description.Split('\n').FirstOrDefault()))}\n{progress}";
+                            x.IsInline = false;
+                        });
                     }
 
-                    embed.AddField(x =>
+                    var foot = new EmbedFooterBuilder()
                     {
-                        x.Name = challenges.Value.DisplayProperties.Name;
-                        x.Value = $"{DestinyEmote.ParseBungieVars(challenges.Value.DisplayProperties.Description.Split('\n').FirstOrDefault())}\n{progress}";
-                        x.IsInline = false;
-                    });
+                        Text = $"Powered by the Bungie API | Week {index + 1}/{ManifestHelper.SeasonalChallenges.Count}{(classifiedCount > 0 ? $" | Classified Records ({classifiedCount}/{ManifestHelper.SeasonalChallenges[index].Count}) are Hidden" : "")}"
+                    };
+                    embed.WithFooter(foot);
+
+                    return new PageBuilder()
+                        .WithAuthor(embed.Author)
+                        .WithDescription(embed.Description)
+                        .WithFields(embed.Fields)
+                        .WithFooter(embed.Footer)
+                        .WithColor((Discord.Color)embed.Color);
                 }
-
-                var foot = new EmbedFooterBuilder()
-                {
-                    Text = $"Powered by the Bungie API | Week {index + 1}/{ManifestHelper.SeasonalChallenges.Count}{(classifiedCount > 0 ? $" | Classified Records ({classifiedCount}/{ManifestHelper.SeasonalChallenges[index].Count}) are Hidden" : "")}"
-                };
-                embed.WithFooter(foot);
-
-                return new PageBuilder()
-                    .WithAuthor(embed.Author)
-                    .WithDescription(embed.Description)
-                    .WithFields(embed.Fields)
-                    .WithFooter(embed.Footer)
-                    .WithColor((Discord.Color)embed.Color);
             }
         }
 
         [SlashCommand("try-on", "Try on any emblem in the Bungie API.")]
         public async Task TryOut([Summary("emblem-name", "Emblem name of the Emblem you want to try on."), Autocomplete(typeof(EmblemAutocomplete))] string SearchQuery)
         {
-            var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
-
-            string name = linkedUser != null ? linkedUser.UniqueBungieName.Substring(0, linkedUser.UniqueBungieName.Length - 5) : Context.User.Username;
+            var linkedUser = Users.GetUser(Context.User.Id);
 
             if (!long.TryParse(SearchQuery, out long HashCode))
             {
@@ -1468,71 +1492,38 @@ namespace Levante.Commands
             }
 
             Emblem emblem;
-            Bitmap bitmap;
             try
             {
                 emblem = new Emblem(HashCode);
                 var byteArray = new HttpClient().GetByteArrayAsync(emblem.GetBackgroundUrl()).Result;
-                MemoryStream ms = new(byteArray);
-                bitmap = (Bitmap)System.Drawing.Image.FromStream(ms); //load the image file
             }
             catch (Exception)
             {
-                await RespondAsync($"No emblem found for Hash Code: {HashCode}.");
+                var errEmbed = Embeds.GetErrorEmbed();
+                errEmbed.Description = $"No emblem found for Hash Code: {HashCode}.";
+                await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
                 return;
             }
 
-            await DeferAsync();
+            string name = linkedUser != null ? linkedUser.BungieCredentials.BungieName.Substring(0, linkedUser.BungieCredentials.BungieName.Length - 5) : Context.User.Username;
 
-            using (Graphics graphics = Graphics.FromImage(bitmap))
-            {
-                using (Font font = new("Neue Haas Grotesk Display Pro", 18, FontStyle.Bold))
-                {
-                    graphics.DrawString(name, font, Brushes.White, new PointF(83f, 7f));
-                }
-
-                using (Font font = new("Neue Haas Grotesk Display Pro", 14))
-                {
-                    graphics.DrawString($"{BotConfig.AppName} Bot{(BotConfig.IsSupporter(Context.User.Id) ? " Supporter" : "")} {(RequireBotStaff.IsBotStaff(Context.User.Id) ? " Staff" : "")}", font, new SolidBrush(System.Drawing.Color.FromArgb(128, System.Drawing.Color.White)), new PointF(84f, 37f));
-                }
-            }
-
-            using (var stream = new MemoryStream())
-            {
-                bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
-                byte[] bytes = stream.ToArray();
-                await using (var fs = new FileStream(@"temp.png", FileMode.Create))
-                {
-                    fs.Write(bytes, 0, bytes.Length);
-                    fs.Close();
-                }
-            }
-
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = $"Emblem Testing",
-                IconUrl = emblem.GetIconUrl(),
-            };
-            var foot = new EmbedFooterBuilder()
-            {
-                Text = $"This is not a perfect replica."
-            };
-            int[] emblemRGB = emblem.GetRGBAsIntArray();
-            var embed = new EmbedBuilder()
-            {
-                Color = new Discord.Color(emblemRGB[0], emblemRGB[1], emblemRGB[2]),
-                Author = auth,
-                Footer = foot
-            };
+            var embed = Embeds.GetErrorEmbed();
             embed.Description =
-                    $"This is probably what you'd look like in-game if you had **{emblem.GetName()}**.\n\nThis command will be deprecated in the near future. Please use the [web version](https://winnow.oatsfx.com/#/emblem-try-on?emblem={HashCode}&name={name}) of this tool that yields a more accurate result!";
-            embed.ImageUrl = @"attachment://temp.png";
-            await Context.Interaction.FollowupWithFileAsync(filePath: "temp.png", embed: embed.Build());
+                    $"This command is deprecated. Please use the [web version](https://winnow.oatsfx.com/#/emblem-try-on?emblem={HashCode}&name={name}) of this tool!";
+
+            await RespondAsync(embed: embed.Build());
         }
 
         [Group("view", "Get details on in-game items.")]
         public class View : InteractionModuleBase<ShardedInteractionContext>
         {
+            private readonly UserService Users;
+
+            public View(UserService users)
+            {
+                Users = users;
+            }
+
             [SlashCommand("consumable", "Get details on a consumable found via Bungie's API.")]
             public async Task ViewConsumable([Summary("name", "Name of the consumable you want details for."), Autocomplete(typeof(ConsumablesAutocomplete))] string SearchQuery)
             {
@@ -1553,27 +1544,26 @@ namespace Levante.Commands
                 }
                 catch (Exception)
                 {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"No consumable found for Hash Code: {HashCode}."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = $"No consumable found for Hash Code: {HashCode}.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $""; message.Components = new ComponentBuilder().Build(); message.Embed = errEmbed.Build(); });
                     return;
                 }
 
                 if (!ManifestHelper.Consumables.ContainsKey(HashCode))
                 {
-                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $"Hash Code: {HashCode} is not a Consumable type."; });
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = $"Hash Code: {HashCode} is not a Consumable type.";
+                    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = $""; message.Components = new ComponentBuilder().Build(); message.Embed = errEmbed.Build(); });
                     return;
                 }
 
                 var itemEmbed = consumable.GetEmbed();
-
-                var dil = DataConfig.GetLinkedUser(Context.User.Id);
-                if (dil != null)
+                
+                if (Users.IsExistingUser(Context.User.Id))
                 {
-                    using var client = new HttpClient();
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
-
-                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=100,102,201").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
+                    var dil = Users.GetUser(Context.User.Id);
+                    var content = await BungieApi.Query($"/Platform/Destiny2/{dil.BungieCredentials.MembershipType}/Profile/{dil.BungieCredentials.MembershipId}/?components=100,102,201", dil.BungieCredentials.AccessToken);
                     dynamic item = JsonConvert.DeserializeObject(content);
 
                     // Get the amount the user has on their account.
@@ -1718,7 +1708,7 @@ namespace Levante.Commands
                     return;
                 }
 
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = weapon.GetEmbed().Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
+                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = weapon.GetEmbed(showMorePerks).Build(); message.Content = null; message.Components = new ComponentBuilder().Build(); });
             }
         }
     }

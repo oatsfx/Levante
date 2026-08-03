@@ -9,7 +9,7 @@ namespace Levante.Util.Attributes
 
         public DevGuildOnlyAttribute()
         {
-            GuildID = BotConfig.DevServerID;
+            GuildID = AppConfig.Discord.DevServerId;
         }
     }
 }

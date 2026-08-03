@@ -1,19 +1,33 @@
 ﻿using Discord;
 using System.Threading.Tasks;
-using Levante.Configs;
 using Discord.Interactions;
 using System;
 using Levante.Util;
-using Levante.Rotations;
+using Fergun.Interactive;
+using Levante.Services;
+using System.Linq;
+using Levante.Configs;
+using Levante.Structs;
 
 namespace Levante.Commands
 {
     public class Admin : InteractionModuleBase<ShardedInteractionContext>
     {
+        private readonly GuildService Guilds;
+
         [DefaultMemberPermissions(GuildPermission.ManageChannels)]
         [Group("alert", "Set up announcements for Daily/Weekly Reset and Emblem Offers.")]
         public class Alert : InteractionModuleBase<ShardedInteractionContext>
         {
+            private readonly GuildService Guilds;
+            private readonly NewsService News;
+
+            public Alert(GuildService guilds, NewsService news)
+            {
+                Guilds = guilds;
+                News = news;
+            }
+
             [SlashCommand("emblem-offers", "Set up announcements for Emblem Offers. Use this in the channel you want this set up in.")]
             public async Task EmblemOffers([Summary("role", "Add a role to be pinged when a new Emblem Offer is posted.")] IRole RoleToPing = null)
             {
@@ -25,18 +39,20 @@ namespace Levante.Commands
                     return;
                 }
 
-                if (DataConfig.IsExistingEmblemLinkedChannel(Context.Channel.Id))
-                {
-                    DataConfig.DeleteEmblemChannel(Context.Channel.Id);
+                var guild = Guilds.GetGuild(Context.Guild.Id);
 
-                    await RespondAsync($"This channel will no longer receive Emblem Offer reset posts. Run this command to re-subscribe to them!", ephemeral: true);
+                if (guild.GetEmblemChannels().Any(x => x.ChannelId == Context.Channel.Id))
+                {
+                    Guilds.RemoveEmblemChannel(guild.GuildId, Context.Channel.Id);
+
+                    await RespondAsync($"This channel will no longer receive Emblem Offer posts. Run this command to re-subscribe to them!", ephemeral: true);
                     return;
                 }
                 else
                 {
                     foreach (var channel in Context.Guild.TextChannels)
                     {
-                        if (DataConfig.IsExistingEmblemLinkedChannel(channel.Id))
+                        if (guild.IsExistingEmblemChannel(channel.Id))
                         {
                             await RespondAsync($"This guild already has Emblem Offer posts set up in {channel.Mention}.", ephemeral: true);
                             return;
@@ -67,9 +83,67 @@ namespace Levante.Commands
                         return;
                     }
 
-                    DataConfig.AddEmblemChannel(Context.Channel.Id, RoleToPing);
+                    if (RoleToPing != null)
+                        Guilds.AddEmblemChannel(Context.Guild.Id, Context.Channel.Id, RoleToPing.Id);
+                    else
+                        Guilds.AddEmblemChannel(Context.Guild.Id, Context.Channel.Id);
 
                     await RespondAsync($"This channel is now successfully subscribed to Emblem Offer posts. Run this command again to remove this type of alert!", ephemeral: true);
+                    return;
+                }
+            }
+
+            [SlashCommand("news", "Set up announcements for News posts. Use this in the channel you want this set up in.")]
+            public async Task NewsAlert([Summary("role", "Add a role to be pinged when a News post is posted.")] IRole RoleToPing = null)
+            {
+                if (Context.Channel.GetChannelType() == ChannelType.DM)
+                {
+                    var errEmbed = Embeds.GetErrorEmbed();
+                    errEmbed.Description = $"I only allow alerts like these to be made in servers!";
+                    await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
+                    return;
+                }
+
+                var guild = Guilds.GetGuild(Context.Guild.Id);
+
+                if (guild.IsExistingNewsChannel(Context.Channel.Id))
+                {
+                    Guilds.RemoveNewsChannel(guild.GuildId, Context.Channel.Id);
+
+                    await RespondAsync($"This channel will no longer receive News posts. Run this command to re-subscribe to them!", ephemeral: true);
+                    return;
+                }
+                else
+                {
+                    foreach (var channel in Context.Guild.TextChannels)
+                    {
+                        if (guild.IsExistingNewsChannel(channel.Id))
+                        {
+                            await RespondAsync($"This guild already has News posts set up in {channel.Mention}.", ephemeral: true);
+                            return;
+                        }
+                    }
+
+                    var newsEmbed = News.GetRecentNewsEmbed();
+
+                    try
+                    {
+                        await Context.Channel.SendMessageAsync($"{RoleToPing.Mention}", embed: newsEmbed);
+                    }
+                    catch
+                    {
+                        var errEmbed = Embeds.GetErrorEmbed();
+                        errEmbed.Description = $"Something went wrong when trying to send a news post, do I have permissions to send messages into this channel?";
+                        await RespondAsync(embed: errEmbed.Build(), ephemeral: true);
+                        return;
+                    }
+
+                    if (RoleToPing != null)
+                        Guilds.AddNewsChannel(Context.Guild.Id, Context.Channel.Id, RoleToPing.Id);
+                    else
+                        Guilds.AddNewsChannel(Context.Guild.Id, Context.Channel.Id);
+
+                    await RespondAsync($"This channel is now successfully subscribed to News posts. Run this command again to remove this type of alert!", ephemeral: true);
                     return;
                 }
             }
@@ -134,7 +208,7 @@ namespace Levante.Commands
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
@@ -176,11 +250,11 @@ namespace Levante.Commands
             };
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"Powered by {BotConfig.AppName} v{BotConfig.Version}",
+                Text = $"Powered by {AppConfig.App.Name} v{AppConfig.App.Version}",
             };
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
                 Description = $"\n",
@@ -188,23 +262,24 @@ namespace Levante.Commands
 
             ulong emblemAnnounceId = 0,
                 emblemAnnounceRoleId = 0,
-                dailyAnnounceId = 0,
-                weeklyAnnounceId = 0;
+                newsAnnounceId = 0,
+                newsAnnounceRoleId = 0;
+
+            var guild = Guilds.GetGuild(Context.Guild.Id);
 
             foreach (var Channel in Context.Guild.TextChannels)
             {
-                if (emblemAnnounceId == 0 && DataConfig.AnnounceEmblemLinks.Exists(x => x.ChannelID == Channel.Id))
+                if (emblemAnnounceId == 0 && guild.GetEmblemChannels().Exists(x => x.ChannelId == Channel.Id))
                 {
                     emblemAnnounceId = Channel.Id;
-                    emblemAnnounceRoleId = DataConfig.AnnounceEmblemLinks.Find(x => x.ChannelID == Channel.Id).RoleID;
+                    emblemAnnounceRoleId = guild.GetEmblemChannels().Find(x => x.ChannelId == Channel.Id).RoleId;
                 }
 
-                if (dailyAnnounceId == 0 && DataConfig.AnnounceDailyLinks.Contains(Channel.Id))
-                    dailyAnnounceId = Channel.Id;
-
-                if (weeklyAnnounceId == 0 && DataConfig.AnnounceWeeklyLinks.Contains(Channel.Id))
-                    weeklyAnnounceId = Channel.Id;
-
+                if (newsAnnounceId == 0 && guild.GetNewsChannels().Exists(x => x.ChannelId == Channel.Id))
+                {
+                    newsAnnounceId = Channel.Id;
+                    newsAnnounceRoleId = guild.GetNewsChannels().Find(x => x.ChannelId == Channel.Id).RoleId;
+                }
             }
 
             embed.AddField(x =>
@@ -216,11 +291,10 @@ namespace Levante.Commands
             })
             .AddField(x =>
             {
-                x.Name = $"> {BotConfig.AppName} Integrations";
+                x.Name = $"> {AppConfig.App.Name} Integrations";
                 x.Value = $"Bot Joined: {TimestampTag.FromDateTime(Context.Guild.GetUser(Context.Client.CurrentUser.Id).JoinedAt.Value.DateTime, TimestampTagStyles.ShortDateTime)}\n" +
                     $"Emblem Announce Channel: {(emblemAnnounceId == 0 ? "None." : $"<#{emblemAnnounceId}>")}{(emblemAnnounceRoleId != 0 ? $" and tags role: <@&{emblemAnnounceRoleId}>" : "")}\n" +
-                    $"Daily Reset Channel: {(dailyAnnounceId == 0 ? "None." : $"<#{dailyAnnounceId}>")}\n" +
-                    $"Weekly Reset Channel: {(weeklyAnnounceId == 0 ? "None." : $"<#{weeklyAnnounceId}>")}\n";
+                    $"News Announce Channel: {(newsAnnounceId == 0 ? "None." : $"<#{newsAnnounceId}>")}{(newsAnnounceRoleId != 0 ? $" and tags role: <@&{newsAnnounceRoleId}>" : "")}\n";
                 x.IsInline = false;
             });
 

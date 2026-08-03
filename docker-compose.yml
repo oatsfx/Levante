@@ -1,0 +1,10 @@
+version: '3.9'
+
+services:
+  levante:
+    build: ./Levante
+    volumes:
+      - levante-dev:/app
+
+volumes:
+  levante-dev:

@@ -2,11 +2,12 @@
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
-using Levante.Configs;
 using Serilog.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 using Serilog;
+using Levante.Services;
+using Levante.Configs;
 
 namespace Levante.Helpers
 {
@@ -81,8 +82,8 @@ namespace Levante.Helpers
             var message = logEvent.RenderMessage(_formatProvider).Replace("\"", "");
             if (logEvent.Level >= LogEventLevel.Error)
             {
-                if (LevanteCordInstance.Client != null && BotConfig.LoggingChannel != null)
-                    BotConfig.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix(logEvent.Timestamp.DateTime)}]: {message}");
+                if (LevanteCordInstance.Client != null && AppConfig.Discord.LoggingChannel != null)
+                    AppConfig.Discord.LoggingChannel.SendMessageAsync($"> [{GetTimePrefix(logEvent.Timestamp.DateTime)}]: {message}");
             }
         }
 

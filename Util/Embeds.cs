@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Levante.Configs;
+using Levante.Services;
 
 namespace Levante.Util
 {
@@ -10,13 +11,13 @@ namespace Levante.Util
             var embed = new EmbedBuilder()
             {
                 Title = "Uh oh!",
-                Description = $"An error has occurred. If this error continues, [let us know](https://discord.gg/{BotConfig.SupportServer})!",
-                Color = new Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
-                ThumbnailUrl = BotConfig.BotLogoUrl,
+                Description = $"An error has occurred. If this error continues, [let us know](https://discord.gg/{AppConfig.Discord.SupportServerInvite})!",
+                Color = new Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
+                ThumbnailUrl = AppConfig.App.LogoUrl,
                 Footer = new()
                 {
-                    IconUrl = BotConfig.BotAvatarUrl,
-                    Text = $"{BotConfig.AppName} v{BotConfig.Version}",
+                    IconUrl = AppConfig.App.AvatarUrl,
+                    Text = $"{AppConfig.App.Name} v{AppConfig.App.Version}",
                 }
             };
 
@@ -29,13 +30,13 @@ namespace Levante.Util
             {
                 Title = "Bot Help",
                 Description = "All commands and bot features can be found at [this page](https://www.levante.dev/features/).",
-                Color = new Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
-                ThumbnailUrl = BotConfig.BotLogoUrl,
+                Color = new Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
+                ThumbnailUrl = AppConfig.App.LogoUrl,
                 Footer = new()
                 {
-                    IconUrl = BotConfig.BotAvatarUrl,
-                    Text = $"{BotConfig.AppName} v{BotConfig.Version}",
-                },
+                    IconUrl = AppConfig.App.AvatarUrl,
+                    Text = $"{AppConfig.App.Name} v{AppConfig.App.Version}",
+                }
             };
 
             return embed;

@@ -10,14 +10,20 @@ using Discord.WebSocket;
 using Fergun.Interactive;
 using Newtonsoft.Json;
 using System.IO;
-using Levante.Helpers;
-using Levante.Rotations;
 using System.Collections.Generic;
 using Discord.Interactions;
 using System.Diagnostics;
 using Levante.Util.Attributes;
 using Serilog;
 using BungieSharper.Entities.Destiny;
+using Levante.Services;
+using Levante.Helpers;
+using Levante.Structs;
+using System.Xml.Linq;
+using System.Collections;
+using static System.Net.Mime.MediaTypeNames;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace Levante.Commands
 {
@@ -25,53 +31,192 @@ namespace Levante.Commands
     [DevGuildOnly]
     public class Owner : InteractionModuleBase<ShardedInteractionContext>
     {
+        public LoggingService Logging { get; set; }
         public InteractiveService Interactive { get; set; }
+        public UserService Users { get; set; }
+        public GuildService Guilds { get; set; }
 
-        [RequireOwner]
-        [SlashCommand("force", "[OWNER]: Sends a button to force a daily/weekly reset.")]
-        public async Task Force()
+        public Owner(LoggingService xpLoggingService, InteractiveService interactive, UserService users, GuildService guilds)
         {
-            Emoji helpEmote = new("❔");
-
-            var buttonBuilder = new ComponentBuilder()
-                .WithButton("Force Daily Reset", customId: "dailyForce", ButtonStyle.Secondary, helpEmote, row: 0)
-                .WithButton("Force Weekly Reset", customId: "weeklyForce", ButtonStyle.Secondary, helpEmote, row: 0);
-
-            await RespondAsync("This shouldn't really be used... Additionally, make sure the API is not disabled.", components: buttonBuilder.Build());
+            Logging = xpLoggingService;
+            Interactive = interactive;
+            Users = users;
+            Guilds = guilds;
         }
+
+        //[RequireBotStaff]
+        //[SlashCommand("migrate-emotes", "[OWNER]: Go through all of the emotes in the emote servers and add them to my config.")]
+        //public async Task Force([Summary("start", "Select a server index to start at.")] int start = 0)
+        //{
+        //    await DeferAsync();
+
+        //    var servers = new List<ulong>
+        //    {
+        //        915020047154565220,
+        //        690373608228519997,
+        //        933971948965359626,
+        //        947726767907553311,
+        //        955276637442813983,
+        //        955276672087777280,
+        //        955276702492295279,
+        //        955276738215166002,
+        //        955277044906868786,
+        //        974466039989538848,
+        //        1021147734138441768,
+        //        1049879387002122270,
+        //        1081668729693286420,
+        //        1128754351800852538,
+        //        1247634843857326110,
+
+        //    };
+        //    servers.RemoveRange(0, start);
+
+        //    var fields = typeof(DestinyEmote)
+        //        .GetFields(BindingFlags.Public | BindingFlags.Static);
+
+        //    var fieldsA = typeof(Emotes)
+        //        .GetFields(BindingFlags.Public | BindingFlags.Static);
+
+        //    var regex = new Regex(@"<a?:(\w+):\d+>");
+
+        //    var emoteNames = fields.Concat(fieldsA)
+        //        .Select(f => f.GetValue(null) as string)
+        //        .Where(val => !string.IsNullOrEmpty(val) && regex.IsMatch(val))
+        //        .Select(val => regex.Match(val).Groups[1].Value)
+        //        .ToList();
+
+        //    var buttonBuilder = new ComponentBuilder()
+        //        .WithButton("Yes", customId: $"sendYes", ButtonStyle.Success, row: 0)
+        //        .WithButton("No", customId: $"sendNo", ButtonStyle.Danger, row: 0)
+        //        .WithButton("Cancel", customId: $"sendCancel", ButtonStyle.Secondary, row: 0);
+
+        //    using var client = new HttpClient();
+        //    client.DefaultRequestHeaders.UserAgent.ParseAdd($"Mozilla/5.0 (compatible; {AppConfig.App.Name}/{AppConfig.App.Version})");
+        //    var emotes = EmoteConfig.GetEmotes();
+
+        //    foreach (var id in servers)
+        //    {
+        //        var server = Context.Client.GetGuild(id);
+        //        Log.Debug("Starting guild: {server}.", server.Name);
+
+        //        var auth = new EmbedAuthorBuilder()
+        //        {
+        //            Name = $"{server.Name}"
+        //        };
+        //        var foot = new EmbedFooterBuilder()
+        //        {
+        //            Text = $"Guild ID: {server.Id}"
+        //        };
+
+        //        foreach (var emote in await server.GetEmotesAsync())
+        //        {
+        //            if (emotes.Any(x => x.Name.Equals(emote.Name)))
+        //                continue;
+
+        //            if (!emoteNames.Any(x => x.Equals(emote.Name)))
+        //                continue;
+
+        //            var byteArray = await client.GetByteArrayAsync(emote.Url).ConfigureAwait(false);
+        //            await EmoteConfig.AddEmote(emote.Name, new Discord.Image(new MemoryStream(byteArray)));
+        //            Log.Debug("Added Emote: {Emote} to my own emotes.", emote.Name);
+
+        //            //var embed = new EmbedBuilder()
+        //            //{
+        //            //    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
+        //            //    Author = auth,
+        //            //    Footer = foot,
+        //            //};
+        //            //embed.Description = $"# Emote: {emote} ({emote.Name}) `{emote}`\n" +
+        //            //    $"Used in DestinyEmote? **{emoteNames.Any(x => x.Equals(emote.Name))}**\n" +
+        //            //    $"Managed by app? **{emote.IsManaged}**\n" +
+        //            //    $"Created: {new TimestampTag(emote.CreatedAt, TimestampTagStyles.LongDateTime)}";
+
+        //            //if (emote.CreatorId is ulong userId)
+        //            //    embed.Description += $"\nby: {Context.Client.GetUser(userId).Mention}";
+
+        //            //embed.Description += $"";
+
+        //            //await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); message.Components = buttonBuilder.Build(); });
+
+        //            //var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
+
+        //            //if (buttonResponse == null)
+        //            //{
+        //            //    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+        //            //    return;
+        //            //}
+
+        //            //if (buttonResponse.IsTimeout)
+        //            //{
+        //            //    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+        //            //    return;
+        //            //}
+
+        //            //if (buttonResponse.Value.Data.CustomId.Equals("sendYes"))
+        //            //{
+        //            //    await buttonResponse.Value!.DeferAsync();
+
+        //            //    if (emotes.Any(x => x.Name.Equals(emote.Name)))
+        //            //    {
+        //            //        Log.Debug("{Emote} already exists in my emotes.", emote.Name);
+        //            //        continue;
+        //            //    }
+
+        //            //    var byteArray = await client.GetByteArrayAsync(emote.Url).ConfigureAwait(false);
+        //            //    await EmoteConfig.AddEmote(emote.Name, new Discord.Image(new MemoryStream(byteArray)));
+        //            //    Log.Debug("Added Emote: {Emote} to my own emotes.", emote.Name);
+
+        //            //}
+        //            //else if (buttonResponse.Value.Data.CustomId.Equals("sendNo"))
+        //            //{
+        //            //    await buttonResponse.Value!.DeferAsync();
+        //            //    Log.Debug("Did NOT add Emote: {Emote}.", emote.Name);
+        //            //}
+        //            //else
+        //            //{
+        //            //    await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Cancelled operation."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+        //            //    return;
+        //            //}
+        //        }
+        //    }
+        //}
+
 
         [RequireBotStaff]
         [SlashCommand("active-logging-users", "[BOT STAFF]: Gets a list of the users that are using my XP logging feature.")]
         public async Task ActiveAFK()
         {
+            var xpLoggingList = Logging.GetXpLoggingUsers();
+            var priorityXpLoggingList = Logging.GetPriorityXpLoggingUsers();
+
             var app = await Context.Client.GetApplicationInfoAsync();
             var auth = new EmbedAuthorBuilder()
             {
                 Name = $"Active XP Logging Users",
                 IconUrl = app.IconUrl
             };
-            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
+            string p = priorityXpLoggingList.Count != 0 ? $" (+{priorityXpLoggingList.Count})" : "";
             var foot = new EmbedFooterBuilder()
             {
-                Text = $"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} people are logging their XP."
+                Text = $"{xpLoggingList.Count}/{Logging.GetMaxLoggingUsers()}{p} people are logging their XP."
             };
             var embed = new EmbedBuilder()
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = auth,
                 Footer = foot,
             };
 
-            if (ActiveConfig.ActiveAFKUsers.Count >= 1)
+            if (xpLoggingList.Count >= 1)
             {
-                embed.Description = $"__Priority XP Logging List:__\n";
-                foreach (var aau in ActiveConfig.PriorityActiveAFKUsers)
+                embed.Description = $"## Priority XP Logging List:\n";
+                foreach (var aau in priorityXpLoggingList)
                 {
                     embed.Description +=
                         $"{aau.UniqueBungieName}: Level {aau.Last.Level}\n";
                 }
-                embed.Description += $"__XP Logging List:__\n";
-                foreach (var aau in ActiveConfig.ActiveAFKUsers)
+                embed.Description += $"## XP Logging List:\n";
+                foreach (var aau in xpLoggingList)
                 {
                     embed.Description +=
                         $"{aau.UniqueBungieName}: Level {aau.Last.Level}\n";
@@ -93,30 +238,28 @@ namespace Levante.Commands
             {
                 var embed = new EmbedBuilder
                 {
-                    Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                    Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                     Title = "Supporters"
                 };
                 string result = "";
-                foreach (var supporter in BotConfig.BotSupportersDiscordIDs)
-                    result += $"<@{supporter}>\n";
+                foreach (var supporter in Users.GetSupporters())
+                    result += $"<@{supporter.Key}>\n";
 
                 embed.Description = result;
                 await RespondAsync(embed: embed.Build());
                 return;
             }
 
-            if (BotConfig.BotSupportersDiscordIDs.Contains(User.Id))
+            if (Users.GetSupporters().ContainsKey(User.Id))
             {
-                BotConfig.BotSupportersDiscordIDs.Remove(User.Id);
+                Users.RemoveSupporter(User.Id);
                 await RespondAsync($"{User.Mention} has been removed as a bot supporter!");
             }
             else
             {
-                BotConfig.BotSupportersDiscordIDs.Add(User.Id);
+                Users.AddSupporter(User.Id);
                 await RespondAsync($"Added {User.Mention} to my list of Supporters!");
             }
-            var bConfig = new BotConfig();
-            File.WriteAllText(BotConfig.FilePath, JsonConvert.SerializeObject(bConfig, Formatting.Indented));
         }
 
         [RequireBotStaff]
@@ -156,7 +299,7 @@ namespace Levante.Commands
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "This is what the embed looks like. What would you like to do?"; message.Embed = newOffer.BuildEmbed().Build(); message.Components = buttonBuilder.Build(); });
 
-            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
 
             if (buttonResponse == null)
             {
@@ -173,10 +316,10 @@ namespace Levante.Commands
             if (buttonResponse.Value.Data.CustomId.Equals("newPost"))
             {
                 await buttonResponse.Value.DeferAsync();
-                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sending to {DataConfig.AnnounceEmblemLinks.Count} channels..."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sending to {Guilds.GetEmblemChannelCount()} channels..."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
                 newOffer.CreateJSON();
-                await SendToAllAnnounceChannels(newOffer);
-                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sent to {DataConfig.AnnounceEmblemLinks.Count} channels!"; });
+                await Guilds.PostToEmblemChannels(newOffer);
+                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sent to {Guilds.GetEmblemChannelCount()} channels!"; });
                 return;
             }
             else if (buttonResponse.Value.Data.CustomId.Equals("newSkip"))
@@ -191,115 +334,6 @@ namespace Levante.Commands
                 await buttonResponse.Value.DeferAsync();
                 await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Cancelled operation."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
                 return;
-            }
-        }
-
-        [RequireBotStaff]
-        [SlashCommand("new-countdown", "[BOT STAFF]: Add a new countdown to the /countdown command.")]
-        public async Task NewCountdown([Summary("event", "Event that should be tracked on /countdown.")] string Name,
-            [Summary("start-time", "Date and time the event starts.")] DateTime StartTime)
-        {
-            await DeferAsync();
-            if (CountdownConfig.Countdowns.ContainsKey(Name))
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"Countdown of name: \"{Name}\" already exists.");
-                return;
-            }
-
-            if (StartTime < DateTime.Now)
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"I won't add a countdown that has already occurred.");
-                return;
-            }
-
-            var buttonBuilder = new ComponentBuilder()
-                .WithButton("Yes", customId: $"sendYes", ButtonStyle.Success, row: 0)
-                .WithButton("No", customId: $"sendNo", ButtonStyle.Danger, row: 0);
-
-            var embed = new EmbedBuilder
-            {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
-                Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                Footer = new EmbedFooterBuilder() { Text = $"{Context.User.Username}" },
-                Title = "New Countdown",
-                Description = $"**{Name}**: Starts {TimestampTag.FromDateTime(StartTime, TimestampTagStyles.Relative)} ({TimestampTag.FromDateTime(StartTime, TimestampTagStyles.ShortDate)})"
-            };
-
-            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "This is the countdown you are adding, continue?"; message.Components = buttonBuilder.Build(); message.Embed = embed.Build(); });
-            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
-
-            if (buttonResponse == null)
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                return;
-            }
-
-            if (buttonResponse.IsTimeout)
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                return;
-            }
-
-            if (buttonResponse.Value.Data.CustomId.Equals("sendYes"))
-            {
-                CountdownConfig.AddCountdown(Name, StartTime);
-                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Added this countdown."; message.Components = new ComponentBuilder().Build(); });
-            }
-            else
-            {
-                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Did not add this countdown."; message.Components = new ComponentBuilder().Build(); });
-            }
-        }
-
-        [RequireBotStaff]
-        [SlashCommand("remove-countdown", "[BOT STAFF]: Remove a countdown from the /countdown command.")]
-        public async Task RemoveCountdown([Summary("countdown", "Countdown to remove."), Autocomplete(typeof(CountdownAutocomplete))] string Name)
-        {
-            if (!CountdownConfig.Countdowns.ContainsKey(Name))
-            {
-                await RespondAsync($"No countdown found under \"{Name}\".");
-                return;
-            }
-
-            await DeferAsync();
-            var buttonBuilder = new ComponentBuilder()
-                .WithButton("Yes", customId: $"removeYes", ButtonStyle.Success, row: 0)
-                .WithButton("No", customId: $"removeNo", ButtonStyle.Danger, row: 0);
-
-            var embed = new EmbedBuilder
-            {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
-                Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                Footer = new EmbedFooterBuilder() { Text = $"{Context.User.Username}" },
-                Title = "Countdown Removal",
-                Description = $"**{Name}**: Starts {TimestampTag.FromDateTime(CountdownConfig.Countdowns[Name], TimestampTagStyles.Relative)} ({TimestampTag.FromDateTime(CountdownConfig.Countdowns[Name], TimestampTagStyles.ShortDate)})"
-            };
-
-            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Remove this countdown?"; message.Embed = embed.Build(); message.Components = buttonBuilder.Build(); });
-
-            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
-
-            if (buttonResponse == null)
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, invaild response."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                return;
-            }
-
-            if (buttonResponse.IsTimeout)
-            {
-                await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Closed command, timed out."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                return;
-            }
-
-            if (buttonResponse.Value.Data.CustomId.Equals("removeYes"))
-            {
-                CountdownConfig.RemoveCountdown(Name);
-
-                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Removed this countdown."; message.Components = new ComponentBuilder().Build();});
-            }
-            else
-            {
-                await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Did not remove this countdown."; message.Components = new ComponentBuilder().Build(); });
             }
         }
 
@@ -327,7 +361,7 @@ namespace Levante.Commands
 
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
                 Footer = new EmbedFooterBuilder() { Text = $"{removeHashes.Count} expired Emblem offers" },
                 Title = "Remove these offers?",
@@ -340,7 +374,7 @@ namespace Levante.Commands
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); message.Components = buttonBuilder.Build(); });
 
-            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
 
             if (buttonResponse == null)
             {
@@ -397,7 +431,7 @@ namespace Levante.Commands
 
             await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Remove this offer?";  message.Embed = offerToDelete.BuildEmbed().Build(); message.Components = buttonBuilder.Build(); });
 
-            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+            var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
 
             if (buttonResponse == null)
             {
@@ -441,7 +475,7 @@ namespace Levante.Commands
                     .WithButton("Yes", customId: $"sendYes", ButtonStyle.Success, row: 1)
                     .WithButton("No", customId: $"sendNo", ButtonStyle.Danger, row: 1);
                 await RespondAsync("This is what the embed looks like. Ready to send to all channels?", embed: eo.BuildEmbed().Build(), components: buttonBuilder.Build());
-                var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(BotConfig.DurationToWaitForNextMessage));
+                var buttonResponse = await Interactive.NextMessageComponentAsync(x => x.Channel.Id == Context.Channel.Id && x.User.Id == Context.User.Id, timeout: TimeSpan.FromSeconds(AppConfig.Discord.DurationToWaitForNextMessage));
 
                 if (buttonResponse == null)
                 {
@@ -457,34 +491,15 @@ namespace Levante.Commands
 
                 if (buttonResponse.Value.Data.CustomId.Equals("sendYes"))
                 {
-                    await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sending to {DataConfig.AnnounceEmblemLinks.Count} channels..."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
-                    await SendToAllAnnounceChannels(eo);
-                    await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sent {DataConfig.AnnounceEmblemLinks.Count} channels!"; message.Embed = eo.BuildEmbed().Build(); });
+                    await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sending to {Guilds.GetEmblemChannelCount()} channels..."; message.Components = new ComponentBuilder().Build(); message.Embed = null; });
+                    await Guilds.PostToEmblemChannels(eo);
+                    await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = $"Sent {Guilds.GetEmblemChannelCount()} channels!"; message.Embed = eo.BuildEmbed().Build(); });
                 }
                 else
                 {
                     await buttonResponse.Value.Message.ModifyAsync(message => { message.Content = "Did not send offer."; message.Components = new ComponentBuilder().Build(); });
                 }
             }
-        }
-
-        [RequireOwner]
-        [SlashCommand("flush-tracking", "[OWNER]: Force send out rotation tracking reminders.")]
-        public async Task FlushTracking()
-        {
-            await DeferAsync();
-            // Send reset embeds if applicable.
-            if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
-                await DataConfig.PostWeeklyResetUpdate(Context.Client);
-
-            await DataConfig.PostDailyResetUpdate(Context.Client);
-
-            // Send users their tracking if applicable.
-            if (DateTime.Today.DayOfWeek == DayOfWeek.Tuesday)
-                await CurrentRotations.CheckUsersWeeklyTracking(Context.Client);
-
-            await CurrentRotations.CheckUsersDailyTracking(Context.Client);
-            await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Content = "Flushed tracking!"; });
         }
 
         [RequireBotStaff]
@@ -502,13 +517,9 @@ namespace Levante.Commands
                 return;
             }
 
-            int old = ActiveConfig.MaximumLoggingUsers;
-            ActiveConfig.MaximumLoggingUsers = NewMaxUserCount;
-            ActiveConfig.UpdateActiveAFKUsersConfig();
+            int old = Logging.GetMaxLoggingUsers();
+            Logging.SetMaxLoggingUsers(NewMaxUserCount);
 
-            string s = ActiveConfig.ActiveAFKUsers.Count == 1 ? "'s" : "s'";
-            string p = ActiveConfig.PriorityActiveAFKUsers.Count != 0 ? $" (+{ActiveConfig.PriorityActiveAFKUsers.Count})" : "";
-            await Context.Client.SetActivityAsync(new Game($"{ActiveConfig.ActiveAFKUsers.Count}/{ActiveConfig.MaximumLoggingUsers}{p} User{s} XP", ActivityType.Watching));
             await RespondAsync($"Changed maximum XP Logging users to {NewMaxUserCount} (was {old}).");
         }
 
@@ -519,11 +530,11 @@ namespace Levante.Commands
             var app = await Context.Client.GetApplicationInfoAsync();
             var embed = new EmbedBuilder
             {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
+                Color = new Discord.Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B),
                 Author = new EmbedAuthorBuilder() { IconUrl = Context.Client.CurrentUser.GetAvatarUrl() },
-                Footer = new EmbedFooterBuilder() { Text = $"{BotConfig.AppName} v{BotConfig.Version}" },
+                Footer = new EmbedFooterBuilder() { Text = $"{AppConfig.App.Name} v{AppConfig.App.Version}" },
                 Title = "Metrics",
-                ThumbnailUrl = BotConfig.BotLogoUrl
+                ThumbnailUrl = AppConfig.App.LogoUrl
             };
 
             var process = Process.GetCurrentProcess();
@@ -568,311 +579,28 @@ namespace Levante.Commands
         }
 
         [RequireBotStaff]
-        [SlashCommand("check-manifest", "[BOT STAFF]: Check Bungie.net for an updated Manifest.")]
+        [SlashCommand("check-manifest", "[BOT STAFF]: Check Bungie.net for an updated ManifestHelper.")]
         public async Task CheckManifest()
         {
             await DeferAsync();
             if (ManifestHelper.IsNewManifest())
             {
                 var oldVersion = ManifestHelper.DestinyManifestVersion;
-                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"New Manifest found! Updating the stuffs...");
+                await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"New ManifestHelper found! Updating the stuffs...");
                 await Task.Run(() => ManifestHelper.LoadManifestDictionaries());
                 await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"Updated! {oldVersion} -> {ManifestHelper.DestinyManifestVersion}");
                 return;
             }
 
-            await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"No new Manifest. Current Version: {ManifestHelper.DestinyManifestVersion}");
+            await Context.Interaction.ModifyOriginalResponseAsync(message => message.Content = $"No new manifest. Current Version: {ManifestHelper.DestinyManifestVersion}");
             return;
-        }
-
-        [RequireBotStaff]
-        [SlashCommand("creations-stats", "[BOT STAFF]: Grab various statistics regarding Bungie's Community Creations page.")]
-        public async Task CreationsStats()
-        {
-            await DeferAsync();
-            Dictionary<KeyValuePair<string, string>, int> moderators = new();
-            DateTime oldest = DateTime.Now;
-            int totalIndexed = 0;
-            
-            using (var client = new HttpClient())
-            {
-                try
-                {
-                    // Name, Id, Amount Approved
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    int page = 0;
-                    bool hasMore = true;
-                    do
-                    {
-                        var response = client.GetAsync($"https://www.bungie.net/Platform/CommunityContent/Get/1/0/{page}/").Result;
-                        var content = response.Content.ReadAsStringAsync().Result;
-                        dynamic item = JsonConvert.DeserializeObject(content);
-                        totalIndexed += (int)item.Response.totalResults;
-                        hasMore = item.Response.hasMore;
-                        foreach (var creation in item.Response.results)
-                        {
-                            // Find Editor
-                            foreach (var author in item.Response.authors)
-                            {
-                                if ($"{author.membershipId}".Equals($"{creation.editorMembershipId}"))
-                                {
-                                    var editorNameId = new KeyValuePair<string, string>($"{author.displayName}", $"{author.membershipId}");
-                                    if (moderators.ContainsKey(editorNameId))
-                                    {
-                                        moderators[editorNameId]++;
-                                    }
-                                    else
-                                        moderators.Add(editorNameId, 1);
-                                }
-
-                                if (oldest > DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc))
-                                    oldest = DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc);
-                            }
-                        }
-                        page++;
-                    }
-                    while (hasMore);
-                }
-                catch (Exception x)
-                {
-                    Console.WriteLine($"{x}");
-                }
-            }
-
-            var sorted = moderators.OrderBy(x => x.Value).Reverse();
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = $"Community Creations Stats",
-            };
-            var foot = new EmbedFooterBuilder()
-            {
-                Text = $"Powered by the Bungie API"
-            };
-            var embed = new EmbedBuilder
-            {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
-                Author = auth,
-                Footer = foot,
-                Timestamp = DateTime.Now,
-                Description = $"Indexed {totalIndexed} Creations from {TimestampTag.FromDateTime(oldest)} to Now."
-            };
-            foreach (var moderator in sorted)
-            {
-                embed.AddField(x =>
-                {
-                    x.Name = $"{moderator.Key.Key}";
-                    x.Value = $"{moderator.Value} ({(double)(moderator.Value / (double) totalIndexed)*100:0.00}%)";
-                    x.IsInline = true;
-                });
-            }
-            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
-        }
-
-        [RequireBotStaff]
-        [SlashCommand("my-creations", "[BOT STAFF]: Find your Community Creation uploads.")]
-        public async Task Testing()
-        {
-            await DeferAsync();
-            var linkedUser = DataConfig.GetLinkedUser(Context.User.Id);
-            DateTime oldest = DateTime.Now;
-            int totalIndexed = 0;
-
-            var auth = new EmbedAuthorBuilder()
-            {
-                Name = $"Creations by {linkedUser.UniqueBungieName}",
-            };
-            var foot = new EmbedFooterBuilder()
-            {
-                Text = $"Powered by the Bungie API"
-            };
-            var embed = new EmbedBuilder()
-            {
-                Color = new Discord.Color(BotConfig.EmbedColor.R, BotConfig.EmbedColor.G, BotConfig.EmbedColor.B),
-                Author = auth,
-                Footer = foot,
-                Timestamp = DateTime.Now,
-            };
-
-            using (var client = new HttpClient())
-            {
-                try
-                {
-                    // Name, Id, Amount Approved
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    int page = 0;
-                    bool hasMore = true;
-                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/{linkedUser.BungieMembershipType}/Profile/{linkedUser.BungieMembershipID}/LinkedProfiles/").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
-                    string bngMemId = $"{item.Response.bnetMembership.membershipId}";
-
-                    do
-                    {
-                        response = client.GetAsync($"https://www.bungie.net/Platform/CommunityContent/Get/1/0/{page}/").Result;
-                        content = response.Content.ReadAsStringAsync().Result;
-                        item = JsonConvert.DeserializeObject(content);
-                        totalIndexed += (int)item.Response.totalResults;
-                        hasMore = item.Response.hasMore;
-                        bool pageHasAuthor = false;
-
-                        foreach (var author in item.Response.authors)
-                        {
-                            if ($"{author.membershipId}".Equals(bngMemId))
-                                pageHasAuthor = true;
-                        }
-
-                        foreach (var creation in item.Response.results)
-                        {
-                            // Find Editor
-                            if ($"{creation.authorMembershipId}".Equals(bngMemId))
-                            {
-                                embed.AddField(x =>
-                                {
-                                    x.Name = $"{creation.subject}";
-                                    x.Value = $"Upvotes: **{creation.upvotes}**\n" +
-                                        $"Uploaded: {TimestampTag.FromDateTime(DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc), TimestampTagStyles.ShortDate)}\n" +
-                                        $"Approved: {TimestampTag.FromDateTime(DateTime.SpecifyKind(DateTime.Parse($"{creation.lastModified}"), DateTimeKind.Utc), TimestampTagStyles.ShortDate)}\n" +
-                                        $"[LINK](https://www.bungie.net/en/Community/Detail?itemId={creation.postId})";
-                                    x.IsInline = true;
-                                });
-                            }
-
-                            if (oldest > DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc))
-                                oldest = DateTime.SpecifyKind(DateTime.Parse($"{creation.creationDate}"), DateTimeKind.Utc);
-                        }
-                        page++;
-                    }
-                    while (hasMore);
-                }
-                catch (Exception x)
-                {
-                    Console.WriteLine($"{x}");
-                }
-            }
-            embed.Description = $"Indexed {totalIndexed} Creations from {TimestampTag.FromDateTime(oldest)} to Now.";
-            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Embed = embed.Build(); });
         }
 
         [RequireBotStaff]
         [SlashCommand("test", "[BOT STAFF]: Testing, testing... 1... 2.")]
         public async Task Test()
         {
-            await DeferAsync();
-            var listOfEmblemCollectibleHashes = ManifestHelper.EmblemsCollectible.Values.ToList();
 
-            var profiles = new List<string>
-            {
-                ""
-            };
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-            Log.Debug($"starting with {listOfEmblemCollectibleHashes.Count} emblems");
-
-            foreach (var profile in profiles)
-            {
-                Log.Debug($"{profile}");
-
-                try
-                {
-                    var response = client.GetAsync($"{profile}?components=800").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
-
-                    foreach (var emblem in listOfEmblemCollectibleHashes.ToList())
-                    {
-                        if (item.Response.profileCollectibles.data.collectibles[$"{emblem}"] == null)
-                        {
-                            listOfEmblemCollectibleHashes.RemoveAll(x => x == emblem);
-
-                            Log.Debug($"removed {emblem}");
-                            continue;
-                        }
-
-                        if (item.Response.profileCollectibles.data.collectibles[$"{emblem}"].state == null)
-                        {
-                            listOfEmblemCollectibleHashes.RemoveAll(x => x == emblem);
-
-                            Log.Debug($"removed {emblem}");
-                            continue;
-                        }
-
-                        if (((DestinyCollectibleState)item.Response.profileCollectibles.data.collectibles[$"{emblem}"].state).HasFlag(DestinyCollectibleState.NotAcquired))
-                        {
-                            listOfEmblemCollectibleHashes.RemoveAll(x => x == emblem);
-
-                            Log.Debug($"removed {emblem}");
-                        }
-                    }
-
-                }
-                catch (Exception x)
-                {
-                    Log.Error($"{x}");
-                }
-                
-            }
-            Log.Debug($"profiles grabbed {listOfEmblemCollectibleHashes.Count}");
-
-            var invHashes = ManifestHelper.EmblemsCollectible.Where(x => listOfEmblemCollectibleHashes.Contains(x.Value)).Select(x => x.Key);
-            await Context.Interaction.ModifyOriginalResponseAsync(x => { x.Content = "Sending emblem results now."; });
-            var builder = "";
-
-            foreach (var hash in invHashes)
-            {
-                //await Context.Channel.SendMessageAsync($"{ManifestHelper.Emblems[hash]} <https://emblem.report/{hash}>");
-                builder += $"{ManifestHelper.Emblems[hash]}\n";
-            }
-
-            Log.Debug(builder);
-        }
-
-        public async Task SendToAllAnnounceChannels(EmblemOffer offer)
-        {
-            var embed = offer.BuildEmbed();
-            var button = offer.BuildExternalButton();
-            foreach (var Link in DataConfig.AnnounceEmblemLinks.ToList())
-            {
-                var channel = Context.Client.GetChannel(Link.ChannelID) as SocketTextChannel;
-                var guildChannel = Context.Client.GetChannel(Link.ChannelID) as SocketGuildChannel;
-                try
-                {
-                    if (channel == null || guildChannel == null)
-                    {
-                        Log.Information("[{Type}] Could not find channel {Id}.", "Offers", Link.ChannelID);
-                        continue;
-                    }
-
-                    foreach (var chan in guildChannel.Guild.TextChannels)
-                    {
-                        if (DataConfig.IsExistingEmblemLinkedChannel(chan.Id) && Link.ChannelID != chan.Id)
-                        {
-                            Log.Information("[{Type}] Duplicate channel detected. Removing: {Id}", "Offers", chan.Id);
-                            DataConfig.DeleteEmblemChannel(chan.Id);
-                        }
-                    }
-
-                    if (Link.RoleID != 0)
-                    {
-                        var role = Context.Client.GetGuild(guildChannel.Guild.Id).GetRole(Link.RoleID);
-                        var msg = await channel.SendMessageAsync($"{role.Mention}", embed: embed.Build(), components: button.Build());
-                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
-                            await msg.CrosspostAsync();
-                    }
-                    else
-                    {
-                        // Crosspost/Publish for the support server news channel.
-                        var msg = await channel.SendMessageAsync("", embed: embed.Build(), components: button.Build());
-                        if (channel is SocketNewsChannel && channel.Guild.Id == BotConfig.SupportServerID)
-                            await msg.CrosspostAsync();
-                    }
-                }
-                catch (Exception x)
-                {
-                    //LogHelper.ConsoleLog($"[OFFERS] Could not send to channel {guildChannel.Id} in guild {guildChannel.Guild.Id}.");
-                    Log.Warning("[{Type}] Could not send to channel {ChannelId} in guild {GuildId}. Reason: {Reason}", "Offers", guildChannel.Id, guildChannel.Guild.Id, x);
-                }
-            }
         }
     }
 }

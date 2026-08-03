@@ -1,0 +1,74 @@
+﻿using Discord;
+using Levante.Configs;
+using Levante.Helpers;
+using Levante.Services;
+using Levante.Util;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Levante.Structs
+{
+    public class Consumable : InventoryItem
+    {
+        public Consumable(long hashCode)
+        {
+            HashCode = hashCode;
+            APIUrl = $"/Platform/Destiny2/Manifest/DestinyInventoryItemDefinition/{HashCode}";
+
+            Content = ManifestHelper.GetInventoryItemById(unchecked((int)hashCode));
+        }
+
+        public int GetMaxStackSize() => Content.Inventory.MaxStackSize;
+
+        public override EmbedBuilder GetEmbed()
+        {
+            var auth = new EmbedAuthorBuilder()
+            {
+                Name = $"Consumable Details: {GetName()}",
+                IconUrl = GetIconUrl(),
+            };
+            var foot = new EmbedFooterBuilder()
+            {
+                Text = "Powered by the Bungie API"
+            };
+            var embed = new EmbedBuilder()
+            {
+                Author = auth,
+                Footer = foot
+            };
+            try
+            {
+                int[] embedRGB = DestinyColors.GetColorFromString(GetSpecificItemType());
+                embed.WithColor(embedRGB[0], embedRGB[1], embedRGB[2]);
+
+                embed.ThumbnailUrl = GetIconUrl();
+                embed.Description = Content.DisplayProperties.Description;
+
+                embed.Description += $"\n### Max per Stack: {GetMaxStackSize():n0}\n";
+
+                embed.Description += Content.Action.ConsumeEntireStack ? $"Upon dismantle, the __entire stack__ of **{GetName()}** will be deleted." : $"Upon dismantle, only __one__ **{GetName()}** will be deleted.";
+
+                embed.Description += Content.Inventory.MaxStackSize == 1 ? " Though, since the max is 1, it doesn't matter." : "";
+
+                embed.AddField(x =>
+                {
+                    x.Name = "> Information";
+                    x.Value = $"\n\nStackable?: {(string.IsNullOrEmpty(Content.Inventory.StackUniqueLabel) ? EmoteConfig.GetEmote("Yes") : EmoteConfig.GetEmote("No"))}" +
+                              $"\nPostmaster?: {(Content.Inventory.RecoveryBucketTypeHash != 0 ? EmoteConfig.GetEmote("Yes") : EmoteConfig.GetEmote("No"))}" +
+                              $"\nVault?: {(!Content.NonTransferrable ? EmoteConfig.GetEmote("Yes") : EmoteConfig.GetEmote("No"))}";
+                    x.IsInline = true;
+                });
+            }
+            catch
+            {
+                embed.WithColor(new Color(AppConfig.Discord.EmbedColor.R, AppConfig.Discord.EmbedColor.G, AppConfig.Discord.EmbedColor.B));
+                embed.Description = "This consumable is missing some API values, sorry about that!";
+            }
+
+            return embed;
+        }
+    }
+}

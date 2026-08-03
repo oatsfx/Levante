@@ -8,68 +8,43 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Levante.Util;
+using Levante.Services;
 
 namespace Levante.Configs
 {
     public class EmoteConfig
     {
-        public static string FilePath = @"Configs/emoteConfig.json";
+        private static IEnumerable<Emote> Emotes = [];
 
-        [JsonProperty("EmoteServers")]
-        public List<ulong> EmoteServers { get; internal set; } = new();
-
-        [JsonProperty("Emotes")]
-        private Dictionary<string, string> Emotes { get; set; } = new();
-
-        public async Task<bool> AddEmote(string name, Image image)
+        public static async Task<Emote> AddEmote(string name, Image image)
         {
-            // Don't make an emote when debugging.
-            if (BotConfig.IsDebug)
-            {
-                Log.Debug("[{Type}] Would've made an emote for {Name}", "Emotes", name);
-                return true;
-            }
-
-                bool success = false;
-            foreach (var guildId in EmoteServers)
-            {
-                var guild = LevanteCordInstance.Client.GetGuild(guildId);
-                try
-                {
-                    if (guild.Emotes.Count(x => !x.Animated) < 50)
-                    {
-                        var emote = await guild.CreateEmoteAsync(name, image);
-                        Emotes.Add(name, $"<:{emote.Name}:{emote.Id}>");
-                        success = true;
-                        Log.Information("[{Type}] Added emote for {Name}.", "Emotes", name);
-                        break;
-                    }
-                }
-                catch (Discord.Net.HttpException x)
-                {
-                    var json = JsonConvert.SerializeObject(x.Errors, Formatting.Indented);
-                    Log.Error("[{Type}] Could not create an emote for {Name}. Reason: {Json}", "Emotes", name, json);
-                    break;
-                }
-            }
+            if (HasEmote(name)) return GetEmote(name);
+            var emote = await LevanteCordInstance.Client.Shards.First().CreateApplicationEmoteAsync(name, image);
             image.Dispose();
-            return success;
+            await RefreshEmotes();
+            return emote;
         }
 
-        public string GetEmote(string name)
-        {
-            if (Emotes.ContainsKey(name))
-                return Emotes[name];
+        public static IEnumerable<Emote> GetEmotes() => Emotes;
 
-            return DestinyEmote.Classified;
+        public static Emote GetEmote(string name)
+        {
+            if (Emotes.Any(x => x.Name.ToLower().Equals(name.ToLower())))
+                return Emotes.First(x => x.Name.ToLower().Equals(name.ToLower()));
+
+            throw new KeyNotFoundException($"Emote {name} not found.");
         }
 
-        public bool HasEmote(string name) => Emotes.ContainsKey(name);
-
-        public void UpdateJSON()
+        public static bool HasEmote(string name)
         {
-            string output = JsonConvert.SerializeObject(this, Formatting.Indented);
-            File.WriteAllText(FilePath, output);
+            var emotes = GetEmotes();
+
+            return emotes.Any(x => x.Name.ToLower().Equals(name.ToLower()));
+        }
+
+        public static async Task RefreshEmotes()
+        {
+            Emotes = await LevanteCordInstance.Client.Shards.First().GetApplicationEmotesAsync();
         }
     }
 }

@@ -1,21 +1,24 @@
 ﻿using Discord;
 using System.Threading.Tasks;
-using Levante.Configs;
 using Discord.Interactions;
 using System;
 using System.Collections.Generic;
-using Levante.Helpers;
 using System.Net.Http;
 using Newtonsoft.Json;
 using System.Linq;
 using BungieSharper.Entities.Destiny.Definitions;
 using BungieSharper.Entities.Destiny;
 using Levante.Util;
+using Levante.Services;
+using Levante.Configs;
+using Levante.Helpers;
 
 namespace Levante.Commands
 {
     public class Fun : InteractionModuleBase<ShardedInteractionContext>
     {
+        private readonly UserService Users;
+
         [SlashCommand("ratio", "Get ratioed.")]
         public async Task Ratio()
         {
@@ -67,11 +70,11 @@ namespace Levante.Commands
             foreach (var msg in msgs)
                 result += $"{msg} + ";
 
-            if (!DataConfig.IsExistingLinkedUser(Context.User.Id))
+            if (!Users.IsExistingUser(Context.User.Id))
                 result += $"You aren't linked";
             else
             {
-                var dil = DataConfig.GetLinkedUser(Context.User.Id);
+                var dil = Users.GetUser(Context.User.Id);
                 if (dil == null)
                 {
                     var embed = Embeds.GetErrorEmbed();
@@ -79,38 +82,32 @@ namespace Levante.Commands
                     await Context.Interaction.ModifyOriginalResponseAsync(message => { message.Embed = embed.Build(); });
                     return;
                 }
-                using (var client = new HttpClient())
+
+                var content = await BungieApi.Query($"/Platform/Destiny2/{dil.BungieCredentials.MembershipType}/Profile/{dil.BungieCredentials.MembershipId}/?components=800", dil.BungieCredentials.AccessToken);
+                dynamic item = JsonConvert.DeserializeObject(content);
+
+                bool HasEmblem = true;
+                while (HasEmblem)
                 {
-                    client.DefaultRequestHeaders.Add("X-API-Key", BotConfig.BungieApiKey);
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {dil.AccessToken}");
-
-                    var response = client.GetAsync($"https://www.bungie.net/Platform/Destiny2/" + dil.BungieMembershipType + "/Profile/" + dil.BungieMembershipID + "/?components=800").Result;
-                    var content = response.Content.ReadAsStringAsync().Result;
-                    dynamic item = JsonConvert.DeserializeObject(content);
-
-                    bool HasEmblem = true;
-                    while (HasEmblem)
+                    try
                     {
-                        try
-                        {
-                            var emblem = ManifestHelper.Emblems.ElementAt(random.Next(0, ManifestHelper.EmblemsCollectible.Count));
-                            var emblemCollectible = ManifestHelper.EmblemsCollectible[emblem.Key];
-                            if (item.Response.profileCollectibles.data.collectibles[$"{emblemCollectible}"].state == null)
-                            {
-                                continue;
-                            }
-
-                            if (((DestinyCollectibleState)item.Response.profileCollectibles.data.collectibles[$"{emblemCollectible}"].state).HasFlag(DestinyCollectibleState.NotAcquired))
-                            {
-                                HasEmblem = false;
-                                result += $"You don't have {emblem.Value}";
-                                break;
-                            }
-                        }
-                        catch
+                        var emblem = ManifestHelper.Emblems.ElementAt(random.Next(0, ManifestHelper.EmblemsCollectible.Count));
+                        var emblemCollectible = ManifestHelper.EmblemsCollectible[emblem.Key];
+                        if (item.Response.profileCollectibles.data.collectibles[$"{emblemCollectible}"].state == null)
                         {
                             continue;
                         }
+
+                        if (((DestinyCollectibleState)item.Response.profileCollectibles.data.collectibles[$"{emblemCollectible}"].state).HasFlag(DestinyCollectibleState.NotAcquired))
+                        {
+                            HasEmblem = false;
+                            result += $"You don't have {emblem.Value}";
+                            break;
+                        }
+                    }
+                    catch
+                    {
+                        continue;
                     }
                 }
             }
